@@ -160,3 +160,8 @@ button { font-family: inherit; }
   user-select: none;
 }
 .msym-fill { font-variation-settings: "FILL" 1, "GRAD" 0; }
+
+/* iOS Safari zooms into any focused field under 16px and stays zoomed; keep touch inputs at 16px. Unlayered so it beats utilities. */
+@media (pointer: coarse) {
+  input, textarea, select { font-size: 16px; }
+}

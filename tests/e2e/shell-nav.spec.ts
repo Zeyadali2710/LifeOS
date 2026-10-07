@@ -40,8 +40,11 @@ test("desktop: sidebar reaches every domain page, shortcuts and compact persiste
   await expect(page.getByRole("complementary", { name: "Primary" })).not.toContainText("0.9");
 
   await page.goto("/");
-  await page.keyboard.press("Alt+2");
-  await expect(page).toHaveURL(/\/career$/);
+  // First press can land before hydration; retry until the shortcut listener exists.
+  await expect(async () => {
+    if (!/\/career$/.test(page.url())) await page.keyboard.press("Alt+2");
+    await expect(page).toHaveURL(/\/career$/, { timeout: 500 });
+  }).toPass();
 
   await page.keyboard.press("Control+Backslash");
   await expect(page.getByRole("button", { name: "Expand sidebar" })).toBeVisible();

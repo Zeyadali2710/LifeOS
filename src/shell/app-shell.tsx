@@ -42,7 +42,7 @@ export function AppShell({
           <div className="@container/main flex min-w-0 flex-1 flex-col">
             <TopBar owner={owner} />
             <main id="main" tabIndex={-1} className="relative min-h-0 flex-1 outline-none">
-              <div className="h-full overflow-x-hidden overflow-y-auto pb-[calc(var(--bottombar-h)+env(safe-area-inset-bottom))] tab:pb-0">{children}</div>
+              <div className="h-full overflow-x-hidden overflow-y-auto px-4 pt-5 pb-[calc(var(--bottombar-h)+env(safe-area-inset-bottom)+24px)] tab:px-8 tab:pt-9 tab:pb-[170px]">{children}</div>
               <CommandBar />
               <NotificationsDrawer />
             </main>
