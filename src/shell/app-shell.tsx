@@ -2,9 +2,12 @@
 
 import type { ReactNode } from "react";
 import type { Health } from "@/server/health";
+import { AIPanel } from "./ai-panel";
 import { BottomBar } from "./bottom-bar";
+import { CommandBar } from "./command-bar";
 import { LiveProvider } from "./live-provider";
 import { MoreSheet } from "./more-sheet";
+import { Palette } from "./palette";
 import { ShellProvider } from "./shell-provider";
 import { Sidebar } from "./sidebar";
 import { TopBar } from "./top-bar";
@@ -39,12 +42,14 @@ export function AppShell({
             <TopBar owner={owner} />
             <main id="main" tabIndex={-1} className="relative min-h-0 flex-1 outline-none">
               <div className="h-full overflow-x-hidden overflow-y-auto pb-[calc(var(--bottombar-h)+env(safe-area-inset-bottom))] tab:pb-0">{children}</div>
-              {/* MOUNT (plan 10): command bar, command palette, AI panel */}
+              <CommandBar />
               {/* MOUNT (plan 12): notifications drawer */}
             </main>
           </div>
+          <AIPanel />
           <BottomBar />
           <MoreSheet />
+          <Palette />
         </div>
       </LiveProvider>
     </ShellProvider>
