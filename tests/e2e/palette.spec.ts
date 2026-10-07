@@ -53,6 +53,12 @@ test("desktop: palette navigates, closes, and asks", async ({ page }, info) => {
   await page.getByRole("button", { name: "Plan my week" }).click();
   await expect(assistant.getByRole("alert").last()).toContainText("LifeOS can't answer yet.");
 
+  // Alt+digit while typing must not navigate away; from the page it does.
+  await assistant.getByRole("textbox", { name: "Message LifeOS" }).focus();
+  await page.keyboard.press("Alt+2");
+  await page.waitForTimeout(300);
+  await expect(page).toHaveURL(/\/goals$/);
+  await page.locator("main").first().click({ position: { x: 1, y: 1 } });
   await page.keyboard.press("Alt+2");
   await expect(page).toHaveURL(/\/career$/);
 });

@@ -20,6 +20,15 @@ describe("matchShortcut", () => {
     expect(k({ code: "Digit2", altKey: true, ctrlKey: true })).toBeNull();
     expect(k({ code: "Digit2", altKey: true, shiftKey: true })).toBeNull();
   });
+  it("nav shortcuts never fire while typing in a field", () => {
+    const field = { closest: (sel: string) => (sel.includes("textarea") ? {} : null) } as unknown as EventTarget;
+    const page = { closest: () => null } as unknown as EventTarget;
+    const at = (target: EventTarget, o: Partial<typeof base>) => matchShortcut({ ...base, ...o, target });
+    expect(at(field, { code: "Digit2", altKey: true })).toBeNull();
+    expect(at(field, { code: "Comma", key: ",", ctrlKey: true })).toBeNull();
+    expect(at(field, { key: "k", ctrlKey: true })).toEqual({ type: "palette" });
+    expect(at(page, { code: "Digit2", altKey: true })).toEqual({ type: "nav", href: "/career" });
+  });
   it("escape, composition, repeat", () => {
     expect(k({ key: "Escape" })).toEqual({ type: "escape" });
     expect(k({ key: "Escape", isComposing: true })).toBeNull();
