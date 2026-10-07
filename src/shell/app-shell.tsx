@@ -7,6 +7,7 @@ import { BottomBar } from "./bottom-bar";
 import { CommandBar } from "./command-bar";
 import { LiveProvider } from "./live-provider";
 import { MoreSheet } from "./more-sheet";
+import { NotificationsDrawer } from "./notifications-drawer";
 import { Palette } from "./palette";
 import { ShellProvider } from "./shell-provider";
 import { Sidebar } from "./sidebar";
@@ -43,7 +44,7 @@ export function AppShell({
             <main id="main" tabIndex={-1} className="relative min-h-0 flex-1 outline-none">
               <div className="h-full overflow-x-hidden overflow-y-auto pb-[calc(var(--bottombar-h)+env(safe-area-inset-bottom))] tab:pb-0">{children}</div>
               <CommandBar />
-              {/* MOUNT (plan 12): notifications drawer */}
+              <NotificationsDrawer />
             </main>
           </div>
           <AIPanel />
