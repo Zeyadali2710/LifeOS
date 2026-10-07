@@ -6,7 +6,7 @@ function fmt(d: Date, opts: Intl.DateTimeFormatOptions) {
     new Intl.DateTimeFormat("en-AU", { timeZone: TZ, hourCycle: "h23", ...opts })
       .formatToParts(d)
       .map((p) => [p.type, p.value]),
-  ) as Record<string, string>;
+  ) as Record<Intl.DateTimeFormatPartTypes, string>;
 }
 
 export function sydneyParts(d: Date) {

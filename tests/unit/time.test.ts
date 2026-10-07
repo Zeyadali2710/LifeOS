@@ -18,22 +18,22 @@ describe("snoozePresets", () => {
   it("omits Tonight after 18:00", () => {
     const p = snoozePresets(d("2026-10-03T12:00:00Z"));
     expect(p.map((x) => x.key)).toEqual(["hour", "tomorrow"]);
-    expect(p[1].until.toISOString()).toBe("2026-10-03T22:00:00.000Z");
-    expect(p[1].hint).toBe("Sun 09:00");
+    expect(p[1]!.until.toISOString()).toBe("2026-10-03T22:00:00.000Z");
+    expect(p[1]!.hint).toBe("Sun 09:00");
   });
   it("offers all three at noon", () => {
     const now = d("2026-10-07T01:00:00Z");
     const p = snoozePresets(now);
     expect(p.map((x) => x.key)).toEqual(["hour", "tonight", "tomorrow"]);
-    expect(p[0].until.getTime()).toBe(now.getTime() + 3600000);
-    expect(p[0].hint).toBe("13:00");
-    expect(p[1].until.toISOString()).toBe("2026-10-07T07:00:00.000Z");
-    expect(p[1].hint).toBe("18:00");
-    expect(p[2].until.toISOString()).toBe("2026-10-07T22:00:00.000Z");
+    expect(p[0]!.until.getTime()).toBe(now.getTime() + 3600000);
+    expect(p[0]!.hint).toBe("13:00");
+    expect(p[1]!.until.toISOString()).toBe("2026-10-07T07:00:00.000Z");
+    expect(p[1]!.hint).toBe("18:00");
+    expect(p[2]!.until.toISOString()).toBe("2026-10-07T22:00:00.000Z");
   });
   it("rolls over the month", () => {
     const p = snoozePresets(d("2026-10-31T10:00:00Z"));
-    expect(p.at(-1)!.until.toISOString()).toBe("2026-10-31T22:00:00.000Z");
+    expect(p[p.length - 1]!.until.toISOString()).toBe("2026-10-31T22:00:00.000Z");
   });
 });
 
