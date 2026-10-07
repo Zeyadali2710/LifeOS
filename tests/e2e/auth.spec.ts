@@ -28,7 +28,7 @@ test("owner can sign in and out; session cookie is hardened", async ({ page, con
   await page.getByRole("button", { name: "Sign in" }).click();
 
   await expect(page.getByRole("heading", { level: 1 })).toContainText("Ada.");
-  await expect(page.getByText("Database")).toBeVisible();
+  await expect(page.getByText("SYSTEM", { exact: true })).toBeVisible();
 
   const session = (await context.cookies()).find((c) => c.name.includes("session_token"));
   expect(session).toBeDefined();
@@ -36,6 +36,7 @@ test("owner can sign in and out; session cookie is hardened", async ({ page, con
   expect(session!.secure).toBe(true);
   expect(session!.sameSite).toBe("Lax");
 
+  await page.goto("/settings");
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/login$/);
 });
