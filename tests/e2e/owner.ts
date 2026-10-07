@@ -17,9 +17,9 @@ async function withDb<T>(fn: (c: Client) => Promise<T>): Promise<T> {
   }
 }
 
-// Random client IP avoids the 5/min/IP sign-in limit across tests.
+// Random client IP (100-249, clear of the fixed IPs in auth.spec) avoids the 5/min/IP sign-in limit across tests.
 export async function signIn(page: Page) {
-  await page.setExtraHTTPHeaders({ "x-forwarded-for": `203.0.113.${1 + Math.floor(Math.random() * 250)}` });
+  await page.setExtraHTTPHeaders({ "x-forwarded-for": `203.0.113.${100 + Math.floor(Math.random() * 150)}` });
   await page.goto("/login");
   await page.getByLabel("Email").fill(E2E_OWNER.email);
   await page.getByLabel("Password").fill(E2E_OWNER.password);

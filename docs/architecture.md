@@ -53,6 +53,9 @@ worker: github.sync job
   → Home agent reads recent events when building the daily briefing
 ```
 
+## Live events
+`emitActivity` writes `activity_events` (and `notifications` when needed), then `pg_notify('lifeos_events', {k, id})` with ids only. A `globalThis` hub in each web process holds one LISTEN connection and fans out to SSE clients (`/api/events`), which the client `LiveProvider` consumes; on reconnect the hub sends `resync`. The health monitor runs from `instrumentation.ts` and uses compare-and-swap on `settings` keys `health.last` and `app.version` so a status change emits exactly once.
+
 ## Failure model
 - Providers wrap vendor errors into typed errors (`AuthExpired`, `RateLimited`, `Unavailable`, `Invalid`), record `integrations.status/error`, and the UI degrades per integration rather than failing the page.
 - Jobs retry with backoff via pg-boss; side-effecting tool calls carry idempotency keys (unique index) so a retry never double-sends.
