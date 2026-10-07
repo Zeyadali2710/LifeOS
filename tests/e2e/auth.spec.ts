@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { E2E_OWNER } from "./owner";
+import { Client } from "pg";
+import { E2E_DB_URL, E2E_OWNER } from "./owner";
 
 test("unauthenticated visitors are redirected to /login", async ({ page }) => {
   await page.goto("/");
@@ -36,9 +37,11 @@ test("owner can sign in and out; session cookie is hardened", async ({ page, con
   expect(session!.secure).toBe(true);
   expect(session!.sameSite).toBe("Lax");
 
+  const before = await countSignOuts();
   await page.goto("/settings");
   await page.getByRole("button", { name: "Sign out" }).click();
   await expect(page).toHaveURL(/\/login$/);
+  await expect.poll(() => countSignOuts()).toBeGreaterThan(before);
 });
 
 test("responses carry security headers", async ({ request }) => {
@@ -82,3 +85,29 @@ test("public sign-up is disabled", async ({ request, baseURL }) => {
   });
   expect(res.ok()).toBe(false);
 });
+
+test("sign-out without a valid session is not audited", async ({ request, baseURL }, testInfo) => {
+  const ip = testInfo.project.name === "mobile" ? "203.0.113.31" : "203.0.113.30";
+  for (const cookie of [undefined, "__Secure-better-auth.session_token=forged.value"]) {
+    const res = await request.post("/api/auth/sign-out", {
+      headers: { origin: baseURL!, "x-forwarded-for": ip, ...(cookie ? { cookie } : {}) },
+      data: {},
+    });
+    expect(res.status()).toBeLessThan(500);
+  }
+  expect(await countSignOuts(ip)).toBe(0);
+});
+
+async function countSignOuts(ip?: string): Promise<number> {
+  const c = new Client({ connectionString: E2E_DB_URL });
+  await c.connect();
+  try {
+    const r = await c.query(
+      "select count(*)::int as n from audit_log where action = 'auth.sign_out' and ($1::text is null or ip = $1)",
+      [ip ?? null],
+    );
+    return r.rows[0].n as number;
+  } finally {
+    await c.end();
+  }
+}

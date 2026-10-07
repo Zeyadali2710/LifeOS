@@ -36,6 +36,8 @@ function createAuth() {
     hooks: {
       after: createAuthMiddleware(async (ctx) => {
         if (ctx.path !== "/sign-in/email" && ctx.path !== "/sign-out") return;
+        // Sign-out succeeds even without a session; only a validly signed session cookie counts as the owner.
+        if (ctx.path === "/sign-out" && !(await ctx.getSignedCookie(ctx.context.authCookies.sessionToken.name, ctx.context.secret))) return;
         const ip = clientIp(ctx.request?.headers);
         const returned = ctx.context.returned;
         const failed = returned instanceof Error;
