@@ -17,7 +17,7 @@
 - [ ] **FND-12**: Design tokens + base primitives establish the LifeOS visual language (dark-first, light supported)
 
 ### Shell
-- [ ] **SHL-01**: Desktop navigation rail + mobile bottom bar across all domain pages
+- [x] **SHL-01**: Desktop navigation rail + mobile bottom bar across all domain pages
 - [ ] **SHL-02**: Command palette (Ctrl/Cmd-K) for navigation and AI prompts
 - [x] **SHL-03**: Home shows date/time, greeting, priorities, today, activity, approvals, system status (with honest empty states)
 - [x] **SHL-04**: Activity stream updates live (SSE)
