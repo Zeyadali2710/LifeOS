@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="max-width:1480px;margin:0 auto;padding:36px 32px 170px;display:flex;flex-direction:column;gap:22px">
+  <section style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="font:500 11px 'Geist Mono',monospace;letter-spacing:0.12em;color:#a5a6ff">PROJECTS</div>
+      <h1 style="margin:0;font-size:clamp(28px,3vw,40px);font-weight:500;letter-spacing:-0.025em">Everything you're building, in one place.</h1>
+      <p style="margin:0;font-size:15px;color:#a3a6b4">9 projects · 2 due this week · 1 at risk</p>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;flex:none">
+      <div role="radiogroup" aria-label="Sort" style="display:flex;gap:2px;padding:3px;border-radius:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06)">
+        <sc-for list="{{ sorts }}" as="v" hint-placeholder-count="3"><button role="radio" aria-checked="{{ v.on }}" onClick="{{ v.pick }}" style="height:28px;padding:0 12px;border-radius:7px;border:none;background:{{ v.bg }};color:{{ v.color }};font-size:12.5px;cursor:pointer">{{ v.label }}</button></sc-for>
+      </div>
+      <button onClick="{{ newProject }}" style="height:34px;padding:0 14px;border-radius:9px;border:none;background:#8b8cff;color:#0b0c10;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px" style-hover="background:#a5a6ff"><span style="font-family:'Material Symbols Outlined';font-size:17px">add</span>New project</button>
+    </div>
+  </section>
+  <div style="display:flex;gap:6px;flex-wrap:wrap">
+    <sc-for list="{{ filters }}" as="f" hint-placeholder-count="7"><button onClick="{{ f.pick }}" aria-pressed="{{ f.on }}" style="height:30px;padding:0 12px;border-radius:999px;border:1px solid {{ f.border }};background:{{ f.bg }};color:{{ f.color }};font-size:12.5px;cursor:pointer;display:flex;align-items:center;gap:6px">{{ f.label }}<span style="font:400 10.5px 'Geist Mono',monospace;color:#80849a">{{ f.n }}</span></button></sc-for>
+  </div>
+  <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}">
+    <div style="padding:56px 24px;border-radius:14px;border:1px dashed rgba(255,255,255,0.1);display:flex;flex-direction:column;gap:8px;align-items:center;text-align:center">
+      <span style="font-family:'Material Symbols Outlined';font-size:28px;color:#4a4e5c">deployed_code</span>
+      <span style="font-size:15px">No projects in this category yet.</span>
+      <span style="font-size:13px;color:#a3a6b4;max-width:400px;line-height:1.5">Create one, or ask LifeOS to group related tasks, repos and posts into a project and link it to a goal.</span>
+      <button onClick="{{ newProject }}" style="margin-top:6px;height:32px;padding:0 14px;border-radius:8px;border:none;background:#8b8cff;color:#0b0c10;font-size:13px;font-weight:500;cursor:pointer">Create a project</button>
+    </div>
+  </sc-if>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,320px),1fr));gap:12px">
+    <sc-for list="{{ projects }}" as="p" hint-placeholder-count="9">
+      <button onClick="{{ p.open }}" style="display:flex;flex-direction:column;gap:14px;padding:18px;border-radius:14px;border:1px solid {{ p.border }};background:#111318;text-align:left;color:#e9eaf0;cursor:pointer;transition:border-color .15s,transform .15s;animation:loFade .2s ease" style-hover="border-color:rgba(255,255,255,0.18);transform:translateY(-1px)">
+        <div style="display:flex;align-items:center;gap:8px;width:100%">
+          <span style="font:600 10px 'Geist Mono',monospace;letter-spacing:0.06em;padding:3px 7px;border-radius:5px;color:{{ p.pc }};background:{{ p.pbg }}">{{ p.pri }}</span>
+          <span style="font:500 10px 'Geist Mono',monospace;letter-spacing:0.08em;color:#80849a">{{ p.cat }}</span>
+          <span style="flex:1"></span>
+          <span style="display:flex;align-items:center;gap:6px;font:600 10px 'Geist Mono',monospace;letter-spacing:0.08em;color:{{ p.sc }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ p.sc }}"></span>{{ p.status }}</span>
+        </div>
+        <span style="font-size:17px;font-weight:500;letter-spacing:-0.01em">{{ p.name }}</span>
+        <div style="display:flex;align-items:center;gap:12px;width:100%">
+          <div role="img" aria-label="{{ p.progress }}% complete" style="width:44px;height:44px;border-radius:50%;background:{{ p.ring }};display:grid;place-items:center;flex:none"><span style="width:36px;height:36px;border-radius:50%;background:#111318;display:grid;place-items:center;font:500 11px 'Geist Mono',monospace">{{ p.progress }}%</span></div>
+          <div style="display:flex;flex-direction:column;gap:3px;min-width:0"><span style="font-size:13px;color:#e9eaf0"><span style="color:#80849a">Next · </span>{{ p.next }}</span><span style="font:400 11px 'Geist Mono',monospace;color:{{ p.dc }}">due {{ p.due }}</span></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.05);width:100%">
+          <span style="width:7px;height:7px;border-radius:2px;transform:rotate(45deg);background:{{ p.ac }};animation:{{ p.anim }};flex:none"></span>
+          <span style="font-size:12px;color:#a3a6b4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.agent }}</span>
+        </div>
+      </button>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const P = [
+  ['lifeos','LifeOS','Startup','Technical','ACTIVE','P1',62,'Finish event-log migration','Oct 24','Career Agent drafting changelog',true],
+  ['ledgerline','Ledgerline v0.4','Technical','Startup','AT RISK','P1',78,'Fix settlement rounding test','Fri','Career Agent triaged CI failure',false],
+  ['sentinel','Sentinel','Technical','Career','ACTIVE','P2',41,'Review #31 GCP provider','Nov 3','Career Agent summarizing PR',true],
+  ['portfolio','Portfolio site','Career','Technical','ACTIVE','P3',90,'Add Sentinel case study','Oct 18','Stats synced 18:10',false],
+  ['hack','UNSW Fintech Hackathon','Learning','Career','ACTIVE','P1',80,'Submit application form','Tonight','Organization Agent blocked 20:30',false],
+  ['comp','COMP3900 capstone','Learning','Personal','ACTIVE','P2',55,'Revised architecture diagram','Sun','No agent activity',false],
+  ['bip','Build-in-public series','Social','Career','ACTIVE','P2',35,'Approve post #7','Thu 08:30','Social Agent awaiting approval',false],
+  ['run','Half-marathon training','Personal','','ON TRACK','P3',48,'Long run · 14 km','Sun','Organization Agent scheduled runs',false],
+  ['jp','Japanese N4','Learning','Personal','BEHIND','P3',30,'Kanji set 6','Mon','Knowledge Agent paused',false]
+];
+const FL = ['All','Personal','Career','Startup','Technical','Social','Learning'];
+const ST = {'ACTIVE':'#4fd1a1','AT RISK':'#e8b86a','ON TRACK':'#4fd1a1','BEHIND':'#f07a6e'};
+const PR = {P1:['#0b0c10','#f07a6e'],P2:['#0b0c10','#e8b86a'],P3:['#a3a6b4','rgba(255,255,255,0.07)']};
+class Component extends DCLogic {
+  state = { f:'All', sort:'Priority' };
+  renderVals(){
+    const s=this.state, nav=this.props.nav||{};
+    let list = P.filter(p=>s.f==='All'||p[2]===s.f||p[3]===s.f);
+    if (s.f==='Social' && this.state.emptyDemo) list=[];
+    const dueRank = d=>({Tonight:0,'Thu 08:30':1,Fri:2,Sun:3,Mon:4,'Oct 18':5,'Oct 24':6,'Nov 3':7}[d]??9);
+    list = [...list].sort((a,b)=>s.sort==='Priority'?a[5].localeCompare(b[5]):s.sort==='Deadline'?dueRank(a[8])-dueRank(b[8]):b[6]-a[6]);
+    const isCode = id=>['lifeos','ledgerline','sentinel','portfolio'].includes(id);
+    return {
+      sorts:['Priority','Deadline','Progress'].map(v=>({label:v,on:v===s.sort,bg:v===s.sort?'#1f222b':'transparent',color:v===s.sort?'#e9eaf0':'#80849a',pick:()=>this.setState({sort:v})})),
+      filters:FL.map(f=>{ const on=f===s.f; return {label:f,n:String(f==='All'?P.length:P.filter(p=>p[2]===f||p[3]===f).length),on,bg:on?'rgba(139,140,255,0.12)':'transparent',border:on?'rgba(139,140,255,0.45)':'rgba(255,255,255,0.1)',color:on?'#e9eaf0':'#a3a6b4',pick:()=>this.setState({f})}; }),
+      empty:list.length===0,
+      newProject:()=>nav.toast&&nav.toast('New project created in Inbox'),
+      projects:list.map(p=>{ const sc=ST[p[4]]; return {name:p[1],cat:(p[2]+(p[3]?' · '+p[3]:'')).toUpperCase(),status:p[4],sc,pri:p[5],pc:PR[p[5]][0],pbg:PR[p[5]][1],progress:p[6],next:p[7],due:p[8],dc:/Tonight|Thu|Fri/.test(p[8])?'#e8b86a':'#80849a',agent:p[9],
+        ring:'conic-gradient('+sc+' '+p[6]+'%, rgba(255,255,255,0.07) 0)',ac:p[10]?'#8b8cff':'#4a4e5c',anim:p[10]?'loPulse 1.6s ease-out infinite':'none',border:p[4]==='AT RISK'?'rgba(232,184,106,0.3)':'rgba(255,255,255,0.07)',
+        open:()=>nav.go&&(isCode(p[0])?nav.go('career',p[0]):nav.go('goals'))}; })
+    };
+  }
+}
+</script>
+</body>
+</html>

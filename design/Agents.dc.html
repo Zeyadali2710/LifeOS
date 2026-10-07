@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="max-width:1480px;margin:0 auto;padding:36px 32px 170px;display:flex;flex-direction:column;gap:28px">
+<sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
+  <section style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end;justify-content:space-between">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="font:500 11px 'Geist Mono',monospace;letter-spacing:0.12em;color:#a5a6ff">AGENT COMMAND</div>
+      <h1 style="margin:0;font-size:clamp(28px,3vw,40px);font-weight:500;letter-spacing:-0.025em">Your autonomous workforce.</h1>
+      <p style="margin:0;font-size:15px;color:#a3a6b4">6 agents · 3 active · 1 needs attention · nothing sends without your approval.</p>
+    </div>
+    <div style="display:flex;gap:8px;flex:none">
+      <button onClick="{{ goApprovals }}" style="white-space:nowrap;height:34px;padding:0 14px;border-radius:9px;border:1px solid rgba(232,184,106,0.35);background:rgba(232,184,106,0.08);color:#e8b86a;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px" style-hover="background:rgba(232,184,106,0.14)"><span style="font-family:'Material Symbols Outlined';font-size:17px">verified_user</span>4 approvals waiting</button>
+      <button onClick="{{ pauseAll }}" style="white-space:nowrap;height:34px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.03);color:#e9eaf0;font-size:13px;cursor:pointer" style-hover="border-color:rgba(255,255,255,0.2)">{{ pauseAllLabel }}</button>
+    </div>
+  </section>
+
+  <section aria-label="Orchestrator" style="position:relative;border-radius:16px;border:1px solid rgba(139,140,255,0.25);background:radial-gradient(600px 200px at 20% 0%,rgba(139,140,255,0.14),transparent 70%),#111318;padding:22px;display:flex;flex-wrap:wrap;gap:24px;align-items:center;overflow:hidden">
+    <div style="position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.025) 1px,transparent 1px);background-size:24px 24px;pointer-events:none;mask-image:linear-gradient(90deg,#000,transparent 70%)"></div>
+    <button onClick="{{ orch.open }}" style="position:relative;display:flex;gap:16px;align-items:center;flex:1 1 380px;border:none;background:none;color:#e9eaf0;text-align:left;cursor:pointer;padding:0">
+      <div style="width:56px;height:56px;border-radius:14px;flex:none;display:grid;place-items:center;background:rgba(139,140,255,0.12);border:1px solid rgba(139,140,255,0.35)"><span style="width:16px;height:16px;border-radius:4px;background:#8b8cff;transform:rotate(45deg);animation:loPulse 2.4s ease-out infinite"></span></div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;gap:10px;align-items:center"><span style="font:600 13px 'Geist Mono',monospace;letter-spacing:0.1em">ORCHESTRATOR</span><span style="font:500 10px 'Geist Mono',monospace;letter-spacing:0.08em;padding:3px 7px;border-radius:999px;color:#4fd1a1;background:rgba(79,209,161,0.12)">ONLINE</span></div>
+        <div style="font-size:15px">{{ orch.task }}</div>
+        <div style="font:400 11px 'Geist Mono',monospace;color:#80849a">uptime 99.9% · 214 runs today · median 1.8s to first action</div>
+      </div>
+    </button>
+    <div style="position:relative;display:flex;gap:28px;flex-wrap:wrap">
+      <sc-for list="{{ orchStats }}" as="s" hint-placeholder-count="4">
+        <div style="display:flex;flex-direction:column;gap:4px"><span style="font:500 10px 'Geist Mono',monospace;letter-spacing:0.08em;color:#80849a">{{ s.k }}</span><span style="font-size:22px;font-weight:500;letter-spacing:-0.02em">{{ s.v }}</span></div>
+      </sc-for>
+    </div>
+  </section>
+
+  <div aria-hidden="true" style="position:relative;height:28px;margin:-28px 0 -28px">
+    <div style="position:absolute;left:50%;top:0;height:14px;width:1px;background:rgba(139,140,255,0.4)"></div>
+    <div style="position:absolute;left:8%;right:8%;top:14px;height:1px;background:linear-gradient(90deg,transparent,rgba(139,140,255,0.4),transparent)"></div>
+  </div>
+
+  <section aria-label="Domain agents" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:12px">
+    <sc-for list="{{ cards }}" as="a" hint-placeholder-count="5">
+      <button onClick="{{ a.open }}" style="display:flex;flex-direction:column;gap:14px;padding:16px;border-radius:14px;border:1px solid {{ a.border }};background:#111318;text-align:left;color:#e9eaf0;cursor:pointer;transition:border-color .15s,transform .15s;position:relative" style-hover="border-color:rgba(255,255,255,0.18);transform:translateY(-1px)">
+        <span style="position:absolute;top:-8px;left:50%;width:1px;height:8px;background:rgba(139,140,255,0.4)"></span>
+        <div style="display:flex;align-items:center;gap:10px;width:100%">
+          <span style="width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:{{ a.tint }};color:{{ a.color }}"><span style="font-family:'Material Symbols Outlined';font-size:17px">{{ a.icon }}</span></span>
+          <span style="font:600 11.5px 'Geist Mono',monospace;letter-spacing:0.08em;flex:1">{{ a.name }}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="width:7px;height:7px;border-radius:50%;background:{{ a.sc }};animation:{{ a.anim }}"></span>
+          <span style="font:600 10.5px 'Geist Mono',monospace;letter-spacing:0.1em;color:{{ a.sc }}">{{ a.status }}</span>
+        </div>
+        <div style="font-size:13.5px;line-height:1.45;min-height:40px;text-wrap:pretty">{{ a.task }}</div>
+        <sc-if value="{{ a.running }}" hint-placeholder-val="{{ false }}"><div style="height:2px;border-radius:2px;background:linear-gradient(90deg,transparent,{{ a.color }},transparent) no-repeat,rgba(255,255,255,0.05);background-size:35% 100%,100% 100%;animation:loScan 1.8s linear infinite"></div></sc-if>
+        <sc-if value="{{ a.notRunning }}" hint-placeholder-val="{{ true }}"><div style="height:2px;border-radius:2px;background:rgba(255,255,255,0.05)"></div></sc-if>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+          <div style="display:flex;flex-direction:column;gap:3px"><span style="font:500 9.5px 'Geist Mono',monospace;letter-spacing:0.08em;color:#80849a">LAST</span><span style="font:500 12px 'Geist Mono',monospace">{{ a.last }}</span></div>
+          <div style="display:flex;flex-direction:column;gap:3px"><span style="font:500 9.5px 'Geist Mono',monospace;letter-spacing:0.08em;color:#80849a">QUEUE</span><span style="font:500 12px 'Geist Mono',monospace">{{ a.queueN }}</span></div>
+          <div style="display:flex;flex-direction:column;gap:3px"><span style="font:500 9.5px 'Geist Mono',monospace;letter-spacing:0.08em;color:#80849a">HEALTH</span><span style="font:500 12px 'Geist Mono',monospace;color:{{ a.hc }}">{{ a.health }}</span></div>
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:2px;height:22px" aria-label="Runs in last 24 hours">
+          <sc-for list="{{ a.spark }}" as="b" hint-placeholder-count="24"><span style="flex:1;height:{{ b.h }};background:{{ b.c }};border-radius:1px"></span></sc-for>
+        </div>
+      </button>
+    </sc-for>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:center;gap:12px"><span style="font:500 11px 'Geist Mono',monospace;letter-spacing:0.1em;color:#80849a">RECENT RUNS</span><span style="font:500 10.5px 'Geist Mono',monospace;color:#4a4e5c">ALL AGENTS · LAST 2 HOURS</span><span style="flex:1;height:1px;background:rgba(255,255,255,0.06)"></span></div>
+    <div role="table" style="border-radius:14px;border:1px solid rgba(255,255,255,0.07);background:#111318;overflow:auto">
+      <div role="row" style="display:grid;grid-template-columns:110px 170px minmax(240px,1fr) 90px 110px 60px;gap:12px;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,0.06);font:500 10px 'Geist Mono',monospace;letter-spacing:0.08em;color:#80849a;min-width:820px">
+        <span>RUN</span><span>AGENT</span><span>TASK</span><span>DURATION</span><span>RESULT</span><span>TIME</span>
+      </div>
+      <sc-for list="{{ allRuns }}" as="r" hint-placeholder-count="6">
+        <div role="row" onClick="{{ r.open }}" style="display:grid;grid-template-columns:110px 170px minmax(240px,1fr) 90px 110px 60px;gap:12px;padding:11px 16px;border-bottom:1px solid rgba(255,255,255,0.04);align-items:center;font-size:13px;cursor:pointer;min-width:820px" style-hover="background:rgba(255,255,255,0.025)">
+          <span style="font:400 11.5px 'Geist Mono',monospace;color:#a3a6b4">{{ r.id }}</span>
+          <span style="font:500 11px 'Geist Mono',monospace;letter-spacing:0.05em;color:{{ r.color }}">{{ r.agent }}</span>
+          <span style="color:#e9eaf0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.task }}</span>
+          <span style="font:400 11.5px 'Geist Mono',monospace;color:#a3a6b4">{{ r.dur }}</span>
+          <span style="display:flex;align-items:center;gap:6px;font:500 11px 'Geist Mono',monospace;color:{{ r.rc }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ r.rc }}"></span>{{ r.result }}</span>
+          <span style="font:400 11.5px 'Geist Mono',monospace;color:#80849a">{{ r.time }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+</sc-if>
+
+<sc-if value="{{ isDetail }}" hint-placeholder-val="{{ false }}">
+  <button onClick="{{ back }}" style="align-self:flex-start;display:flex;align-items:center;gap:6px;border:none;background:none;color:#a3a6b4;font-size:13px;cursor:pointer;padding:0" style-hover="color:#e9eaf0"><span style="font-family:'Material Symbols Outlined';font-size:17px">arrow_back</span>Agent command</button>
+  <section style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;justify-content:space-between">
+    <div style="display:flex;gap:16px;align-items:center;flex:1 1 480px">
+      <div style="width:56px;height:56px;border-radius:14px;flex:none;display:grid;place-items:center;background:{{ ag.tint }};border:1px solid {{ ag.border }};color:{{ ag.color }}"><span style="font-family:'Material Symbols Outlined';font-size:26px">{{ ag.icon }}</span></div>
+      <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><h1 style="margin:0;font:600 22px 'Geist Mono',monospace;letter-spacing:0.06em">{{ ag.upper }}</h1><span style="display:flex;align-items:center;gap:7px;font:600 10.5px 'Geist Mono',monospace;letter-spacing:0.1em;padding:4px 9px;border-radius:999px;color:{{ ag.sc }};background:{{ ag.sbg }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ ag.sc }};animation:{{ ag.anim }}"></span>{{ ag.status }}</span></div>
+        <p style="margin:0;font-size:15px;color:#a3a6b4;max-width:640px;line-height:1.5">{{ ag.purpose }}</p>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex:none">
+      <button onClick="{{ togglePause }}" style="height:34px;padding:0 14px;border-radius:9px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.03);color:#e9eaf0;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:7px" style-hover="border-color:rgba(255,255,255,0.2)"><span style="font-family:'Material Symbols Outlined';font-size:17px">{{ pauseIcon }}</span>{{ pauseLabel }}</button>
+      <button onClick="{{ runNow }}" style="height:34px;padding:0 14px;border-radius:9px;border:none;background:#8b8cff;color:#0b0c10;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:7px" style-hover="background:#a5a6ff"><span style="font-family:'Material Symbols Outlined';font-size:17px">play_arrow</span>Run now</button>
+    </div>
+  </section>
+
+  <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start">
+    <div style="flex:1.6 1 560px;min-width:0;display:flex;flex-direction:column;gap:24px">
+      <section style="border-radius:14px;border:1px solid rgba(255,255,255,0.07);background:#111318;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,0.06)">
+          <span style="font:500 11px 'Geist Mono',monospace;letter-spacing:0.1em;color:#80849a">CURRENT TASK</span>
+          <span style="font:400 11px 'Geist Mono',monospace;color:#4a4e5c">{{ ag.runId }}</span>
+          <span style="flex:1"></span>
+          <span style="font:500 11px 'Geist Mono',monospace;color:{{ progColor }}">{{ progLabel }}</span>
+        </div>
+        <div style="padding:18px;display:flex;flex-direction:column;gap:18px">
+          <div style="font-size:17px;font-weight:500;letter-spacing:-0.01em">{{ ag.task }}</div>
+          <div style="display:flex;gap:4px" aria-hidden="true">
+            <sc-for list="{{ steps }}" as="s" hint-placeholder-count="5"><span style="flex:1;height:4px;border-radius:2px;background:{{ s.bar }};transition:background .3s"></span></sc-for>
+          </div>
+          <ol aria-label="Execution timeline" style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column">
+            <sc-for list="{{ steps }}" as="s" hint-placeholder-count="5">
+              <li style="display:grid;grid-template-columns:52px 20px minmax(0,1fr) auto;column-gap:12px;opacity:{{ s.op }};transition:opacity .25s">
+                <span style="font:500 11.5px 'Geist Mono',monospace;color:#a3a6b4;padding-top:2px">{{ s.time }}</span>
+                <span style="position:relative;display:flex;justify-content:center"><span style="position:relative;z-index:1;margin-top:5px;width:9px;height:9px;border-radius:50%;background:{{ s.dot }};border:1px solid {{ s.ring }};animation:{{ s.anim }}"></span><span style="position:absolute;top:16px;bottom:-2px;width:1px;background:rgba(255,255,255,0.08)"></span></span>
+                <div style="padding-bottom:16px;display:flex;flex-direction:column;gap:3px"><span style="font-size:14px;color:#e9eaf0">{{ s.label }}</span><span style="font:400 11.5px 'Geist Mono',monospace;color:#80849a">{{ s.detail }}</span></div>
+                <span style="font:500 10.5px 'Geist Mono',monospace;color:{{ s.sc }};padding-top:3px">{{ s.state }}</span>
+              </li>
+            </sc-for>
+          </ol>
+        </div>
+      </section>
+
+      <section style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;gap:12px"><span style="font:500 11px 'Geist Mono',monospace;letter-spacing:0.1em;color:#80849a">QUEUE</span><span style="font:500 10.5px 'Geist Mono',monospace;color:#4a4e5c">{{ ag.queueN }} WAITING</span><span style="flex:1;height:1px;background:rgba(255,255,255,0.06)"></span></div>
+        <sc-if value="{{ queueEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:22px;border-radius:12px;border:1px dashed rgba(255,255,255,0.1);color:#a3a6b4;font-size:13px;line-height:1.5">Queue is empty. This agent picks up new work from its schedule, from triggers, or when you ask LifeOS.</div>
+        </sc-if>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <sc-for list="{{ queue }}" as="q" hint-placeholder-count="2">
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:#111318">
+              <span style="font:500 11px 'Geist Mono',monospace;color:#80849a;width:20px">{{ q.n }}</span>
+              <span style="flex:1;font-size:13.5px">{{ q.t }}</span>
+              <span style="font:400 11px 'Geist Mono',monospace;color:#80849a">{{ q.src }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;gap:12px"><span style="font:500 11px 'Geist Mono',monospace;letter-spacing:0.1em;color:#80849a">RECENT RUNS</span><span style="flex:1;height:1px;background:rgba(255,255,255,0.06)"></span></div>
+        <div style="border-radius:14px;border:1px solid rgba(255,255,255,0.07);background:#111318;overflow:hidden">
+          <sc-for list="{{ runs }}" as="r" hint-placeholder-count="4">
+            <div style="display:grid;grid-template-columns:96px minmax(0,1fr) 72px 100px 48px;gap:12px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);align-items:center;font-size:13px">
+              <span style="font:400 11.5px 'Geist Mono',monospace;color:#a3a6b4">{{ r.id }}</span>
+              <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.task }}</span>
+              <span style="font:400 11.5px 'Geist Mono',monospace;color:#a3a6b4">{{ r.dur }}</span>
+              <span style="display:flex;align-items:center;gap:6px;font:500 11px 'Geist Mono',monospace;color:{{ r.rc }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ r.rc }}"></span>{{ r.result }}</span>
+              <span style="font:400 11.5px 'Geist Mono',monospace;color:#80849a">{{ r.time }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+    </div>
+
+    <aside style="flex:1 1 320px;min-width:0;display:flex;flex-direction:column;gap:16px">
+      <sc-if value="{{ hasErrors }}" hint-placeholder-val="{{ false }}">
+        <section role="alert" style="border-radius:14px;border:1px solid rgba(240,122,110,0.3);background:linear-gradient(180deg,rgba(240,122,110,0.08),rgba(240,122,110,0.02));padding:16px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:8px;font:500 10.5px 'Geist Mono',monospace;letter-spacing:0.08em;color:#f07a6e"><span style="font-family:'Material Symbols Outlined';font-size:17px">error</span>ERROR · {{ err.time }}</div>
+          <div style="font-size:14.5px;font-weight:500">{{ err.what }}</div>
+          <div style="font-size:13px;color:#a3a6b4;line-height:1.5"><span style="color:#e9eaf0">Why: </span>{{ err.why }}</div>
+          <div style="font-size:13px;color:#a3a6b4;line-height:1.5"><span style="color:#e9eaf0">What to do: </span>{{ err.fix }}</div>
+          <div style="display:flex;gap:6px"><button onClick="{{ reconnect }}" style="height:30px;padding:0 12px;border-radius:7px;border:none;background:#e9eaf0;color:#0b0c10;font-size:12.5px;font-weight:600;letter-spacing:0.04em;cursor:pointer">RECONNECT</button><button style="height:30px;padding:0 12px;border-radius:7px;border:1px solid rgba(255,255,255,0.12);background:transparent;color:#e9eaf0;font-size:12.5px;cursor:pointer">View log</button></div>
+        </section>
+      </sc-if>
+      <section style="border-radius:14px;border:1px solid rgba(255,255,255,0.07);background:#111318;padding:16px;display:flex;flex-direction:column;gap:12px">
+        <span style="font:500 11px 'Geist Mono',monospace;letter-spacing:0.1em;color:#80849a">HEALTH</span>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+          <sc-for list="{{ healthStats }}" as="h" hint-placeholder-count="3"><div style="display:flex;flex-direction:column;gap:3px"><span style="font:500 9.5px 'Geist Mono',monospace;letter-spacing:0.08em;color:#80849a">{{ h.k }}</span><span style="font-size:18px;font-weight:500">{{ h.v }}</span></div></sc-for>
+        </div>
+      </section>
+      <section style="border-radius:14px;border:1px solid rgba(255,255,255,0.07);background:#111318;padding:16px;display:flex;flex-direction:column;gap:12px">
+        <span style="font:500 11px 'Geist Mono',monospace;letter-spacing:0.1em;color:#80849a">CAPABILITIES</span>
+        <div style="display:flex;flex-wrap:wrap;gap:6px"><sc-for list="{{ caps }}" as="c" hint-placeholder-count="4"><span style="font-size:12.5px;padding:5px 10px;border-radius:7px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);color:#e9eaf0">{{ c.t }}</span></sc-for></div>
+      </section>
+      <section style="border-radius:14px;border:1px solid rgba(255,255,255,0.07);background:#111318;padding:16px;display:flex;flex-direction:column;gap:10px">
+        <span style="font:500 11px 'Geist Mono',monospace;letter-spacing:0.1em;color:#80849a">PERMISSIONS</span>
+        <sc-for list="{{ perms }}" as="p" hint-placeholder-count="4">
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px"><span style="flex:1;color:#e9eaf0">{{ p.t }}</span><span style="font:500 10px 'Geist Mono',monospace;letter-spacing:0.06em;padding:3px 7px;border-radius:5px;color:{{ p.c }};background:{{ p.bg }}">{{ p.level }}</span></div>
+        </sc-for>
+      </section>
+      <section style="border-radius:14px;border:1px solid rgba(255,255,255,0.07);background:#111318;padding:16px;display:flex;flex-direction:column;gap:10px">
+        <span style="font:500 11px 'Geist Mono',monospace;letter-spacing:0.1em;color:#80849a">TOOLS</span>
+        <sc-for list="{{ tools }}" as="t" hint-placeholder-count="3">
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px"><span style="width:6px;height:6px;border-radius:50%;background:{{ t.c }}"></span><span style="flex:1;font-family:'Geist Mono',monospace;font-size:12px">{{ t.n }}</span><span style="font:400 11px 'Geist Mono',monospace;color:{{ t.c }}">{{ t.s }}</span></div>
+        </sc-for>
+      </section>
+      <section style="border-radius:14px;border:1px solid rgba(255,255,255,0.07);background:#111318;padding:16px;display:flex;flex-direction:column;gap:12px">
+        <span style="font:500 11px 'Geist Mono',monospace;letter-spacing:0.1em;color:#80849a">CONFIGURATION</span>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <span style="font-size:12.5px;color:#a3a6b4">Autonomy</span>
+          <div role="radiogroup" aria-label="Autonomy" style="display:grid;grid-template-columns:repeat(3,1fr);padding:3px;border-radius:9px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06)">
+            <sc-for list="{{ autonomy }}" as="o" hint-placeholder-count="3"><button role="radio" aria-checked="{{ o.on }}" onClick="{{ o.pick }}" style="height:28px;border-radius:7px;border:none;background:{{ o.bg }};color:{{ o.color }};font-size:12.5px;cursor:pointer">{{ o.t }}</button></sc-for>
+          </div>
+          <span style="font-size:12px;color:#80849a;line-height:1.45">{{ autonomyNote }}</span>
+        </div>
+        <sc-for list="{{ config }}" as="c" hint-placeholder-count="3">
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.05)"><span style="flex:1;color:#a3a6b4">{{ c.k }}</span><span style="font:400 12px 'Geist Mono',monospace;color:#e9eaf0">{{ c.v }}</span></div>
+        </sc-for>
+      </section>
+    </aside>
+  </div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const AG = {
+  orchestrator:{name:'Orchestrator',icon:'hub',color:'#a5a6ff',status:'ONLINE',task:'Routing 2 requests · watching 14 sources',last:'19:44',purpose:'Plans every request, delegates to domain agents, and assembles one answer. Routes anything with side effects to the Approval centre.',
+    caps:['Planning','Delegation','Result synthesis','Approval routing','Priority ranking'],perms:[['Read all agent outputs','READ'],['Send notifications','ALLOWED'],['Trigger agents','ALLOWED'],['External actions','NEVER']],tools:[['agents.*','6 online'],['memory.store','ok'],['notify.push','ok']],
+    steps:[['19:44','Request received','"What needs my attention?"'],['19:44','Planning','3 sources selected'],['19:44','Delegating','career, organization'],['19:44','Assembling result','ranked 3 of 11 items'],['19:44','Completed','delivered to Home']],at:4,queue:[],
+    runs:[['run_9a10','Rank priorities for Home','1.8s','Completed','19:40'],['run_99f2','Find something for Thursday','3.6s','Completed','19:36'],['run_99c1','Morning briefing','4.1s','Completed','07:30']],health:['99.9%','214','1.8s'],autonomy:'Act',cfg:[['Model','claude · large'],['Memory','long-term · on'],['Quiet hours','23:00–07:00']]},
+  career:{name:'Career Agent',icon:'terminal',color:'#e8b86a',status:'WORKING',task:'Analyzing GitHub activity for your weekly report',last:'19:42',purpose:'Tracks your repositories, PRs and technical momentum. Writes weekly summaries and keeps your portfolio stats current.',
+    caps:['GitHub analysis','Weekly reports','Changelog drafts','Portfolio sync','PR triage'],perms:[['Read repositories','READ'],['Comment on PRs','ASK FIRST'],['Push to branches','NEVER'],['Delete repositories','ASK FIRST']],tools:[['github.api','connected'],['claude_code.workspace','connected'],['portfolio.cms','connected']],
+    steps:[['19:42','Task received','from schedule · weekly report'],['19:42','Analyzing request','4 repos · last 7 days'],['19:43','GitHub API','fetching commits, PRs, reviews'],['19:43','Processing results','23 commits · 2 PRs merged'],['19:44','Completed','report ready for review']],at:2,queue:[['Draft changelog for LifeOS 0.9','schedule'],['Summarize sentinel #31 for review','GitHub trigger']],
+    runs:[['run_8f2a','Weekly commit summary','1m 52s','Completed','19:40'],['run_8e71','Portfolio stats refresh','24s','Completed','18:10'],['run_8d03','Triage ledgerline CI failure','41s','Completed','18:48'],['run_8c90','Archive request: portfolio-v1','3s','Needs approval','17:20']],health:['98.7%','31','46s'],autonomy:'Ask',cfg:[['Schedule','Wed 19:30 weekly'],['Repos','4 of 23 tracked'],['Model','claude · medium']]},
+  social:{name:'Social Agent',icon:'public',color:'#e889c4',status:'IDLE',task:'Waiting on approval: LinkedIn post for 08:30',last:'19:21',purpose:'Plans and drafts content across LinkedIn, Instagram and TikTok, and reads analytics to find what works. Never publishes without approval.',
+    caps:['Drafting posts','Caption variants','Analytics','Scheduling','Trend scan'],perms:[['Read analytics','READ'],['Publish posts','ASK FIRST'],['Reply to comments','ASK FIRST'],['Delete posts','NEVER']],tools:[['linkedin.api','connected'],['instagram.graph','connected'],['tiktok.api','not connected']],
+    steps:[['19:18','Task received','Prepare LinkedIn post'],['19:18','Analyzing request','build-in-public series #7'],['19:19','Career Agent','pulled weekly commit summary'],['19:20','Drafting','612 chars · 1 image'],['19:21','Waiting','approval requested']],at:4,queue:[['LinkedIn analytics digest','schedule · Thu 09:00']],
+    runs:[['run_7b11','Draft LinkedIn post #7','2m 40s','Needs approval','19:21'],['run_7a02','Caption variants for Instagram','58s','Completed','17:02'],['run_79f0','Monthly analytics','1m 10s','Completed','Mon']],health:['99.1%','12','1m 4s'],autonomy:'Ask',cfg:[['Tone profile','calm · technical'],['Best window','08:30 weekdays'],['Model','claude · medium']]},
+  outreach:{name:'Outreach Agent',icon:'travel_explore',color:'#6cb6ff',status:'SEARCHING',task:'Searching Sydney events for Thu–Sat',last:'19:43',purpose:'Finds people, events and opportunities worth your time in Sydney, triages networking email, and drafts follow-ups.',
+    caps:['Event discovery','Relevance scoring','Email triage','Follow-up drafts','Contact notes'],perms:[['Read Gmail','READ'],['Send email','ASK FIRST'],['RSVP to events','ASK FIRST'],['Pay for tickets','NEVER']],tools:[['meetup.search','ok'],['humanitix.search','ok'],['eventbrite.search','rate limited'],['gmail.api','connected']],
+    steps:[['19:43','Task received','from Orchestrator'],['19:43','Analyzing request','interests: cyber, fintech, AI'],['19:43','Searching sources','Meetup · Humanitix · Eventbrite · Luma'],['19:44','Scoring relevance','7 candidates'],['19:44','Completed','handing to Organization Agent']],at:2,queue:[['Draft follow-up to Priya Nair','email trigger'],['Weekly events digest','schedule · Sun 18:00'],['Check Startup Grind RSVPs','manual']],
+    runs:[['run_6c44','Find something for Thursday','2.1s','Completed','19:36'],['run_6b90','Triage inbox','12s','Completed','19:29'],['run_6b12','Draft reply to Fishburners','9s','Needs approval','19:30']],health:['97.4%','46','8s'],autonomy:'Ask',cfg:[['Location','Sydney · 15 km'],['Interests','6 tags'],['Model','claude · medium']]},
+  organization:{name:'Organization Agent',icon:'calendar_month',color:'#4fd1a1',status:'READY',task:"Next: build tomorrow's plan at 22:00",last:'19:15',purpose:'Keeps your calendar, tasks and plans coherent. Finds time, protects focus blocks, and prepares weekly reviews.',
+    caps:['Scheduling','Free-time search','Daily plans','Weekly review prep','Conflict detection'],perms:[['Read calendars','READ'],['Create events','ASK FIRST'],['Move events','ASK FIRST'],['Decline invites','NEVER']],tools:[['google.calendar','connected'],['tasks.local','ok']],
+    steps:[['19:14','Task received','Weekly review conflict'],['19:14','Analyzing','dinner overlaps 20:00'],['19:15','Google Calendar','moved review to 21:00'],['19:15','Notified','Home timeline updated'],['19:15','Completed','']],at:5,queue:[["Build tomorrow's plan",'schedule · 22:00']],
+    runs:[['run_5d20','Move weekly review','2s','Completed','19:15'],['run_5c88','Check Thursday calendar','0.6s','Completed','19:36'],['run_5b10','Morning plan','5s','Completed','07:00']],health:['99.6%','28','3s'],autonomy:'Ask',cfg:[['Focus blocks','protect · 2h'],['Work hours','08:30–18:00'],['Model','claude · small']]},
+  knowledge:{name:'Knowledge Agent',icon:'library_books',color:'#b48cff',status:'ATTENTION',task:'Paused: Google Drive needs to reconnect',last:'19:30',purpose:'Indexes your notes, documents and bookmarks, and surfaces what you already know when it becomes relevant.',
+    caps:['Semantic search','Auto-tagging','Related notes','Research recall'],perms:[['Read notes and Drive','READ'],['Create notes','ALLOWED'],['Delete notes','NEVER']],tools:[['google.drive','token expired'],['notes.local','ok'],['bookmarks','ok']],
+    steps:[['19:30','Task received','scheduled re-index'],['19:30','Google Drive','401 · token expired'],['19:30','Paused','waiting for reconnect']],at:1,err:true,queue:[['Re-index Drive (212 files)','blocked'],['Tag 12 new notes','schedule']],
+    runs:[['run_4a91','Re-index Drive','0.4s','Failed','19:30'],['run_4a10','Tag new notes','6s','Completed','16:00'],['run_49f3','Related notes for LifeOS','2s','Completed','14:12']],health:['94.2%','19','4s'],autonomy:'Act',cfg:[['Index','1,284 items'],['Sources','3'],['Model','claude · small']]}
+};
+const STC = {ONLINE:['#4fd1a1','rgba(79,209,161,0.12)'],WORKING:['#a5a6ff','rgba(139,140,255,0.14)'],SEARCHING:['#a5a6ff','rgba(139,140,255,0.14)'],IDLE:['#a3a6b4','rgba(255,255,255,0.06)'],READY:['#6cb6ff','rgba(108,182,255,0.12)'],ATTENTION:['#f07a6e','rgba(240,122,110,0.12)'],PAUSED:['#e8b86a','rgba(232,184,106,0.12)']};
+const RC = {Completed:'#4fd1a1','Needs approval':'#e8b86a',Failed:'#f07a6e',Running:'#a5a6ff'};
+const PERM = {READ:['#a3a6b4','rgba(255,255,255,0.06)'],ALLOWED:['#4fd1a1','rgba(79,209,161,0.1)'],'ASK FIRST':['#e8b86a','rgba(232,184,106,0.1)'],NEVER:['#f07a6e','rgba(240,122,110,0.1)']};
+const rnd = (seed)=>{ let x=seed; return ()=>{ x=(x*9301+49297)%233280; return x/233280; }; };
+const tint = c => c+'1f';
+
+class Component extends DCLogic {
+  state = { sel:null, at:{}, paused:{}, allPaused:false, autonomy:{}, fixed:false };
+  componentDidMount(){ this.applyRoute(); this.iv = setInterval(()=>this.advance(), 2400); }
+  componentDidUpdate(p){ if (p.route!==this.props.route) this.applyRoute(); }
+  componentWillUnmount(){ clearInterval(this.iv); }
+  applyRoute(){ const r=this.props.route; this.setState({sel:r&&AG[r.id]?r.id:null}); }
+  advance(){
+    const id=this.state.sel; if (!id) return; const a=AG[id];
+    if (!['WORKING','SEARCHING'].includes(a.status) || this.state.paused[id]) return;
+    const cur = this.state.at[id] ?? a.at;
+    if (cur < a.steps.length){ this.setState(s=>({at:{...s.at,[id]:cur+1}})); if (cur+1===a.steps.length && this.props.nav) this.props.nav.toast(a.name+' completed its task'); }
+  }
+  status(id){ const a=AG[id]; if (this.state.allPaused && id!=='orchestrator') return 'PAUSED'; if (this.state.paused[id]) return 'PAUSED'; if (id==='knowledge' && this.state.fixed) return 'READY'; const at=this.state.at[id]; if (at!==undefined && at>=a.steps.length && ['WORKING','SEARCHING'].includes(a.status)) return 'READY'; return a.status; }
+  renderVals(){
+    const nav=this.props.nav||{}; const s=this.state;
+    const open = id=>()=>this.setState({sel:id});
+    const card = id => { const a=AG[id]; const st=this.status(id); const running=['WORKING','SEARCHING'].includes(st); const r=rnd(id.length*31+7);
+      return {id,name:a.name.toUpperCase(),icon:a.icon,color:a.color,tint:tint(a.color),status:st,task:st==='READY'&&id!=='knowledge'&&a.status!=='READY'?'Completed · report ready for review':(id==='knowledge'&&s.fixed?'Re-indexing Drive · 212 files':a.task),last:a.last,queueN:String(a.queue.length),health:a.health[0],hc:parseFloat(a.health[0])>97?'#4fd1a1':'#e8b86a',
+        running,notRunning:!running,sc:STC[st][0],anim:running?'loPulse 1.4s ease-out infinite':'none',border:st==='ATTENTION'?'rgba(240,122,110,0.3)':'rgba(255,255,255,0.07)',
+        spark:Array.from({length:24},(_,i)=>{const v=r();return {h:Math.round(10+v*90)+'%',c:i>21?a.color:'rgba(255,255,255,0.1)'};}),open:open(id)}; };
+    const cards = ['career','social','outreach','organization','knowledge'].map(card);
+    const allRuns = Object.keys(AG).flatMap(id=>AG[id].runs.map(r=>({id:r[0],agent:AG[id].name.toUpperCase(),color:AG[id].color,task:r[1],dur:r[2],result:r[3],rc:RC[r[3]],time:r[4],open:open(id)}))).filter(r=>/^\d/.test(r.time)).sort((a,b)=>b.time.localeCompare(a.time)).slice(0,8);
+    const out = { isList:!s.sel, isDetail:!!s.sel, cards, allRuns, orch:{task:AG.orchestrator.task,open:open('orchestrator')},
+      orchStats:[{k:'ACTIVE',v:'3'},{k:'QUEUED',v:'7'},{k:'RUNS TODAY',v:'214'},{k:'APPROVALS',v:'4'}],
+      goApprovals:()=>nav.go&&nav.go('approvals'), pauseAll:()=>{ this.setState(st=>({allPaused:!st.allPaused})); nav.toast&&nav.toast(s.allPaused?'All agents resumed':'All agents paused'); }, pauseAllLabel:s.allPaused?'Resume all':'Pause all',
+      back:()=>this.setState({sel:null}) };
+    if (s.sel){
+      const id=s.sel, a=AG[id], st=this.status(id); const at=s.at[id] ?? a.at; const running=['WORKING','SEARCHING'].includes(st);
+      const steps = a.steps.map((x,i)=>{ const done=i<at, cur=i===at && st!=='PAUSED'; const isErr=a.err && i===at && !s.fixed;
+        return {time:x[0],label:x[1],detail:x[2],op:i>at?0.4:1,
+          dot:isErr?'#f07a6e':done?'#4fd1a1':cur?'#8b8cff':'transparent',ring:isErr?'#f07a6e':done?'#4fd1a1':cur?'#8b8cff':'rgba(255,255,255,0.25)',
+          anim:cur&&running?'loPulse 1.2s ease-out infinite':'none',state:isErr?'FAILED':done?'DONE':cur?(running?'RUNNING':'WAITING'):'—',sc:isErr?'#f07a6e':done?'#80849a':cur?'#a5a6ff':'#4a4e5c',
+          bar:isErr?'#f07a6e':done?a.color:cur?'rgba(139,140,255,0.45)':'rgba(255,255,255,0.07)'}; });
+      const pct = Math.round(Math.min(at,a.steps.length)/a.steps.length*100);
+      const level = s.autonomy[id] || a.autonomy;
+      Object.assign(out,{
+        ag:{...a,upper:a.name.toUpperCase(),status:st,tint:tint(a.color),border:a.color+'55',sc:STC[st][0],sbg:STC[st][1],anim:running?'loPulse 1.4s ease-out infinite':'none',runId:a.runs[0][0],queueN:a.queue.length},
+        steps, progLabel:a.err&&!s.fixed?'BLOCKED':pct>=100?'COMPLETED':pct+'%', progColor:a.err&&!s.fixed?'#f07a6e':pct>=100?'#4fd1a1':'#a5a6ff',
+        queue:a.queue.map((q,i)=>({n:String(i+1).padStart(2,'0'),t:q[0],src:q[1]})), queueEmpty:a.queue.length===0,
+        runs:a.runs.map(r=>({id:r[0],task:r[1],dur:r[2],result:r[3],rc:RC[r[3]],time:r[4]})),
+        hasErrors:!!a.err && !s.fixed, err:{time:'19:30',what:'Google Drive needs to reconnect.',why:'The access token LifeOS uses for Drive expired. Indexing paused so nothing is half-updated.',fix:'Reconnect your Google account. The 212 queued files will index automatically.'},
+        reconnect:()=>{ this.setState({fixed:true}); nav.toast&&nav.toast('Google Drive reconnected · re-indexing'); },
+        healthStats:[{k:'SUCCESS',v:a.health[0]},{k:'RUNS · 7D',v:a.health[1]},{k:'AVG RUN',v:a.health[2]}],
+        caps:a.caps.map(t=>({t})), perms:a.perms.map(p=>({t:p[0],level:p[1],c:PERM[p[1]][0],bg:PERM[p[1]][1]})),
+        tools:a.tools.map(t=>({n:t[0],s:t[1],c:/expired|not connected/.test(t[1])&&!(s.fixed&&id==='knowledge')?'#f07a6e':/limited/.test(t[1])?'#e8b86a':'#4fd1a1'})),
+        autonomy:['Suggest','Ask','Act'].map(t=>({t,on:t===level,bg:t===level?'#1f222b':'transparent',color:t===level?'#e9eaf0':'#80849a',pick:()=>this.setState(st2=>({autonomy:{...st2.autonomy,[id]:t}}))})),
+        autonomyNote:{Suggest:'Only proposes actions. You run them.',Ask:'Runs read-only work freely. Anything external waits for approval.',Act:'Runs approved action types without asking. Destructive actions still ask.'}[level],
+        config:a.cfg.map(c=>({k:c[0],v:c[1]})),
+        togglePause:()=>this.setState(st2=>({paused:{...st2.paused,[id]:!st2.paused[id]}})), pauseLabel:st==='PAUSED'?'Resume':'Pause', pauseIcon:st==='PAUSED'?'play_circle':'pause_circle',
+        runNow:()=>{ this.setState(st2=>({at:{...st2.at,[id]:0},paused:{...st2.paused,[id]:false}})); AG[id].status=['ONLINE','ATTENTION'].includes(a.status)?a.status:'WORKING'; nav.toast&&nav.toast(a.name+' started'); }
+      });
+    }
+    return out;
+  }
+}
+</script>
+</body>
+</html>
