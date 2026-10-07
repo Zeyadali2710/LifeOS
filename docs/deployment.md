@@ -202,6 +202,10 @@ The password needs at least 12 characters. The script refuses to run if an owner
 On any device signed in to Tailscale, open `https://lifeos.<your-tailnet>.ts.net` and sign in.
 The first request can take ~10 s while Tailscale issues the certificate.
 
+**First deploy only — check server actions behind the proxy.** Open the notifications drawer and mark one read.
+If it fails with an origin error, Tailscale is sending a different `Host` than the browser's `Origin`:
+add `experimental: { serverActions: { allowedOrigins: ["lifeos.<your-tailnet>.ts.net"] } }` to `next.config.ts` and redeploy (T-02-45).
+
 ---
 
 ## Part 7 — Proxmox backups (whole-VM safety net)
