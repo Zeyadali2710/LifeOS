@@ -157,10 +157,13 @@ export function LiveProvider({
         if (loadedRef.current) markFresh([n.id]);
       });
       es.addEventListener("resync", () => void resync());
-      es.addEventListener("error", () => {
+      es.addEventListener("error", async () => {
         es?.close();
         setConnected(false);
         if (everConnected.current) setAnnounce("Live updates reconnecting.");
+        if (closed) return;
+        // EventSource hides the 401 of an expired session; this probe sends the tab to /login instead of retrying forever.
+        await refetchNotifications();
         if (closed) return;
         backoff = nextBackoff(backoff);
         timer = setTimeout(connect, backoff);
@@ -172,7 +175,7 @@ export function LiveProvider({
       es?.close();
       clearTimeout(timer);
     };
-  }, [resync, markFresh]);
+  }, [resync, markFresh, refetchNotifications]);
 
   // snooze wake timer + tab refocus
   useEffect(() => {

@@ -62,3 +62,16 @@ test("live activity: auth guard, fast SSE open, new event appears without refres
   expect(text).not.toContain("@");
   expect(text).not.toMatch(/\d+\.\d+\.\d+\.\d+/);
 });
+
+test("live stream sends a revoked session to /login instead of retrying forever", async ({ page, context }, info) => {
+  test.skip(info.project.name !== "desktop");
+  // EventSource can't see the 401 status; the client must notice the dead session another way.
+  await page.route("**/api/events", (r) => r.fulfill({ status: 401, body: "" }));
+  await signIn(page);
+  const token = decodeURIComponent((await context.cookies()).find((c) => c.name.includes("session_token"))!.value).split(".")[0];
+  const c = new Client({ connectionString: E2E_DB_URL });
+  await c.connect();
+  await c.query("delete from sessions where token = $1", [token]);
+  await c.end();
+  await expect(page).toHaveURL(/\/login$/, { timeout: 20_000 });
+});
