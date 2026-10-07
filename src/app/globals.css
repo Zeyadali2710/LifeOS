@@ -92,17 +92,6 @@
   --color-violet: var(--violet);
   --color-on-accent: var(--on-accent);
 
-  /* Phase 1 legacy aliases so /login keeps compiling. Migrate usages, then delete these 8 lines. */
-  --color-bg: var(--canvas);
-  --color-bg-raised: var(--surface);
-  --color-fg: var(--text);
-  --color-fg-muted: var(--text-2);
-  --color-fg-faint: var(--text-3);
-  --color-signal: var(--indigo);
-  --color-attention: var(--amber);
-  --color-danger: var(--red);
-  --color-ok: var(--green);
-
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
