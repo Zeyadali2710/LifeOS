@@ -3,6 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { createAuthMiddleware } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import { audit } from "./audit";
+import { emitAuthEvent } from "./auth-events";
 import { clientIp } from "./client-ip";
 import { db } from "./db/client";
 import { accounts, rateLimits, sessions, users, verifications } from "./db/schema";
@@ -44,6 +45,7 @@ function createAuth() {
           ip,
           metadata: failed ? { email: (ctx.body as { email?: string } | undefined)?.email } : undefined,
         });
+        await emitAuthEvent(ctx.path === "/sign-out" ? "sign_out" : failed ? "sign_in_failed" : "sign_in");
       }),
     },
     plugins: [nextCookies()],
