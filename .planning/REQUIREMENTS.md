@@ -20,7 +20,7 @@
 - [ ] **SHL-01**: Desktop navigation rail + mobile bottom bar across all domain pages
 - [ ] **SHL-02**: Command palette (Ctrl/Cmd-K) for navigation and AI prompts
 - [ ] **SHL-03**: Home shows date/time, greeting, priorities, today, activity, approvals, system status (with honest empty states)
-- [ ] **SHL-04**: Activity stream updates live (SSE)
+- [x] **SHL-04**: Activity stream updates live (SSE)
 - [ ] **SHL-05**: Notifications: categories URGENT/IMPORTANT/FYI/AGENT/APPROVAL/REMINDER; read, snooze, dismiss
 
 ### Agents

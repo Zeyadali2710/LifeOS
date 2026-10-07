@@ -41,7 +41,7 @@ From an empty repo to a personal OS: secure foundation and deploy path first, th
   2. A new activity event appears on Home without refresh
   3. Notifications can be read, snoozed, dismissed
 **Plans**: 13 plans in 6 waves
-- [ ] 02-01-PLAN.md — Event backbone: DTO contract, emitActivity (insert + id-only NOTIFY), LISTEN hub
+- [x] 02-01-PLAN.md — Event backbone: DTO contract, emitActivity (insert + id-only NOTIFY), LISTEN hub
 - [ ] 02-02-PLAN.md — Pure helpers: Sydney time/snooze/grouping, Open-Meteo weather, date line, lead, isSafePath
 - [ ] 02-03-PLAN.md — Design tokens 1:1, dark only, self-hosted Material Symbols subset + Icon
 - [ ] 02-04-PLAN.md — Event sources: auth hooks, web-process health/version monitor, worker/migrate events, e2e helpers
@@ -82,6 +82,6 @@ Goals per phase list above; detailed when each phase is planned (`/gsd-plan-phas
 |-------|----------------|--------|-----------|
 | 0. Architecture | - | Complete | 2026-10-07 |
 | 1. Foundation | 3/3 | Complete | 2026-10-07 |
-| 2. Shell | 0/13 | Planned | - |
+| 2. Shell | 1/13 | In Progress|  |
 | 3. Agents + GitHub | 0/? | Not started | - |
 | 4–11 | - | Not started | - |

@@ -1,0 +1,1 @@
+- design/support.js has 2 pre-existing eslint errors (react/no-deprecated, no-assign-module-variable); npm run lint fails on them. Out of scope for 02-01 (src/tests clean).
