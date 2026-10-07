@@ -1,7 +1,7 @@
 ---
 phase: 2
 slug: shell
-status: draft
+status: approved
 shadcn_initialized: false
 preset: none
 created: 2026-10-07
@@ -459,6 +459,8 @@ Priority P1/P2/P3 filled variant (red `#f07a6e`, amber `#e8b86a`, neutral `rgba(
 ---
 
 ## Home composition (D-07..D-11)
+
+Focal point: the Display greeting is the primary anchor; status tiles, then sections, follow in reading order.
 
 1. **Date line** (Label, text-3): `WEDNESDAY, OCTOBER 7 · SYDNEY · 17°C CLEAR` — Australia/Sydney, uppercase `en-AU`. Weather via Open-Meteo, server-cached 30 min; any failure renders the date only (`WEDNESDAY, OCTOBER 7`), silently. Weather code map to the word: 0 `CLEAR` · 1–2 `PARTLY CLOUDY` · 3 `CLOUDY` · 45/48 `FOG` · 51–57 `DRIZZLE` · 61–67/80–82 `RAIN` · 71–77/85–86 `SNOW` · 95–99 `STORM`. Temperature rounded, `°C`.
 2. **Greeting** (Display): `Good morning` (<12:00), `Good afternoon` (<18:00), else `Good evening` (Sydney hour) + `, {first name}.`; with no name on the owner record: `Good evening.`
