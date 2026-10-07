@@ -5,7 +5,7 @@ From an empty repo to a personal OS: secure foundation and deploy path first, th
 
 ## Phases
 - [x] **Phase 1: Foundation** - Repo, Next.js + worker, Postgres/migrations, auth, crypto, logging, health, design tokens, Compose, CI
-- [ ] **Phase 2: Shell** - Navigation, command palette, Home, live activity stream, notifications, AI panel UI
+- [x] **Phase 2: Shell** - Navigation, command palette, Home, live activity stream, notifications, AI panel UI (completed 2026-10-07)
 - [ ] **Phase 3: Agent infrastructure + GitHub** - Tool gateway, permissions, approvals, runs, orchestrator chat, Agent Command Centre, GitHub read-only
 - [ ] **Phase 4: Organization** - Calendars (Google, iCloud), tasks, conflicts, scheduling suggestions
 - [ ] **Phase 5: Career + Projects** - Repo dashboards, cross-domain projects, project workspaces
@@ -53,7 +53,7 @@ From an empty repo to a personal OS: secure foundation and deploy path first, th
 - [x] 02-10-PLAN.md — Command palette, AI panel shell, command bar (not-connected InlineError), palette e2e
 - [x] 02-11-PLAN.md — Real Home + live ActivityList + SystemTile, home/live-activity e2e
 - [x] 02-12-PLAN.md — Notifications drawer: grouping, filter, read/snooze/dismiss, snooze menu, notifications e2e
-- [ ] 02-13-PLAN.md — Phase gate: alias cleanup, a11y e2e, docs/attributions, full suite, owner visual sign-off
+- [x] 02-13-PLAN.md — Phase gate: alias cleanup, a11y e2e, docs/attributions, full suite, owner visual sign-off
 
 ### Phase 3: Agent infrastructure + GitHub
 **Goal**: The orchestrator answers real questions about real GitHub data, with every tool call observable and every risky action gated.
@@ -82,6 +82,6 @@ Goals per phase list above; detailed when each phase is planned (`/gsd-plan-phas
 |-------|----------------|--------|-----------|
 | 0. Architecture | - | Complete | 2026-10-07 |
 | 1. Foundation | 3/3 | Complete | 2026-10-07 |
-| 2. Shell | 12/13 | In Progress|  |
+| 2. Shell | 13/13 | Complete   | 2026-10-07 |
 | 3. Agents + GitHub | 0/? | Not started | - |
 | 4–11 | - | Not started | - |
