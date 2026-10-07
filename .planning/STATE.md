@@ -20,7 +20,7 @@ Progress: [█░░░░░░░░░] 9%
 - Phase 0: GitHub integration moved into Phase 3 as end-to-end proof of the agent path
 
 ### Pending Todos
-None yet.
+- Import hi-fi design from Claude Design (claude_design MCP): project faf225f7-8c4a-46ca-982e-fd969ee2f29d, files LifeOS.dc.html + support.js → design/. Design is the visual source of truth; content is placeholder.
 
 ### Blockers/Concerns
 - Superpowers installed in desktop app but not visible to sessions yet.
@@ -28,5 +28,5 @@ None yet.
 
 ## Session Continuity
 Last session: 2026-10-07
-Stopped at: Phase 1 complete; next /gsd-plan-phase 2
+Stopped at: Phase 1 complete + deployed to Proxmox. Next: import design → /gsd-discuss-phase 2 → /gsd-ui-phase 2 (derive UI-SPEC from design) → /gsd-plan-phase 2. Phase 1 tokens in globals.css to be replaced by the design's.
 Resume file: None
