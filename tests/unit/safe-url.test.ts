@@ -7,7 +7,7 @@ describe("isSafePath", () => {
     expect(isSafePath("/")).toBe(true);
   });
   it("rejects everything else", () => {
-    for (const v of ["//evil.com", "/\\evil", "javascript:alert(1)", "https://x.com", "", null, undefined]) {
+    for (const v of ["//evil.com", "/\\evil", "javascript:alert(1)", "https://x.com", "/\t/evil.com", "/\n/evil.com", "/\r//evil.com", "", null, undefined]) {
       expect(isSafePath(v)).toBe(false);
     }
   });
