@@ -4,15 +4,15 @@
 See: .planning/PROJECT.md (updated 2026-10-07)
 
 **Core value:** Know what matters, what needs attention, and what to do next — in one place.
-**Current focus:** Phase 1 — Foundation
+**Current focus:** Phase 2 — Shell
 
 ## Current Position
-Phase: 1 of 11 (Foundation)
-Plan: 1 of 3
-Status: In progress
-Last activity: 2026-10-07 — Phase 0 complete (docs, ADRs, roadmap)
+Phase: 2 of 11 (Shell)
+Plan: 0 of TBD
+Status: Ready to plan
+Last activity: 2026-10-07 — Phase 1 complete (see phases/01-foundation/01-SUMMARY.md)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] 9%
 
 ## Accumulated Context
 ### Decisions
@@ -23,9 +23,10 @@ Progress: [░░░░░░░░░░] 0%
 None yet.
 
 ### Blockers/Concerns
-- Superpowers plugin not installed; practices followed by convention.
+- Superpowers installed in desktop app but not visible to sessions yet.
+- Tailscale sidecar + CI unverified until Proxmox deploy / GitHub remote.
 
 ## Session Continuity
 Last session: 2026-10-07
-Stopped at: Starting plan 01-01
+Stopped at: Phase 1 complete; next /gsd-plan-phase 2
 Resume file: None

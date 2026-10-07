@@ -4,7 +4,7 @@
 From an empty repo to a personal OS: secure foundation and deploy path first, then the shell and live activity, then the agent/permission core proven end-to-end with GitHub, then one life domain per phase, then automation, hardening and polish. Phase 0 (architecture, ADRs, this roadmap) is complete.
 
 ## Phases
-- [ ] **Phase 1: Foundation** - Repo, Next.js + worker, Postgres/migrations, auth, crypto, logging, health, design tokens, Compose, CI
+- [x] **Phase 1: Foundation** - Repo, Next.js + worker, Postgres/migrations, auth, crypto, logging, health, design tokens, Compose, CI
 - [ ] **Phase 2: Shell** - Navigation, command palette, Home, live activity stream, notifications, AI panel UI
 - [ ] **Phase 3: Agent infrastructure + GitHub** - Tool gateway, permissions, approvals, runs, orchestrator chat, Agent Command Centre, GitHub read-only
 - [ ] **Phase 4: Organization** - Calendars (Google, iCloud), tasks, conflicts, scheduling suggestions
@@ -28,9 +28,9 @@ From an empty repo to a personal OS: secure foundation and deploy path first, th
   3. Tests (unit + DB integration + e2e smoke) pass locally and in CI
   4. Docs + ADRs current
 **Plans**: 3 plans
-- [ ] 01-01: Scaffold, env, logging, crypto, DB schema + migrations, tests
-- [ ] 01-02: Auth, middleware, security headers, design tokens, login + home shell, worker + health
-- [ ] 01-03: Docker, Compose (dev/prod, backup, tailscale), CI, e2e smoke
+- [x] 01-01: Scaffold, env, logging, crypto, DB schema + migrations, tests
+- [x] 01-02: Auth, middleware, security headers, design tokens, login + home shell, worker + health
+- [x] 01-03: Docker, Compose (dev/prod, backup, tailscale), CI, e2e smoke
 
 ### Phase 2: Shell
 **Goal**: LifeOS feels like an OS: navigable, live, honest about what's connected.
@@ -68,7 +68,7 @@ Goals per phase list above; detailed when each phase is planned (`/gsd-plan-phas
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 0. Architecture | - | Complete | 2026-10-07 |
-| 1. Foundation | 0/3 | In progress | - |
+| 1. Foundation | 3/3 | Complete | 2026-10-07 |
 | 2. Shell | 0/? | Not started | - |
 | 3. Agents + GitHub | 0/? | Not started | - |
 | 4–11 | - | Not started | - |
