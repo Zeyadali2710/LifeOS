@@ -14,6 +14,16 @@ export function mergeById<T extends { id: string }>(current: T[], incoming: T[],
     .slice(0, limit);
 }
 
+// The snapshot wins, but items that arrived over SSE while it was in flight (unknown when it started) are kept.
+export function applySnapshot(cur: NotificationDTO[], snap: NotificationDTO[], knownBefore: ReadonlySet<string>): NotificationDTO[] {
+  return mergeById(cur.filter((i) => !knownBefore.has(i.id)), snap, "createdAt", Number.MAX_SAFE_INTEGER);
+}
+
+// Undo one optimistic change without clobbering anything else that changed meanwhile.
+export function restoreItem(cur: NotificationDTO[], original: NotificationDTO): NotificationDTO[] {
+  return mergeById(cur.filter((i) => i.id !== original.id), [original], "createdAt", Number.MAX_SAFE_INTEGER);
+}
+
 export function healthFromActivity(a: ActivityDTO): Health | null {
   return a.type.startsWith("system.health_") && a.health ? a.health : null;
 }

@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import type { Health } from "@/server/health";
 import type { ActivityDTO, NotificationDTO } from "@/lib/live-types";
-import { healthFromActivity, mergeById, nextBackoff, parseSnapshot, unreadOf, wakeDelay } from "./live";
+import { applySnapshot, healthFromActivity, mergeById, nextBackoff, parseSnapshot, unreadOf, wakeDelay } from "./live";
 
 type Live = {
   activity: ActivityDTO[];
@@ -68,6 +68,7 @@ export function LiveProvider({
   }, []);
 
   const refetchNotifications = useCallback(async (): Promise<boolean> => {
+    const known = new Set(idsRef.current);
     try {
       const res = await fetch("/api/notifications", { cache: "no-store" });
       if (res.status === 401) {
@@ -78,8 +79,9 @@ export function LiveProvider({
       if (!snap) return false;
       // diff against known ids so snooze reappearances animate in (not on first load)
       if (loadedRef.current) markFresh(snap.items.filter((i) => !idsRef.current.has(i.id)).map((i) => i.id));
-      idsRef.current = new Set(snap.items.map((i) => i.id));
-      setNotifications(snap.items);
+      const arrived = [...idsRef.current].filter((id) => !known.has(id));
+      idsRef.current = new Set([...snap.items.map((i) => i.id), ...arrived]);
+      setNotifications((cur) => applySnapshot(cur, snap.items, known));
       setNextWake(snap.nextWake);
       return true;
     } catch {

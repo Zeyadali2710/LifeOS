@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { healthFromActivity, mergeById, nextBackoff, parseSnapshot, unreadOf, wakeDelay } from "@/shell/live";
+import { applySnapshot, healthFromActivity, mergeById, nextBackoff, parseSnapshot, restoreItem, unreadOf, wakeDelay } from "@/shell/live";
 import type { ActivityDTO, NotificationDTO } from "@/lib/live-types";
 
 const n = (id: string, readAt: string | null = null): NotificationDTO => ({
@@ -41,5 +41,21 @@ describe("live helpers", () => {
     expect(parseSnapshot(null)).toBeNull();
     expect(parseSnapshot({ items: [{}], unread: 1, nextWake: null })).toBeNull();
     expect(parseSnapshot({ items: [], unread: "x", nextWake: null })).toBeNull();
+  });
+  it("applySnapshot replaces known items but keeps SSE arrivals made during the fetch", () => {
+    const at = (id: string, t: string) => ({ ...n(id), createdAt: t });
+    const cur = [at("new", "2026-01-03T00:00:00.000Z"), at("gone", "2026-01-02T00:00:00.000Z"), at("a", "2026-01-01T00:00:00.000Z")];
+    const snap = [{ ...at("a", "2026-01-01T00:00:00.000Z"), readAt: "r" }];
+    const out = applySnapshot(cur, snap, new Set(["gone", "a"]));
+    expect(out.map((i) => i.id)).toEqual(["new", "a"]);
+    expect(out[1]?.readAt).toBe("r");
+    expect(applySnapshot([], [], new Set())).toEqual([]);
+  });
+  it("restoreItem undoes one item and keeps the rest", () => {
+    const at = (id: string, t: string) => ({ ...n(id), createdAt: t });
+    const orig = at("b", "2026-01-02T00:00:00.000Z");
+    const cur = [at("c", "2026-01-03T00:00:00.000Z"), at("a", "2026-01-01T00:00:00.000Z")]; // b dismissed, c arrived since
+    expect(restoreItem(cur, orig).map((i) => i.id)).toEqual(["c", "b", "a"]);
+    expect(restoreItem([{ ...orig, readAt: "x" }], orig)).toEqual([orig]);
   });
 });

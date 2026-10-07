@@ -30,7 +30,6 @@ export function NotificationsDrawer() {
   const now = new Date();
 
   const readAll = async () => {
-    const previous = notifications;
     const at = new Date().toISOString();
     setNotifications((l) => l.map((n) => (n.readAt ? n : { ...n, readAt: at })));
     let ok = false;
@@ -41,7 +40,8 @@ export function NotificationsDrawer() {
     }
     if (ok) toast("All notifications marked read");
     else {
-      setNotifications(previous);
+      // Undo only what this action marked (its unique timestamp), keeping anything that arrived meanwhile.
+      setNotifications((l) => l.map((n) => (n.readAt === at ? { ...n, readAt: null } : n)));
       toast("Couldn't update that notification. Try again.", "error");
     }
   };

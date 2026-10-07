@@ -10,6 +10,7 @@ import { Badge } from "@/ui/badge";
 import { Button } from "@/ui/button";
 import { Icon } from "@/ui/icon";
 import { CATEGORY_META, iconFor } from "./notification-meta";
+import { restoreItem } from "./live";
 import { useLive } from "./live-provider";
 import { useShell } from "./shell-provider";
 import { SnoozeMenu } from "./snooze-menu";
@@ -18,7 +19,7 @@ const secondary = "h-[26px] rounded-6 border border-[rgba(255,255,255,.08)] px-2
 
 export function NotificationRow({ n, fresh }: { n: NotificationDTO; fresh: boolean }) {
   const router = useRouter();
-  const { notifications, setNotifications, refetchNotifications } = useLive();
+  const { setNotifications, refetchNotifications } = useLive();
   const { closeNotifications, toast } = useShell();
   const [menu, setMenu] = useState<HTMLElement | null>(null);
   const meta = CATEGORY_META[n.category];
@@ -26,9 +27,8 @@ export function NotificationRow({ n, fresh }: { n: NotificationDTO; fresh: boole
   const important = unread && meta.important;
   const now = new Date();
 
-  // Optimistic: apply `next`, run the action, revert + error toast on failure.
+  // Optimistic: apply `next`, run the action, restore just this item + error toast on failure.
   const mutate = async (next: (l: NotificationDTO[]) => NotificationDTO[], act: () => Promise<{ ok: boolean }>, okMsg?: string, refetch = false) => {
-    const previous = notifications;
     setNotifications(next);
     let ok = false;
     try {
@@ -37,7 +37,7 @@ export function NotificationRow({ n, fresh }: { n: NotificationDTO; fresh: boole
       ok = false;
     }
     if (!ok) {
-      setNotifications(previous);
+      setNotifications((cur) => restoreItem(cur, n));
       toast("Couldn't update that notification. Try again.", "error");
       return;
     }
