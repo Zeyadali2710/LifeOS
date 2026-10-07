@@ -1,68 +1,173 @@
 @import "tailwindcss";
 
-/* LifeOS design tokens. Dark-first; light via prefers-color-scheme. */
 :root {
-  --bg: oklch(0.14 0.012 255);
-  --bg-raised: oklch(0.18 0.014 255);
-  --line: oklch(0.28 0.015 255);
-  --fg: oklch(0.95 0.005 255);
-  --fg-muted: oklch(0.68 0.015 255);
-  --fg-faint: oklch(0.5 0.015 255);
-  --signal: oklch(0.82 0.12 185); /* primary accent: calm cyan */
-  --attention: oklch(0.82 0.14 75); /* needs-you amber */
-  --danger: oklch(0.68 0.19 25);
-  --ok: oklch(0.78 0.15 150);
+  /* surfaces */
+  --canvas: #0b0c10;
+  --surface: #111318;          /* cards, panels (elev 0) */
+  --inset: #0d0e13;            /* code, previews, inputs */
+  --raised: #1a1d24;           /* tooltips, toasts, menus */
+  --selected: #1f222b;         /* active segment */
+  --overlay: #12141a;          /* elev 2: drawer, palette base */
+  --drawer: #101217;           /* notifications drawer (SH l.268) */
+  --panel-top: #14151e;        /* AI panel gradient top (SH l.150, @.98 alpha) */
+
+  /* text */
+  --text: #e9eaf0;             /* primary */
+  --text-2: #a3a6b4;           /* secondary, 7.6:1 */
+  --text-3: #80849a;           /* labels/meta, 4.9:1 */
+  --text-4: #4a4e5c;           /* decorative only: never for informative text */
+
+  /* hairlines and fills (white alpha) */
+  --border: rgba(255, 255, 255, 0.07);
+  --border-soft: rgba(255, 255, 255, 0.05);   /* inner dividers */
+  --border-hover: rgba(255, 255, 255, 0.16);  /* design uses .12–.2 */
+  --border-strong: rgba(255, 255, 255, 0.12); /* secondary button, input rest .08 */
+  --fill-1: rgba(255, 255, 255, 0.03);        /* input/secondary rest */
+  --fill-2: rgba(255, 255, 255, 0.05);        /* ghost hover */
+  --fill-3: rgba(255, 255, 255, 0.08);        /* disabled send, active tab */
+
+  /* accents (same L/C, hue varies). Tints = accent at 8-14% alpha, borders 22-45%: use bg-indigo/10, border-indigo/35 */
+  --indigo: #8b8cff;           /* LifeOS, primary, AI, focus */
+  --indigo-text: #a5a6ff;      /* accent text */
+  --indigo-soft: #c7c8ff;      /* text on indigo tint (Ask LifeOS button, link hover) */
+  --green: #4fd1a1;            /* healthy, done, online */
+  --amber: #e8b86a;            /* at risk, approval, important */
+  --red: #f07a6e;              /* error, urgent, destructive */
+  --blue: #6cb6ff;             /* info/FYI, email, events */
+  --pink: #e889c4;             /* Socials (reserved, unused in Phase 2 UI) */
+  --violet: #b48cff;           /* Knowledge (reserved, unused in Phase 2 UI) */
+  --on-accent: #0b0c10;        /* text on any accent fill */
+  --indigo-deep: #5b5cd6;      /* logo gradient end */
+
+  /* elevation */
+  --shadow-float: 0 18px 50px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.04); /* command bar, elev 1 */
+  --shadow-overlay: 0 30px 80px rgba(0,0,0,.6);                       /* elev 2 */
+  --shadow-palette: 0 30px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(0,0,0,.5), 0 0 60px rgba(110,112,255,.08);
+  --shadow-drawer: -30px 0 60px rgba(0,0,0,.5);
+  --shadow-tooltip: 0 8px 24px rgba(0,0,0,.5);
+  --shadow-toast: 0 12px 30px rgba(0,0,0,.5);
+  --shadow-glow-ai: 0 0 0 4px rgba(139,140,255,.12), 0 8px 24px rgba(110,112,255,.3); /* primary AI action only */
+  --ring-input: 0 0 0 3px rgba(139,140,255,.15);                       /* input focus ring */
+
+  /* layout */
+  --sidebar-w: 232px;
+  --rail-w: 64px;              /* manual compact (desktop) */
+  --rail-w-tablet: 68px;       /* 720-1100 auto rail */
+  --topbar-h: 56px;
+  --ai-w: 440px;
+  --drawer-w: 420px;
+  --content-max: 1480px;
+  --bottombar-h: 66px;         /* + env(safe-area-inset-bottom); design's 96px includes the phone home-indicator mock */
+
   color-scheme: dark;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    --bg: oklch(0.985 0.003 255);
-    --bg-raised: oklch(1 0 0);
-    --line: oklch(0.9 0.006 255);
-    --fg: oklch(0.2 0.015 255);
-    --fg-muted: oklch(0.45 0.015 255);
-    --fg-faint: oklch(0.6 0.012 255);
-    --signal: oklch(0.55 0.11 195);
-    --attention: oklch(0.62 0.15 65);
-    --danger: oklch(0.55 0.2 25);
-    --ok: oklch(0.55 0.14 150);
-    color-scheme: light;
-  }
-}
-
 @theme inline {
-  --color-bg: var(--bg);
-  --color-bg-raised: var(--bg-raised);
-  --color-line: var(--line);
-  --color-fg: var(--fg);
-  --color-fg-muted: var(--fg-muted);
-  --color-fg-faint: var(--fg-faint);
-  --color-signal: var(--signal);
-  --color-attention: var(--attention);
-  --color-danger: var(--danger);
-  --color-ok: var(--ok);
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-inset: var(--inset);
+  --color-raised: var(--raised);
+  --color-selected: var(--selected);
+  --color-overlay: var(--overlay);
+  --color-drawer: var(--drawer);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-text-4: var(--text-4);
+  --color-line: var(--border);
+  --color-line-soft: var(--border-soft);
+  --color-line-hover: var(--border-hover);
+  --color-line-strong: var(--border-strong);
+  --color-fill-1: var(--fill-1);
+  --color-fill-2: var(--fill-2);
+  --color-fill-3: var(--fill-3);
+  --color-indigo: var(--indigo);
+  --color-indigo-text: var(--indigo-text);
+  --color-indigo-soft: var(--indigo-soft);
+  --color-green: var(--green);
+  --color-amber: var(--amber);
+  --color-red: var(--red);
+  --color-blue: var(--blue);
+  --color-pink: var(--pink);
+  --color-violet: var(--violet);
+  --color-on-accent: var(--on-accent);
+
+  /* Phase 1 legacy aliases so /login keeps compiling. Migrate usages, then delete these 8 lines. */
+  --color-bg: var(--canvas);
+  --color-bg-raised: var(--surface);
+  --color-fg: var(--text);
+  --color-fg-muted: var(--text-2);
+  --color-fg-faint: var(--text-3);
+  --color-signal: var(--indigo);
+  --color-attention: var(--amber);
+  --color-danger: var(--red);
+  --color-ok: var(--green);
+
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* radius: numeric names = design px so utilities are rounded-5, rounded-9, ... */
+  --radius-4: 4px; --radius-5: 5px; --radius-6: 6px; --radius-7: 7px; --radius-8: 8px;
+  --radius-9: 9px; --radius-10: 10px; --radius-12: 12px; --radius-14: 14px; --radius-16: 16px;
+
+  --shadow-float: var(--shadow-float);
+  --shadow-overlay: var(--shadow-overlay);
+  --shadow-tooltip: var(--shadow-tooltip);
+  --shadow-toast: var(--shadow-toast);
+  --shadow-glow-ai: var(--shadow-glow-ai);
+
+  /* viewport breakpoints (min-width). Below 720 = mobile (no variant). */
+  --breakpoint-tab: 720px;
+  --breakpoint-desk: 1100px;
 }
 
+html, body { height: 100%; }
 body {
-  background: var(--bg);
-  color: var(--fg);
+  margin: 0;
+  background:
+    radial-gradient(1200px 600px at 12% -10%, rgba(110,112,255,.10), transparent 60%),
+    radial-gradient(900px 500px at 100% 0%, rgba(150,110,255,.06), transparent 60%),
+    var(--canvas);
+  color: var(--text);
   font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
+* { box-sizing: border-box; }
+a { color: var(--indigo-text); text-decoration: none; }
+a:hover { color: var(--indigo-soft); text-decoration: underline; }
+button { font-family: inherit; }
+:focus-visible { outline: 2px solid var(--indigo); outline-offset: 2px; }  /* never removed; no forced radius (design's 6px override distorts pills) */
+::selection { background: rgba(139,140,255,.35); }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,.08); border-radius: 10px; border: 3px solid transparent; background-clip: padding-box; }
 
-:focus-visible {
-  outline: 2px solid var(--signal);
-  outline-offset: 2px;
-}
+/* motion keyframes (SH l.23–32, DS l.18–22) */
+@keyframes lo-pulse   { 0% { box-shadow: 0 0 0 0 rgba(139,140,255,.55) } 100% { box-shadow: 0 0 0 7px rgba(139,140,255,0) } }
+@keyframes lo-pulse-g { 0% { box-shadow: 0 0 0 0 rgba(79,209,161,.5) }  100% { box-shadow: 0 0 0 6px rgba(79,209,161,0) } }
+@keyframes lo-in      { from { opacity: 0; transform: translateY(-6px) } to { opacity: 1; transform: none } }
+@keyframes lo-fade    { from { opacity: 0 } to { opacity: 1 } }
+@keyframes lo-rise    { from { opacity: 0; transform: translateY(8px) scale(.99) } to { opacity: 1; transform: none } }
+@keyframes lo-slide   { from { opacity: 0; transform: translateX(16px) } to { opacity: 1; transform: none } }
+@keyframes lo-shimmer { 0% { background-position: -200% 0 } 100% { background-position: 200% 0 } }
+@keyframes lo-spin    { to { transform: rotate(360deg) } }
 
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
-  }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
 }
+
+/* Material Symbols Outlined (self-hosted subset, --font-symbols from layout.tsx) */
+.msym {
+  font-family: var(--font-symbols);
+  font-weight: 300;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  font-feature-settings: "liga";
+  font-variation-settings: "FILL" 0, "GRAD" 0;
+  user-select: none;
+}
+.msym-fill { font-variation-settings: "FILL" 1, "GRAD" 0; }
