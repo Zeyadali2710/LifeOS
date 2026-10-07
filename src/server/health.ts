@@ -19,7 +19,12 @@ export async function checkHealth(now = Date.now()): Promise<Health> {
   } catch {
     return { status: "down", db: "down", worker: "unknown", version };
   }
-  const [row] = await db().select({ value: settings.value }).from(settings).where(eq(settings.key, HEARTBEAT_KEY));
+  // A failure here (DB dropped between queries) reads as "worker unknown", never a thrown layout.
+  const [row] = await db()
+    .select({ value: settings.value })
+    .from(settings)
+    .where(eq(settings.key, HEARTBEAT_KEY))
+    .catch(() => []);
   const beat = typeof row?.value === "string" ? Date.parse(row.value) : NaN;
   const worker = Number.isNaN(beat) ? "unknown" : now - beat > STALE_AFTER_MS ? "stale" : "ok";
   return { status: worker === "ok" ? "ok" : "degraded", db: "ok", worker, version };
