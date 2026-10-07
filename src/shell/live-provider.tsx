@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import type { Health } from "@/server/health";
 import type { ActivityDTO, NotificationDTO } from "@/lib/live-types";
-import { applySnapshot, healthFromActivity, mergeById, nextBackoff, parseSnapshot, unreadOf, wakeDelay } from "./live";
+import { applySnapshot, healthFromActivity, isActivity, isNotification, mergeById, nextBackoff, parseSnapshot, unreadOf, wakeDelay } from "./live";
 
 type Live = {
   activity: ActivityDTO[];
@@ -102,9 +102,10 @@ export function LiveProvider({
         window.location.assign("/login");
         return;
       }
-      const ok = act.ok ? ((await act.json()) as { items?: ActivityDTO[] }) : null;
+      const body = act.ok ? ((await act.json()) as { items?: unknown }) : null;
+      const items = Array.isArray(body?.items) ? body.items.filter(isActivity) : null;
       const notifOk = await refetchNotifications();
-      if (ok?.items) setActivity((cur) => mergeById(cur, ok.items!, "at", ACTIVITY_LIMIT));
+      if (items) setActivity((cur) => mergeById(cur, items, "at", ACTIVITY_LIMIT));
       if (h) {
         try {
           setHealth((await h.json()) as Health); // 200 and 503 both carry Health JSON
@@ -112,7 +113,7 @@ export function LiveProvider({
           /* keep previous */
         }
       }
-      const good = Boolean(ok?.items) && notifOk;
+      const good = Boolean(items) && notifOk;
       setLoadError(!good);
       if (good) {
         loadedRef.current = true;
@@ -129,9 +130,9 @@ export function LiveProvider({
     let backoff = 0;
     let closed = false;
 
-    const parse = <T,>(e: Event): T | null => {
+    const parse = (e: Event): unknown => {
       try {
-        return JSON.parse((e as MessageEvent<string>).data) as T;
+        return JSON.parse((e as MessageEvent<string>).data);
       } catch {
         return null; // malformed frame ignored (T-02-24)
       }
@@ -147,16 +148,16 @@ export function LiveProvider({
         void resync();
       });
       es.addEventListener("activity", (e) => {
-        const a = parse<ActivityDTO>(e);
-        if (!a?.id) return;
+        const a = parse(e);
+        if (!isActivity(a)) return;
         setActivity((cur) => mergeById(cur, [a], "at", ACTIVITY_LIMIT));
         if (loadedRef.current) markFresh([a.id]);
         const h = healthFromActivity(a);
         if (h) setHealth(h);
       });
       es.addEventListener("notification", (e) => {
-        const n = parse<NotificationDTO>(e);
-        if (!n?.id) return;
+        const n = parse(e);
+        if (!isNotification(n)) return;
         idsRef.current.add(n.id);
         setNotifications((cur) => mergeById(cur, [n], "createdAt", Number.MAX_SAFE_INTEGER));
         if (loadedRef.current) markFresh([n.id]);

@@ -1,4 +1,5 @@
 import type { Health } from "@/server/health";
+import { NOTIFICATION_CATEGORIES } from "@/lib/live-types";
 import type { ActivityDTO, NotificationDTO, NotificationsSnapshot } from "@/lib/live-types";
 
 export function nextBackoff(prev: number): number {
@@ -42,12 +43,25 @@ export function wakeDelay(nextWake: string | null, now: number): number | null {
 const isStr = (x: unknown) => typeof x === "string";
 const strOrNull = (x: unknown) => x === null || typeof x === "string";
 
-function isNotification(x: unknown): x is NotificationDTO {
+// Guards for everything that arrives over the wire: a bad frame is dropped instead of crashing render
+// (e.g. an old tab receiving a category added by a newer deploy).
+export function isNotification(x: unknown): x is NotificationDTO {
   if (typeof x !== "object" || x === null) return false;
   const o = x as Record<string, unknown>;
   return (
-    isStr(o.id) && isStr(o.category) && isStr(o.source) && isStr(o.title) && isStr(o.createdAt) &&
-    strOrNull(o.body) && strOrNull(o.actionUrl) && strOrNull(o.readAt) && strOrNull(o.snoozedUntil)
+    isStr(o.id) && (NOTIFICATION_CATEGORIES as readonly unknown[]).includes(o.category) && isStr(o.source) && isStr(o.title) &&
+    isStr(o.createdAt) && strOrNull(o.body) && strOrNull(o.actionUrl) && strOrNull(o.readAt) && strOrNull(o.snoozedUntil)
+  );
+}
+
+export function isActivity(x: unknown): x is ActivityDTO {
+  if (typeof x !== "object" || x === null) return false;
+  const o = x as Record<string, unknown>;
+  const h = o.health as Record<string, unknown> | null;
+  return (
+    isStr(o.id) && isStr(o.at) && isStr(o.type) && isStr(o.source) && isStr(o.title) && strOrNull(o.detail) &&
+    (o.tone === null || o.tone === "red" || o.tone === "amber" || o.tone === "green") &&
+    (h === null || (typeof h === "object" && isStr(h.status) && isStr(h.db) && isStr(h.worker) && isStr(h.version)))
   );
 }
 

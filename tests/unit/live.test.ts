@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applySnapshot, healthFromActivity, mergeById, nextBackoff, parseSnapshot, restoreItem, unreadOf, wakeDelay } from "@/shell/live";
+import { applySnapshot, healthFromActivity, isActivity, isNotification, mergeById, nextBackoff, parseSnapshot, restoreItem, unreadOf, wakeDelay } from "@/shell/live";
 import type { ActivityDTO, NotificationDTO } from "@/lib/live-types";
 
 const n = (id: string, readAt: string | null = null): NotificationDTO => ({
@@ -41,6 +41,18 @@ describe("live helpers", () => {
     expect(parseSnapshot(null)).toBeNull();
     expect(parseSnapshot({ items: [{}], unread: 1, nextWake: null })).toBeNull();
     expect(parseSnapshot({ items: [], unread: "x", nextWake: null })).toBeNull();
+  });
+  it("wire guards drop frames that would crash render", () => {
+    expect(isNotification(n("1"))).toBe(true);
+    expect(isNotification({ ...n("1"), category: "NEW_KIND" })).toBe(false);
+    expect(parseSnapshot({ items: [{ ...n("1"), category: "NEW_KIND" }], unread: 1, nextWake: null })).toBeNull();
+    const a = { id: "1", at: "t", type: "x", source: "auth", title: "t", detail: null, tone: null, health: null };
+    expect(isActivity(a)).toBe(true);
+    expect(isActivity({ ...a, tone: "green", health: { status: "ok", db: "ok", worker: "ok", version: "1" } })).toBe(true);
+    expect(isActivity({ ...a, source: undefined })).toBe(false);
+    expect(isActivity({ ...a, tone: "purple" })).toBe(false);
+    expect(isActivity({ ...a, health: {} })).toBe(false);
+    expect(isActivity(null)).toBe(false);
   });
   it("applySnapshot replaces known items but keeps SSE arrivals made during the fetch", () => {
     const at = (id: string, t: string) => ({ ...n(id), createdAt: t });
