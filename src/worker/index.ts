@@ -1,5 +1,6 @@
 import { PgBoss } from "pg-boss";
 import { db } from "@/server/db/client";
+import { emitActivity } from "@/server/events";
 import { settings } from "@/server/db/schema";
 import { env } from "@/server/env";
 import { HEARTBEAT_KEY } from "@/server/health";
@@ -22,6 +23,7 @@ async function main() {
   await boss.schedule(HEARTBEAT, "* * * * *");
   await boss.work(HEARTBEAT, async () => beat());
   await beat();
+  await emitActivity({ type: "system.worker_started", source: "system", title: "Worker started", detail: `v${process.env.LIFEOS_VERSION ?? "dev"}` });
   log.info("worker started");
 
   const shutdown = async (signal: string) => {
