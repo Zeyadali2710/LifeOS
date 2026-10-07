@@ -52,7 +52,7 @@ From an empty repo to a personal OS: secure foundation and deploy path first, th
 - [x] 02-09-PLAN.md — 10 honest domain pages, template/loading/error, shell-nav e2e
 - [x] 02-10-PLAN.md — Command palette, AI panel shell, command bar (not-connected InlineError), palette e2e
 - [x] 02-11-PLAN.md — Real Home + live ActivityList + SystemTile, home/live-activity e2e
-- [ ] 02-12-PLAN.md — Notifications drawer: grouping, filter, read/snooze/dismiss, snooze menu, notifications e2e
+- [x] 02-12-PLAN.md — Notifications drawer: grouping, filter, read/snooze/dismiss, snooze menu, notifications e2e
 - [ ] 02-13-PLAN.md — Phase gate: alias cleanup, a11y e2e, docs/attributions, full suite, owner visual sign-off
 
 ### Phase 3: Agent infrastructure + GitHub
@@ -82,6 +82,6 @@ Goals per phase list above; detailed when each phase is planned (`/gsd-plan-phas
 |-------|----------------|--------|-----------|
 | 0. Architecture | - | Complete | 2026-10-07 |
 | 1. Foundation | 3/3 | Complete | 2026-10-07 |
-| 2. Shell | 11/13 | In Progress|  |
+| 2. Shell | 12/13 | In Progress|  |
 | 3. Agents + GitHub | 0/? | Not started | - |
 | 4–11 | - | Not started | - |
