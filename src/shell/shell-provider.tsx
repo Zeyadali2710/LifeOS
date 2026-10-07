@@ -98,10 +98,15 @@ export function ShellProvider({ initialCompact, children }: { initialCompact: bo
   useEffect(() => () => clearTimeout(toastTimer.current), []);
 
   const signOut = useCallback(async () => {
-    await authClient.signOut();
+    // better-auth reports failures as { error }; a throw (network) counts too. Never pretend we signed out.
+    const res = await authClient.signOut().catch(() => null);
+    if (!res || res.error) {
+      toast("Couldn't sign out. Try again.", "error");
+      return;
+    }
     router.replace("/login");
     router.refresh();
-  }, [router]);
+  }, [router, toast]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

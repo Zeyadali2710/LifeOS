@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { Client } from "pg";
-import { E2E_DB_URL, E2E_OWNER } from "./owner";
+import { E2E_DB_URL, E2E_OWNER, signIn } from "./owner";
 
 test("unauthenticated visitors are redirected to /login", async ({ page }) => {
   await page.goto("/");
@@ -84,6 +84,15 @@ test("public sign-up is disabled", async ({ request, baseURL }) => {
     data: { email: "intruder@example.com", password: "intruder-password-1", name: "x" },
   });
   expect(res.ok()).toBe(false);
+});
+
+test("failed sign-out keeps the user in place and says so", async ({ page }) => {
+  await signIn(page);
+  await page.route("**/api/auth/sign-out", (r) => r.fulfill({ status: 500, json: { message: "boom" } }));
+  await page.goto("/settings");
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Couldn't sign out" })).toBeVisible();
+  await expect(page).toHaveURL(/\/settings$/);
 });
 
 test("sign-out without a valid session is not audited", async ({ request, baseURL }, testInfo) => {

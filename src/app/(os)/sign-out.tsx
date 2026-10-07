@@ -1,21 +1,13 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { authClient } from "@/lib/auth-client";
+import { useShell } from "@/shell/shell-provider";
 import { Button } from "@/ui/button";
 import { Icon } from "@/ui/icon";
 
 export function SignOut() {
-  const router = useRouter();
+  const { signOut } = useShell();
   return (
-    <Button
-      variant="secondary"
-      onClick={async () => {
-        await authClient.signOut();
-        router.replace("/login");
-        router.refresh();
-      }}
-    >
+    <Button variant="secondary" onClick={signOut}>
       <Icon name="logout" size={18} />
       Sign out
     </Button>
