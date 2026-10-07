@@ -40,7 +40,20 @@ From an empty repo to a personal OS: secure foundation and deploy path first, th
   1. Owner can navigate all domain pages on desktop and phone
   2. A new activity event appears on Home without refresh
   3. Notifications can be read, snoozed, dismissed
-**Plans**: TBD
+**Plans**: 13 plans in 6 waves
+- [ ] 02-01-PLAN.md — Event backbone: DTO contract, emitActivity (insert + id-only NOTIFY), LISTEN hub
+- [ ] 02-02-PLAN.md — Pure helpers: Sydney time/snooze/grouping, Open-Meteo weather, date line, lead, isSafePath
+- [ ] 02-03-PLAN.md — Design tokens 1:1, dark only, self-hosted Material Symbols subset + Icon
+- [ ] 02-04-PLAN.md — Event sources: auth hooks, web-process health/version monitor, worker/migrate events, e2e helpers
+- [ ] 02-05-PLAN.md — Notification queries + owner-guarded server actions; /api/events SSE, /api/activity, /api/notifications
+- [ ] 02-06-PLAN.md — UI primitives (Button variants, Badge, Kbd, EmptyState, InlineError, StatusTile...) + login migration
+- [ ] 02-07-PLAN.md — Client live store: EventSource reconnect, snapshot resync, snooze wake, useLive()
+- [ ] 02-08-PLAN.md — Shell chrome: ShellProvider + keyboard map, sidebar/rail, top bar, bottom bar, More sheet, (os) layout
+- [ ] 02-09-PLAN.md — 10 honest domain pages, template/loading/error, shell-nav e2e
+- [ ] 02-10-PLAN.md — Command palette, AI panel shell, command bar (not-connected InlineError), palette e2e
+- [ ] 02-11-PLAN.md — Real Home + live ActivityList + SystemTile, home/live-activity e2e
+- [ ] 02-12-PLAN.md — Notifications drawer: grouping, filter, read/snooze/dismiss, snooze menu, notifications e2e
+- [ ] 02-13-PLAN.md — Phase gate: alias cleanup, a11y e2e, docs/attributions, full suite, owner visual sign-off
 
 ### Phase 3: Agent infrastructure + GitHub
 **Goal**: The orchestrator answers real questions about real GitHub data, with every tool call observable and every risky action gated.
@@ -69,6 +82,6 @@ Goals per phase list above; detailed when each phase is planned (`/gsd-plan-phas
 |-------|----------------|--------|-----------|
 | 0. Architecture | - | Complete | 2026-10-07 |
 | 1. Foundation | 3/3 | Complete | 2026-10-07 |
-| 2. Shell | 0/? | Not started | - |
+| 2. Shell | 0/13 | Planned | - |
 | 3. Agents + GitHub | 0/? | Not started | - |
 | 4–11 | - | Not started | - |
