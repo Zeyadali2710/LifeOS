@@ -109,7 +109,8 @@ function PaletteDialog() {
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
-              setSel(0);
+              // Default to the best match, not the Ask row; Ask stays one ArrowUp away (and is the only row when nothing matches).
+              setSel(buildPalette(e.target.value, { wide }).noMatch || !e.target.value.trim() ? 0 : 1);
             }}
             onKeyDown={onKeyDown}
             className="min-w-0 flex-1 bg-transparent text-[16px] text-text outline-none placeholder:text-text-3"
