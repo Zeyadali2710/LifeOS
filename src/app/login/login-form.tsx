@@ -6,7 +6,7 @@ import { authClient } from "@/lib/auth-client";
 import { Button } from "@/ui/button";
 
 const field =
-  "mt-1.5 block h-11 w-full rounded-md border border-line bg-bg-raised px-3 text-sm text-fg placeholder:text-fg-faint focus:border-signal focus:outline-none";
+  "mt-1.5 block h-11 w-full rounded-9 border border-[rgba(255,255,255,.10)] bg-surface px-3 text-sm text-text placeholder:text-text-3 focus:border-indigo focus:outline-none";
 
 export function LoginForm({ next }: { next: string }) {
   const router = useRouter();
@@ -33,18 +33,18 @@ export function LoginForm({ next }: { next: string }) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-5" noValidate>
-      <label className="block text-sm text-fg-muted">
+      <label className="block text-sm text-text-2">
         Email
         <input name="email" type="email" autoComplete="username" required className={field} />
       </label>
-      <label className="block text-sm text-fg-muted">
+      <label className="block text-sm text-text-2">
         Password
         <input name="password" type="password" autoComplete="current-password" required className={field} />
       </label>
-      <p role="alert" aria-live="polite" className="min-h-5 text-sm text-danger">
+      <p role="alert" aria-live="polite" className="min-h-5 text-sm text-red">
         {error}
       </p>
-      <Button type="submit" disabled={pending} className="w-full">
+      <Button type="submit" size="touch" loading={pending} className="w-full">
         {pending ? "Signing in…" : "Sign in"}
       </Button>
     </form>
