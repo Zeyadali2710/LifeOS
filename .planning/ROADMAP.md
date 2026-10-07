@@ -45,7 +45,7 @@ From an empty repo to a personal OS: secure foundation and deploy path first, th
 - [x] 02-02-PLAN.md — Pure helpers: Sydney time/snooze/grouping, Open-Meteo weather, date line, lead, isSafePath
 - [x] 02-03-PLAN.md — Design tokens 1:1, dark only, self-hosted Material Symbols subset + Icon
 - [x] 02-04-PLAN.md — Event sources: auth hooks, web-process health/version monitor, worker/migrate events, e2e helpers
-- [ ] 02-05-PLAN.md — Notification queries + owner-guarded server actions; /api/events SSE, /api/activity, /api/notifications
+- [x] 02-05-PLAN.md — Notification queries + owner-guarded server actions; /api/events SSE, /api/activity, /api/notifications
 - [ ] 02-06-PLAN.md — UI primitives (Button variants, Badge, Kbd, EmptyState, InlineError, StatusTile...) + login migration
 - [ ] 02-07-PLAN.md — Client live store: EventSource reconnect, snapshot resync, snooze wake, useLive()
 - [ ] 02-08-PLAN.md — Shell chrome: ShellProvider + keyboard map, sidebar/rail, top bar, bottom bar, More sheet, (os) layout
@@ -82,6 +82,6 @@ Goals per phase list above; detailed when each phase is planned (`/gsd-plan-phas
 |-------|----------------|--------|-----------|
 | 0. Architecture | - | Complete | 2026-10-07 |
 | 1. Foundation | 3/3 | Complete | 2026-10-07 |
-| 2. Shell | 4/13 | In Progress|  |
+| 2. Shell | 5/13 | In Progress|  |
 | 3. Agents + GitHub | 0/? | Not started | - |
 | 4–11 | - | Not started | - |
