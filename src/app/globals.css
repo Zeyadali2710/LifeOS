@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+/* LifeOS design tokens. Dark-first; light via prefers-color-scheme. */
+:root {
+  --bg: oklch(0.14 0.012 255);
+  --bg-raised: oklch(0.18 0.014 255);
+  --line: oklch(0.28 0.015 255);
+  --fg: oklch(0.95 0.005 255);
+  --fg-muted: oklch(0.68 0.015 255);
+  --fg-faint: oklch(0.5 0.015 255);
+  --signal: oklch(0.82 0.12 185); /* primary accent: calm cyan */
+  --attention: oklch(0.82 0.14 75); /* needs-you amber */
+  --danger: oklch(0.68 0.19 25);
+  --ok: oklch(0.78 0.15 150);
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: oklch(0.985 0.003 255);
+    --bg-raised: oklch(1 0 0);
+    --line: oklch(0.9 0.006 255);
+    --fg: oklch(0.2 0.015 255);
+    --fg-muted: oklch(0.45 0.015 255);
+    --fg-faint: oklch(0.6 0.012 255);
+    --signal: oklch(0.55 0.11 195);
+    --attention: oklch(0.62 0.15 65);
+    --danger: oklch(0.55 0.2 25);
+    --ok: oklch(0.55 0.14 150);
+    color-scheme: light;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-raised: var(--bg-raised);
+  --color-line: var(--line);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-faint: var(--fg-faint);
+  --color-signal: var(--signal);
+  --color-attention: var(--attention);
+  --color-danger: var(--danger);
+  --color-ok: var(--ok);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--signal);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

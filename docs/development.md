@@ -17,7 +17,18 @@ DISCOVER → ARCHITECT → PLAN → IMPLEMENT → TEST → REVIEW → HARDEN →
 | `npm run typecheck` / `lint` | Static checks |
 | `npm test` | Vitest (unit + DB integration; needs dev Postgres) |
 | `npm run e2e` | Playwright |
-| `npm run create-owner` | Create the single owner account (interactive env vars) |
+| `npm run create-owner` | Create the single owner (`OWNER_EMAIL`, `OWNER_PASSWORD` env vars) |
+| `npm run build:worker` | Bundle worker + scripts to `dist/*.mjs` (esbuild) |
+
+## First-time setup
+```bash
+cp .env.example .env   # fill secrets; DATABASE_URL=postgres://lifeos:lifeos@localhost:5433/lifeos
+docker compose -f docker/compose.dev.yml up -d
+npm ci && npm run db:migrate
+OWNER_EMAIL=… OWNER_PASSWORD=… npm run create-owner
+npm run dev & npm run worker
+```
+E2E (`npm run e2e`) builds a production server on :3100 against a throwaway `lifeos_e2e` database.
 
 ## Layout
 ```

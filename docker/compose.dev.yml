@@ -1,0 +1,19 @@
+# Local development: Postgres only. App runs on the host via `npm run dev` / `npm run worker`.
+name: lifeos-dev
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: lifeos
+      POSTGRES_PASSWORD: lifeos
+      POSTGRES_DB: lifeos
+    ports:
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - pgdata-dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lifeos"]
+      interval: 5s
+      retries: 10
+volumes:
+  pgdata-dev:

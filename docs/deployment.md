@@ -23,7 +23,17 @@ Devices (desktop, laptop, phone, tablet) install Tailscale and open `https://lif
 - `LIFEOS_MASTER_KEY` and `.env` stored separately (password manager).
 - Restore procedure tested in Phase 10.
 
-## Deploy procedure (Phase 1 manual; automate later)
+## First deploy
+1. Debian VM: install Docker Engine + Compose plugin; clone the repo.
+2. `cp .env.example .env`, `chmod 600 .env`; fill every value. `BETTER_AUTH_URL` must be the exact tailnet URL (`https://lifeos.<tailnet>.ts.net`) or sign-in will fail origin checks.
+3. Tailscale admin: enable HTTPS certificates; create a non-reusable, tagged auth key → `TS_AUTHKEY`.
+4. `docker compose -f docker/compose.yml --env-file .env up -d --build`
+5. Create the owner (type the password at a hidden prompt, not in shell history):
+   ```bash
+   read -rs OWNER_PASSWORD && docker compose -f docker/compose.yml --env-file .env run --rm -e OWNER_EMAIL=you@example.com -e OWNER_PASSWORD worker node dist/scripts/create-owner.mjs
+   ```
+
+## Deploy procedure (updates)
 ```bash
 git pull && docker compose -f docker/compose.yml --env-file .env up -d --build
 ```

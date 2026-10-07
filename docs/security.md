@@ -8,10 +8,11 @@ LifeOS holds tokens to email, calendars, socials and code. Treat it as highly se
 3. **Sessions** — DB-backed, httpOnly, `Secure`, `SameSite=Lax` cookies. Better Auth validates `Origin` on mutating requests (CSRF).
 4. **Authorization** — every route and server action checks the session. Every agent tool call goes through the permission gateway (`permissions.md`).
 5. **Secrets** — `.env` on host (mode 600, gitignored) for bootstrap secrets; integration tokens encrypted at rest with AES-256-GCM (`src/server/crypto.ts`, key `LIFEOS_MASTER_KEY`). Keys never reach the browser (`server-only` imports).
-6. **Headers** — CSP, HSTS, `X-Frame-Options: DENY`/`frame-ancestors 'none'`, `nosniff`, strict referrer policy, permissions policy.
-7. **Input/output validation** — zod at every trust boundary: env, HTTP bodies, provider responses, LLM tool inputs and outputs.
-8. **Audit** — `audit_log` for auth events, approvals, permission changes, integration connects/disconnects, and all side-effecting tool calls.
-9. **Supply chain** — lockfile committed, `npm audit` + gitleaks in CI, minimal dependencies.
+6. **Client IP** — `src/proxy.ts` rewrites `X-Forwarded-For` to the rightmost (proxy-appended) hop before Better Auth sees it, so clients cannot spoof the IP used for rate limiting (5 sign-ins/min/IP) and audit.
+7. **Headers** — per-request nonce CSP (`src/proxy.ts`, `strict-dynamic`), HSTS, `X-Frame-Options: DENY`/`frame-ancestors 'none'`, `nosniff`, strict referrer policy, permissions policy.
+8. **Input/output validation** — zod at every trust boundary: env, HTTP bodies, provider responses, LLM tool inputs and outputs.
+9. **Audit** — `audit_log` for auth events, approvals, permission changes, integration connects/disconnects, and all side-effecting tool calls.
+10. **Supply chain** — lockfile committed, `npm audit` + gitleaks in CI, minimal dependencies.
 
 ## Rules
 - Never commit credentials. Never hardcode secrets. Never log tokens (pino redaction paths configured).

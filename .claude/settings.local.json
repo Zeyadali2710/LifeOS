@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "PowerShell(git init -b main C:\\\\Users\\\\footb\\\\Desktop\\\\LifeOS)",
-      "PowerShell(git -C C:\\\\Users\\\\footb\\\\Desktop\\\\LifeOS config user.email)",
-      "PowerShell(git -C C:\\\\Users\\\\footb\\\\Desktop\\\\LifeOS config user.name)"
-    ]
-  }
-}

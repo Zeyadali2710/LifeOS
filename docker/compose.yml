@@ -1,0 +1,98 @@
+# Production stack for the Proxmox VM. Run from repo root:
+#   docker compose -f docker/compose.yml --env-file .env up -d --build
+# No ports are published. Ingress is only via the Tailscale sidecar.
+name: lifeos
+
+x-app: &app
+  env_file: ../.env
+  environment:
+    NODE_ENV: production
+    DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+  restart: unless-stopped
+  networks: [data, default]
+  logging: &logging
+    driver: json-file
+    options: { max-size: "10m", max-file: "5" }
+
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      retries: 10
+    restart: unless-stopped
+    networks: [data]
+    deploy: { resources: { limits: { cpus: "1.0", memory: 1g } } }
+    logging: *logging
+
+  migrate:
+    <<: *app
+    build: { context: .., dockerfile: docker/Dockerfile, target: worker }
+    image: lifeos-worker
+    command: ["node", "dist/scripts/migrate.mjs"]
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      LIFEOS_SERVICE: migrate
+    restart: "no"
+    depends_on: { db: { condition: service_healthy } }
+
+  web:
+    <<: *app
+    build: { context: .., dockerfile: docker/Dockerfile, target: web }
+    image: lifeos-web
+    depends_on: { migrate: { condition: service_completed_successfully } }
+    deploy: { resources: { limits: { cpus: "1.0", memory: 768m } } }
+
+  worker:
+    <<: *app
+    image: lifeos-worker
+    depends_on: { migrate: { condition: service_completed_successfully } }
+    deploy: { resources: { limits: { cpus: "1.0", memory: 512m } } }
+
+  backup:
+    image: pgvector/pgvector:pg17
+    environment:
+      PGHOST: db
+      PGUSER: ${POSTGRES_USER}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: ${POSTGRES_DB}
+    volumes:
+      - ../backups:/backups
+    # ponytail: sleep-loop scheduler; move to a pg-boss job or host cron if timing precision matters.
+    entrypoint: ["sh", "-c", "while true; do pg_dump -Fc -f /backups/lifeos-$$(date +%F).dump && find /backups -name 'lifeos-*.dump' -mtime +14 -delete; sleep 86400; done"]
+    depends_on: { db: { condition: service_healthy } }
+    restart: unless-stopped
+    networks: [data]
+    deploy: { resources: { limits: { cpus: "0.5", memory: 256m } } }
+    logging: *logging
+
+  tailscale:
+    image: tailscale/tailscale:stable
+    hostname: lifeos
+    environment:
+      TS_AUTHKEY: ${TS_AUTHKEY}
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_SERVE_CONFIG: /config/serve.json
+    volumes:
+      - tsstate:/var/lib/tailscale
+      - ./tailscale-serve.json:/config/serve.json:ro
+    depends_on: [web]
+    restart: unless-stopped
+    deploy: { resources: { limits: { cpus: "0.5", memory: 256m } } }
+    logging: *logging
+
+networks:
+  data:
+    internal: true # db is unreachable from anything not on this network, and has no egress
+
+volumes:
+  pgdata:
+  tsstate:

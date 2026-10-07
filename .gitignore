@@ -12,3 +12,4 @@ next-env.d.ts
 backups/
 *.dump
 .DS_Store
+.claude/settings.local.json

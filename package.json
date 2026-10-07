@@ -1,0 +1,50 @@
+{
+  "name": "lifeos",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "build:worker": "esbuild src/worker/index.ts src/scripts/migrate.ts src/scripts/create-owner.ts --bundle --platform=node --target=node24 --format=esm --packages=external --tsconfig=tsconfig.json --outdir=dist --out-extension:.js=.mjs",
+    "start": "next start",
+    "worker": "tsx watch --env-file-if-exists=.env src/worker/index.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx --env-file-if-exists=.env src/scripts/migrate.ts",
+    "create-owner": "tsx --env-file-if-exists=.env src/scripts/create-owner.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "e2e": "playwright test"
+  },
+  "dependencies": {
+    "better-auth": "^1.7.7",
+    "drizzle-orm": "^0.45.3",
+    "next": "^16.4.0",
+    "pg": "^8.23.1",
+    "pg-boss": "^12.37.0",
+    "pino": "^10.4.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^26.6.4",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "drizzle-kit": "^0.31.11",
+    "esbuild": "^0.28.2",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.4.0",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.3"
+  }
+}
