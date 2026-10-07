@@ -47,6 +47,8 @@ export function LiveProvider({
   const [loadError, setLoadError] = useState(false);
   const [freshIds, setFreshIds] = useState<Set<string>>(new Set());
   const [nextWake, setNextWake] = useState<string | null>(null);
+  // Unread items past the inbox cap (100): the list can't count them, the server snapshot can.
+  const [hiddenUnread, setHiddenUnread] = useState(0);
   const [announce, setAnnounce] = useState("");
 
   const loadedRef = useRef(false);
@@ -83,6 +85,7 @@ export function LiveProvider({
       idsRef.current = new Set([...snap.items.map((i) => i.id), ...arrived]);
       setNotifications((cur) => applySnapshot(cur, snap.items, known));
       setNextWake(snap.nextWake);
+      setHiddenUnread(Math.max(0, snap.unread - unreadOf(snap.items)));
       return true;
     } catch {
       return false;
@@ -199,14 +202,14 @@ export function LiveProvider({
       notifications,
       setNotifications,
       refetchNotifications,
-      unread: loaded ? unreadOf(notifications) : initialUnread,
+      unread: loaded ? unreadOf(notifications) + hiddenUnread : initialUnread,
       health,
       connected,
       loaded,
       loadError,
       freshIds,
     }),
-    [activity, notifications, refetchNotifications, initialUnread, health, connected, loaded, loadError, freshIds],
+    [activity, notifications, refetchNotifications, initialUnread, hiddenUnread, health, connected, loaded, loadError, freshIds],
   );
 
   return (

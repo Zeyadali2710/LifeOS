@@ -38,8 +38,10 @@ export function NotificationsDrawer() {
     } catch {
       ok = false;
     }
-    if (ok) toast("All notifications marked read");
-    else {
+    if (ok) {
+      toast("All notifications marked read");
+      void refetchNotifications(); // clears unread counted beyond the list cap
+    } else {
       // Undo only what this action marked (its unique timestamp), keeping anything that arrived meanwhile.
       setNotifications((l) => l.map((n) => (n.readAt === at ? { ...n, readAt: null } : n)));
       toast("Couldn't update that notification. Try again.", "error");
