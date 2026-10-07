@@ -451,11 +451,11 @@ All test files above; shared fixtures (`signIn`, `seedHeartbeat`, `insertNotific
 | A5 | Tailscale Host/Origin match for server actions | Pattern 9 | Actions rejected on deploy; fix via `allowedOrigins` |
 | A6 | `dialog.showModal()` styling meets spec (backdrop, focus return) | Don't Hand-Roll | Planner may choose a small custom trap instead |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Does `serverActions.allowedOrigins` need the tailnet host?** Unknown until Tailscale deploy; plan a verification note (Phase 1 already flags Tailscale as unverified). Recommend leaving unset now.
-2. **Should notification mutations sync across open tabs?** Out of scope (D-10 excludes mutation events); refetch on `visibilitychange` suffices.
-3. **Single web instance assumption:** monitor CAS makes multi-instance safe, hub is per-instance by design; fine for the Proxmox single-host deployment.
+1. **Does `serverActions.allowedOrigins` need the tailnet host?** Unknown until Tailscale deploy; plan a verification note (Phase 1 already flags Tailscale as unverified). Recommend leaving unset now. — DEFERRED to Proxmox deploy check (02-VALIDATION manual item).
+2. **Should notification mutations sync across open tabs?** Out of scope (D-10 excludes mutation events); refetch on `visibilitychange` suffices. — OUT OF SCOPE.
+3. **Single web instance assumption:** monitor CAS makes multi-instance safe, hub is per-instance by design; fine for the Proxmox single-host deployment. — ACCEPTED.
 
 ## Project Constraints (from AGENTS.md; no CLAUDE.md in repo)
 - This Next.js has breaking changes: read `node_modules/next/dist/docs/` before Next code (done for every API above).
