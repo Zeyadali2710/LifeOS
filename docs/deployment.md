@@ -251,7 +251,8 @@ Restoring requires the same `LIFEOS_MASTER_KEY` that was in use when the backup 
 |---|---|
 | `migrate` exited non-zero | `lc logs migrate`. Usually a bad `POSTGRES_PASSWORD` (use hex) or `db` not healthy yet. Re-run `lc up -d`. |
 | App container keeps restarting | `lc logs web` and look for `Invalid environment:` with the variable name. Fix `.env`, then `lc up -d`. |
-| Sign-in fails with no clear error | `BETTER_AUTH_URL` doesn't match the browser URL exactly. |
+| Sign-in fails with no clear error | `BETTER_AUTH_URL` doesn't match the browser URL exactly. Fix `.env`, then `lc up -d` (`lc restart` does **not** reload `.env`). |
+| Changed `.env` but nothing changed | Use `lc up -d` — it recreates containers with the new values; `restart` keeps the old environment. |
 | "Too many attempts" | Rate limit: 5 sign-ins/min. Wait a minute. |
 | URL doesn't resolve on phone | Phone's Tailscale app is off or on another account; MagicDNS disabled. |
 | Certificate error | HTTPS not enabled in the tailnet DNS settings; check `tailscale serve status`. |
