@@ -8,7 +8,7 @@ Open LifeOS and immediately know: what is happening, what matters, what needs at
 
 ## Requirements
 ### Validated
-None yet.
+- SHL-01..05 — OS shell: navigation across all domains, live activity over SSE, notifications (read/snooze/dismiss), command palette, honest health. Validated in Phase 2: Shell (desktop visual + Windows shortcut UAT pending).
 
 ### Active
 See `REQUIREMENTS.md`.
@@ -48,3 +48,5 @@ See `REQUIREMENTS.md`.
 
 ## Project Reference
 Docs: `docs/` · ADRs: `docs/decisions/` · Roadmap: `.planning/ROADMAP.md`
+
+_Last updated: 2026-10-08 — Phase 2 (Shell) complete._
