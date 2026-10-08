@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { formatHM, tzLabel } from "@/server/time";
 import { Icon } from "@/ui/icon";
 import { Kbd } from "@/ui/kbd";
+import { useAgentStatus } from "./use-agent-status";
 import { useLive } from "./live-provider";
 import { crumbFor } from "./nav";
 import { useShell } from "./shell-provider";
@@ -13,6 +14,7 @@ export function TopBar({ owner }: { owner: { name: string; email: string } }) {
   const pathname = usePathname();
   const { openPalette, openNotifications, openAI, aiOpen, isApple } = useShell();
   const { unread } = useLive();
+  const running = useAgentStatus().status?.running ?? 0;
   const [now, setNow] = useState<Date | null>(null);
 
   useEffect(() => {
@@ -47,6 +49,12 @@ export function TopBar({ owner }: { owner: { name: string; email: string } }) {
         <Kbd className="hidden shrink-0 tab:@min-[760px]/main:inline-block">{isApple ? "⌘ K" : "Ctrl K"}</Kbd>
       </button>
       <div className="flex-1" />
+      {running > 0 && (
+        <div className="hidden shrink-0 items-center gap-2 font-mono text-[10.5px] font-medium tracking-[0.08em] whitespace-nowrap text-[#a5a6ff] tab:@min-[1100px]/main:flex">
+          <span aria-hidden="true" className="size-[7px] rounded-full bg-[#8b8cff] animate-[lo-pulse_2s_ease-out_infinite]" />
+          {running} RUNNING
+        </div>
+      )}
       {now && (
         <div className="hidden shrink-0 font-mono text-[11.5px] font-medium whitespace-nowrap text-text-2 tab:@min-[680px]/main:block">
           {formatHM(now)} <span className="text-text-3">{tzLabel(now)}</span>

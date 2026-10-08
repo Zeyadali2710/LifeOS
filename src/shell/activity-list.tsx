@@ -23,7 +23,7 @@ const FALLBACK = { icon: "dns" as IconName, color: "#a3a6b4" };
 const TONES = { red: "#ff6b6b", amber: "#e8b86a", green: "#4fd1a1" } as const;
 const SHOWN = 8;
 
-function Item({ a, fresh }: { a: ActivityDTO; fresh: boolean }) {
+export function Item({ a, fresh }: { a: ActivityDTO; fresh: boolean }) {
   const s = SOURCES[a.source.toLowerCase()] ?? FALLBACK;
   const color = a.tone ? TONES[a.tone] : s.color;
   return (

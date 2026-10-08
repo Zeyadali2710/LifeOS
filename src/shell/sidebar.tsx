@@ -5,13 +5,11 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { Icon } from "@/ui/icon";
 import type { IconName } from "@/ui/icon-names";
+import { useAgentStatus } from "./use-agent-status";
 import { useLive } from "./live-provider";
 import { isCurrent, NAV_ITEMS, SECONDARY_ITEMS } from "./nav";
 import type { NavItem } from "./nav";
 import { useShell } from "./shell-provider";
-
-// Approvals arrive in Phase 3; until then the count is a real zero, not a placeholder.
-const APPROVALS_WAITING = 0;
 
 function cap(n: number) {
   return n > 99 ? "99+" : String(n);
@@ -84,6 +82,15 @@ export function Sidebar({ version }: { version: string }) {
   const pathname = usePathname();
   const { compact, toggleCompact, notifOpen, openNotifications, isApple } = useShell();
   const { unread, health, connected, loaded } = useLive();
+  const { status } = useAgentStatus();
+  const waiting = status?.approvalsWaiting ?? 0;
+  const ai = {
+    ready: { text: "AI READY", dot: "bg-green" },
+    working: { text: "AI WORKING", dot: "bg-[#8b8cff] animate-[lo-pulse_2s_ease-out_infinite]" },
+    paused: { text: "AI PAUSED", dot: "bg-amber" },
+    cap: { text: "AI PAUSED", dot: "bg-amber" },
+    no_key: { text: "AI NOT CONNECTED", dot: "border border-[#80849a]" },
+  }[status?.assistant ?? "no_key"];
   const lab = compact ? "hidden" : "hidden desk:block";
   const mod = isApple ? "⌘\\" : "Ctrl+\\";
 
@@ -157,9 +164,9 @@ export function Sidebar({ version }: { version: string }) {
               item={n}
               current={isCurrent(pathname, n.href)}
               compact={compact}
-              badge={APPROVALS_WAITING}
+              badge={waiting}
               badgeTone="amber"
-              label={`Approvals, ${APPROVALS_WAITING} waiting`}
+              label={`Approvals, ${waiting} waiting`}
             />
           ) : (
             <Item key={n.key} item={n} current={isCurrent(pathname, n.href)} compact={compact} badge={0} badgeTone="neutral" label={n.label} hint={n.shortcut} />
@@ -178,8 +185,8 @@ export function Sidebar({ version }: { version: string }) {
           </span>
         </div>
         <div className={`flex items-center gap-[9px] font-mono text-[10.5px] font-medium tracking-[0.08em] text-text-2 ${compact ? "justify-center" : "justify-center desk:justify-start"}`}>
-          <span aria-hidden="true" className="size-[7px] shrink-0 rotate-45 rounded-[2px] border border-[#80849a]" />
-          <span className={lab}>AI NOT CONNECTED</span>
+          <span aria-hidden="true" className={`size-[7px] shrink-0 rotate-45 rounded-[2px] ${ai.dot}`} />
+          <span className={lab}>{ai.text}</span>
         </div>
       </div>
     </aside>

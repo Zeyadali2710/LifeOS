@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { isSafePath } from "@/lib/safe-url";
+import { isSafeGithubUrl, isSafePath } from "@/lib/safe-url";
 import type { NotificationDTO } from "@/lib/live-types";
 import { dismiss, markRead, snooze } from "@/server/notification-actions";
 import { relativeTime, snoozeToast } from "@/server/time";
@@ -49,6 +49,11 @@ export function NotificationRow({ n, fresh }: { n: NotificationDTO; fresh: boole
     mutate((l) => l.map((i) => (i.id === n.id ? { ...i, readAt: read ? new Date().toISOString() : null } : i)), () => markRead(n.id, read));
 
   const open = () => {
+    if (isSafeGithubUrl(n.actionUrl)) {
+      if (unread) void setReadState(true);
+      window.open(n.actionUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
     if (!isSafePath(n.actionUrl)) return;
     if (unread) void setReadState(true);
     closeNotifications();
@@ -85,7 +90,7 @@ export function NotificationRow({ n, fresh }: { n: NotificationDTO; fresh: boole
         </div>
         {n.body && <p className="text-[12.5px] leading-[1.45] break-words text-text-2">{n.body}</p>}
         <div className="mt-1 flex flex-wrap gap-1">
-          {isSafePath(n.actionUrl) && (
+          {(isSafePath(n.actionUrl) || isSafeGithubUrl(n.actionUrl)) && (
             <Button size="xs" onClick={open}>
               Open
             </Button>

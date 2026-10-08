@@ -7,14 +7,20 @@ describe("buildPalette", () => {
     expect(groups.map((g) => g.label)).toEqual(["Commands", "Jump to"]);
     expect(noMatch).toBe(false);
     const cmds = groups[0]!.items;
-    expect(cmds.map((i) => i.label)).toEqual(["Open notifications", "Ask LifeOS", "Toggle compact sidebar", "Sign out"]);
-    expect(cmds[1]!.hint).toBe("Ctrl J");
-    expect(cmds[2]!.hint).toBe("Ctrl \\");
+    expect(cmds.map((i) => i.label)).toEqual(["Open notifications", "Open approvals", "View agent activity", "Ask LifeOS", "Toggle compact sidebar", "Sign out"]);
+    expect(cmds[1]!.hint).toBe("0 waiting");
+    expect(cmds[3]!.hint).toBe("Ctrl J");
+    expect(cmds[4]!.hint).toBe("Ctrl \\");
     const jump = groups[1]!.items;
     expect(jump.map((i) => i.label)).toEqual(["Home", "Career", "Socials", "Outreach", "Organization", "Projects", "Knowledge", "Goals", "Agents", "Approvals", "Settings"]);
     expect(jump[0]!.hint).toBe("Alt 1");
     expect(jump[8]!.hint).toBe("Alt 9");
     expect(jump[10]!.hint).toBe("Ctrl ,");
+  });
+
+  it("approvals hint carries the live count", () => {
+    const cmds = buildPalette("", { wide: true, approvalsWaiting: 3 }).groups[0]!.items;
+    expect(cmds[1]!.hint).toBe("3 waiting");
   });
 
   it("narrow omits compact toggle", () => {

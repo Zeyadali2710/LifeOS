@@ -13,9 +13,11 @@ export type PaletteGroup = { label: "Ask LifeOS" | "Commands" | "Jump to"; items
 
 const spaced = (s?: string) => s?.replace("+", " ");
 
-export function buildPalette(query: string, opts: { wide: boolean }): { groups: PaletteGroup[]; noMatch: boolean } {
+export function buildPalette(query: string, opts: { wide: boolean; approvalsWaiting?: number }): { groups: PaletteGroup[]; noMatch: boolean } {
   const commands: PaletteItem[] = [
     { id: "cmd-notifications", label: "Open notifications", icon: "notifications", run: { type: "notifications" } },
+    { id: "cmd-approvals", label: "Open approvals", icon: "verified_user", hint: `${opts.approvalsWaiting ?? 0} waiting`, run: { type: "nav", href: "/approvals" } },
+    { id: "cmd-agents", label: "View agent activity", icon: "memory", run: { type: "nav", href: "/agents" } },
     { id: "cmd-ai", label: "Ask LifeOS", icon: "auto_awesome", hint: "Ctrl J", run: { type: "ai" } },
     ...(opts.wide
       ? [{ id: "cmd-compact", label: "Toggle compact sidebar", icon: "left_panel_close", hint: "Ctrl \\", run: { type: "compact" } } satisfies PaletteItem]

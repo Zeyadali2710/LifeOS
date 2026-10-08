@@ -5,7 +5,10 @@ import { unreadImportantCount } from "@/server/notifications";
 import { requireOwner } from "@/server/session";
 import { greeting } from "@/server/time";
 import { getSydneyWeather } from "@/server/weather";
-import { ActivityList } from "@/shell/activity-list";
+import { counts } from "@/server/agents/runs";
+import { db } from "@/server/db/client";
+import { recentActivity } from "@/server/events";
+import { ActivityList, Item as ActivityItem } from "@/shell/activity-list";
 import { SystemTile } from "@/shell/system-tile";
 import { EmptyState } from "@/ui/empty-state";
 import { Icon } from "@/ui/icon";
@@ -41,10 +44,14 @@ function Section({
 export default async function HomePage() {
   const { user } = await requireOwner();
   const now = new Date();
-  const [health, weather, unreadImportant] = await Promise.all([
+  const [health, weather, unreadImportant, agentCounts, agentActivity] = await Promise.all([
     checkHealth(now.getTime()),
     getSydneyWeather(),
     unreadImportantCount().catch(() => 0),
+    counts(db()).catch(() => ({ running: 0, queued: 0, approvalsWaiting: 0 })),
+    recentActivity(db(), 50)
+      .then((a) => a.filter((x) => x.type.startsWith("agent.")).slice(0, 5))
+      .catch(() => []),
   ]);
   const first = user.name.trim().split(/\s+/)[0] ?? "";
 
@@ -63,9 +70,8 @@ export default async function HomePage() {
           ))}
         </p>
         <div className="mt-5 flex flex-wrap gap-2">
-          {/* literal 0 until agents/approvals exist (Phase 3) */}
-          <StatusTile label="AGENTS" value="0 running" dot="indigo" href="/agents" />
-          <StatusTile label="APPROVALS" value="0 waiting" dot="amber" href="/approvals" />
+          <StatusTile label="AGENTS" value={`${agentCounts.running} running`} dot="indigo" href="/agents" />
+          <StatusTile label="APPROVALS" value={`${agentCounts.approvalsWaiting} waiting`} dot="amber" href="/approvals" />
           <SystemTile initial={health} />
         </div>
       </header>
@@ -93,7 +99,7 @@ export default async function HomePage() {
             href="/agents"
             className="mb-6 flex min-h-11 items-center justify-between rounded-12 border border-[rgba(255,255,255,.07)] px-3.5 font-mono text-[11px] font-medium tracking-[0.08em] text-text-2 uppercase tab:hidden"
           >
-            0 agents running
+            {agentCounts.running} agents running
             <Icon name="chevron_right" size={18} />
           </Link>
           <ActivityList />
@@ -110,15 +116,26 @@ export default async function HomePage() {
           body="Projects appear here once GitHub is connected."
           className="min-w-0 flex-[1.5_1_520px]"
         />
-        <Section
-          id="h-agents"
-          label="Agent activity"
-          link={{ href: "/agents", label: "Agent command →" }}
-          icon="memory"
-          title="No agents running."
-          body="Agents start on a schedule or when you ask. None are configured yet."
-          className="min-w-0 flex-[1_1_340px]"
-        />
+        {agentActivity.length > 0 ? (
+          <section aria-labelledby="h-agents" className="min-w-0 flex-[1_1_340px]">
+            <SectionHeader id="h-agents" label="Agent activity" link={{ href: "/agents", label: "Agent command →" }} />
+            <ul className="rounded-14 border border-[rgba(255,255,255,.07)] bg-surface p-1.5">
+              {agentActivity.map((a) => (
+                <ActivityItem key={a.id} a={a} fresh={false} />
+              ))}
+            </ul>
+          </section>
+        ) : (
+          <Section
+            id="h-agents"
+            label="Agent activity"
+            link={{ href: "/agents", label: "Agent command →" }}
+            icon="memory"
+            title="No agents running."
+            body="Agents run when you ask LifeOS or when work is delegated. Ask something in the assistant to start."
+            className="min-w-0 flex-[1_1_340px]"
+          />
+        )}
       </div>
 
       <Section

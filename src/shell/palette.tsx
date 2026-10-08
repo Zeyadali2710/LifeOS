@@ -7,6 +7,7 @@ import { Icon } from "@/ui/icon";
 import { Kbd } from "@/ui/kbd";
 import { buildPalette } from "./palette-items";
 import type { PaletteItem } from "./palette-items";
+import { useAgentStatus } from "./use-agent-status";
 import { useShell } from "./shell-provider";
 import { useDialog } from "./use-dialog";
 
@@ -23,10 +24,11 @@ function PaletteDialog() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [sel, setSel] = useState(0);
+  const approvalsWaiting = useAgentStatus().status?.approvalsWaiting ?? 0;
   const [wide] = useState(() => window.innerWidth >= 1100);
   const ref = useDialog<HTMLDivElement>(true, closePalette, { modal: true, initialFocus: () => inputRef.current });
 
-  const { groups, noMatch } = useMemo(() => buildPalette(query, { wide }), [query, wide]);
+  const { groups, noMatch } = useMemo(() => buildPalette(query, { wide, approvalsWaiting }), [query, wide, approvalsWaiting]);
   const flat = useMemo(() => groups.flatMap((g) => g.items), [groups]);
   const rowId = (i: PaletteItem) => `${listId}-${i.id}`;
   const active = flat[Math.min(sel, flat.length - 1)];
@@ -110,7 +112,7 @@ function PaletteDialog() {
             onChange={(e) => {
               setQuery(e.target.value);
               // Default to the best match, not the Ask row; Ask stays one ArrowUp away (and is the only row when nothing matches).
-              setSel(buildPalette(e.target.value, { wide }).noMatch || !e.target.value.trim() ? 0 : 1);
+              setSel(buildPalette(e.target.value, { wide, approvalsWaiting }).noMatch || !e.target.value.trim() ? 0 : 1);
             }}
             onKeyDown={onKeyDown}
             className="min-w-0 flex-1 bg-transparent text-[16px] text-text outline-none placeholder:text-text-3"
