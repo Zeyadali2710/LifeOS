@@ -27,6 +27,8 @@ type GatewayCtx = {
   fetch?: typeof fetch;
   onEvent?: (e: ChatEvent) => void;
   llm?: LlmClient;
+  /** Fired once a fresh tool_calls row is claimed and its handler is about to run (live "running" step). */
+  onClaimed?: (callId: string) => Promise<void>;
 };
 
 const EXPIRY_MS = 7 * 24 * 60 * 60 * 1000;
@@ -190,6 +192,7 @@ export async function callTool(
   }
 
   // Steps 5-6: run the handler.
+  await ctx.onClaimed?.(callId);
   const t0 = Date.now();
   const finish = async (set: Partial<typeof toolCalls.$inferInsert>) => {
     await h.update(toolCalls).set({ ...set, durationMs: Date.now() - t0 }).where(eq(toolCalls.id, callId));
