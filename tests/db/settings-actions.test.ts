@@ -11,7 +11,7 @@ vi.mock("@/server/session", () => ({
     if (denied) throw new Error("redirect");
   },
 }));
-const enqueue = vi.fn(async (..._a: unknown[]) => undefined);
+const enqueue = vi.fn<(...a: unknown[]) => Promise<void>>(async () => undefined);
 vi.mock("@/server/queue", () => ({ enqueue: (...a: unknown[]) => enqueue(...a), QUEUES: { githubSync: "github.sync" } }));
 const saveToken = vi.fn();
 vi.mock("@/server/github/connections", async (orig) => ({ ...(await orig<object>()), saveToken: (...a: unknown[]) => saveToken(...a) }));
