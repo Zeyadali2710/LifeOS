@@ -53,6 +53,7 @@ beforeEach(async () => {
   await h().delete(activityEvents);
   await h().delete(connections);
   await h().delete(agents);
+  await h().delete(githubRepos); // child tables cascade; a leftover private me/secret trips the D-09 gate
 });
 
 describe("free errors: retry then Sonnet (D-06, D-08)", () => {
