@@ -16,7 +16,7 @@ import { agentConfig, isPaused } from "./runs";
 import { assertUnderCap } from "./spend";
 import { appendMessage, threadHistory } from "./threads";
 import { TOOLS, toolLabel } from "./tools";
-import { toAnthropicTool, type LlmClient, type Tool } from "./types";
+import { toAnthropicTool, type LlmClient, type LlmUsage, type Tool } from "./types";
 
 type Msg = Anthropic.MessageParam;
 
@@ -112,10 +112,15 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
   const run0 = claimed;
   const agent = getAgent(run0.agentId);
   const setStatus = async (set: Partial<typeof agentRuns.$inferInsert>): Promise<RunStatus> => {
-    const [row] = await h.update(agentRuns).set(set).where(eq(agentRuns.id, runId)).returning();
+    // Only a still-running run may be finished: a swept/cancelled run must not be resurrected.
+    const [row] = await h.update(agentRuns).set(set).where(and(eq(agentRuns.id, runId), eq(agentRuns.status, "running"))).returning();
+    if (!row) {
+      const [cur] = await h.select({ s: agentRuns.status }).from(agentRuns).where(eq(agentRuns.id, runId));
+      return cur?.s ?? "failed";
+    }
     await notifyLive(h, "run", runId);
-    if (row) emit({ k: "done", run: toRunDTO(row) });
-    return row?.status ?? "failed";
+    emit({ k: "done", run: toRunDTO(row) });
+    return row.status;
   };
   const finish = async (set: Partial<typeof agentRuns.$inferInsert>): Promise<RunStatus> => {
     const status = await setStatus({ ...set, endedAt: now() });
@@ -179,23 +184,38 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
       if (active >= RUN_LIMITS.activeMs) return await fail("limit:time", "This run took too long and was stopped.");
 
       const t0 = now().getTime();
-      const turn = await opts.llm.stream(
-        { model: run0.model, system: agent.systemPrompt, messages, tools: anthropicTools, maxTokens: RUN_LIMITS.turnMaxTokens },
-        (text) => emit({ k: "delta", runId, text }),
-        opts.signal,
-      );
+      const addUsage = (u: LlmUsage) =>
+        h
+          .update(agentRuns)
+          .set({
+            inputTokens: sql`${agentRuns.inputTokens} + ${u.input}`,
+            outputTokens: sql`${agentRuns.outputTokens} + ${u.output}`,
+            cacheWriteTokens: sql`${agentRuns.cacheWriteTokens} + ${u.cacheWrite}`,
+            cacheReadTokens: sql`${agentRuns.cacheReadTokens} + ${u.cacheRead}`,
+            costUsd: sql`${agentRuns.costUsd} + (${costUsd(run0.model, u).toFixed(6)})::numeric`,
+          })
+          .where(eq(agentRuns.id, runId));
+      let streamedChars = 0;
+      let turn;
+      try {
+        turn = await opts.llm.stream(
+          { model: run0.model, system: agent.systemPrompt, messages, tools: anthropicTools, maxTokens: RUN_LIMITS.turnMaxTokens },
+          (text) => {
+            streamedChars += text.length;
+            emit({ k: "delta", runId, text });
+          },
+          opts.signal,
+        );
+      } catch (err) {
+        // Tokens that streamed were billed even though the turn failed; estimate (~4 chars/token) so the spend cap sees them.
+        if (streamedChars > 0) {
+          await addUsage({ input: Math.ceil(JSON.stringify(messages).length / 4), output: Math.ceil(streamedChars / 4), cacheWrite: 0, cacheRead: 0 }).catch(() => undefined);
+        }
+        throw err;
+      }
       const u = turn.usage;
       tokens += u.input + u.output;
-      await h
-        .update(agentRuns)
-        .set({
-          inputTokens: sql`${agentRuns.inputTokens} + ${u.input}`,
-          outputTokens: sql`${agentRuns.outputTokens} + ${u.output}`,
-          cacheWriteTokens: sql`${agentRuns.cacheWriteTokens} + ${u.cacheWrite}`,
-          cacheReadTokens: sql`${agentRuns.cacheReadTokens} + ${u.cacheRead}`,
-          costUsd: sql`${agentRuns.costUsd} + (${costUsd(run0.model, u).toFixed(6)})::numeric`,
-        })
-        .where(eq(agentRuns.id, runId));
+      await addUsage(u);
       messages.push({ role: "assistant", content: turn.content as Msg["content"] });
 
       const uses = turn.content.filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use");
@@ -204,7 +224,7 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
         await persist();
         const answer = turn.content.flatMap((b) => (b.type === "text" ? [b.text] : [])).join("");
         const status = await finish({ status: "completed", answer });
-        if (!run0.parentRunId) {
+        if (status === "completed" && !run0.parentRunId) {
           if (run0.threadId) await appendMessage(h, run0.threadId, "assistant", answer, runId);
           await emitActivity(
             { type: "agent.run.completed", source: run0.agentId, title: "Run completed", detail: `${agent.name} · ${formatDuration(active)}` },

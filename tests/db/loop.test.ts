@@ -180,6 +180,29 @@ describe("advance", () => {
   });
 });
 
+describe("advance failure paths", () => {
+  it("records an estimated cost when a stream fails after tokens were billed", async () => {
+    const id = await mk();
+    const llm = { stream: async (_p: unknown, onText: (t: string) => void) => (onText("partial answer text"), Promise.reject(new Error("socket reset"))) };
+    expect(await advance(id, { handle: h(), llm: llm as never })).toBe("failed");
+    const r = await run(id);
+    expect(r.outputTokens).toBeGreaterThan(0);
+    expect(Number(r.costUsd)).toBeGreaterThan(0);
+  });
+
+  it("does not resurrect a run that was swept while executing", async () => {
+    const id = await mk();
+    const llm = {
+      stream: async () => {
+        await h().update(agentRuns).set({ status: "failed", errorKind: "interrupted", endedAt: new Date() }).where(eq(agentRuns.id, id));
+        return { content: [{ type: "text", text: "late", citations: null }], stopReason: "end_turn", usage: { input: 1, output: 1, cacheWrite: 0, cacheRead: 0 } };
+      },
+    };
+    expect(await advance(id, { handle: h(), llm: llm as never })).toBe("failed");
+    expect(await run(id)).toMatchObject({ status: "failed", errorKind: "interrupted" });
+  });
+});
+
 describe("delegate, resumeParent, retry", () => {
   it("delegates to projects as a child run", async () => {
     const id = await mk("orchestrator", "PRs?");
