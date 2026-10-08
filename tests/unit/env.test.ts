@@ -16,6 +16,11 @@ describe("env", () => {
     expect(env.LOG_LEVEL).toBe("info");
   });
 
+  it("treats ANTHROPIC_API_KEY as optional", () => {
+    expect(parseEnv(valid).ANTHROPIC_API_KEY).toBeUndefined();
+    expect(parseEnv({ ...valid, ANTHROPIC_API_KEY: "sk-ant-x" }).ANTHROPIC_API_KEY).toBe("sk-ant-x");
+  });
+
   it("names every invalid variable", () => {
     const run = () => parseEnv({ ...valid, BETTER_AUTH_SECRET: "short", LIFEOS_MASTER_KEY: "abc", DATABASE_URL: undefined });
     expect(run).toThrow(/BETTER_AUTH_SECRET/);
