@@ -1,6 +1,6 @@
 # Integrations
 
-Status: designed; first provider (GitHub) lands in Phase 3.
+Status: designed; GitHub shipped in Phase 3 (below).
 
 ## Capability providers
 Application code depends on capability interfaces, never on vendor SDKs.
@@ -28,3 +28,12 @@ Each provider:
 
 ## Least-privilege scopes
 Documented per provider when implemented. Default to read-only scopes; write scopes added only for APPROVE-tier features the owner enables.
+
+## GitHub (Phase 3)
+Two fine-grained personal access tokens, added in Settings -> Connections. They are encrypted at rest (AES-256-GCM, key from `LIFEOS_MASTER_KEY`). Only the last four characters, login, expiry and repository list are shown; tokens are never logged or sent to the browser.
+
+- **Read token** (sync and all READ tools). Repository permissions, all read-only: Contents, Metadata, Pull requests, Issues, Actions, Commit statuses.
+- **Issues-write token** (only `github.create_issue`). Repository permission: Issues: read and write, on the chosen repositories only. Without it CREATE ISSUE is disabled in the Approval Centre.
+- **Sync**: every 15 minutes (pg-boss schedule) plus Sync now. ETags make unchanged resources return 304. Stored: repos, pull requests (with reviews and requested reviewers), issues, recent commits and workflow runs. New or changed items emit activity events once.
+- **Failures**: a 401 pauses sync and marks the connection RECONNECT; rate limits back off until reset. Expiry comes from GitHub's token-expiration header; if GitHub omits it, none is shown.
+- **No webhooks**: polling only. Webhooks are deferred.
