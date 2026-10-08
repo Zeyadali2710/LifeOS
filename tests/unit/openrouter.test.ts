@@ -181,6 +181,12 @@ describe("openrouter failures", () => {
     expect(n).toMatchObject({ code: "network", transient: true });
   });
 
+  it("a body that stalls past the timeout is a transient timeout; a garbled body is bad_body (WR-05)", async () => {
+    const stalled = (err: unknown) => ({ ok: true, status: 200, headers: new Headers(), clone() { return this; }, json: async () => { throw err; } }) as unknown as Response;
+    expect(await fail(setup(stalled(new DOMException("t", "TimeoutError"))).llm.stream(params(), vi.fn()))).toMatchObject({ code: "timeout", transient: true });
+    expect(await fail(setup(stalled(new SyntaxError("bad json"))).llm.stream(params(), vi.fn()))).toMatchObject({ code: "bad_body", transient: false });
+  });
+
   it("two timed-out free attempts plus backoff leave Sonnet half the run budget (WR-03)", () => {
     expect(2 * FREE_TIMEOUT_MS + 5000).toBeLessThanOrEqual(RUN_LIMITS.activeMs / 2);
   });

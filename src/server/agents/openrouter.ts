@@ -134,7 +134,10 @@ export function createOpenRouter(deps: { getKey: () => Promise<string | null>; f
       let data: OrResponse;
       try {
         data = (await res.json()) as OrResponse;
-      } catch {
+      } catch (e) {
+        // The timeout also covers the body: a stalled body is a transient timeout (D-06 retry), not bad_body.
+        if (signal?.aborted) throw e;
+        if (e instanceof DOMException && e.name === "TimeoutError") throw new FreeModelError("timeout", true);
         throw new FreeModelError("bad_body", false);
       }
       const choice = data.choices?.[0];
