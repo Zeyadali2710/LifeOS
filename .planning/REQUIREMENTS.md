@@ -24,12 +24,12 @@
 - [x] **SHL-05**: Notifications: categories URGENT/IMPORTANT/FYI/AGENT/APPROVAL/REMINDER; read, snooze, dismiss
 
 ### Agents
-- [ ] **AGT-01**: Tool gateway enforces tiers READ/PREPARE/APPROVE/EXECUTE/HIGH_RISK; HIGH_RISK cannot be lowered
-- [ ] **AGT-02**: APPROVE/HIGH_RISK actions create approvals; run suspends and resumes on decision
-- [ ] **AGT-03**: Side-effecting calls are idempotent
-- [ ] **AGT-04**: Orchestrator chat streams responses, shows tool status, delegates to domain agents
-- [ ] **AGT-05**: Agent Command Centre: status, queue, runs, tool calls, errors, latency, tokens, cost; pause/resume/retry/cancel
-- [ ] **AGT-06**: GitHub read-only integration feeds Career data and activity
+- [x] **AGT-01**: Tool gateway enforces tiers READ/PREPARE/APPROVE/EXECUTE/HIGH_RISK; HIGH_RISK cannot be lowered
+- [x] **AGT-02**: APPROVE/HIGH_RISK actions create approvals; run suspends and resumes on decision
+- [x] **AGT-03**: Side-effecting calls are idempotent
+- [x] **AGT-04**: Orchestrator chat streams responses, shows tool status, delegates to domain agents
+- [x] **AGT-05**: Agent Command Centre: status, queue, runs, tool calls, errors, latency, tokens, cost; pause/resume/retry/cancel
+- [x] **AGT-06**: GitHub read-only integration feeds Career data and activity
 
 ### Organization
 - [ ] **ORG-01**: Google Calendar + iCloud CalDAV via CalendarProvider; day/week/month views
