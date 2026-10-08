@@ -41,11 +41,11 @@ export function parseAnswer(src: string): Block[] {
   };
   const lines = src.split("\n");
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+    const line = lines[i] ?? "";
     if (line.startsWith("```")) {
       flush();
       const code: string[] = [];
-      for (i++; i < lines.length && !lines[i].startsWith("```"); i++) code.push(lines[i]);
+      for (i++; i < lines.length && !(lines[i] ?? "").startsWith("```"); i++) code.push(lines[i] ?? "");
       blocks.push({ t: "code", text: code.join("\n") });
     } else if (/^\s*[-*] /.test(line)) {
       if (para.length) flush();

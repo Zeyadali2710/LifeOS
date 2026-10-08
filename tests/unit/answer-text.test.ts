@@ -7,7 +7,7 @@ describe("parseAnswer", () => {
     expect(b.map((x) => x.t)).toEqual(["p", "ul"]);
     const ul = b[1] as Extract<(typeof b)[number], { t: "ul" }>;
     expect(ul.items[0]).toContainEqual({ t: "citation", ref: "octo/app#12", url: "https://github.com/octo/app/issues/12" });
-    expect(ul.items[1][0]).toEqual({ t: "code", text: "main" });
+    expect(ul.items[1]![0]).toEqual({ t: "code", text: "main" });
   });
   it("keeps html as literal text", () => {
     const b = parseAnswer("<img src=x onerror=alert(1)>");

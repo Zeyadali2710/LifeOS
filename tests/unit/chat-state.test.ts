@@ -9,17 +9,17 @@ const pending: TurnDTO = { id: PENDING_TURN, prompt: "hi", at: "", run: null, st
 describe("applyChatEvent", () => {
   it("run replaces pending, steps upsert in seq order, deltas append, done replaces", () => {
     let t = applyChatEvent([pending], { k: "run", run, threadId: "t" });
-    expect(t[0].id).toBe("r1");
+    expect(t[0]!.id).toBe("r1");
     t = applyChatEvent(t, { k: "step", step: step("b", 2) });
     t = applyChatEvent(t, { k: "step", step: step("a", 1) });
     t = applyChatEvent(t, { k: "step", step: { ...step("b", 2), state: "done" } });
-    expect(t[0].steps.map((s) => s.id)).toEqual(["a", "b"]);
-    expect(t[0].steps[1].state).toBe("done");
+    expect(t[0]!.steps.map((s) => s.id)).toEqual(["a", "b"]);
+    expect(t[0]!.steps[1]!.state).toBe("done");
     t = applyChatEvent(t, { k: "delta", runId: "r1", text: "Hel" });
     t = applyChatEvent(t, { k: "delta", runId: "r1", text: "lo" });
-    expect(t[0].run?.answer).toBe("Hello");
+    expect(t[0]!.run?.answer).toBe("Hello");
     t = applyChatEvent(t, { k: "done", run: { ...run, status: "completed", answer: "Hello" } });
-    expect(t[0].run?.status).toBe("completed");
+    expect(t[0]!.run?.status).toBe("completed");
   });
 });
 
