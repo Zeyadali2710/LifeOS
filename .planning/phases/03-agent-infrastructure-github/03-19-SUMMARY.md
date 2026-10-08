@@ -62,7 +62,7 @@ Run by the owner on the production deployment, not the local dev stack. This is 
 | # | Outcome |
 |---|---------|
 | A1 | Confirmed: live chat with zod-derived tool schemas ran with no API error |
-| A2 | Unverified: owner did not report whether the token-expiry header/expiry was shown |
+| A2 | Partly: both live PATs (read-only and issues-write) were created with a 90-day expiry, so GitHub has an expiry to send; owner did not confirm the date rendered in Settings. Re-check the Connections row on the VM. |
 | A3 | Not individually reported; no live issue raised |
 | A4 | Not individually reported; cost fixture test covers it, no live issue raised |
 | A5 | Repo sync and PR/issue citations worked live (steps passed); no shape issues reported |
