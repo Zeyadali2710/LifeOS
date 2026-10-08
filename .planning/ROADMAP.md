@@ -71,7 +71,7 @@ From an empty repo to a personal OS: secure foundation and deploy path first, th
 - [x] 03-04-PLAN.md — GitHub fetch client + encrypted connection store (read/write tokens)
 - [x] 03-05-PLAN.md — Tool gateway callTool: allow-list, zod, tiers, approval creation, idempotency
 - [x] 03-06-PLAN.md — Spend + cap, run controls, orphan sweep, threads
-- [ ] 03-07-PLAN.md — DTO mappers + run/approval live SSE kinds
+- [x] 03-07-PLAN.md — DTO mappers + run/approval live SSE kinds
 - [ ] 03-08-PLAN.md — GitHub sync (ETag, diff events, CI-failed notifications) + job handler
 - [ ] 03-09-PLAN.md — GitHub tools: DB-backed READ tools + APPROVE create_issue with marker adoption
 - [ ] 03-10-PLAN.md — Settings: Connections + AI and spend, owner actions
@@ -103,5 +103,5 @@ Goals per phase list above; detailed when each phase is planned (`/gsd-plan-phas
 | 0. Architecture | - | Complete | 2026-10-07 |
 | 1. Foundation | 3/3 | Complete | 2026-10-07 |
 | 2. Shell | 13/13 | Complete   | 2026-10-07 |
-| 3. Agents + GitHub | 6/19 | In Progress|  |
+| 3. Agents + GitHub | 7/19 | In Progress|  |
 | 4–11 | - | Not started | - |
