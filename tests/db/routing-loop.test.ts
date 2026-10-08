@@ -140,6 +140,24 @@ describe("private-data gate (D-09)", () => {
     expect(models(llm2)).toEqual([freeModel(), freeModel()]);
   });
 
+  it("opt-in switched off during an approval wait: a run in a tainted tree resumes on Sonnet (CR-01)", async () => {
+    await withKey();
+    await connect();
+    await h().insert(settings).values({ key: "ai.free_private_ok", value: true });
+    const parent = await mk("orchestrator");
+    await h().update(agentRuns).set({ sawPrivate: true }).where(eq(agentRuns.id, parent));
+    const id = await mk("projects", "summarise these PR titles", { parentRunId: parent, tier: "simple" });
+    expect((await run(id)).model).toBe(freeModel()); // opt-in on: free despite the taint
+    const issue = { name: "github.create_issue", input: { repo: "me/a", title: "Bug" } };
+    const llm = scriptedLlm([{ toolUses: [issue] }, { text: "Done" }]);
+    expect(await advance(id, { handle: h(), llm })).toBe("waiting_approval");
+    await h().delete(settings); // owner switches the opt-in off, then approves
+    await h().update(toolCalls).set({ status: "done", output: { number: 1, url: "u" } }).where(eq(toolCalls.runId, id));
+    expect(await advance(id, { handle: h(), llm })).toBe("completed");
+    expect(models(llm)).toEqual([freeModel(), SONNET]);
+    expect((await run(id)).routeEvents.at(-1)).toMatchObject({ kind: "private", to: SONNET });
+  });
+
   it("Free-only pin: transient errors fail free_unavailable, private fails private_blocked, no escalate tool", async () => {
     await withKey();
     await connect();

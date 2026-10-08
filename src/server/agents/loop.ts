@@ -257,8 +257,17 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
       if (tokens > RUN_LIMITS.tokens) return await fail("limit:tokens", "This run used too many tokens and was stopped.");
       if (active >= RUN_LIMITS.activeMs) return await fail("limit:time", "This run took too long and was stopped.");
 
-      // D-09: before any free request is built, the whole conversation must be free of private/unknown repos.
-      if (isFree(curModel) && !(await getFreePrivateOk(h)) && mentionsSensitive(messages, await sensitiveRepoNames(h))) {
+      // D-09: before any free request is built, the whole conversation must be free of private/unknown repos,
+      // and neither this run nor its tree/thread (or the run it retries) may have seen private data. Re-checked
+      // every turn: the opt-in may have been switched off since createRun (e.g. during an approval wait).
+      if (
+        isFree(curModel) &&
+        !(await getFreePrivateOk(h)) &&
+        (tainted ||
+          (await privateInTree(h, run0.parentRunId ?? run0.id)) ||
+          (!!run0.retryOf && (await privateInTree(h, run0.retryOf))) ||
+          mentionsSensitive(messages, await sensitiveRepoNames(h)))
+      ) {
         const s = await switchToSonnet("private", "private repo data");
         if (s) return s;
         continue;
