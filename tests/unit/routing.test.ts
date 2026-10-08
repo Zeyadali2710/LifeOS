@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("server-only", () => ({}));
 vi.mock("@/server/env", () => ({ env: () => ({ OPENROUTER_FREE_MODEL: process.env.TEST_FREE }) }));
 
 import { MODELS } from "@/server/agents/registry";

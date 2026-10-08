@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("server-only", () => ({}));
 vi.mock("@/server/db/client", () => ({ db: () => ({}) }));
 vi.mock("@/server/github/connections", () => ({ markConnectionError: vi.fn(), openrouterKey: vi.fn() }));
 

@@ -4,7 +4,6 @@ import type { AnthropicTool } from "@/server/agents/types";
 import text from "../fixtures/openrouter/text.json";
 import toolCalls from "../fixtures/openrouter/tool-calls.json";
 
-vi.mock("server-only", () => ({}));
 
 const KEY = "sk-or-secret-key";
 const json = (b: unknown, init: ResponseInit = {}) => new Response(JSON.stringify(b), init);
