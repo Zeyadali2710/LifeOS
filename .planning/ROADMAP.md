@@ -7,7 +7,7 @@ From an empty repo to a personal OS: secure foundation and deploy path first, th
 - [x] **Phase 1: Foundation** - Repo, Next.js + worker, Postgres/migrations, auth, crypto, logging, health, design tokens, Compose, CI
 - [x] **Phase 2: Shell** - Navigation, command palette, Home, live activity stream, notifications, AI panel UI
  (completed 2026-10-07)
-- [ ] **Phase 3: Agent infrastructure + GitHub** - Tool gateway, permissions, approvals, runs, orchestrator chat, Agent Command Centre, GitHub read-only
+- [x] **Phase 3: Agent infrastructure + GitHub** - Tool gateway, permissions, approvals, runs, orchestrator chat, Agent Command Centre, GitHub read-only (completed 2026-10-08)
 - [ ] **Phase 4: Organization** - Calendars (Google, iCloud), tasks, conflicts, scheduling suggestions
 - [ ] **Phase 5: Career + Projects** - Repo dashboards, cross-domain projects, project workspaces
 - [ ] **Phase 6: Outreach** - Sydney event discovery, pipeline, email intelligence, drafting
@@ -83,7 +83,7 @@ From an empty repo to a personal OS: secure foundation and deploy path first, th
 - [x] 03-16-PLAN.md — Approval Centre page with edit-before-approve
 - [x] 03-17-PLAN.md — Agent Command Centre, agent detail, run detail pages
 - [x] 03-18-PLAN.md — Worker job registration + shell wiring (badges, AI row, Home, palette)
-- [ ] 03-19-PLAN.md — Phase gate: e2e, docs, live owner verification
+- [x] 03-19-PLAN.md — Phase gate: e2e, docs, live owner verification
 
 ### Phase 4–11
 Goals per phase list above; detailed when each phase is planned (`/gsd-plan-phase N`).
@@ -103,5 +103,5 @@ Goals per phase list above; detailed when each phase is planned (`/gsd-plan-phas
 | 0. Architecture | - | Complete | 2026-10-07 |
 | 1. Foundation | 3/3 | Complete | 2026-10-07 |
 | 2. Shell | 13/13 | Complete   | 2026-10-07 |
-| 3. Agents + GitHub | 18/19 | In Progress|  |
+| 3. Agents + GitHub | 19/19 | Complete   | 2026-10-08 |
 | 4–11 | - | Not started | - |
