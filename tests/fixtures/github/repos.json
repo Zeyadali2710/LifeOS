@@ -1,0 +1,5 @@
+[
+  { "id": 101, "full_name": "owner-test/private-app", "name": "private-app", "owner": { "login": "owner-test" }, "private": true, "default_branch": "main", "html_url": "https://github.com/owner-test/private-app", "description": "Private app", "language": "TypeScript", "archived": false, "pushed_at": "2026-05-01T10:00:00Z" },
+  { "id": 102, "full_name": "owner-test/old-thing", "name": "old-thing", "owner": { "login": "owner-test" }, "private": false, "default_branch": "master", "html_url": "https://github.com/owner-test/old-thing", "description": null, "language": null, "archived": true, "pushed_at": "2023-01-01T00:00:00Z" },
+  { "id": 103, "full_name": "owner-test/public-lib", "name": "public-lib", "owner": { "login": "owner-test" }, "private": false, "default_branch": "main", "html_url": "https://github.com/owner-test/public-lib", "description": "A public lib", "language": "Go", "archived": false, "pushed_at": "2026-04-01T09:00:00Z" }
+]
