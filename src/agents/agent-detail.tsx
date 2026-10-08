@@ -95,7 +95,7 @@ export function AgentDetail(d: AgentDetailProps) {
       setModel(prev);
       return toast("Couldn't save that. Try again.", "error");
     }
-    toast(`Model changed to ${MODEL_LABELS[next] ?? next}`);
+    toast(`Model changed to ${{ auto: "Auto", free: "Free only" }[next] ?? MODEL_LABELS[next] ?? next}`);
     router.refresh();
   };
 
@@ -252,14 +252,29 @@ export function AgentDetail(d: AgentDetailProps) {
             <Card label="CONFIGURATION">
               <label className="flex flex-col gap-1.5 text-[12.5px] text-text-2">
                 Model
-                <Select value={model} onChange={(e) => void changeModel(e.target.value)}>
-                  {Object.values(MODELS).map((m) => (
-                    <option key={m} value={m}>
-                      {MODEL_LABELS[m]}
-                      {m === config.defaultModel ? " (default)" : ""}
-                    </option>
-                  ))}
+                <Select value={model} disabled={agent.id === "orchestrator"} onChange={(e) => void changeModel(e.target.value)}>
+                  {agent.id === "orchestrator" ? (
+                    <option value={MODELS.opus}>Claude Opus 5.5 (always)</option>
+                  ) : config.routable ? (
+                    <>
+                      <option value="auto" disabled={!config.freeAvailable}>Auto (free when simple)</option>
+                      <option value="free" disabled={!config.freeAvailable}>Free only</option>
+                      <option value={MODELS.sonnet}>Claude Sonnet 5.5</option>
+                      <option value={MODELS.opus}>Claude Opus 5.5</option>
+                      {![ "auto", "free", MODELS.sonnet, MODELS.opus ].includes(model) && <option value={model}>{MODEL_LABELS[model] ?? model}</option>}
+                    </>
+                  ) : (
+                    Object.values(MODELS).map((m) => (
+                      <option key={m} value={m}>
+                        {MODEL_LABELS[m]}
+                        {m === config.defaultModel ? " (default)" : ""}
+                      </option>
+                    ))
+                  )}
                 </Select>
+                {config.routable && !config.freeAvailable && (
+                  <span className="text-[12px] text-text-3">Add an OpenRouter key in Settings → Connections to use free models.</span>
+                )}
               </label>
               <dl className="m-0 flex flex-col gap-1 font-mono text-[12px] text-text-2">
                 <div className="flex justify-between"><dt>Max tool calls</dt><dd className="m-0">{config.limits.toolCalls}</dd></div>

@@ -127,6 +127,9 @@ export function CommandCentre({
             Change cap →
           </Link>
         </div>
+        <p className="mb-2 font-mono text-[11.5px] text-text-3">
+          {o.routing.free} free · {o.routing.paid} paid runs this month
+        </p>
         <Progress value={spend.mtdUsd} max={spend.capUsd} label="Month-to-date AI spend" />
         <p aria-live="polite" className={`text-[12.5px] ${reached ? "mt-2 text-red" : "sr-only"}`}>
           {reached ? "Cap reached. New runs are blocked until the cap is raised or the month rolls over." : ""}

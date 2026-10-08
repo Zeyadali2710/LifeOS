@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { formatDuration, formatTokens, formatUsd } from "@/lib/format";
 import { cancelRunAction, retryRunAction } from "@/server/agent-actions";
 import type { runDetail } from "@/server/agents/queries";
-import { RUN_LIMITS } from "@/server/agents/registry";
+import { modelLabel, RUN_LIMITS } from "@/server/agents/registry";
 import { formatHM } from "@/server/time";
 import { useLiveEvents } from "@/shell/live-provider";
 import { useShell } from "@/shell/shell-provider";
@@ -120,7 +120,7 @@ export function RunDetail({ run, agent, steps, toolCalls }: RunDetailProps) {
       </header>
 
       <dl className="m-0 grid [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))] gap-4">
-        <Fact k="MODEL" v={run.model} />
+        <Fact k="MODEL" v={`${modelLabel(run.model)}${run.tier ? ` · tag ${run.tier}` : ""}`} />
         <Fact k="STARTED" v={run.startedAt ? formatHM(new Date(run.startedAt)) : "—"} />
         <Fact k="DURATION" v={run.durationMs === null ? "—" : formatDuration(run.durationMs)} />
         <Fact k="TOKENS IN/OUT/CACHE" v={`${formatTokens(run.tokensIn)} / ${formatTokens(run.tokensOut)} / ${formatTokens(run.tokensCache)}`} />

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { RunDTO, RunStatus } from "@/lib/agent-types";
 import { formatDuration, formatTokens, formatUsd } from "@/lib/format";
-import { getAgent } from "@/server/agents/registry";
+import { getAgent, modelLabel, modelShort } from "@/server/agents/registry";
 import { formatHM } from "@/server/time";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
@@ -63,6 +63,7 @@ export function RunsTable({
               {!compact && <th scope="col" className={th}>AGENT</th>}
               <th scope="col" className={th}>TASK</th>
               {!compact && <th scope="col" className={th}>TOOLS</th>}
+              <th scope="col" className={th}>MODEL</th>
               <th scope="col" className={th}>TOKENS</th>
               <th scope="col" className={th}>COST</th>
               <th scope="col" className={th}>LATENCY</th>
@@ -81,6 +82,9 @@ export function RunsTable({
                 {!compact && <td className="px-2 py-2.5 text-text-2">{agentName(r.agentId)}</td>}
                 <td className="max-w-[360px] truncate px-2 py-2.5 text-text">{r.prompt}</td>
                 {!compact && <td className="px-2 py-2.5 font-mono text-[12px]">{r.toolCalls}</td>}
+                <td className="px-2 py-2.5 font-mono text-[10.5px] tracking-[0.1em] text-text-2" title={modelLabel(r.model)}>
+                  {modelShort(r.model)}
+                </td>
                 <td className="px-2 py-2.5 font-mono text-[12px]" title={`${tok(r).toLocaleString("en-AU")} tokens`}>
                   {formatTokens(tok(r))}
                 </td>
@@ -105,7 +109,7 @@ export function RunsTable({
               </span>
               <span className="truncate text-[13px] text-text-2">{r.prompt}</span>
               <span className="font-mono text-[11px] text-text-3">
-                {r.toolCalls} tools · {formatTokens(tok(r))} · {formatUsd(r.costUsd)} · {lat(r)} · {time(r)}
+                <span title={modelLabel(r.model)}>{modelShort(r.model)}</span> · {r.toolCalls} tools · {formatTokens(tok(r))} · {formatUsd(r.costUsd)} · {lat(r)} · {time(r)}
               </span>
             </Link>
           </li>

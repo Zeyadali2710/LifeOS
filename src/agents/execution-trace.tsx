@@ -12,6 +12,7 @@ type Tone = "text-3" | "indigo" | "amber" | "red";
 export function stepView(s: StepDTO): { label: string; tone: Tone; expandable: boolean; showOutput: boolean } {
   const expandable = s.inputSummary !== null || s.outputSummary !== null;
   const showOutput = s.state !== "running";
+  if (s.kind === "route") return s.state === "failed" ? { label: "FAILED", tone: "red", expandable: false, showOutput: false } : { label: "ROUTE", tone: "indigo", expandable: false, showOutput: false };
   switch (s.state) {
     case "queued": return { label: "QUEUED", tone: "text-3", expandable, showOutput };
     case "running": return { label: "RUNNING", tone: "indigo", expandable, showOutput };

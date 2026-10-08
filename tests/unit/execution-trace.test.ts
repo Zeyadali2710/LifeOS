@@ -16,6 +16,10 @@ describe("stepView", () => {
     expect(stepView(step({ state: "failed" }))).toMatchObject({ label: "FAILED", tone: "red" });
     expect(stepView(step({ state: "cancelled" }))).toMatchObject({ label: "CANCELLED", tone: "text-3" });
   });
+  it("route steps are indigo ROUTE, or red FAILED when blocked", () => {
+    expect(stepView(step({ kind: "route" }))).toMatchObject({ label: "ROUTE", tone: "indigo", expandable: false, showOutput: false });
+    expect(stepView(step({ kind: "route", state: "failed" }))).toMatchObject({ label: "FAILED", tone: "red" });
+  });
   it("is expandable only with a summary; running hides output", () => {
     expect(stepView(step({})).expandable).toBe(false);
     expect(stepView(step({ outputSummary: "x" })).expandable).toBe(true);
