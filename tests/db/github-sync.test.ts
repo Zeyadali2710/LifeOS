@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { beforeAll, describe, expect, it } from "vitest";
-import { connections, githubIssues, githubPullRequests, githubRepos, githubWorkflowRuns } from "@/server/db/schema";
+import { connections, githubEtags, githubIssues, githubPullRequests, githubRepos, githubWorkflowRuns } from "@/server/db/schema";
 import { saveToken } from "@/server/github/connections";
 import { createSync } from "@/server/github/sync";
 import commits from "../fixtures/github/commits.json";
@@ -137,5 +137,22 @@ describe("github sync", () => {
     expect(sent[0]).toMatchObject({ category: "IMPORTANT", title: "GitHub connection needs attention" });
     const [c] = await h.select().from(connections).where(eq(connections.id, "github_read"));
     expect(c!.status).toBe("error");
+  });
+
+  it("does not keep an ETag for data that failed to persist", async () => {
+    const h = t.handle();
+    await h.delete(githubEtags);
+    await h.delete(githubPullRequests);
+    const { fetch } = world();
+    let broken = true;
+    const flaky = ((input: Request | string | URL, init?: RequestInit) =>
+      broken && String(input instanceof Request ? input.url : input).includes("/pulls/1/reviews")
+        ? Promise.resolve(new Response("{}", { status: 500 }))
+        : fetch(input, init)) as typeof globalThis.fetch;
+    const s = createSync({ handle: h, fetch: flaky, emit, now: () => NOW });
+    expect(await s.run()).toEqual({ error: "other" });
+    broken = false;
+    expect(await s.run()).toMatchObject({ ok: true });
+    expect(await h.select().from(githubPullRequests)).toHaveLength(2);
   });
 });

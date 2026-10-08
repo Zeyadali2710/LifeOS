@@ -96,12 +96,16 @@ export function createSync(opts: Opts = {}) {
       };
 
       // ETag-conditional GET (If-None-Match via client): null when unchanged (304).
-      async function cond<T>(path: string, schema: z.ZodType<T>): Promise<T | null> {
+      // The ETag is saved by save(), which callers invoke only after persisting the rows, so a mid-sync failure retries the data.
+      async function cond<T>(path: string, schema: z.ZodType<T>): Promise<{ data: T; save: () => Promise<void> } | null> {
         const [prev] = await h.select().from(githubEtags).where(eq(githubEtags.url, path));
         const r = await gh.get(path, schema, { etag: prev?.etag });
         if (r.status === 304) return null;
-        if (r.etag) await h.insert(githubEtags).values({ url: path, etag: r.etag }).onConflictDoUpdate({ target: githubEtags.url, set: { etag: r.etag } });
-        return r.data;
+        const etag = r.etag;
+        const save = async () => {
+          if (etag) await h.insert(githubEtags).values({ url: path, etag }).onConflictDoUpdate({ target: githubEtags.url, set: { etag } });
+        };
+        return { data: r.data, save };
       }
 
       let owner: string;
@@ -125,7 +129,8 @@ export function createSync(opts: Opts = {}) {
         throw e;
       }
 
-      const repoData = await cond("/user/repos?per_page=100&sort=pushed", z.array(Repo)); // ponytail: first page only (ETag); >100 repos need paging
+      const repoRes = await cond("/user/repos?per_page=100&sort=pushed", z.array(Repo));
+      const repoData = repoRes?.data ?? null; // ponytail: first page only (ETag); >100 repos need paging
       const known = new Set((await h.select({ id: githubRepos.id }).from(githubRepos)).map((r) => r.id));
 
       if (repoData) {
@@ -137,6 +142,7 @@ export function createSync(opts: Opts = {}) {
           await h.insert(githubRepos).values({ id: r.id, ...row }).onConflictDoUpdate({ target: githubRepos.id, set: row });
         }
       }
+      await repoRes?.save();
       const repoRows = repoData
         ? repoData.map((r) => ({ id: r.id, full_name: r.full_name, default_branch: r.default_branch, archived: r.archived, pushed_at: r.pushed_at }))
         : (await h.select().from(githubRepos)).map((r) => ({ id: r.id, full_name: r.fullName, default_branch: r.defaultBranch, archived: !!r.archived, pushed_at: r.pushedAt?.toISOString() ?? null }));
@@ -149,7 +155,8 @@ export function createSync(opts: Opts = {}) {
         const base = `/repos/${r.full_name}`;
         const branch = r.default_branch ?? "main";
 
-        const pulls = await cond(`${base}/pulls?state=all&sort=updated&per_page=50`, z.array(Pull));
+        const pullRes = await cond(`${base}/pulls?state=all&sort=updated&per_page=50`, z.array(Pull));
+        const pulls = pullRes?.data;
         if (pulls?.length) {
           const prev = new Map((await h.select().from(githubPullRequests).where(inArray(githubPullRequests.id, pulls.map((p) => p.id)))).map((p) => [p.id, p]));
           for (const p of pulls) {
@@ -177,8 +184,10 @@ export function createSync(opts: Opts = {}) {
           }
         }
 
-        const issues = await cond(`${base}/issues?state=all&per_page=50`, z.array(Issue));
-        for (const i of issues ?? []) {
+        await pullRes?.save();
+
+        const issueRes = await cond(`${base}/issues?state=all&per_page=50`, z.array(Issue));
+        for (const i of issueRes?.data ?? []) {
           const mine = i.user?.login === owner || i.assignees.some((a) => a.login === owner);
           if (i.pull_request || !mine) continue;
           const row = {
@@ -189,7 +198,10 @@ export function createSync(opts: Opts = {}) {
           await h.insert(githubIssues).values({ id: i.id, ...row }).onConflictDoUpdate({ target: githubIssues.id, set: row });
         }
 
-        const commits = await cond(`${base}/commits?sha=${encodeURIComponent(branch)}&per_page=20`, z.array(Commit));
+        await issueRes?.save();
+
+        const commitRes = await cond(`${base}/commits?sha=${encodeURIComponent(branch)}&per_page=20`, z.array(Commit));
+        const commits = commitRes?.data;
         if (commits?.length) {
           await h
             .insert(githubCommits)
@@ -197,7 +209,10 @@ export function createSync(opts: Opts = {}) {
             .onConflictDoNothing();
         }
 
-        const runs = await cond(`${base}/actions/runs?branch=${encodeURIComponent(branch)}&per_page=5`, Runs);
+        await commitRes?.save();
+
+        const runRes = await cond(`${base}/actions/runs?branch=${encodeURIComponent(branch)}&per_page=5`, Runs);
+        const runs = runRes?.data;
         if (runs?.workflow_runs.length) {
           const ids = runs.workflow_runs.map((w) => w.id);
           const seen = new Set((await h.select({ id: githubWorkflowRuns.id }).from(githubWorkflowRuns).where(inArray(githubWorkflowRuns.id, ids))).map((x) => x.id));
@@ -216,6 +231,7 @@ export function createSync(opts: Opts = {}) {
             );
           }
         }
+        await runRes?.save();
       }
 
       if (conn?.status === "error") await h.update(connections).set({ status: "connected", lastError: null }).where(eq(connections.id, "github_read"));
