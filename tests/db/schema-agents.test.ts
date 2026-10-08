@@ -6,7 +6,7 @@ import { setupTestDb } from "./helpers";
 const t = setupTestDb();
 
 async function newRun(threadId?: string) {
-  const [run] = await t.handle().insert(agentRuns).values({ agentId: "a", prompt: "p", model: "m", threadId }).returning();
+  const run = await t.handle().insert(agentRuns).values({ agentId: "a", prompt: "p", model: "m", threadId }).returning().then((r) => r[0]!);
   return run;
 }
 const call = (runId: string, toolUseId: string, idempotencyKey?: string) => ({
@@ -32,14 +32,14 @@ describe("Phase 3 schema constraints", () => {
   it("round-trips approvals with null editedPayload", async () => {
     const run = await newRun();
     const db = t.handle();
-    const [tc] = await db.insert(toolCalls).values(call(run.id, "ap")).returning();
-    const [a] = await db
+    const tc = await db.insert(toolCalls).values(call(run.id, "ap")).returning().then((r) => r[0]!);
+    const a = await db
       .insert(approvals)
       .values({
         runId: run.id, toolCallId: tc.id, agentId: "a", tool: "github.create_issue",
         originalPayload: { title: "x" }, payloadHash: "h", expiresAt: new Date(),
       })
-      .returning();
+      .returning().then((r) => r[0]!);
     expect(a.originalPayload).toEqual({ title: "x" });
     expect(a.editedPayload).toBeNull();
     expect(a.status).toBe("pending");
@@ -51,11 +51,11 @@ describe("Phase 3 schema constraints", () => {
 
   it("thread delete nulls runs.threadId and cascades messages", async () => {
     const db = t.handle();
-    const [th] = await db.insert(threads).values({ title: "t" }).returning();
+    const th = await db.insert(threads).values({ title: "t" }).returning().then((r) => r[0]!);
     const run = await newRun(th.id);
     await db.insert(threadMessages).values({ threadId: th.id, role: "user", content: "hi" });
     await db.delete(threads).where(eq(threads.id, th.id));
-    const [after] = await db.select().from(agentRuns).where(eq(agentRuns.id, run.id));
+    const after = (await db.select().from(agentRuns).where(eq(agentRuns.id, run.id)))[0]!;
     expect(after.threadId).toBeNull();
     expect(await db.select().from(threadMessages).where(eq(threadMessages.threadId, th.id))).toHaveLength(0);
   });
