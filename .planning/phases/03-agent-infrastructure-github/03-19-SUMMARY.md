@@ -8,12 +8,21 @@ provides: [phase 3 e2e coverage, shipped-infrastructure docs, live production ve
 requirements-completed: [AGT-01, AGT-02, AGT-03, AGT-04, AGT-05, AGT-06]
 key-files:
   created:
-    - tests/e2e (specs for approvals, agents, chat, settings)
+    - tests/e2e/owner.ts
+    - tests/e2e/approvals.spec.ts
+    - tests/e2e/agents.spec.ts
+    - tests/e2e/chat.spec.ts
+    - tests/e2e/settings.spec.ts
   modified:
     - src/app/api/chat/route.ts
+    - src/server/queue.ts
     - tests/db/chat-route.test.ts
-    - playwright config (workers: 1)
-    - docs (agent infrastructure and GitHub integration)
+    - tests/e2e/home.spec.ts
+    - tests/e2e/palette.spec.ts
+    - tests/e2e/shell-nav.spec.ts
+    - playwright.config.ts
+    - docs/agents.md
+    - docs/integrations.md
 metrics:
   tasks: 3
   completed: 2026-10-09
