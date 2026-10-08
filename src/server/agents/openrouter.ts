@@ -102,17 +102,27 @@ export function createOpenRouter(deps: { getKey: () => Promise<string | null>; f
       };
       const withDeny = (deny: boolean) => ({ ...base, provider: { require_parameters: true, ...(deny ? { data_collection: "deny" } : {}) } });
 
+      const errDetail = async (r: Response) => {
+        try {
+          const j = (await r.json()) as { error?: { code?: unknown; message?: unknown } };
+          return `${j.error?.code ?? ""} ${j.error?.message ?? ""}`.trim();
+        } catch {
+          return "";
+        }
+      };
       let res = await post(key, withDeny(Date.now() >= denyUnsupportedUntil), sig, signal);
+      let detail: string | null = null;
       if (res.status === 404 && Date.now() >= denyUnsupportedUntil) {
-        denyUnsupportedUntil = Date.now() + DENY_BACKOFF_MS;
-        res = await post(key, withDeny(false), sig, signal);
+        // Only a 404 about the data policy drops the deny preference; an unknown/retired model id is a plain error.
+        detail = await errDetail(res);
+        if (/data.?policy|data_collection|privacy/i.test(detail)) {
+          denyUnsupportedUntil = Date.now() + DENY_BACKOFF_MS;
+          detail = null;
+          res = await post(key, withDeny(false), sig, signal);
+        }
       }
       if (!res.ok) {
-        let detail = "";
-        try {
-          const j = (await res.json()) as { error?: { code?: unknown; message?: unknown } };
-          detail = `${j.error?.code ?? ""} ${j.error?.message ?? ""}`.trim().slice(0, 200);
-        } catch {}
+        detail = (detail ?? (await errDetail(res))).slice(0, 200);
         const ra = Number(res.headers.get("retry-after"));
         throw new FreeModelError("http", res.status === 408 || res.status === 429 || (res.status >= 500 && res.status <= 599), {
           status: res.status,

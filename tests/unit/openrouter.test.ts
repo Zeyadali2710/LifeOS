@@ -144,8 +144,9 @@ describe("openrouter failures", () => {
     expect(e.message).not.toContain(KEY);
   });
 
-  it("retries once without data_collection on 404 and remembers", async () => {
-    const { llm, calls } = setup(json({ error: {} }, { status: 404 }), json(text));
+  const policy404 = () => json({ error: { code: 404, message: "No endpoints found matching your data policy (Free model publication)." } }, { status: 404 });
+  it("retries once without data_collection on a data-policy 404 and remembers", async () => {
+    const { llm, calls } = setup(policy404(), json(text));
     await llm.stream(params(), vi.fn());
     expect(calls).toHaveLength(2);
     expect(calls[0]!.body.provider.data_collection).toBe("deny");
@@ -154,9 +155,19 @@ describe("openrouter failures", () => {
     expect(calls[2]!.body.provider.data_collection).toBeUndefined();
   });
 
-  it("404 twice is permanent", async () => {
-    const e = await fail(setup(json({ error: {} }, { status: 404 })).llm.stream(params(), vi.fn()));
+  it("data-policy 404 twice is permanent", async () => {
+    const e = await fail(setup(policy404()).llm.stream(params(), vi.fn()));
     expect(e).toMatchObject({ code: "http", transient: false, status: 404 });
+  });
+
+  it("a 404 for an unknown model keeps the deny preference (WR-04)", async () => {
+    const { llm, calls } = setup(json({ error: { code: 404, message: "Model vendor/x:free not found" } }, { status: 404 }), json(text));
+    const e = await fail(llm.stream(params(), vi.fn()));
+    expect(e).toMatchObject({ code: "http", transient: false, status: 404 });
+    expect(e.message).toContain("not found");
+    expect(calls).toHaveLength(1);
+    await llm.stream(params(), vi.fn());
+    expect(calls[1]!.body.provider.data_collection).toBe("deny");
   });
 
   it("caller abort rethrows AbortError; timeout and network are typed", async () => {
