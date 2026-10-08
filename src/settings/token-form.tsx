@@ -54,7 +54,7 @@ export function TokenForm({
     setBusy(true);
     try {
       const r = or ? await saveOpenRouterKeyAction(value) : await saveTokenAction(id as "github_read" | "github_write", value);
-      if (r.ok) onDone("repos" in r ? { repos: r.repos } : {});
+      if (r.ok) onDone({ repos: "repos" in r ? Number(r.repos) : undefined });
       else if (r.error === "empty") setFieldError(or ? "Paste a key to continue." : "Paste a token to continue.");
       else setError((or ? OR_ERRORS : ERRORS)[r.error] ?? ERRORS.failed);
     } catch {
