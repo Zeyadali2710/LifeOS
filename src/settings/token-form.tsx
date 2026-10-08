@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { saveTokenAction } from "@/server/settings-actions";
+import { saveOpenRouterKeyAction, saveTokenAction } from "@/server/settings-actions";
 import { Button } from "@/ui/button";
 import { Field, Input } from "@/ui/field";
 
@@ -13,7 +13,16 @@ const ERRORS: Record<string, string> = {
   failed: "Couldn't reach GitHub. Nothing was saved. Try again.",
 };
 
+const OR_ERRORS: Record<string, string> = {
+  rejected: "OpenRouter rejected this key. Check it and try again.",
+  unreachable: "Couldn't reach OpenRouter. Nothing was saved. Try again.",
+  invalid: "Couldn't reach OpenRouter. Nothing was saved. Try again.",
+  failed: "Couldn't reach OpenRouter. Nothing was saved. Try again.",
+};
+
 const HELP = {
+  openrouter:
+    "Create a key at openrouter.ai/settings/keys. LifeOS uses it only for free models. Buying US$10 of credits once raises the free limit from 50 to 1000 requests a day; free models don't spend credits.",
   github_read:
     "Create it at github.com/settings/personal-access-tokens. Read token: Repository permissions: Contents, Metadata, Pull requests, Issues, Actions, Commit statuses all read-only.",
   github_write:
@@ -25,10 +34,11 @@ export function TokenForm({
   onDone,
   onCancel,
 }: {
-  id: "github_read" | "github_write";
-  onDone: (r: { login: string; repos: number }) => void;
+  id: "github_read" | "github_write" | "openrouter";
+  onDone: (r: { repos?: number }) => void;
   onCancel: () => void;
 }) {
+  const or = id === "openrouter";
   const [token, setToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [fieldError, setFieldError] = useState<string>();
@@ -43,10 +53,10 @@ export function TokenForm({
     setFieldError(undefined);
     setBusy(true);
     try {
-      const r = await saveTokenAction(id, value);
-      if (r.ok) onDone(r);
-      else if (r.error === "empty") setFieldError("Paste a token to continue.");
-      else setError(ERRORS[r.error] ?? ERRORS.failed);
+      const r = or ? await saveOpenRouterKeyAction(value) : await saveTokenAction(id as "github_read" | "github_write", value);
+      if (r.ok) onDone("repos" in r ? { repos: r.repos } : {});
+      else if (r.error === "empty") setFieldError(or ? "Paste a key to continue." : "Paste a token to continue.");
+      else setError((or ? OR_ERRORS : ERRORS)[r.error] ?? ERRORS.failed);
     } catch {
       setError(ERRORS.failed);
     } finally {
@@ -56,7 +66,7 @@ export function TokenForm({
 
   return (
     <form onSubmit={submit} className="flex animate-[lo-rise_.25s_ease-out] flex-col gap-3.5 rounded-12 border border-[rgba(255,255,255,.08)] bg-inset px-[18px] py-4">
-      <Field label="Fine-grained personal access token" helper={HELP[id]} error={fieldError}>
+      <Field label={or ? "OpenRouter API key" : "Fine-grained personal access token"} helper={HELP[id]} error={fieldError}>
         <Input
           type="password"
           autoComplete="off"
@@ -75,7 +85,7 @@ export function TokenForm({
       )}
       <div className="flex gap-2">
         <Button type="submit" loading={busy}>
-          {busy ? "Verifying…" : "Save token"}
+          {busy ? "Verifying…" : or ? "Save key" : "Save token"}
         </Button>
         <Button variant="ghost" onClick={onCancel} disabled={busy}>
           Cancel

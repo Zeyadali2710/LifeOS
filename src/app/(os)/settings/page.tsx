@@ -1,4 +1,5 @@
 import { inArray } from "drizzle-orm";
+import { getFreePrivateOk } from "@/server/agents/routing";
 import { MODEL_LABELS } from "@/server/agents/registry";
 import { sydneyMonthBounds } from "@/server/agents/pricing";
 import { capStatus, spendByModel } from "@/server/agents/spend";
@@ -48,6 +49,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         connections={connections}
         privacy={Object.fromEntries(priv.map((r) => [r.n, Boolean(r.p)]))}
         anthropic={Boolean(env().ANTHROPIC_API_KEY)}
+        freePrivateOk={await getFreePrivateOk(h)}
       />
     );
   }

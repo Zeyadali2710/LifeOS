@@ -17,6 +17,7 @@ const COLOR = { connected: "text-green", none: "text-text-3", error: "text-red" 
 
 export function ConnectionRow({
   id,
+  title,
   tile,
   name,
   detail,
@@ -27,7 +28,8 @@ export function ConnectionRow({
   onChanged,
   children,
 }: {
-  id?: "github_read" | "github_write";
+  id?: "github_read" | "github_write" | "openrouter";
+  title?: string;
   tile: string;
   name: string;
   detail: ReactNode;
@@ -47,7 +49,7 @@ export function ConnectionRow({
     const r = await removeTokenAction(id!);
     if (r.ok) {
       setOpen(false);
-      toast(`${noun === "read" ? "GitHub read" : "Issues-write"} token removed`);
+      toast(title ? `${title} removed` : `${noun === "read" ? "GitHub read" : "Issues-write"} token removed`);
       onChanged?.("removed");
     } else toast("Couldn't save that. Try again.", "error");
   }
@@ -86,7 +88,7 @@ export function ConnectionRow({
             onCancel={() => setOpen(false)}
             onDone={(r) => {
               setOpen(false);
-              toast(id === "github_read" ? `GitHub connected · ${r.repos} repositories` : `Issue creation enabled · ${r.repos} repositories`);
+              toast(id === "openrouter" ? "OpenRouter connected · free models on" : id === "github_read" ? `GitHub connected · ${r.repos} repositories` : `Issue creation enabled · ${r.repos} repositories`);
               onChanged?.("saved");
             }}
           />
@@ -102,7 +104,7 @@ export function ConnectionRow({
       <Dialog
         open={confirm}
         onClose={() => setConfirm(false)}
-        title={`Remove the ${noun === "read" ? "GitHub read" : "issues-write"} token?`}
+        title={title ? `Remove the ${title}?` : `Remove the ${noun === "read" ? "GitHub read" : "issues-write"} token?`}
         initialFocus={() => document.getElementById("remove-token-cancel")}
         actions={
           <>

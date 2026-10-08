@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { ConnectionDTO } from "@/lib/agent-types";
-import { syncNowAction } from "@/server/settings-actions";
+import { setFreePrivateAction, syncNowAction } from "@/server/settings-actions";
 import { formatHM } from "@/server/time";
 import { useShell } from "@/shell/shell-provider";
 import { Button } from "@/ui/button";
@@ -20,14 +20,29 @@ export function ConnectionsSection({
   connections,
   privacy,
   anthropic,
+  freePrivateOk,
 }: {
   connections: ConnectionDTO[];
   privacy: Record<string, boolean>;
   anthropic: boolean;
+  freePrivateOk: boolean;
 }) {
   const router = useRouter();
   const { toast } = useShell();
   const [syncing, setSyncing] = useState(false);
+  const [priv, setPriv] = useState(freePrivateOk);
+  const or = connections.find((c) => c.id === "openrouter")!;
+
+  async function togglePrivate(next: boolean) {
+    setPriv(next);
+    const r = await setFreePrivateAction(next).catch(() => ({ ok: false }));
+    if (!r.ok) {
+      setPriv(!next);
+      return toast("Couldn't save that. Try again.", "error");
+    }
+    toast(next ? "Private repos allowed on free models" : "Private repos kept off free models");
+    router.refresh();
+  }
   const read = connections.find((c) => c.id === "github_read")!;
   const write = connections.find((c) => c.id === "github_write")!;
   const st = (c: ConnectionDTO): RowStatus => c.status;
@@ -112,6 +127,43 @@ export function ConnectionsSection({
           removeBody="LifeOS can no longer create issues."
           onChanged={refresh}
         />
+        <ConnectionRow
+          id="openrouter"
+          tile="OR"
+          name="OpenRouter · free models"
+          title="OpenRouter key"
+          detail={
+            or.status === "none" ? (
+              "Optional. Routine agent work runs on a free model at US$0. Without a key every run uses Anthropic, as today."
+            ) : (
+              <span className={mono}>····{or.last4} · free model routing on</span>
+            )
+          }
+          status={st(or)}
+          removeBody="Agent runs go back to Anthropic models only."
+          onChanged={refresh}
+        >
+          {or.status !== "none" && (
+            <div className="flex items-start gap-3 rounded-12 border border-[rgba(255,255,255,.07)] bg-surface px-4 py-3.5">
+              <input
+                id="free-private"
+                type="checkbox"
+                role="switch"
+                className="mt-1 size-4 shrink-0"
+                checked={priv}
+                onChange={(e) => togglePrivate(e.target.checked)}
+              />
+              <div className="max-w-[520px]">
+                <label htmlFor="free-private" className="text-[14.5px] font-medium">
+                  Allow private-repo content to be sent to free models (may be logged by provider)
+                </label>
+                <p className="text-[12.5px] text-text-3">
+                  Off: any run that touches a private repository switches to Claude Sonnet before private data is sent. Free providers may log or train on prompts.
+                </p>
+              </div>
+            </div>
+          )}
+        </ConnectionRow>
         <ConnectionRow
           tile="AI"
           name="Anthropic API"
