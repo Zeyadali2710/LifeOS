@@ -67,7 +67,7 @@ From an empty repo to a personal OS: secure foundation and deploy path first, th
 **Plans**: 19 plans in 7 waves
 - [x] 03-01-PLAN.md — Schema: agents, permissions, threads, runs, tool_calls, approvals, connections, github_* + migration 0001
 - [x] 03-02-PLAN.md — Contracts: SDK install, optional ANTHROPIC_API_KEY, DTOs, registry, policy, pricing, redact, queue sender, fake LLM
-- [ ] 03-03-PLAN.md — UI primitives (field, disclosure, dialog, progress, status dot), icon subset, ExecutionTrace
+- [x] 03-03-PLAN.md — UI primitives (field, disclosure, dialog, progress, status dot), icon subset, ExecutionTrace
 - [x] 03-04-PLAN.md — GitHub fetch client + encrypted connection store (read/write tokens)
 - [x] 03-05-PLAN.md — Tool gateway callTool: allow-list, zod, tiers, approval creation, idempotency
 - [ ] 03-06-PLAN.md — Spend + cap, run controls, orphan sweep, threads
@@ -103,5 +103,5 @@ Goals per phase list above; detailed when each phase is planned (`/gsd-plan-phas
 | 0. Architecture | - | Complete | 2026-10-07 |
 | 1. Foundation | 3/3 | Complete | 2026-10-07 |
 | 2. Shell | 13/13 | Complete   | 2026-10-07 |
-| 3. Agents + GitHub | 4/19 | In Progress|  |
+| 3. Agents + GitHub | 5/19 | In Progress|  |
 | 4–11 | - | Not started | - |
