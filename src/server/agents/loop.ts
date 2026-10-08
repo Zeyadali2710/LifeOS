@@ -329,7 +329,7 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
           await new Promise((r) => setTimeout(r, Math.min(fe.retryAfterMs ?? 0, 5000)));
           continue;
         }
-        if (fe && (fe.transient || fe.status === 429 || fe.status === 402)) markFreeUnavailable(now());
+        if (fe && (fe.transient || fe.status === 429 || fe.status === 401 || fe.status === 402)) markFreeUnavailable(now());
         const s = await switchToSonnet("fallback", fe ? `${fe.code}${fe.status ? " " + fe.status : ""}` : "error");
         if (s) return s;
         continue;

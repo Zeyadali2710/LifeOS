@@ -4,7 +4,7 @@ import type { ChatEvent } from "@/lib/agent-types";
 import { advance, createRun } from "@/server/agents/loop";
 import { costUsd } from "@/server/agents/pricing";
 import { FreeModelError } from "@/server/agents/openrouter";
-import { freeModel, mentionsSensitive, resetFreeCooldown } from "@/server/agents/routing";
+import { freeCoolingDown, freeModel, mentionsSensitive, resetFreeCooldown } from "@/server/agents/routing";
 import { githubTools } from "@/server/agents/tools/github";
 import { TOOLS } from "@/server/agents/tools";
 import {
@@ -87,6 +87,13 @@ describe("free errors: retry then Sonnet (D-06, D-08)", () => {
     const llm = scriptedLlm([{ throw: fe(401, false) }, { text: "ok" }]);
     await advance(id, { handle: h(), llm });
     expect(models(llm)).toEqual([freeModel(), SONNET]);
+    expect(freeCoolingDown(new Date())).toBe(true); // WR-02: a rejected key starts the cooldown too
+  });
+
+  it("a key marked as errored (401/402) turns routing off (WR-02)", async () => {
+    await withKey();
+    await h().update(connections).set({ status: "error" }).where(eq(connections.id, "openrouter"));
+    expect((await run(await freeChild())).model).not.toBe(freeModel());
   });
 
   it("a caller abort does not fall back", async () => {

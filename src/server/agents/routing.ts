@@ -1,4 +1,4 @@
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db, type DB } from "../db/client";
 import { connections, githubRepos, settings } from "../db/schema";
 import { env } from "../env";
@@ -64,7 +64,7 @@ export async function privateInTree(h: DB, anchorRunId: string | null): Promise<
 }
 
 export async function hasFreeKey(h: DB = db()): Promise<boolean> {
-  const rows = await h.select({ id: connections.id }).from(connections).where(eq(connections.id, "openrouter")).limit(1);
+  const rows = await h.select({ id: connections.id }).from(connections).where(and(eq(connections.id, "openrouter"), eq(connections.status, "connected"))).limit(1); // a 401/402-marked key routes nothing
   return rows.length > 0;
 }
 
