@@ -9,7 +9,7 @@ From an empty repo to a personal OS: secure foundation and deploy path first, th
  (completed 2026-10-07)
 - [x] **Phase 3: Agent infrastructure + GitHub** - Tool gateway, permissions, approvals, runs, orchestrator chat, Agent Command Centre, GitHub read-only
  (completed 2026-10-09)
-- [ ] **Phase 3.1: Model routing** (INSERTED) - Free OpenRouter models for routine agent work, Sonnet escalation, orchestrator stays on Opus
+- [x] **Phase 3.1: Model routing** (INSERTED) - Free OpenRouter models for routine agent work, Sonnet escalation, orchestrator stays on Opus (completed 2026-10-08)
 - [ ] **Phase 4: Organization** - Calendars (Google, iCloud), tasks, conflicts, scheduling suggestions
 - [ ] **Phase 5: Career + Projects** - Repo dashboards, cross-domain projects, project workspaces
 - [ ] **Phase 6: Outreach** - Sydney event discovery, pipeline, email intelligence, drafting
@@ -98,7 +98,7 @@ From an empty repo to a personal OS: secure foundation and deploy path first, th
   3. The orchestrator always runs on claude-opus-5-5; routing is per-run, visible in the trace and Command Centre, and can be overridden per agent in its settings
   4. Spend cap, pricing and audit stay correct for mixed providers; with no OpenRouter key everything behaves exactly as today (Anthropic only)
 **Notes:** GitHub sync makes no LLM calls today; the cost is in agent runs. Route behind the existing LlmClient seam (src/server/agents/llm.ts); OpenRouter speaks the OpenAI chat format, so tool-use translation and data-retention/privacy of free providers must be researched (free models may log prompts, so no tokens or private-repo content without an explicit owner choice).
-**Plans:** 8/9 plans executed
+**Plans:** 9/9 plans complete
 
 Plans:
 - [x] 03.1-01-PLAN.md — AGT-07, schema (tier, route mode/events, run_turns) + migration 0002 with backfill, route types/steps, registry flags
@@ -109,7 +109,7 @@ Plans:
 - [x] 03.1-06-PLAN.md — Loop: private gate, retry/fallback, escalate, sanity checks, Free-only failure, resume
 - [x] 03.1-07-PLAN.md — Settings UI: OpenRouter row + private-repo opt-in toggle
 - [x] 03.1-08-PLAN.md — Command Centre: route steps in traces, model chip, free/paid counts, 4-option picker
-- [ ] 03.1-09-PLAN.md — Docs/ADR, full suite and live OpenRouter smoke test on the VM
+- [x] 03.1-09-PLAN.md — Docs/ADR, full suite and live OpenRouter smoke test on the VM
 
 ### Phase 4–11
 Goals per phase list above; detailed when each phase is planned (`/gsd-plan-phase N`).
