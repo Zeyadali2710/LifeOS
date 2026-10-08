@@ -1,4 +1,5 @@
 import { z } from "zod";
+/* eslint-disable @typescript-eslint/no-explicit-any -- test fake: heterogeneous tool inputs */
 import { ToolError, type Tool } from "@/server/agents/types";
 
 export function fakeTools() {

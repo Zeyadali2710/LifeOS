@@ -20,6 +20,7 @@ type GatewayCtx = {
   handle: DB;
   runId: string;
   agentId: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- heterogeneous tool map; each tool validates its own I/O via zod
   tools: Record<string, Tool<any, any>>;
   now?: () => Date;
   emit?: typeof emitActivity;

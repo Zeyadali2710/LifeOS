@@ -79,8 +79,8 @@ export function LiveProvider({
   const loadedRef = useRef(false);
   const idsRef = useRef<Set<string>>(new Set());
   const everConnected = useRef(false);
-  const subsRef = useRef(new Set<Sub>());
-  const dispatch = useCallback((e: LiveEvent) => subsRef.current.forEach((f) => f(e)), []);
+  const [subs] = useState(() => new Set<Sub>());
+  const dispatch = useCallback((e: LiveEvent) => subs.forEach((f) => f(e)), [subs]);
 
   const markFresh = useCallback((ids: string[]) => {
     if (ids.length === 0) return;
@@ -255,7 +255,7 @@ export function LiveProvider({
 
   return (
     <Ctx.Provider value={value}>
-      <SubsCtx.Provider value={subsRef.current}>{children}</SubsCtx.Provider>
+      <SubsCtx.Provider value={subs}>{children}</SubsCtx.Provider>
       <div role="status" aria-live="polite" className="sr-only">
         {announce}
       </div>
