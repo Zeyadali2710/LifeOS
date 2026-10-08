@@ -15,6 +15,7 @@ export function useChat() {
   const [streaming, setStreaming] = useState(false);
   const [block, setBlock] = useState<ChatBlockCode | null>(null);
   const [capUsd, setCapUsd] = useState<number | null>(null);
+  const [announce, setAnnounce] = useState("");
   const live = useRef({ threadId, turns, streaming });
   useEffect(() => {
     live.current = { threadId, turns, streaming };
@@ -78,6 +79,7 @@ export function useChat() {
         }
         for await (const e of readNdjson(res.body.getReader())) {
           if (e.k === "run") setThreadId(e.threadId);
+          if (e.k === "done") setAnnounce(e.run.status === "failed" ? "Run failed" : "LifeOS finished");
           setTurns((t) => applyChatEvent(t, e));
         }
         return true;
@@ -107,5 +109,5 @@ export function useChat() {
   useLiveEvents("run", (dto) => refetch(dto ? [dto.id, dto.parentRunId] : null));
   useLiveEvents("approval", (dto) => refetch(dto ? [dto.runId] : null));
 
-  return { threadId, turns, threads, streaming, block, capUsd, send, stop, newThread, openThread, loadThreads, clearBlock: () => setBlock(null) };
+  return { threadId, turns, threads, streaming, block, capUsd, announce, send, stop, newThread, openThread, loadThreads, clearBlock: () => setBlock(null) };
 }

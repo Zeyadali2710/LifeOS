@@ -1,24 +1,25 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
+import { ExecutionTrace } from "@/agents/execution-trace";
+import type { ChatBlockCode } from "@/lib/agent-types";
 import { formatHM } from "@/server/time";
 import { Icon } from "@/ui/icon";
 import type { IconName } from "@/ui/icon-names";
 import { InlineError } from "@/ui/inline-error";
+import { ApprovalCard } from "./ai/approval-card";
+import { RecentThreads } from "./ai/recent-threads";
+import { ResultCard } from "./ai/result-card";
+import { useChat } from "./ai/use-chat";
 import { useShell } from "./shell-provider";
+import { useAgentStatus } from "./use-agent-status";
 import { useDialog } from "./use-dialog";
 
-// D-05: the orchestrator is not connected. Turns live in local state only; nothing is sent anywhere.
-type Turn = { id: number; prompt: string; time: string };
 type Mode = "docked" | "overlay" | "sheet";
 
-const SUGGESTIONS: { icon: IconName; text: string }[] = [
-  { icon: "priority_high", text: "What needs my attention?" },
-  { icon: "event_note", text: "Plan my week" },
-  { icon: "travel_explore", text: "Find events this weekend" },
-  { icon: "edit_note", text: "Prepare my LinkedIn post" },
-];
+const SUB_LABEL = { ready: "ONLINE", working: "WORKING", paused: "PAUSED", cap: "SPEND CAP REACHED", no_key: "NOT CONNECTED" } as const;
 
 const subscribe = (cb: () => void) => {
   window.addEventListener("resize", cb);
@@ -27,42 +28,111 @@ const subscribe = (cb: () => void) => {
 const getMode = (): Mode => (window.innerWidth >= 1100 ? "docked" : window.innerWidth >= 720 ? "overlay" : "sheet");
 
 export function AIPanel() {
-  const { aiOpen, closeAI, consumeAIPrompt } = useShell();
+  const { aiOpen, closeAI, consumeAIPrompt, toast } = useShell();
+  const router = useRouter();
+  const { status } = useAgentStatus();
+  const chat = useChat();
+  const { turns, streaming, loadThreads, send } = chat;
   const mode = useSyncExternalStore(subscribe, getMode, () => "docked" as Mode);
-  const [turns, setTurns] = useState<Turn[]>([]);
   const [draft, setDraft] = useState("");
-  const nextId = useRef(0);
+  const [showRecent, setShowRecent] = useState(false);
   const areaRef = useRef<HTMLTextAreaElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
-  const ref = useDialog<HTMLElement>(aiOpen, closeAI, { modal: mode !== "docked", initialFocus: () => areaRef.current });
+  // Esc steps back from Recent first, then closes. It never cancels a run.
+  const ref = useDialog<HTMLElement>(aiOpen, () => (showRecent ? setShowRecent(false) : closeAI()), {
+    modal: mode !== "docked",
+    initialFocus: () => areaRef.current,
+  });
 
-  const submit = (text: string) => {
+  const assistant = status?.assistant ?? "ready";
+  const blockCode: ChatBlockCode | null = chat.block ?? (assistant === "cap" || assistant === "no_key" || assistant === "paused" ? (assistant === "cap" ? "cap" : assistant) : null);
+  const blocked = blockCode === "cap" || blockCode === "no_key" || blockCode === "paused";
+  const capUsd = chat.capUsd ?? status?.capUsd ?? 0;
+
+  const submit = async (text: string) => {
     const prompt = text.trim();
-    if (!prompt) return;
-    setTurns((t) => [...t, { id: ++nextId.current, prompt, time: formatHM(new Date()) }]);
+    if (!prompt || blocked || streaming) return;
     setDraft("");
+    const ok = await send(prompt);
+    if (!ok) setDraft((d) => d || text);
   };
 
   useEffect(() => {
     if (!aiOpen) return;
-    const p = consumeAIPrompt();
-    if (p) submit(p);
+    const t = setTimeout(() => {
+      const p = consumeAIPrompt(); // deferred so setState never runs synchronously in the effect
+      if (p) void submit(p);
+    }, 0);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- submit is recreated each render; only the open edge should consume a prompt
   }, [aiOpen, consumeAIPrompt]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView?.({ block: "end" });
-  }, [turns.length]);
+  }, [turns]);
+
+  useEffect(() => {
+    if (chat.block === "rate_limited") toast("Too many requests. Wait a moment, then try again.", "error");
+    else if (chat.block === "invalid") toast("That request couldn't be sent. Try again.", "error");
+  }, [chat.block, toast]);
 
   if (!aiOpen) return null;
 
+  const activeRunId = streaming ? [...turns].reverse().find((t) => t.run)?.run?.id : undefined;
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
-      submit(draft);
+      void submit(draft);
     }
   };
   const iconBtn = "grid size-11 place-items-center rounded-8 text-text-3 hover:bg-fill-2 hover:text-text tab:size-[30px]";
   const modal = mode !== "docked";
+  const examples: { icon: IconName; text: string }[] = [
+    { icon: "priority_high", text: "What's happening in my repos?" },
+    { icon: "code", text: "Which pull requests need my review?" },
+    { icon: "check_circle", text: "Is CI passing on my default branches?" },
+    ...(status?.firstRepo ? [{ icon: "edit_note" as IconName, text: `Create an issue in ${status.firstRepo}` }] : []),
+  ];
+
+  const newConversation = () => {
+    if (turns.length > 0) chat.newThread();
+    setShowRecent(false);
+    areaRef.current?.focus();
+  };
+  const toggleRecent = () => {
+    if (!showRecent) void loadThreads();
+    setShowRecent(!showRecent);
+  };
+
+  const blockedError = blockCode === "cap" ? (
+    <InlineError
+      label="ERROR · SPEND CAP"
+      title="LifeOS can't start a new run."
+      what="Your request wasn't sent."
+      why={`This month's AI spend reached the US$${capUsd} cap.`}
+      fix="Raise the cap in Settings. Runs already in progress will finish."
+      action={{ label: "OPEN SETTINGS", onClick: () => router.push("/settings?section=ai") }}
+    />
+  ) : blockCode === "no_key" ? (
+    <InlineError
+      label="ERROR · ORCHESTRATOR"
+      icon="link_off"
+      title="LifeOS can't answer yet."
+      what="Your request wasn't sent anywhere."
+      why="The Anthropic API key isn't configured on the server."
+      fix="Set ANTHROPIC_API_KEY in the server environment and restart LifeOS."
+    />
+  ) : blockCode === "paused" ? (
+    <InlineError
+      label="ERROR · PAUSED"
+      icon="block"
+      title="LifeOS can't start a new run."
+      what="Your request wasn't sent."
+      why="New runs are paused."
+      fix="Resume runs in the Command Centre. Running work will finish."
+      action={{ label: "OPEN AGENTS", onClick: () => router.push("/agents") }}
+    />
+  ) : null;
 
   const panel = (
     <aside
@@ -77,11 +147,17 @@ export function AIPanel() {
         <span aria-hidden="true" className="size-[9px] rotate-45 rounded-[2px] bg-[#8b8cff]" />
         <div className="flex flex-col">
           <span className="text-[14px] leading-tight font-medium">LifeOS</span>
-          <span className="font-mono text-[10px] tracking-[0.08em] text-text-3">ORCHESTRATOR · NOT CONNECTED</span>
+          <span className={`flex items-center gap-1.5 font-mono text-[10px] tracking-[0.08em] ${assistant === "cap" ? "text-text-2" : "text-text-3"}`}>
+            {assistant === "cap" && <span aria-hidden="true" className="size-1.5 rounded-full bg-red" />}
+            ORCHESTRATOR · {SUB_LABEL[assistant]}
+          </span>
         </div>
         <div className="flex-1" />
-        <button type="button" aria-label="New conversation" onClick={() => setTurns([])} className={iconBtn}>
+        <button type="button" aria-label="New conversation" onClick={newConversation} className={iconBtn}>
           <Icon name="edit_square" size={18} />
+        </button>
+        <button type="button" aria-label="Recent conversations" aria-expanded={showRecent} onClick={toggleRecent} className={iconBtn}>
+          <Icon name="history" size={18} />
         </button>
         <button type="button" aria-label="Close assistant" onClick={closeAI} className={iconBtn}>
           <Icon name="close" size={18} />
@@ -89,20 +165,31 @@ export function AIPanel() {
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
-        {turns.length === 0 ? (
+        {showRecent ? (
+          <RecentThreads
+            threads={chat.threads}
+            currentId={chat.threadId}
+            onSelect={(id) => {
+              void chat.openThread(id);
+              setShowRecent(false);
+              areaRef.current?.focus();
+            }}
+          />
+        ) : turns.length === 0 ? (
           <div className="flex flex-col gap-4 p-5">
             <h2 className="text-[20px] leading-[1.3] font-medium tracking-[-0.01em]">What should we look at?</h2>
             <p className="text-[13px] leading-normal text-text-2">
-              The assistant isn&apos;t connected yet. When it is, you can plan, search and delegate to your agents from here. Anything that sends, publishes or deletes will wait for your approval.
+              Ask about your repositories, pull requests and CI. Anything that creates or changes something waits for your approval.
             </p>
             <div className="font-mono text-[10px] tracking-[0.08em] text-text-3">EXAMPLES</div>
             <div className="flex flex-col gap-2">
-              {SUGGESTIONS.map((s) => (
+              {examples.map((s) => (
                 <button
                   key={s.text}
                   type="button"
-                  onClick={() => submit(s.text)}
-                  className="flex min-h-11 items-center gap-2.5 rounded-9 border border-[rgba(255,255,255,.07)] bg-fill-1 px-3 py-2.5 text-left text-[13.5px] hover:border-[rgba(139,140,255,.35)] hover:bg-[rgba(139,140,255,.06)]"
+                  disabled={blocked || streaming}
+                  onClick={() => void submit(s.text)}
+                  className="flex min-h-11 items-center gap-2.5 rounded-9 border border-[rgba(255,255,255,.07)] bg-fill-1 px-3 py-2.5 text-left text-[13.5px] hover:border-[rgba(139,140,255,.35)] hover:bg-[rgba(139,140,255,.06)] disabled:opacity-50"
                 >
                   <Icon name={s.icon} size={17} className="text-[#a5a6ff]" />
                   {s.text}
@@ -111,21 +198,23 @@ export function AIPanel() {
             </div>
           </div>
         ) : (
-          turns.map((t) => (
+          turns.map((t, i) => (
             <div key={t.id} className="flex animate-[lo-fade_250ms_ease-out] flex-col gap-3 border-b border-[rgba(255,255,255,.05)] p-5">
-              <div className="font-mono text-[10px] tracking-[0.08em] text-text-3">YOU · {t.time}</div>
+              <div className="font-mono text-[10px] tracking-[0.08em] text-text-3">YOU · {formatHM(new Date(t.at))}</div>
               <p className="text-[16px] leading-[1.4] break-words whitespace-pre-wrap">{t.prompt}</p>
-              <InlineError
-                label="ERROR · ORCHESTRATOR"
-                icon="link_off"
-                title="LifeOS can't answer yet."
-                what="Your request wasn't sent anywhere."
-                why="The orchestrator isn't connected. It arrives with agents in the next phase."
-                fix="Nothing to fix on your side. Use the command palette to move between pages in the meantime."
+              {t.steps.length > 0 && <ExecutionTrace steps={t.steps} size="panel" runHref={t.run ? `/agents/runs/${t.run.id}` : undefined} />}
+              {t.approvals.map((a) => (
+                <ApprovalCard key={a.id} approval={a} onDecided={() => void (chat.threadId && chat.openThread(chat.threadId))} />
+              ))}
+              <ResultCard
+                turn={t}
+                streaming={streaming && i === turns.length - 1}
+                onRetried={() => void (chat.threadId && chat.openThread(chat.threadId))}
               />
             </div>
           ))
         )}
+        {!showRecent && blockedError && <div className="p-5">{blockedError}</div>}
         <div ref={endRef} />
       </div>
 
@@ -135,7 +224,8 @@ export function AIPanel() {
             ref={areaRef}
             rows={2}
             aria-label="Message LifeOS"
-            placeholder="Ask LifeOS anything…"
+            aria-disabled={blocked || undefined}
+            placeholder={blockCode === "no_key" ? "Assistant isn't connected" : blocked ? "New runs are paused" : "Ask LifeOS anything…"}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={onKeyDown}
@@ -153,17 +243,32 @@ export function AIPanel() {
             >
               <Icon name="mic" size={18} />
             </button>
-            <button
-              type="button"
-              aria-label="Send"
-              disabled={!draft.trim()}
-              onClick={() => submit(draft)}
-              className="grid size-11 place-items-center rounded-8 bg-[#8b8cff] text-[#0b0c10] shadow-glow-ai disabled:bg-fill-3 disabled:text-text-4 disabled:shadow-none tab:size-[30px]"
-            >
-              <Icon name="arrow_upward" size={18} />
-            </button>
+            {streaming ? (
+              <button
+                type="button"
+                aria-label="Stop run"
+                disabled={!activeRunId}
+                onClick={() => activeRunId && void chat.stop(activeRunId)}
+                className="grid size-11 place-items-center rounded-8 bg-fill-3 text-text tab:size-[30px]"
+              >
+                <Icon name="stop" size={18} />
+              </button>
+            ) : (
+              <button
+                type="button"
+                aria-label="Send"
+                disabled={!draft.trim() || blocked}
+                onClick={() => void submit(draft)}
+                className="grid size-11 place-items-center rounded-8 bg-[#8b8cff] text-[#0b0c10] shadow-glow-ai disabled:bg-fill-3 disabled:text-text-4 disabled:shadow-none tab:size-[30px]"
+              >
+                <Icon name="arrow_upward" size={18} />
+              </button>
+            )}
           </div>
         </div>
+      </div>
+      <div role="status" aria-live="polite" className="sr-only">
+        {chat.announce}
       </div>
     </aside>
   );
