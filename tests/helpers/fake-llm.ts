@@ -6,6 +6,7 @@ type Turn = {
   toolUses?: { name: string; input: unknown }[];
   usage?: Partial<LlmUsage>;
   stopReason?: string;
+  throw?: Error;
 };
 
 let n = 0;
@@ -16,9 +17,10 @@ export function scriptedLlm(turns: Turn[]): LlmClient & { calls: Parameters<LlmC
   return {
     calls,
     async stream(params, onText) {
-      calls.push(params);
+      calls.push({ ...params, messages: structuredClone(params.messages) }); // snapshot: the loop mutates its array
       const t = queue.shift();
       if (!t) throw new Error("script exhausted");
+      if (t.throw) throw t.throw;
       for (const w of (t.text ?? "").split(/(?<=\s)/).filter(Boolean)) onText(w);
       const content = [
         ...(t.text ? [{ type: "text", text: t.text, citations: null }] : []),

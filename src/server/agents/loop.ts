@@ -1,18 +1,33 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { and, eq, inArray, sql } from "drizzle-orm";
-import type { ChatEvent, RunStatus } from "@/lib/agent-types";
+import type { ChatEvent, RouteEvent, RunStatus } from "@/lib/agent-types";
 import { formatDuration } from "@/lib/format";
 import { db, type DB } from "../db/client";
 import { agentRuns, approvals, runTurns, toolCalls } from "../db/schema";
 import { emitActivity, notifyLive } from "../events";
 import { log } from "../log";
 import { enqueue as realEnqueue, QUEUES, type Enqueue } from "../queue";
-import { toApprovalDTO, toRunDTO, toStepDTO } from "./dto";
+import { routeSteps, toApprovalDTO, toRunDTO, toStepDTO } from "./dto";
 import { callTool } from "./gateway";
 import { getLlm } from "./llm";
 import { costUsd } from "./pricing";
-import { getAgent, RUN_LIMITS } from "./registry";
-import { freeCoolingDown, getFreePrivateOk, hasFreeKey, isFree, privateInTree, resolveModel } from "./routing";
+import { FreeModelError } from "./openrouter";
+import { getAgent, MODELS, RUN_LIMITS } from "./registry";
+import {
+  checkFreeTurn,
+  ESCALATE_TOOL,
+  escalateReason,
+  FREE_SUFFIX,
+  freeCoolingDown,
+  getFreePrivateOk,
+  hasFreeKey,
+  isFree,
+  markFreeUnavailable,
+  mentionsSensitive,
+  privateInTree,
+  resolveModel,
+  sensitiveRepoNames,
+} from "./routing";
 import { agentConfig, isPaused } from "./runs";
 import { assertUnderCap } from "./spend";
 import { appendMessage, threadHistory } from "./threads";
@@ -181,6 +196,43 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
       }
     };
     if (run0.threadId) emit({ k: "run", run: toRunDTO(run0), threadId: run0.threadId });
+    for (const step of routeSteps(run0)) emit({ k: "step", step }); // idempotent upsert client-side
+
+    const pinnedFree = run0.routeMode === "free";
+    let freeRetried = false;
+    let curModel = run0.model;
+    // D-09 thread-level taint: records what this run saw, whatever the opt-in; resolveModel decides if it matters.
+    let tainted = run0.sawPrivate;
+    const taint = async (m: unknown) => {
+      if (tainted || !mentionsSensitive(m, await sensitiveRepoNames(h))) return;
+      tainted = true;
+      await h.update(agentRuns).set({ sawPrivate: true }).where(eq(agentRuns.id, runId));
+    };
+    // One-way switch (D-05). Persisting the model before the next turn keeps a resumed run on Sonnet.
+    const switchToSonnet = async (kind: "fallback" | "escalated" | "private", rawReason: string): Promise<RunStatus | null> => {
+      const reason = rawReason.slice(0, 200);
+      const blocked = pinnedFree;
+      const ev: RouteEvent = { at: now().toISOString(), kind: blocked ? "blocked" : kind, from: curModel, to: blocked ? null : MODELS.sonnet, reason, seq: toolCount + 0.5 };
+      const [row] = await h
+        .update(agentRuns)
+        .set({ routeEvents: sql`${agentRuns.routeEvents} || ${JSON.stringify([ev])}::jsonb`, ...(blocked ? {} : { model: MODELS.sonnet }) })
+        .where(eq(agentRuns.id, runId))
+        .returning({ id: agentRuns.id, agentId: agentRuns.agentId, routeEvents: agentRuns.routeEvents });
+      await notifyLive(h, "run", runId);
+      const step = row && routeSteps(row).at(-1);
+      if (step) emit({ k: "step", step });
+      if (blocked) {
+        const priv = kind === "private";
+        return await fail(
+          priv ? "private_blocked" : "free_unavailable",
+          priv
+            ? "This run needs private-repo data, which isn't sent to free models. Allow it in Settings → Connections or pick another model for this agent."
+            : "The free model couldn't complete this run. The agent is pinned to Free only.",
+        );
+      }
+      curModel = MODELS.sonnet;
+      return null;
+    };
 
     // Resume: the last assistant turn's tool_use blocks may still lack results (approval wait).
     const tail = messages.at(-1);
@@ -189,6 +241,7 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
       if (ids.length) {
         try {
           messages.push(await buildToolResults(h, runId, ids));
+          await taint(messages.at(-1));
         } catch (err) {
           if (!(err instanceof PendingToolError)) throw err;
           return await suspend();
@@ -197,12 +250,19 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
       }
     }
 
-    const curModel = run0.model; // plan 06 makes this `let` for mid-run switches
+    await taint(messages);
     for (;;) {
       const [cur] = await h.select({ c: agentRuns.cancelRequestedAt }).from(agentRuns).where(eq(agentRuns.id, runId));
       if (cur?.c) return await finish({ status: "cancelled", error: "Cancelled by you" });
       if (tokens > RUN_LIMITS.tokens) return await fail("limit:tokens", "This run used too many tokens and was stopped.");
       if (active >= RUN_LIMITS.activeMs) return await fail("limit:time", "This run took too long and was stopped.");
+
+      // D-09: before any free request is built, the whole conversation must be free of private/unknown repos.
+      if (isFree(curModel) && !(await getFreePrivateOk(h)) && mentionsSensitive(messages, await sensitiveRepoNames(h))) {
+        const s = await switchToSonnet("private", "private repo data");
+        if (s) return s;
+        continue;
+      }
 
       const t0 = now().getTime();
       const model = curModel; // one turn is priced with exactly the model that served it (D-14)
@@ -233,7 +293,13 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
       let turn;
       try {
         turn = await opts.llm.stream(
-          { model, system: agent.systemPrompt, messages, tools: anthropicTools, maxTokens: RUN_LIMITS.turnMaxTokens },
+          {
+            model,
+            system: isFree(model) ? `${agent.systemPrompt} ${FREE_SUFFIX}` : agent.systemPrompt,
+            messages,
+            tools: isFree(model) && !pinnedFree ? [...anthropicTools, ESCALATE_TOOL] : anthropicTools,
+            maxTokens: RUN_LIMITS.turnMaxTokens,
+          },
           (text) => {
             streamedChars += text.length;
             emit({ k: "delta", runId, text });
@@ -245,11 +311,34 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
         if (streamedChars > 0 && !isFree(model)) {
           await addUsage({ input: Math.ceil(JSON.stringify(messages).length / 4), output: Math.ceil(streamedChars / 4), cacheWrite: 0, cacheRead: 0 }, model).catch(() => undefined);
         }
-        throw err;
+        if (opts.signal?.aborted || !isFree(model)) throw err;
+        // Free turn failed (D-06/D-08): one retry on transient errors, then Sonnet.
+        active += now().getTime() - t0;
+        const fe = err instanceof FreeModelError ? err : null;
+        if (fe?.transient && !freeRetried) {
+          freeRetried = true;
+          await new Promise((r) => setTimeout(r, Math.min(fe.retryAfterMs ?? 0, 5000)));
+          continue;
+        }
+        if (fe && (fe.transient || fe.status === 429 || fe.status === 402)) markFreeUnavailable(now());
+        const s = await switchToSonnet("fallback", fe ? `${fe.code}${fe.status ? " " + fe.status : ""}` : "error");
+        if (s) return s;
+        continue;
       }
       const u = turn.usage;
       tokens += u.input + u.output;
       await addUsage(u, model);
+      if (isFree(model)) {
+        // Bad free turns are dropped before they reach history (Pitfall 1); usage above is already recorded.
+        const esc = pinnedFree ? null : escalateReason(turn.content);
+        const bad = esc ? null : checkFreeTurn({ content: turn.content, stopReason: turn.stopReason, allowed, messages, toolCount, requiresTools: !!agent.requiresTools });
+        if (esc || bad) {
+          active += now().getTime() - t0;
+          const s = await switchToSonnet(esc ? "escalated" : "fallback", esc ?? bad!.code);
+          if (s) return s;
+          continue;
+        }
+      }
       messages.push({ role: "assistant", content: turn.content as Msg["content"] });
 
       const uses = turn.content.filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use");
@@ -294,6 +383,7 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
       active += now().getTime() - t0;
       if (waiting) return await suspend();
       messages.push(await buildToolResults(h, runId, uses.map((b) => b.id)));
+      await taint(messages.at(-1));
       await persist();
     }
   } catch (err) {
