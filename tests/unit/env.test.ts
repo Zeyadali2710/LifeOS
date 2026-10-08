@@ -31,4 +31,10 @@ describe("env", () => {
   it("rejects non-postgres database URLs", () => {
     expect(() => parseEnv({ ...valid, DATABASE_URL: "mysql://u:p@h/db" })).toThrow(/DATABASE_URL/);
   });
+
+  it("validates OPENROUTER_FREE_MODEL ends in :free", () => {
+    expect(parseEnv(valid).OPENROUTER_FREE_MODEL).toBeUndefined();
+    expect(parseEnv({ ...valid, OPENROUTER_FREE_MODEL: "a/b:free" }).OPENROUTER_FREE_MODEL).toBe("a/b:free");
+    expect(() => parseEnv({ ...valid, OPENROUTER_FREE_MODEL: "a/b" })).toThrow(/OPENROUTER_FREE_MODEL/);
+  });
 });
