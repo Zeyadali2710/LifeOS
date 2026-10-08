@@ -98,11 +98,11 @@ From an empty repo to a personal OS: secure foundation and deploy path first, th
   3. The orchestrator always runs on claude-opus-5-5; routing is per-run, visible in the trace and Command Centre, and can be overridden per agent in its settings
   4. Spend cap, pricing and audit stay correct for mixed providers; with no OpenRouter key everything behaves exactly as today (Anthropic only)
 **Notes:** GitHub sync makes no LLM calls today; the cost is in agent runs. Route behind the existing LlmClient seam (src/server/agents/llm.ts); OpenRouter speaks the OpenAI chat format, so tool-use translation and data-retention/privacy of free providers must be researched (free models may log prompts, so no tokens or private-repo content without an explicit owner choice).
-**Plans:** 1/9 plans executed
+**Plans:** 2/9 plans executed
 
 Plans:
 - [x] 03.1-01-PLAN.md — AGT-07, schema (tier, route mode/events, run_turns) + migration 0002 with backfill, route types/steps, registry flags
-- [ ] 03.1-02-PLAN.md — OpenRouter adapter (fetch, translation, FreeModelError, deny-retry) + $0 :free pricing
+- [x] 03.1-02-PLAN.md — OpenRouter adapter (fetch, translation, FreeModelError, deny-retry) + $0 :free pricing
 - [ ] 03.1-03-PLAN.md — routing.ts: resolveModel, free model config, cooldown, D-08 heuristics, escalate tool, D-09 private scan
 - [ ] 03.1-04-PLAN.md — delegate tier, createRun model resolution, picker values, per-turn pricing + spend by turn model
 - [ ] 03.1-05-PLAN.md — Encrypted OpenRouter key, dispatching LlmClient, owner actions (key, private opt-in)
