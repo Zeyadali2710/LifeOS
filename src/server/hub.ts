@@ -10,6 +10,7 @@ export type Hub = { subscribe(fn: (e: HubEvent) => void): () => void; stop(): Pr
 
 const MIN_BACKOFF = 1000;
 const MAX_BACKOFF = 30_000;
+const DATA_KINDS: LiveKind[] = ["activity", "notification", "run", "approval"];
 
 // One dedicated LISTEN connection (never a Pool: LISTEN is per-session). Fans out to all subscribers.
 export function createHub(url: string, load: (p: { k: string; id: string }) => Promise<unknown>): Hub {
@@ -60,9 +61,9 @@ export function createHub(url: string, load: (p: { k: string; id: string }) => P
       } catch {
         return;
       }
-      if ((p.k !== "activity" && p.k !== "notification") || typeof p.id !== "string") return;
-      const row = await load({ k: p.k, id: p.id }).catch(() => null);
-      if (row) emit({ k: p.k, json: JSON.stringify(row) });
+      if (!DATA_KINDS.includes(p.k as LiveKind) || typeof p.id !== "string") return;
+      const row = await load({ k: p.k as string, id: p.id as string }).catch(() => null);
+      if (row) emit({ k: p.k as LiveKind, json: JSON.stringify(row) });
     });
     try {
       await c.connect();
