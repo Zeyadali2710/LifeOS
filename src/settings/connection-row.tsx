@@ -1,0 +1,122 @@
+"use client";
+
+import { useState } from "react";
+import type { ReactNode } from "react";
+import { removeTokenAction } from "@/server/settings-actions";
+import { useShell } from "@/shell/shell-provider";
+import { Button } from "@/ui/button";
+import { Dialog } from "@/ui/dialog";
+import { StatusDot } from "@/ui/status-dot";
+import { TokenForm } from "./token-form";
+
+export type RowStatus = "connected" | "none" | "error";
+
+const LABEL = { connected: "CONNECTED", none: "NOT CONNECTED", error: "RECONNECT" } as const;
+const DOT = { connected: "online", none: "none", error: "attention" } as const;
+const COLOR = { connected: "text-green", none: "text-text-3", error: "text-red" } as const;
+
+export function ConnectionRow({
+  id,
+  tile,
+  name,
+  detail,
+  status,
+  noun,
+  removeBody,
+  readOnly = false,
+  onChanged,
+  children,
+}: {
+  id?: "github_read" | "github_write";
+  tile: string;
+  name: string;
+  detail: ReactNode;
+  status: RowStatus;
+  noun?: string;
+  removeBody?: string;
+  readOnly?: boolean;
+  onChanged?: (message: string) => void;
+  children?: ReactNode;
+}) {
+  const [open, setOpen] = useState(false);
+  const [confirm, setConfirm] = useState(false);
+  const { toast } = useShell();
+
+  async function remove() {
+    setConfirm(false);
+    const r = await removeTokenAction(id!);
+    if (r.ok) {
+      setOpen(false);
+      toast(`${noun === "read" ? "GitHub read" : "Issues-write"} token removed`);
+      onChanged?.("removed");
+    } else toast("Couldn't save that. Try again.", "error");
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div
+        className={`flex flex-wrap items-center gap-3.5 rounded-12 border bg-surface px-4 py-3.5 ${status === "error" ? "border-[rgba(240,122,110,.3)]" : "border-[rgba(255,255,255,.07)]"}`}
+      >
+        <span className="grid size-9 shrink-0 place-items-center rounded-9 bg-fill-2 font-mono text-[11px] font-semibold">{tile}</span>
+        <div className="min-w-[200px] flex-1">
+          <div className="text-[14.5px] font-medium">{name}</div>
+          <div className="text-[12.5px] text-text-3">{detail}</div>
+        </div>
+        <span className={`inline-flex items-center gap-1.5 font-mono text-[10.5px] font-semibold tracking-[0.1em] ${COLOR[status]}`}>
+          <StatusDot state={DOT[status]} />
+          {LABEL[status]}
+        </span>
+        {!readOnly && (
+          <Button
+            size="md"
+            className="h-8 min-w-[110px]"
+            variant={status === "error" ? "inverse" : status === "connected" ? "secondary" : "primary"}
+            aria-expanded={open}
+            onClick={() => setOpen(!open)}
+          >
+            {status === "error" ? "Reconnect" : status === "connected" ? "Replace" : "Connect"}
+          </Button>
+        )}
+      </div>
+      {children}
+      {open && id && (
+        <>
+          <TokenForm
+            id={id}
+            onCancel={() => setOpen(false)}
+            onDone={(r) => {
+              setOpen(false);
+              toast(id === "github_read" ? `GitHub connected · ${r.repos} repositories` : `Issue creation enabled · ${r.repos} repositories`);
+              onChanged?.("saved");
+            }}
+          />
+          {status !== "none" && (
+            <div>
+              <Button variant="ghost" className="text-red" onClick={() => setConfirm(true)}>
+                Remove token
+              </Button>
+            </div>
+          )}
+        </>
+      )}
+      <Dialog
+        open={confirm}
+        onClose={() => setConfirm(false)}
+        title={`Remove the ${noun === "read" ? "GitHub read" : "issues-write"} token?`}
+        initialFocus={() => document.getElementById("remove-token-cancel")}
+        actions={
+          <>
+            <Button id="remove-token-cancel" variant="secondary" onClick={() => setConfirm(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={remove}>
+              Remove token
+            </Button>
+          </>
+        }
+      >
+        The encrypted token is deleted from LifeOS. {removeBody} You can add a token again at any time.
+      </Dialog>
+    </div>
+  );
+}

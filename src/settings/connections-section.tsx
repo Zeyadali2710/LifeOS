@@ -1,0 +1,130 @@
+"use client";
+
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import type { ConnectionDTO } from "@/lib/agent-types";
+import { syncNowAction } from "@/server/settings-actions";
+import { formatHM } from "@/server/time";
+import { useShell } from "@/shell/shell-provider";
+import { Button } from "@/ui/button";
+import { Disclosure } from "@/ui/disclosure";
+import { Icon } from "@/ui/icon";
+import { ConnectionRow, type RowStatus } from "./connection-row";
+
+const SYNC_MS = 15 * 60_000;
+const expiry = (iso: string | null) =>
+  iso ? ` · expires ${new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric", timeZone: "Australia/Sydney" })}` : "";
+const mono = "font-mono";
+
+export function ConnectionsSection({
+  connections,
+  privacy,
+  anthropic,
+}: {
+  connections: ConnectionDTO[];
+  privacy: Record<string, boolean>;
+  anthropic: boolean;
+}) {
+  const router = useRouter();
+  const { toast } = useShell();
+  const [syncing, setSyncing] = useState(false);
+  const read = connections.find((c) => c.id === "github_read")!;
+  const write = connections.find((c) => c.id === "github_write")!;
+  const st = (c: ConnectionDTO): RowStatus => c.status;
+  const refresh = () => router.refresh();
+
+  async function sync() {
+    setSyncing(true);
+    const r = await syncNowAction();
+    setSyncing(false);
+    toast(r.ok ? "Sync started" : "Couldn't save that. Try again.", r.ok ? "success" : "error");
+  }
+
+  const readDetail =
+    read.status === "none" ? (
+      "Add a fine-grained read-only token to sync repositories, pull requests, issues and CI."
+    ) : (
+      <span className={mono}>
+        @{read.login} · ····{read.last4} · read-only{expiry(read.expiresAt)} · {read.repos.length} repositories
+      </span>
+    );
+  const writeDetail =
+    write.status === "none" ? (
+      "Optional. Without it, LifeOS can read GitHub but can't create issues."
+    ) : (
+      <span className={mono}>
+        ····{write.last4} · issues: write · {write.repos.length} repositories{expiry(write.expiresAt)}
+      </span>
+    );
+  const last = read.lastSyncAt ? new Date(read.lastSyncAt) : null;
+
+  return (
+    <div className="flex flex-col gap-4">
+      <p className="text-[14px] text-text-2">Accounts LifeOS reads from and, with your approval, acts on. Tokens are encrypted and never shown again.</p>
+      <div className="flex flex-col gap-2">
+        <ConnectionRow
+          id="github_read"
+          tile="GH"
+          name="GitHub · read access"
+          detail={readDetail}
+          status={st(read)}
+          noun="read"
+          removeBody="Syncing stops and synced GitHub data stays until you reconnect."
+          onChanged={refresh}
+        >
+          {read.status !== "none" && (
+            <div className="rounded-12 border border-[rgba(255,255,255,.07)] bg-surface px-4 py-3">
+              <Disclosure summary={<span className="text-[13px] text-text-2">{read.repos.length} repositories</span>}>
+                <ul className="mt-2 max-h-[240px] overflow-y-auto">
+                  {read.repos.map((r) => (
+                    <li key={r} className={`flex items-center gap-1.5 py-1 text-[12px] ${mono}`}>
+                      {r}
+                      {privacy[r] && <Icon name="lock" size={13} className="text-text-3" />}
+                    </li>
+                  ))}
+                </ul>
+              </Disclosure>
+              <div className="mt-3 flex items-center justify-between gap-3 border-t border-[rgba(255,255,255,.07)] pt-3">
+                {read.lastSyncError ? (
+                  <span className={`text-[11px] text-red ${mono}`}>
+                    Last sync failed {last ? formatHM(last) : ""}: {read.lastSyncError}
+                  </span>
+                ) : (
+                  <span className={`text-[11px] text-text-3 ${mono}`}>
+                    {last ? `Last synced ${formatHM(last)} · next about ${formatHM(new Date(last.getTime() + SYNC_MS))}` : "Not synced yet"}
+                  </span>
+                )}
+                <Button variant="secondary" size="xs" loading={syncing} onClick={sync}>
+                  <Icon name="refresh" size={14} />
+                  Sync now
+                </Button>
+              </div>
+            </div>
+          )}
+        </ConnectionRow>
+        <ConnectionRow
+          id="github_write"
+          tile="GH"
+          name="GitHub · create issues"
+          detail={writeDetail}
+          status={st(write)}
+          noun="write"
+          removeBody="LifeOS can no longer create issues."
+          onChanged={refresh}
+        />
+        <ConnectionRow
+          tile="AI"
+          name="Anthropic API"
+          readOnly
+          status={anthropic ? "connected" : "none"}
+          detail={
+            <>
+              Set in the server environment (<span className={mono}>ANTHROPIC_API_KEY</span>). Not editable here.
+              {anthropic && " Default model Opus 5.5"}
+            </>
+          }
+        />
+      </div>
+    </div>
+  );
+}
