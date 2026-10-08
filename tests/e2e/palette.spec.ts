@@ -71,7 +71,7 @@ test("mobile: assistant opens full-screen and answers honestly", async ({ page }
   const box = await assistant.boundingBox();
   const vp = page.viewportSize()!;
   expect(box!.width).toBeGreaterThanOrEqual(vp.width - 1);
-  await page.getByLabel("Message LifeOS").fill("hello");
-  await page.getByRole("button", { name: "Send" }).click();
+  // With no API key the composer is disabled and the panel says why.
+  await expect(page.getByLabel("Message LifeOS")).toBeDisabled();
   await expect(assistant.getByRole("alert")).toContainText("LifeOS can't answer yet.");
 });

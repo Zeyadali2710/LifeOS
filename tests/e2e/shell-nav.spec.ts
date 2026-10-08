@@ -9,10 +9,10 @@ const ROUTES = [
   ["/projects", "Projects"],
   ["/knowledge", "Knowledge"],
   ["/goals", "Goals"],
-  ["/agents", "Agents"],
-  ["/approvals", "Approvals"],
-  ["/settings", "Settings"],
-] as const;
+  ["/agents", "Your autonomous workforce."],
+  ["/approvals", /decisions? (is|are) waiting|caught up/],
+  ["/settings", "Connections"],
+] as [string, string | RegExp][];
 
 test.beforeAll(seedHeartbeat);
 test.beforeEach(async ({ page }) => {

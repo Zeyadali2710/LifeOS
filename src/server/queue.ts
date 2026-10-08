@@ -22,7 +22,10 @@ function boss(): Promise<PgBoss> {
 
 export const enqueue: Enqueue = async (name, data, opts) => {
   try {
-    await (await boss()).send(name, data, opts?.singletonKey ? { singletonKey: opts.singletonKey } : {});
+    // Never let a missing/unready queue hang the caller: callers treat a throw as "queued: false" and the sweeper retries.
+    const send = (async () => (await boss()).send(name, data, opts?.singletonKey ? { singletonKey: opts.singletonKey } : {}))();
+    send.catch(() => undefined);
+    await Promise.race([send, new Promise((_, rej) => setTimeout(() => rej(new Error("enqueue timed out")), 5000).unref())]);
   } catch (err) {
     log.error({ err, name }, "enqueue failed");
     globalThis.__lifeosBoss = undefined; // allow a retry with a fresh connection

@@ -6,6 +6,8 @@ const PORT = 3100;
 
 export default defineConfig({
   testDir: "tests/e2e",
+  // One shared production server and DB: parallel workers starve it (SSE + status polling) and make specs time out.
+  workers: 1,
   // Locally reuse installed Chrome; CI installs the bundled Chromium.
   use: { baseURL: `http://localhost:${PORT}`, channel: process.env.CI ? undefined : "chrome" },
   projects: [
