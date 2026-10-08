@@ -96,3 +96,48 @@ describe("mentionsSensitive", () => {
     expect(mentionsSensitive([{ role: "user", content: [{ type: "tool_result", tool_use_id: "1", content: "from me/secret#3" }] }], ["me/secret"])).toBe(true);
   });
 });
+
+import { z } from "zod";
+import { checkFreeTurn, ESCALATE_TOOL, escalateReason } from "@/server/agents/routing";
+
+const tool = { name: "github.list_repos", input: z.object({ q: z.string() }) } as never;
+const allowed = { "github.list_repos": tool };
+const use = (input: unknown, name = "github_list_repos") => ({ type: "tool_use", id: "t", name, input }) as never;
+const txt = (text: string) => ({ type: "text", text }) as never;
+const turn = (o: object) => checkFreeTurn({ content: [txt("hello there")], stopReason: "end_turn", allowed, messages: [], toolCount: 1, requiresTools: true, ...o })?.code ?? null;
+
+describe("escalate", () => {
+  it("extracts and trims the reason", () => {
+    expect(ESCALATE_TOOL.name).toBe("escalate");
+    expect(escalateReason([txt("x")])).toBeNull();
+    expect(escalateReason([use({ reason: ` ${"a".repeat(300)} ` }, "escalate")])).toHaveLength(200);
+    expect(escalateReason([use({}, "escalate")])).toBe("no reason given");
+  });
+});
+
+describe("checkFreeTurn", () => {
+  it("accepts valid tool calls", () => expect(turn({ content: [use({ q: "x" })] })).toBeNull());
+  it("invalid_tool_call", () => {
+    expect(turn({ content: [use({ q: "x" }, "nope")] })).toBe("invalid_tool_call");
+    expect(turn({ content: [use({ q: 1 })] })).toBe("invalid_tool_call");
+  });
+  it("empty", () => expect(turn({ content: [txt(" ")] })).toBe("empty"));
+  it("no_tool_use", () => {
+    expect(turn({ toolCount: 0 })).toBe("no_tool_use");
+    expect(turn({ toolCount: 0, requiresTools: false })).toBeNull();
+  });
+  it("unsupported_ref", () => {
+    const content = [txt("see me/a#7")];
+    expect(turn({ content })).toBe("unsupported_ref");
+    const messages = [{ role: "user", content: [{ type: "tool_result", tool_use_id: "t", content: "me/a#7 open" }] }];
+    expect(turn({ content, messages })).toBeNull();
+  });
+  it("tool_markup", () => {
+    for (const t of ["<tool_call>x", "<function=a>", 'x "tool_calls": []', '{"name": "a"}']) expect(turn({ content: [txt(t)] })).toBe("tool_markup");
+  });
+  it("repeat", () => {
+    const messages = [{ role: "assistant", content: [{ type: "tool_use", id: "p", name: "github_list_repos", input: { q: "x" } }] }];
+    expect(turn({ content: [use({ q: "x" })], messages })).toBe("repeat");
+  });
+  it("truncated", () => expect(turn({ stopReason: "max_tokens" })).toBe("truncated"));
+});
