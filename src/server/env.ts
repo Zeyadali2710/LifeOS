@@ -6,6 +6,7 @@ const schema = z.object({
   DATABASE_URL: z.url({ protocol: /^postgres(ql)?$/ }),
   BETTER_AUTH_SECRET: z.string().min(32),
   BETTER_AUTH_URL: z.url(),
+  ANTHROPIC_API_KEY: z.string().min(1).optional(),
   LIFEOS_MASTER_KEY: z
     .string()
     .refine((v) => Buffer.from(v, "base64").length === 32, "must be 32 bytes, base64-encoded"),
