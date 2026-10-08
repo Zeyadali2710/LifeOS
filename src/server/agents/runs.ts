@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db, type DB } from "../db/client";
 import { agentRuns, agents, approvals, settings, toolCalls } from "../db/schema";
 import { notifyLive } from "../events";
@@ -67,7 +67,7 @@ export async function cancelRun(handle: DB = db(), runId: string, now: Date = ne
     const apprs = await tx
       .update(approvals)
       .set({ status: "cancelled", decidedAt: now })
-      .where(and(eq(approvals.runId, runId), eq(approvals.status, "pending")))
+      .where(and(eq(approvals.runId, runId), inArray(approvals.status, ["pending", "approved", "failed"])))
       .returning({ id: approvals.id });
     await tx.update(toolCalls).set({ status: "cancelled" }).where(and(eq(toolCalls.runId, runId), eq(toolCalls.status, "waiting_approval")));
     const parent = run.parentRunId

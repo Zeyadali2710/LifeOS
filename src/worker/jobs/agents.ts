@@ -12,8 +12,10 @@ const data = z.object({ runId: z.uuid(), approvalId: z.uuid().optional() });
 
 /** agent.resume: execute an approved action (if any), then continue the run to its next suspension. */
 export async function handleResume(job: unknown): Promise<void> {
+  const parsed = data.safeParse(job);
+  if (!parsed.success) return log.error({ err: parsed.error }, "agent resume: bad job data"); // retrying can't help
+  const { runId, approvalId } = parsed.data;
   try {
-    const { runId, approvalId } = data.parse(job);
     const h = db();
     if (approvalId && (await executeApproved(h, approvalId)).status === "failed") return; // run keeps waiting; owner can Retry
     if (!getLlm()) {
@@ -27,6 +29,7 @@ export async function handleResume(job: unknown): Promise<void> {
     await runQueued(h, runId);
   } catch (err) {
     log.error({ err }, "agent resume failed");
+    throw err; // let pg-boss retryLimit re-run the job
   }
 }
 

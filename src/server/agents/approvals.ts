@@ -135,7 +135,14 @@ export async function executeApproved(
   const [row] = await h
     .update(approvals)
     .set({ status: "executing" })
-    .where(and(eq(approvals.id, id), inArray(approvals.status, ["approved", "failed"])))
+    .where(
+      and(
+        eq(approvals.id, id),
+        inArray(approvals.status, ["approved", "failed"]),
+        // A cancelled/expired run must never create the issue (cancelRun also cancels approved rows).
+        sql`not exists (select 1 from agent_runs r where r.id = ${approvals.runId} and r.status in ('cancelled', 'expired'))`,
+      ),
+    )
     .returning();
   if (!row) {
     const cur = await load(h, id);
@@ -234,6 +241,14 @@ export async function expireDue(h: DB, now: Date = new Date(), opts: { enqueue?:
     await live(h, a);
     if (run?.parentRunId) await notifyLive(h, "run", run.parentRunId);
   }
+
+  // A worker that died mid-execution leaves 'executing' behind: mark it failed+ambiguous so Retry adopts via the marker.
+  const hung = await h
+    .update(approvals)
+    .set({ status: "failed", ambiguous: true, error: "Interrupted while creating. Retry will check first." })
+    .where(and(eq(approvals.status, "executing"), lte(approvals.updatedAt, new Date(now.getTime() - STUCK_MS))))
+    .returning();
+  for (const a of hung) await live(h, a);
 
   const stuck = await h
     .select()

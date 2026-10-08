@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { decide, executeApproved, expireDue, getApproval, listApprovals, retryApproval, saveEdit } from "@/server/agents/approvals";
 import { advance, createRun, runQueued } from "@/server/agents/loop";
+import { cancelRun } from "@/server/agents/runs";
 import { createThread } from "@/server/agents/threads";
 import { activityEvents, agentRuns, approvals, auditLog, githubRepos, notifications, settings, threadMessages, toolCalls } from "@/server/db/schema";
 import { saveToken } from "@/server/github/connections";
@@ -160,6 +161,34 @@ describe("expireDue and lists", () => {
     const enqueue = vi.fn(async () => {});
     await expireDue(h(), new Date(Date.now() + 3 * 60_000), { enqueue });
     expect(enqueue).toHaveBeenCalledTimes(1);
+  });
+
+  it("recovers approvals stuck in executing as failed+ambiguous", async () => {
+    const { id } = await suspended();
+    await decide(h(), id, "approve", { enqueue: async () => {} });
+    await h().update(approvals).set({ status: "executing" }).where(eq(approvals.id, id));
+    await expireDue(h(), new Date(Date.now() + 3 * 60_000), { enqueue: async () => {} });
+    expect(await row(id)).toMatchObject({ status: "failed", ambiguous: true });
+    expect(await retryApproval(h(), id, { enqueue: async () => {} })).toEqual({ ok: true });
+  });
+
+  it("cancelling the run cancels an approved approval and nothing is posted", async () => {
+    const { id, runId } = await suspended();
+    await decide(h(), id, "approve", { enqueue: async () => {} });
+    expect(await cancelRun(h(), runId)).toBe(true);
+    expect((await row(id)).status).toBe("cancelled");
+    const f = fakeGithub({ "POST /repos/me/a/issues": () => created() });
+    expect(await executeApproved(h(), id, { fetch: f })).toEqual({ status: "skipped" });
+    expect(posts(f)).toHaveLength(0);
+  });
+
+  it("refuses to execute for a cancelled run even if the approval is still approved", async () => {
+    const { id, runId } = await suspended();
+    await decide(h(), id, "approve", { enqueue: async () => {} });
+    await h().update(agentRuns).set({ status: "cancelled" }).where(eq(agentRuns.id, runId));
+    const f = fakeGithub({ "POST /repos/me/a/issues": () => created() });
+    expect(await executeApproved(h(), id, { fetch: f })).toEqual({ status: "skipped" });
+    expect(posts(f)).toHaveLength(0);
   });
 
   it("lists and gets DTOs with repoPrivate", async () => {
