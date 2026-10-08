@@ -134,7 +134,7 @@ export function createOpenRouter(deps: { getKey: () => Promise<string | null>; f
 
       const content: Anthropic.ContentBlock[] = [];
       const text = typeof msg.content === "string" ? msg.content : "";
-      if (text) content.push({ type: "text", text, citations: null });
+      if (text.trim()) content.push({ type: "text", text, citations: null }); // whitespace-only blocks are rejected by Anthropic after a switch
       for (const c of msg.tool_calls ?? []) {
         let input: unknown;
         try {

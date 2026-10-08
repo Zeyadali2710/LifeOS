@@ -92,6 +92,12 @@ describe("openrouter translation", () => {
     expect(t2.usage.output).toBeGreaterThan(0);
   });
 
+  it("drops a whitespace-only text block before tool_calls (WR-01)", async () => {
+    const b = { choices: [{ finish_reason: "tool_calls", message: { content: "\n\n", tool_calls: [{ function: { name: "t_x", arguments: "{}" } }] } }] };
+    const t = await setup(json(b)).llm.stream(params(), vi.fn());
+    expect(t.content.map((c) => c.type)).toEqual(["tool_use"]);
+  });
+
   it("empty tool arguments become {}", async () => {
     const b = { choices: [{ finish_reason: "tool_calls", message: { tool_calls: [{ function: { name: "t_x", arguments: "" } }] } }] };
     const t = await setup(json(b)).llm.stream(params(), vi.fn());
