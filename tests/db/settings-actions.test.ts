@@ -16,7 +16,8 @@ vi.mock("@/server/queue", () => ({ enqueue: (...a: unknown[]) => enqueue(...a), 
 const saveToken = vi.fn();
 vi.mock("@/server/github/connections", async (orig) => ({ ...(await orig<object>()), saveToken: (...a: unknown[]) => saveToken(...a) }));
 
-import { removeTokenAction, saveTokenAction, setSpendCapAction, syncNowAction } from "@/server/settings-actions";
+import { getFreePrivateOk } from "@/server/agents/routing";
+import { removeTokenAction, saveOpenRouterKeyAction, saveTokenAction, setFreePrivateAction, setSpendCapAction, syncNowAction } from "@/server/settings-actions";
 
 const seed = (id: "github_read" | "github_write") =>
   t.handle().insert(connections).values({ id, ciphertext: "x", last4: "abcd", login: "me", status: "connected", repos: ["a/b"] });
@@ -62,5 +63,21 @@ describe("settings actions", () => {
     expect(enqueue).toHaveBeenCalledWith("github.sync", {}, { singletonKey: "github.sync" });
     await seed("github_write");
     expect(await removeTokenAction("github_write")).toEqual({ ok: true });
+  });
+});
+
+describe("openrouter actions", () => {
+  it("validates key, toggles opt-in, removes row, requires owner", async () => {
+    expect(await saveOpenRouterKeyAction("")).toEqual({ ok: false, error: "empty" });
+    expect(await setFreePrivateAction("yes" as never)).toEqual({ ok: false });
+    expect(await setFreePrivateAction(true)).toEqual({ ok: true });
+    expect(await getFreePrivateOk(t.handle())).toBe(true);
+    await t.handle().insert(connections).values({ id: "openrouter", ciphertext: "x", last4: "abcd", status: "connected", repos: [] });
+    expect(await removeTokenAction("openrouter")).toEqual({ ok: true });
+    expect(await t.handle().select().from(connections)).toHaveLength(0);
+    denied = true;
+    const rej = (p: Promise<unknown>) => p.then(() => "ok", (e: Error) => e.message);
+    expect(await rej(saveOpenRouterKeyAction("k"))).toBe("redirect");
+    expect(await rej(setFreePrivateAction(false))).toBe("redirect");
   });
 });

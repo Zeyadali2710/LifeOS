@@ -1,8 +1,9 @@
 import { randomBytes } from "node:crypto";
+import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { decrypt } from "@/server/crypto";
 import { connections, githubEtags } from "@/server/db/schema";
-import { getConnections, readToken, removeToken, saveToken, writeToken } from "@/server/github/connections";
+import { getConnections, readToken, openrouterKey, removeToken, saveOpenRouterKey, saveToken, writeToken } from "@/server/github/connections";
 import repos from "../fixtures/github/repos.json";
 import user from "../fixtures/github/user.json";
 import { fakeGithub } from "../helpers/fake-github";
@@ -24,7 +25,7 @@ describe("github connections", () => {
     expect(row!.last4).toBe("1234");
 
     const dto = await getConnections(h);
-    expect(dto.map((c) => c.status)).toEqual(["connected", "none"]);
+    expect(dto.map((c) => c.status)).toEqual(["connected", "none", "none"]);
     const s = JSON.stringify(dto);
     expect(s).not.toContain("SECRETVALUE");
     expect(s).not.toContain("v1.");
@@ -65,5 +66,27 @@ describe("github connections", () => {
     expect(await saveToken(h, "github_read", "x", { fetch: down, key })).toEqual({ ok: false, error: "unreachable" });
     expect(await saveToken(h, "github_read", "   ", { fetch: ok(), key })).toEqual({ ok: false, error: "invalid" });
     expect(await h.select().from(connections)).toHaveLength(0);
+  });
+});
+
+describe("openrouter key", () => {
+  it("validates, encrypts, decrypts per call, never leaks, removes", async () => {
+    const h = t.handle();
+    const KEY = "sk-or-v1-abcd1234";
+    const f = (status: number) => (async () => new Response("{}", { status })) as unknown as typeof fetch;
+    expect(await saveOpenRouterKey(h, KEY, { fetch: f(401), key })).toEqual({ ok: false, error: "rejected" });
+    expect(await saveOpenRouterKey(h, KEY, { fetch: f(500), key })).toEqual({ ok: false, error: "unreachable" });
+    expect(await saveOpenRouterKey(h, "", { fetch: f(200), key })).toEqual({ ok: false, error: "invalid" });
+    expect(await openrouterKey(h, key)).toBeNull();
+    expect(await saveOpenRouterKey(h, KEY, { fetch: f(200), key })).toEqual({ ok: true });
+    expect(await openrouterKey(h, key)).toBe(KEY);
+    const [row] = await h.select().from(connections).where(eq(connections.id, "openrouter"));
+    expect(row!.ciphertext).not.toBe(KEY);
+    expect(row!.last4).toBe("1234");
+    const dto = await getConnections(h);
+    expect(dto.find((c) => c.id === "openrouter")!.status).toBe("connected");
+    expect(JSON.stringify(dto)).not.toContain("abcd1234");
+    await removeToken(h, "openrouter");
+    expect(await openrouterKey(h, key)).toBeNull();
   });
 });

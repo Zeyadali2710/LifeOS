@@ -5,9 +5,10 @@ import { audit } from "../audit";
 import { decrypt, encrypt } from "../crypto";
 import { db, type DB } from "../db/client";
 import { connections, githubEtags } from "../db/schema";
+import { resetFreeCooldown } from "../agents/routing";
 import { createGithub, GithubError } from "./client";
 
-const IDS: ConnectionId[] = ["github_read", "github_write"];
+const IDS: ConnectionId[] = ["github_read", "github_write", "openrouter"];
 const User = z.object({ login: z.string() });
 const Repo = z.object({ full_name: z.string() });
 
@@ -45,6 +46,30 @@ export async function saveToken(
   return { ok: true, login, repos: repos.length, expiresAt: expiresAt?.toISOString() ?? null };
 }
 
+export type OpenRouterSaveResult = { ok: true } | { ok: false; error: "invalid" | "rejected" | "unreachable" };
+
+// Constant validation URL (T-3.1-22); only last4 is ever audited or returned.
+export async function saveOpenRouterKey(
+  h: DB = db(),
+  raw: string,
+  opts: { fetch?: typeof fetch; now?: Date; key?: Buffer } = {},
+): Promise<OpenRouterSaveResult> {
+  const k = raw.trim();
+  if (!k || k.length > 255) return { ok: false, error: "invalid" };
+  try {
+    const res = await (opts.fetch ?? fetch)("https://openrouter.ai/api/v1/key", { headers: { Authorization: `Bearer ${k}` } });
+    if (res.status === 401 || res.status === 403) return { ok: false, error: "rejected" };
+    if (res.status !== 200) return { ok: false, error: "unreachable" };
+  } catch {
+    return { ok: false, error: "unreachable" };
+  }
+  const row = { ciphertext: encrypt(k, opts.key), last4: k.slice(-4), login: null, expiresAt: null, status: "connected", lastError: null, repos: [] as string[] };
+  await h.insert(connections).values({ id: "openrouter", ...row }).onConflictDoUpdate({ target: connections.id, set: { ...row, updatedAt: opts.now ?? new Date() } });
+  await audit({ actor: "owner", action: "connection.save", target: "openrouter", metadata: { id: "openrouter", last4: row.last4 } });
+  resetFreeCooldown();
+  return { ok: true };
+}
+
 export async function removeToken(h: DB = db(), id: ConnectionId): Promise<void> {
   await h.delete(connections).where(eq(connections.id, id));
   if (id === "github_read") await h.delete(githubEtags);
@@ -62,6 +87,10 @@ export async function readToken(h: DB = db(), key?: Buffer): Promise<string | nu
 }
 export async function writeToken(h: DB = db(), key?: Buffer): Promise<string | null> {
   return tokenFor(h, "github_write", key);
+}
+
+export async function openrouterKey(h: DB = db(), key?: Buffer): Promise<string | null> {
+  return tokenFor(h, "openrouter", key);
 }
 
 export async function markConnectionError(h: DB = db(), id: ConnectionId, message: string): Promise<void> {
