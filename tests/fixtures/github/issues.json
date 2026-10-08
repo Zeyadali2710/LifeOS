@@ -1,0 +1,4 @@
+[
+  { "id": 6001, "number": 3, "title": "Bug report", "state": "open", "user": { "login": "owner-test" }, "assignees": [], "labels": [{ "name": "bug" }], "html_url": "https://github.com/owner-test/private-app/issues/3", "updated_at": "2026-05-01T10:00:00Z" },
+  { "id": 5001, "number": 1, "title": "Add sync", "state": "open", "user": { "login": "owner-test" }, "assignees": [], "labels": [], "html_url": "https://github.com/owner-test/private-app/pull/1", "updated_at": "2026-05-01T10:00:00Z", "pull_request": { "url": "x" } }
+]
