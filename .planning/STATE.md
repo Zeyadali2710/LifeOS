@@ -47,7 +47,7 @@ Progress: [██████████] 100%
 
 ### Blockers/Concerns
 
-- Phase 3 review follow-ups (non-blocking, 03-REVIEW.md): CR-01 stuck `executing` approvals + swallowed resume errors, CR-02 sync ETag saved before upsert, WR-02 cancelled run can still execute an approved issue. Fix via /gsd:code-review 03 --fix or a hardening plan early in Phase 4.
+- Phase 3 review findings CR-01/CR-02/WR-01..08 fixed (03-REVIEW-FIX.md); security verified 81/81 (03-SECURITY.md). Fixes not yet redeployed to the homelab VM. Residual info items IN-01/03/04 open.
 
 ## Session Continuity
 
