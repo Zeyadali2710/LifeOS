@@ -66,7 +66,7 @@ export async function buildToolResults(h: DB, runId: string, toolUseIds: string[
       if (opts.allowPending) continue;
       throw new PendingToolError(`tool call ${id} is still ${r.status}`);
     }
-    if (r?.status === "done") content.push({ type: "tool_result", tool_use_id: id, content: `<tool_data>${JSON.stringify(r.output ?? null)}</tool_data>` });
+    if (r?.status === "done") content.push({ type: "tool_result", tool_use_id: id, content: `<tool_data>${JSON.stringify(r.output ?? null).replaceAll("<", "\\u003c")}</tool_data>` });
     else content.push({ type: "tool_result", tool_use_id: id, is_error: true, content: r?.error ?? r?.status ?? "Tool call not found" });
   }
   return { role: "user", content };
