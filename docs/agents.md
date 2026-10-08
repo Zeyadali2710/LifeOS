@@ -57,3 +57,13 @@ DB is the source of truth. Context is assembled per call by deterministic retrie
 - **Approvals**: `github.create_issue` is APPROVE tier. The run suspends as `waiting_approval`; the owner edits (re-validated server-side), approves or rejects. Approval resumes the run through a queued job and creates the issue once (idempotency key, plus a hidden marker that adopts an issue created before a crash). Approvals **expire after 7 days**; expiry cancels the run.
 - **Spend cap**: monthly cap in USD (default US$20, Settings -> AI and spend, Sydney calendar month). Month-to-date cost is summed from `agent_runs`. At the cap new runs are blocked, running work finishes, and one URGENT notification is raised per month.
 - **Pause**: per agent or all runs from the Command Centre; paused agents reject new runs.
+
+## Model routing (Phase 3.1)
+- **Tier tag.** `delegate(agentId, task, tier)` carries `simple` or `reasoning`. The tag is set by the orchestrator (Opus, trusted) and is never taken from user or tool text.
+- **Picker.** Routable agents (Projects) offer Auto / Free only / Sonnet / Opus. Auto and Free only need an OpenRouter key. The orchestrator is locked to Opus.
+- **Auto.** `simple` goes to the free model (`OPENROUTER_FREE_MODEL`, `:free`); `reasoning` goes to Sonnet.
+- **Fallback.** A free turn gets one transient retry, then the run switches once and permanently to Sonnet ("Fell back -> Sonnet", with a reason code such as `http 4xx`). A failing free provider triggers a 5 minute cooldown, per process.
+- **Escalate.** In Auto runs the free model has an `escalate` pseudo-tool; deterministic sanity checks (invalid tool call, empty, no tool use, unsupported ref, tool markup, repeat, truncated) also switch to Sonnet. The dropped free turn is never added to history, but it is billed in `run_turns`. Text already streamed from a dropped free turn is not retracted in the UI.
+- **Free only** never falls back: it fails the run (`free_unavailable` or `private_blocked`) with a FAILED route step.
+- **Pricing.** Each LLM turn is stored in `run_turns` and priced with the model that served it; `:free` models cost US$0. The spend cap (D-15) applies to all runs. Settings -> AI and spend groups by turn model.
+- **Visibility.** Route steps (Routed / Fell back / Escalated / Switched / Failed) appear in run detail, the latest run on the agent page and reloaded threads (after the tool steps). Runs show a FREE/SONNET/OPUS chip; the Command Centre shows free vs paid counts.

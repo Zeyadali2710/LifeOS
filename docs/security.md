@@ -21,3 +21,10 @@ LifeOS holds tokens to email, calendars, socials and code. Treat it as highly se
 
 ## Key rotation
 `LIFEOS_MASTER_KEY` rotation: decrypt-with-old/encrypt-with-new migration script (Phase 10). Until then, back the key up separately from DB backups — a DB backup without the key cannot reveal tokens, and without the key tokens are unrecoverable (re-connect integrations).
+
+## OpenRouter and free models (Phase 3.1)
+- **Key storage.** The OpenRouter key is stored like an integration token (AES-256-GCM, ADR-007), shown as last4 only, decrypted per call, sent only in the Authorization header, never logged or sent to the browser. Connect/remove is audited.
+- **Private-data gate.** Free models never see private repo content unless the owner turns on "Allow private-repo content on free models" (Settings -> Connections, off by default). Before each free turn, `mentionsSensitive` scans the whole conversation for names of private repos; `private` null (unknown) is treated as private, so it fails closed. A hit switches the run to Sonnet before any free request is built.
+- **Thread taint.** `agent_runs.saw_private` is set from a run's prompt and tool results (any model) and backfilled by migration 0002 for runs that existed before the upgrade. Once private data has entered a thread, further delegations in it are not routed free. This closes the paraphrase gap, where the model rewords a private repo name.
+- **Provider logging.** Requests set `data_collection: deny` (best effort; if no provider matches, one retry without it). Redaction paths cover the key.
+- **Residual risk.** Public data sent to a free model may be logged or trained on by the provider. Only public data should reach it; opt-in on removes the guarantee for private data too.

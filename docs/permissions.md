@@ -14,3 +14,6 @@
 - Finance agent has no tools that move money. This is enforced by absence, not configuration.
 
 Critical tests (Phase 3): tier resolution, HIGH_RISK floor, approval suspend/resume, idempotent retry, agent allow-list, foreign/unknown id rejection.
+
+## Model routing and permissions
+`escalate` is a routing pseudo-tool, not a gateway tool: it grants nothing and is not in any agent's allow-list. Tool calls made by a free model go through the same gateway, tiers and approvals as any other model.
