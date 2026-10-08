@@ -12,6 +12,8 @@ const securityHeaders = [
 const config: NextConfig = {
   output: "standalone",
   poweredByHeader: false,
+  // dev-only: reach `next dev` from other tailnet devices via `tailscale serve`
+  allowedDevOrigins: ["*.tailf137cc.ts.net"],
   serverExternalPackages: ["pino", "pg-boss"],
   headers: async () => [{ source: "/:path*", headers: securityHeaders }],
 };
