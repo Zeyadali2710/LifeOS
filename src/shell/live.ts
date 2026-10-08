@@ -1,5 +1,7 @@
 import type { Health } from "@/server/health";
 import { NOTIFICATION_CATEGORIES } from "@/lib/live-types";
+import { APPROVAL_STATUSES, RUN_STATUSES } from "@/lib/agent-types";
+import type { ApprovalDTO, RunDTO } from "@/lib/agent-types";
 import type { ActivityDTO, NotificationDTO, NotificationsSnapshot } from "@/lib/live-types";
 
 export function nextBackoff(prev: number): number {
@@ -63,6 +65,18 @@ export function isActivity(x: unknown): x is ActivityDTO {
     (o.tone === null || o.tone === "red" || o.tone === "amber" || o.tone === "green") &&
     (h === null || (typeof h === "object" && isStr(h.status) && isStr(h.db) && isStr(h.worker) && isStr(h.version)))
   );
+}
+
+export function isRun(x: unknown): x is RunDTO {
+  if (typeof x !== "object" || x === null) return false;
+  const o = x as Record<string, unknown>;
+  return isStr(o.id) && isStr(o.agentId) && (RUN_STATUSES as readonly unknown[]).includes(o.status);
+}
+
+export function isApproval(x: unknown): x is ApprovalDTO {
+  if (typeof x !== "object" || x === null) return false;
+  const o = x as Record<string, unknown>;
+  return isStr(o.id) && isStr(o.runId) && (APPROVAL_STATUSES as readonly unknown[]).includes(o.status);
 }
 
 export function parseSnapshot(x: unknown): NotificationsSnapshot | null {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applySnapshot, healthFromActivity, isActivity, isNotification, mergeById, nextBackoff, parseSnapshot, restoreItem, unreadOf, wakeDelay } from "@/shell/live";
+import { applySnapshot, healthFromActivity, isActivity, isApproval, isRun, isNotification, mergeById, nextBackoff, parseSnapshot, restoreItem, unreadOf, wakeDelay } from "@/shell/live";
 import type { ActivityDTO, NotificationDTO } from "@/lib/live-types";
 
 const n = (id: string, readAt: string | null = null): NotificationDTO => ({
@@ -53,6 +53,14 @@ describe("live helpers", () => {
     expect(isActivity({ ...a, tone: "purple" })).toBe(false);
     expect(isActivity({ ...a, health: {} })).toBe(false);
     expect(isActivity(null)).toBe(false);
+  });
+  it("isRun / isApproval guards", () => {
+    expect(isRun({ id: "1", agentId: "chief", status: "running" })).toBe(true);
+    expect(isRun({ agentId: "chief", status: "running" })).toBe(false);
+    expect(isRun({ id: "1", agentId: "chief" })).toBe(false);
+    expect(isApproval({ id: "1", runId: "r", status: "pending" })).toBe(true);
+    expect(isApproval({ id: "1", runId: "r", status: "nope" })).toBe(false);
+    expect(isApproval({ runId: "r", status: "pending" })).toBe(false);
   });
   it("applySnapshot replaces known items but keeps SSE arrivals made during the fetch", () => {
     const at = (id: string, t: string) => ({ ...n(id), createdAt: t });

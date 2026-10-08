@@ -1,7 +1,9 @@
 import { and, desc, eq, isNull, lte, or, sql } from "drizzle-orm";
+import type { ApprovalDTO, RunDTO } from "../lib/agent-types";
 import type { ActivityDTO, ActivityTone, NotificationCategory, NotificationDTO } from "../lib/live-types";
 import { db, type DB } from "./db/client";
-import { activityEvents, notifications } from "./db/schema";
+import { toApprovalDTO, toRunDTO } from "./agents/dto";
+import { activityEvents, agentRuns, approvals, notifications } from "./db/schema";
 import { log } from "./log";
 
 export const CHANNEL = "lifeos_events";
@@ -100,7 +102,7 @@ export async function loadEventRow(
   handle: DB,
   p: { k: string; id: string },
   now = new Date(),
-): Promise<ActivityDTO | NotificationDTO | null> {
+): Promise<ActivityDTO | NotificationDTO | RunDTO | ApprovalDTO | null> {
   if (!UUID.test(p.id)) return null;
   try {
     if (p.k === "activity") {
@@ -119,6 +121,14 @@ export async function loadEventRow(
           ),
         );
       return r ? toNotificationDTO(r) : null;
+    }
+    if (p.k === "run") {
+      const [r] = await handle.select().from(agentRuns).where(eq(agentRuns.id, p.id));
+      return r ? toRunDTO(r) : null;
+    }
+    if (p.k === "approval") {
+      const [r] = await handle.select().from(approvals).where(eq(approvals.id, p.id));
+      return r ? toApprovalDTO(r) : null;
     }
     return null;
   } catch (err) {

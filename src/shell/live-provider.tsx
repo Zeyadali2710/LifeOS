@@ -3,8 +3,9 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import type { Dispatch, ReactNode, SetStateAction } from "react";
 import type { Health } from "@/server/health";
+import type { ApprovalDTO, RunDTO } from "@/lib/agent-types";
 import type { ActivityDTO, NotificationDTO } from "@/lib/live-types";
-import { applySnapshot, healthFromActivity, isActivity, isNotification, mergeById, nextBackoff, parseSnapshot, unreadOf, wakeDelay } from "./live";
+import { applySnapshot, healthFromActivity, isActivity, isApproval, isNotification, isRun, mergeById, nextBackoff, parseSnapshot, unreadOf, wakeDelay } from "./live";
 
 type Live = {
   activity: ActivityDTO[];
@@ -25,6 +26,30 @@ export function useLive(): Live {
   const v = useContext(Ctx);
   if (!v) throw new Error("useLive must be used inside <LiveProvider>");
   return v;
+}
+
+type LiveEvent = { kind: "run" | "approval" | "resync"; dto?: unknown };
+type Sub = (e: LiveEvent) => void;
+const SubsCtx = createContext<Set<Sub> | null>(null);
+
+/** Subscribe to run/approval frames (or "resync" on reconnect). Runs/approvals are not held in provider state. */
+export function useLiveEvents(kind: "run", cb: (dto: RunDTO | null) => void): void;
+export function useLiveEvents(kind: "approval", cb: (dto: ApprovalDTO | null) => void): void;
+export function useLiveEvents(kind: "run" | "approval", cb: (dto: never) => void): void {
+  const subs = useContext(SubsCtx);
+  const ref = useRef(cb);
+  useEffect(() => {
+    ref.current = cb;
+  });
+  useEffect(() => {
+    if (!subs) throw new Error("useLiveEvents must be used inside <LiveProvider>");
+    const s: Sub = (e) => {
+      if (e.kind === "resync") (ref.current as (d: null) => void)(null); // null = refetch
+      else if (e.kind === kind) ref.current(e.dto as never);
+    };
+    subs.add(s);
+    return () => void subs.delete(s);
+  }, [subs, kind]);
 }
 
 const FRESH_MS = 4500;
@@ -54,6 +79,8 @@ export function LiveProvider({
   const loadedRef = useRef(false);
   const idsRef = useRef<Set<string>>(new Set());
   const everConnected = useRef(false);
+  const subsRef = useRef(new Set<Sub>());
+  const dispatch = useCallback((e: LiveEvent) => subsRef.current.forEach((f) => f(e)), []);
 
   const markFresh = useCallback((ids: string[]) => {
     if (ids.length === 0) return;
@@ -142,10 +169,12 @@ export function LiveProvider({
       es = new EventSource("/api/events");
       es.addEventListener("open", () => {
         backoff = 0;
+        const reconnect = everConnected.current;
         setConnected(true);
         if (everConnected.current) setAnnounce("Live updates restored.");
         everConnected.current = true;
         void resync();
+        if (reconnect) dispatch({ kind: "resync" });
       });
       es.addEventListener("activity", (e) => {
         const a = parse(e);
@@ -162,7 +191,18 @@ export function LiveProvider({
         setNotifications((cur) => mergeById(cur, [n], "createdAt", Number.MAX_SAFE_INTEGER));
         if (loadedRef.current) markFresh([n.id]);
       });
-      es.addEventListener("resync", () => void resync());
+      es.addEventListener("run", (e) => {
+        const r = parse(e);
+        if (isRun(r)) dispatch({ kind: "run", dto: r });
+      });
+      es.addEventListener("approval", (e) => {
+        const a = parse(e);
+        if (isApproval(a)) dispatch({ kind: "approval", dto: a });
+      });
+      es.addEventListener("resync", () => {
+        void resync();
+        dispatch({ kind: "resync" });
+      });
       es.addEventListener("error", async () => {
         es?.close();
         setConnected(false);
@@ -181,7 +221,7 @@ export function LiveProvider({
       es?.close();
       clearTimeout(timer);
     };
-  }, [resync, markFresh, refetchNotifications]);
+  }, [resync, markFresh, refetchNotifications, dispatch]);
 
   // snooze wake timer + tab refocus
   useEffect(() => {
@@ -215,7 +255,7 @@ export function LiveProvider({
 
   return (
     <Ctx.Provider value={value}>
-      {children}
+      <SubsCtx.Provider value={subsRef.current}>{children}</SubsCtx.Provider>
       <div role="status" aria-live="polite" className="sr-only">
         {announce}
       </div>

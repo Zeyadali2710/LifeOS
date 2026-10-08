@@ -28,4 +28,4 @@ export type NotificationDTO = {
 };
 
 export type NotificationsSnapshot = { items: NotificationDTO[]; unread: number; nextWake: string | null };
-export type LiveKind = "activity" | "notification" | "resync";
+export type LiveKind = "activity" | "notification" | "run" | "approval" | "resync";

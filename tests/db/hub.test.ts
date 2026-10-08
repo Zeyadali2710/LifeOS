@@ -1,6 +1,7 @@
 import { Client } from "pg";
 import { afterAll, describe, expect, it, vi } from "vitest";
-import { emitActivity, loadEventRow } from "@/server/events";
+import { agentRuns } from "@/server/db/schema";
+import { emitActivity, loadEventRow, notifyLive } from "@/server/events";
 import { createHub, type HubEvent } from "@/server/hub";
 import { setupTestDb } from "./helpers";
 
@@ -41,6 +42,21 @@ describe("hub", () => {
     await emitActivity({ ...base, title: "two" }, undefined, t.handle());
     await a.wait((e) => e.k === "activity", 2);
     expect(b.events.filter((e) => e.k === "activity")).toHaveLength(1);
+  });
+
+  it("forwards run notifications as RunDTO and loads null for unknown run", async () => {
+    const [run] = await t.handle().insert(agentRuns).values({ agentId: "chief", prompt: "hi", model: "m" }).returning();
+    expect(await loadEventRow(t.handle(), { k: "run", id: "00000000-0000-0000-0000-000000000000" })).toBeNull();
+    expect(await loadEventRow(t.handle(), { k: "run", id: "nope" })).toBeNull();
+    const hub = createHub(t.url(), (p) => loadEventRow(t.handle(), p));
+    hubs.push(hub);
+    const a = collect(hub);
+    await a.wait((e) => e.k === "resync");
+    await notifyLive(t.handle(), "run", run!.id);
+    await a.wait((e) => e.k === "run");
+    const dto = JSON.parse(a.events.find((e) => e.k === "run")!.json);
+    expect(dto).toMatchObject({ id: run!.id, agentId: "chief", status: "queued" });
+    expect(dto.messages).toBeUndefined();
   });
 
   it("ignores null loads and malformed payloads", async () => {
