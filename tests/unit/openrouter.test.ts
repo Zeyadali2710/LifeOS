@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { createOpenRouter, FreeModelError } from "@/server/agents/openrouter";
+import { createOpenRouter, FREE_TIMEOUT_MS, FreeModelError } from "@/server/agents/openrouter";
+import { RUN_LIMITS } from "@/server/agents/registry";
 import type { AnthropicTool } from "@/server/agents/types";
 import text from "../fixtures/openrouter/text.json";
 import toolCalls from "../fixtures/openrouter/tool-calls.json";
@@ -167,6 +168,10 @@ describe("openrouter failures", () => {
     expect(t).toMatchObject({ code: "timeout", transient: true });
     const n = await fail(setup(new TypeError("fetch failed")).llm.stream(params(), vi.fn()));
     expect(n).toMatchObject({ code: "network", transient: true });
+  });
+
+  it("two timed-out free attempts plus backoff leave Sonnet half the run budget (WR-03)", () => {
+    expect(2 * FREE_TIMEOUT_MS + 5000).toBeLessThanOrEqual(RUN_LIMITS.activeMs / 2);
   });
 
   it("no key", async () => {

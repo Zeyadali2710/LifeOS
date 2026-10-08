@@ -2,7 +2,8 @@ import { randomUUID } from "node:crypto";
 import type Anthropic from "@anthropic-ai/sdk";
 import type { AnthropicTool, LlmClient, LlmUsage } from "./types";
 
-export const FREE_TIMEOUT_MS = 45_000;
+// Attempt + D-06 retry + 5 s backoff (55 s worst case) must leave Sonnet at least half of RUN_LIMITS.activeMs.
+export const FREE_TIMEOUT_MS = 25_000;
 const URL = "https://openrouter.ai/api/v1/chat/completions";
 const DENY_BACKOFF_MS = 10 * 60_000;
 
