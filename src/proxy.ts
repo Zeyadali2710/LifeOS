@@ -27,9 +27,9 @@ export function proxy(request: NextRequest) {
   // Optimistic cookie check only; pages re-validate the session server-side.
   if (!isPublic && !getSessionCookie(request)) {
     if (pathname.startsWith("/api/")) return Response.json({ error: "unauthorized" }, { status: 401 });
-    const url = new URL("/login", request.url);
-    if (pathname !== "/") url.searchParams.set("next", pathname + search);
-    return NextResponse.redirect(url);
+    // Relative Location: request.url carries the internal upstream host behind a reverse proxy.
+    const next = pathname !== "/" ? `?${new URLSearchParams({ next: pathname + search })}` : "";
+    return new Response(null, { status: 307, headers: { Location: `/login${next}` } });
   }
 
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
