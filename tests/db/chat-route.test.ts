@@ -10,6 +10,7 @@ const m = vi.hoisted(() => ({ session: true as boolean, llm: null as unknown, ha
 vi.mock("@/server/auth", () => ({ auth: () => ({ api: { getSession: async () => (m.session ? { user: {} } : null) } }) }));
 vi.mock("@/server/db/client", async (orig) => ({ ...(await orig<object>()), db: () => m.handle }));
 vi.mock("@/server/agents/llm", () => ({ getLlm: () => m.llm }));
+vi.mock("@/server/env", () => ({ env: () => ({ BETTER_AUTH_URL: "https://lifeos.example.ts.net" }) }));
 
 import { POST } from "@/app/api/chat/route";
 
@@ -37,6 +38,8 @@ describe("POST /api/chat", () => {
     m.session = true;
     expect((await POST(new Request("http://localhost/api/chat", { method: "POST", headers: { "content-type": "text/plain" }, body: "x" }))).status).toBe(415);
     expect((await post({ prompt: "hi" }, { origin: "http://evil.test" })).status).toBe(403);
+    // Behind tailscale serve request.url is internal; the public origin must still pass.
+    expect((await post({ prompt: "" }, { origin: "https://lifeos.example.ts.net" })).status).toBe(400);
     expect((await post({ prompt: "" })).status).toBe(400);
     expect((await post({ prompt: "x".repeat(8001) })).status).toBe(400);
   });

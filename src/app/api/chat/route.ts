@@ -4,6 +4,7 @@ import { getLlm } from "@/server/agents/llm";
 import { advance } from "@/server/agents/loop";
 import { auth } from "@/server/auth";
 import { db } from "@/server/db/client";
+import { env } from "@/server/env";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +16,8 @@ export async function POST(request: Request) {
   // CSRF: JSON-only plus same-origin (SameSite=Lax cookie is the third layer).
   if (!request.headers.get("content-type")?.toLowerCase().startsWith("application/json")) return Response.json({ code: "invalid" }, { status: 415 });
   const origin = request.headers.get("origin");
-  if (origin && origin !== new URL(request.url).origin) return Response.json({ error: "forbidden" }, { status: 403 });
+  // Compare to the public URL: behind tailscale serve, request.url is the internal http://…:3000.
+  if (origin && origin !== new URL(env().BETTER_AUTH_URL).origin) return Response.json({ error: "forbidden" }, { status: 403 });
   const parsed = body.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return Response.json({ code: "invalid" }, { status: 400 });
 
