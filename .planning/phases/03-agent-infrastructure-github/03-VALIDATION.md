@@ -36,21 +36,31 @@ created: 2026-10-08
 
 ## Per-Task Verification Map
 
-Filled by the planner per task. Requirement → test file map (from 03-RESEARCH.md):
+Filled by the planner (plan-task -> automated command):
 
-| Requirement | Behavior | Test Type | Automated Command | File Exists | Status |
-|-------------|----------|-----------|-------------------|-------------|--------|
-| AGT-01 | `resolvePolicy`: HIGH_RISK never lowered; allow-list; paused; zod rejection | unit | `npx vitest run tests/unit/policy.test.ts` | ❌ W0 | ⬜ pending |
-| AGT-01 | gateway rejects tool not in agent allow-list; ids not in DB | db | `npx vitest run tests/db/gateway.test.ts` | ❌ W0 | ⬜ pending |
-| AGT-02 | APPROVE suspends; approve resumes once; reject/expire cancel; concurrent approve executes once | db | `npx vitest run tests/db/approvals.test.ts` | ❌ W0 | ⬜ pending |
-| AGT-03 | duplicate idempotency key returns stored result; ambiguous retry adopts issue via marker | db | `npx vitest run tests/db/idempotency.test.ts` | ❌ W0 | ⬜ pending |
-| AGT-04 | loop streams deltas, trace steps, delegation, tool_result pairing | db | `npx vitest run tests/db/loop.test.ts` | ❌ W0 | ⬜ pending |
-| AGT-04 | NDJSON chat endpoint 401 without session; streams events | e2e | `npm run e2e -- chat.spec.ts` | ❌ W0 | ⬜ pending |
-| AGT-05 | cost per model incl. cache; Sydney month bounds; cap blocks new run | unit + db | `npx vitest run tests/unit/pricing.test.ts tests/db/spend.test.ts` | ❌ W0 | ⬜ pending |
-| AGT-05 | pause/cancel/retry transitions; orphan sweep | db | `npx vitest run tests/db/runs.test.ts` | ❌ W0 | ⬜ pending |
-| AGT-06 | sync upserts from fixtures; 304; diff events once; 401 pauses | db | `npx vitest run tests/db/github-sync.test.ts` | ❌ W0 | ⬜ pending |
-| D-09 | token encrypted, only last4 exposed | db | `npx vitest run tests/db/connections.test.ts` | ❌ W0 | ⬜ pending |
-| UI | approvals/agents/settings a11y + approve flow | e2e | `npm run e2e -- approvals.spec.ts` | ❌ W0 | ⬜ pending |
+| Plan-Task | Requirement | Behavior | Test Type | Automated Command | Status |
+|-----------|-------------|----------|-----------|-------------------|--------|
+| 03-01-T2 | AGT-03 | migration 0001; unique idempotency key; cascades | db | `npx vitest run tests/db/migrations.test.ts tests/db/schema-agents.test.ts` | ⬜ pending |
+| 03-02-T2 | AGT-01, AGT-05 | resolvePolicy HIGH_RISK floor; prices/cost/Sydney month; apiName; registry | unit | `npx vitest run tests/unit/policy.test.ts tests/unit/pricing.test.ts tests/unit/agent-contracts.test.ts` | ⬜ pending |
+| 03-02-T3 | — | isSafeGithubUrl; fake LLM seam | unit | `npx vitest run tests/unit/safe-url.test.ts` | ⬜ pending |
+| 03-03-T3 | AGT-04 | ExecutionTrace step states | unit | `npx vitest run tests/unit/execution-trace.test.ts` | ⬜ pending |
+| 03-04-T1/T2 | AGT-06, D-09 | GitHub client errors/ETag/SSRF; token encrypted, last4 only, read/write split | unit + db | `npx vitest run tests/unit/github-client.test.ts tests/db/connections.test.ts` | ⬜ pending |
+| 03-05-T1 | AGT-01, AGT-02 | allow-list, zod, resolve, tiers, approval creation | db | `npx vitest run tests/db/gateway.test.ts` | ⬜ pending |
+| 03-05-T2 | AGT-03 | duplicate/concurrent idempotency key | db | `npx vitest run tests/db/idempotency.test.ts` | ⬜ pending |
+| 03-06-T1 | AGT-05 | MTD spend, cap blocks, URGENT once/month | db | `npx vitest run tests/db/spend.test.ts` | ⬜ pending |
+| 03-06-T2 | AGT-05 | pause/cancel/model/sweep/counts/threads | db | `npx vitest run tests/db/runs.test.ts` | ⬜ pending |
+| 03-07-T1/T2 | AGT-04, AGT-05 | DTOs; run/approval SSE kinds | unit + db | `npx vitest run tests/unit/agent-dto.test.ts tests/db/hub.test.ts tests/unit/live.test.ts` | ⬜ pending |
+| 03-08-T1 | AGT-06 | sync upserts, 304, diff events once, 401 pause, rate limit | db | `npx vitest run tests/db/github-sync.test.ts` | ⬜ pending |
+| 03-09-T1/T2 | AGT-06, AGT-03 | READ tools; create_issue APPROVE, write token, marker adoption | db | `npx vitest run tests/db/github-tools.test.ts` | ⬜ pending |
+| 03-10-T1 | AGT-05, D-09 | settings actions owner/zod | db | `npx vitest run tests/db/settings-actions.test.ts` | ⬜ pending |
+| 03-11-T1..T3 | AGT-02, AGT-04 | loop streaming, pairing, limits, cancel, suspend, delegation, retry | db | `npx vitest run tests/db/loop.test.ts` | ⬜ pending |
+| 03-12-T1/T2 | AGT-02, AGT-03 | approve once, edit re-validate, reject/expire, resume, actions | db | `npx vitest run tests/db/approvals.test.ts tests/db/approval-actions.test.ts` | ⬜ pending |
+| 03-13-T1 | AGT-04 | NDJSON chat route 401/409/429/stream, threads | db | `npx vitest run tests/db/chat-route.test.ts` | ⬜ pending |
+| 03-14-T1/T2 | AGT-05 | Command Centre read models; control actions | db | `npx vitest run tests/db/agent-queries.test.ts tests/db/agent-actions.test.ts` | ⬜ pending |
+| 03-15-T1 | AGT-04 | chat reducer, NDJSON reader, safe answer parser | unit | `npx vitest run tests/unit/chat-state.test.ts tests/unit/answer-text.test.ts` | ⬜ pending |
+| 03-10/16/17/18 UI tasks | AGT-02, AGT-05 | typecheck + lint (+ next build in 03-17) | static | `npm run typecheck && npm run lint` | ⬜ pending |
+| 03-19-T1 | AGT-02, AGT-04, AGT-05 | approvals, agents, chat, settings e2e | e2e | `npm run e2e -- approvals.spec.ts agents.spec.ts chat.spec.ts settings.spec.ts` | ⬜ pending |
+| 03-19-T3 | all | live success criteria 1-3 + assumptions A1-A7 | manual | human-verify checkpoint | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -61,7 +71,7 @@ Filled by the planner per task. Requirement → test file map (from 03-RESEARCH.
 - [ ] Injectable `LlmClient` (`stream(params)`) + injectable `fetch` for GitHub; scripted-stream helper in `tests/db/helpers.ts`
 - [ ] Recorded GitHub JSON fixtures under `tests/fixtures/github/`
 - [ ] Test files listed above; `tests/e2e/prepare-db.ts` seeds agents registry
-- [ ] Spike: one live Anthropic call with zod-derived tool schema + live `GET /user/repos` with a fine-grained PAT
+- [ ] Spike: one live Anthropic call with zod-derived tool schema + live `GET /user/repos` with a fine-grained PAT (planned as part of the 03-19 live checkpoint; offline guard: 03-02 toAnthropicTool shape test)
 
 ---
 

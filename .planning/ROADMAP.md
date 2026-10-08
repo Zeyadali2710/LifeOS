@@ -5,7 +5,8 @@ From an empty repo to a personal OS: secure foundation and deploy path first, th
 
 ## Phases
 - [x] **Phase 1: Foundation** - Repo, Next.js + worker, Postgres/migrations, auth, crypto, logging, health, design tokens, Compose, CI
-- [x] **Phase 2: Shell** - Navigation, command palette, Home, live activity stream, notifications, AI panel UI (completed 2026-10-07)
+- [x] **Phase 2: Shell** - Navigation, command palette, Home, live activity stream, notifications, AI panel UI
+ (completed 2026-10-07)
 - [ ] **Phase 3: Agent infrastructure + GitHub** - Tool gateway, permissions, approvals, runs, orchestrator chat, Agent Command Centre, GitHub read-only
 - [ ] **Phase 4: Organization** - Calendars (Google, iCloud), tasks, conflicts, scheduling suggestions
 - [ ] **Phase 5: Career + Projects** - Repo dashboards, cross-domain projects, project workspaces
@@ -63,7 +64,26 @@ From an empty repo to a personal OS: secure foundation and deploy path first, th
   1. "What's happening in my repos?" streams an answer citing real repos/PRs
   2. A PREPARE→APPROVE action shows in approvals, and only runs after approval
   3. Agent Command Centre shows runs with tokens, cost, latency, tool calls
-**Plans**: TBD
+**Plans**: 19 plans in 7 waves
+- [ ] 03-01-PLAN.md — Schema: agents, permissions, threads, runs, tool_calls, approvals, connections, github_* + migration 0001
+- [ ] 03-02-PLAN.md — Contracts: SDK install, optional ANTHROPIC_API_KEY, DTOs, registry, policy, pricing, redact, queue sender, fake LLM
+- [ ] 03-03-PLAN.md — UI primitives (field, disclosure, dialog, progress, status dot), icon subset, ExecutionTrace
+- [ ] 03-04-PLAN.md — GitHub fetch client + encrypted connection store (read/write tokens)
+- [ ] 03-05-PLAN.md — Tool gateway callTool: allow-list, zod, tiers, approval creation, idempotency
+- [ ] 03-06-PLAN.md — Spend + cap, run controls, orphan sweep, threads
+- [ ] 03-07-PLAN.md — DTO mappers + run/approval live SSE kinds
+- [ ] 03-08-PLAN.md — GitHub sync (ETag, diff events, CI-failed notifications) + job handler
+- [ ] 03-09-PLAN.md — GitHub tools: DB-backed READ tools + APPROVE create_issue with marker adoption
+- [ ] 03-10-PLAN.md — Settings: Connections + AI and spend, owner actions
+- [ ] 03-11-PLAN.md — Resumable agent loop, delegation, limits, retry
+- [ ] 03-12-PLAN.md — Approval state machine, actions, resume/expire worker handlers
+- [ ] 03-13-PLAN.md — POST /api/chat NDJSON, threads + status routes, useAgentStatus
+- [ ] 03-14-PLAN.md — Command Centre read models + agent control actions
+- [ ] 03-15-PLAN.md — AI panel: streaming chat, live trace, inline approvals, threads
+- [ ] 03-16-PLAN.md — Approval Centre page with edit-before-approve
+- [ ] 03-17-PLAN.md — Agent Command Centre, agent detail, run detail pages
+- [ ] 03-18-PLAN.md — Worker job registration + shell wiring (badges, AI row, Home, palette)
+- [ ] 03-19-PLAN.md — Phase gate: e2e, docs, live owner verification
 
 ### Phase 4–11
 Goals per phase list above; detailed when each phase is planned (`/gsd-plan-phase N`).
@@ -83,5 +103,5 @@ Goals per phase list above; detailed when each phase is planned (`/gsd-plan-phas
 | 0. Architecture | - | Complete | 2026-10-07 |
 | 1. Foundation | 3/3 | Complete | 2026-10-07 |
 | 2. Shell | 13/13 | Complete   | 2026-10-07 |
-| 3. Agents + GitHub | 0/? | Not started | - |
+| 3. Agents + GitHub | 0/19 | Planned | - |
 | 4–11 | - | Not started | - |
