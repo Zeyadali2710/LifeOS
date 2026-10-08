@@ -8,7 +8,8 @@ From an empty repo to a personal OS: secure foundation and deploy path first, th
 - [x] **Phase 2: Shell** - Navigation, command palette, Home, live activity stream, notifications, AI panel UI
  (completed 2026-10-07)
 - [x] **Phase 3: Agent infrastructure + GitHub** - Tool gateway, permissions, approvals, runs, orchestrator chat, Agent Command Centre, GitHub read-only
- (completed 2026-10-08)
+ (completed 2026-10-09)
+- [ ] **Phase 3.1: Model routing** (INSERTED) - Free OpenRouter models for routine agent work, Sonnet escalation, orchestrator stays on Opus
 - [ ] **Phase 4: Organization** - Calendars (Google, iCloud), tasks, conflicts, scheduling suggestions
 - [ ] **Phase 5: Career + Projects** - Repo dashboards, cross-domain projects, project workspaces
 - [ ] **Phase 6: Outreach** - Sydney event discovery, pipeline, email intelligence, drafting
@@ -85,6 +86,30 @@ From an empty repo to a personal OS: secure foundation and deploy path first, th
 - [x] 03-17-PLAN.md — Agent Command Centre, agent detail, run detail pages
 - [x] 03-18-PLAN.md — Worker job registration + shell wiring (badges, AI row, Home, palette)
 - [x] 03-19-PLAN.md — Phase gate: e2e, docs, live owner verification
+
+### Phase 03.1: Model routing (INSERTED)
+
+**Goal:** Routine agent work runs on free models so spend goes only where reasoning is needed; the orchestrator stays on claude-opus-5-5.
+**Requirements**: TBD (AGT-07 model routing, proposed)
+**Depends on:** Phase 3
+**Success Criteria**:
+  1. Simple delegated tasks (e.g. Projects agent listing/summarising synced repos, PRs, issues, commits) run on a free OpenRouter model (e.g. DeepSeek free) at US$0, and the run shows which model answered
+  2. Tasks that need reasoning (multi-step analysis, drafting an issue, ambiguous asks) escalate to claude-sonnet-5-5; a free-model failure, timeout or invalid tool call falls back to Sonnet automatically
+  3. The orchestrator always runs on claude-opus-5-5; routing is per-run, visible in the trace and Command Centre, and can be overridden per agent in its settings
+  4. Spend cap, pricing and audit stay correct for mixed providers; with no OpenRouter key everything behaves exactly as today (Anthropic only)
+**Notes:** GitHub sync makes no LLM calls today; the cost is in agent runs. Route behind the existing LlmClient seam (src/server/agents/llm.ts); OpenRouter speaks the OpenAI chat format, so tool-use translation and data-retention/privacy of free providers must be researched (free models may log prompts, so no tokens or private-repo content without an explicit owner choice).
+**Plans:** 9 plans in 4 waves
+
+Plans:
+- [ ] 03.1-01-PLAN.md — AGT-07, schema (tier, route mode/events, run_turns) + migration 0002 with backfill, route types/steps, registry flags
+- [ ] 03.1-02-PLAN.md — OpenRouter adapter (fetch, translation, FreeModelError, deny-retry) + $0 :free pricing
+- [ ] 03.1-03-PLAN.md — routing.ts: resolveModel, free model config, cooldown, D-08 heuristics, escalate tool, D-09 private scan
+- [ ] 03.1-04-PLAN.md — delegate tier, createRun model resolution, picker values, per-turn pricing + spend by turn model
+- [ ] 03.1-05-PLAN.md — Encrypted OpenRouter key, dispatching LlmClient, owner actions (key, private opt-in)
+- [ ] 03.1-06-PLAN.md — Loop: private gate, retry/fallback, escalate, sanity checks, Free-only failure, resume
+- [ ] 03.1-07-PLAN.md — Settings UI: OpenRouter row + private-repo opt-in toggle
+- [ ] 03.1-08-PLAN.md — Command Centre: route steps in traces, model chip, free/paid counts, 4-option picker
+- [ ] 03.1-09-PLAN.md — Docs/ADR, full suite and live OpenRouter smoke test on the VM
 
 ### Phase 4–11
 Goals per phase list above; detailed when each phase is planned (`/gsd-plan-phase N`).
