@@ -4,7 +4,7 @@ import type { ConnectionDTO, ConnectionId } from "../../lib/agent-types";
 import { audit } from "../audit";
 import { decrypt, encrypt } from "../crypto";
 import { db, type DB } from "../db/client";
-import { connections } from "../db/schema";
+import { connections, githubEtags } from "../db/schema";
 import { createGithub, GithubError } from "./client";
 
 const IDS: ConnectionId[] = ["github_read", "github_write"];
@@ -40,12 +40,14 @@ export async function saveToken(
   if (repos.length === 0) return { ok: false, error: "no_repos" };
   const row = { ciphertext: encrypt(token, opts.key), last4: token.slice(-4), login, expiresAt, status: "connected", lastError: null, repos };
   await h.insert(connections).values({ id, ...row }).onConflictDoUpdate({ target: connections.id, set: { ...row, updatedAt: opts.now ?? new Date() } });
+  if (id === "github_read") await h.delete(githubEtags); // ETags belong to the previous token's view; force a full re-sync
   await audit({ actor: "owner", action: "connection.save", target: id, metadata: { id, last4: row.last4 } });
   return { ok: true, login, repos: repos.length, expiresAt: expiresAt?.toISOString() ?? null };
 }
 
 export async function removeToken(h: DB = db(), id: ConnectionId): Promise<void> {
   await h.delete(connections).where(eq(connections.id, id));
+  if (id === "github_read") await h.delete(githubEtags);
   await audit({ actor: "owner", action: "connection.remove", target: id, metadata: { id } });
 }
 

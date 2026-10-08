@@ -1,7 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import { decrypt } from "@/server/crypto";
-import { connections } from "@/server/db/schema";
+import { connections, githubEtags } from "@/server/db/schema";
 import { getConnections, readToken, removeToken, saveToken, writeToken } from "@/server/github/connections";
 import repos from "../fixtures/github/repos.json";
 import user from "../fixtures/github/user.json";
@@ -40,6 +40,17 @@ describe("github connections", () => {
 
     await removeToken(h, "github_read");
     expect(await readToken(h, key)).toBeNull();
+  });
+
+  it("clears sync ETags when the read token is replaced or removed", async () => {
+    const h = t.handle();
+    const seed = () => h.insert(githubEtags).values({ url: "/user/repos?per_page=100&sort=pushed", etag: '"e"' }).onConflictDoNothing();
+    await seed();
+    await saveToken(h, "github_read", "other_account_1111", { fetch: ok(), key });
+    expect(await h.select().from(githubEtags)).toHaveLength(0);
+    await seed();
+    await removeToken(h, "github_read");
+    expect(await h.select().from(githubEtags)).toHaveLength(0);
   });
 
   it("failure modes write nothing", async () => {
