@@ -76,7 +76,7 @@ From an empty repo to a personal OS: secure foundation and deploy path first, th
 - [x] 03-09-PLAN.md — GitHub tools: DB-backed READ tools + APPROVE create_issue with marker adoption
 - [x] 03-10-PLAN.md — Settings: Connections + AI and spend, owner actions
 - [x] 03-11-PLAN.md — Resumable agent loop, delegation, limits, retry
-- [ ] 03-12-PLAN.md — Approval state machine, actions, resume/expire worker handlers
+- [x] 03-12-PLAN.md — Approval state machine, actions, resume/expire worker handlers
 - [ ] 03-13-PLAN.md — POST /api/chat NDJSON, threads + status routes, useAgentStatus
 - [ ] 03-14-PLAN.md — Command Centre read models + agent control actions
 - [ ] 03-15-PLAN.md — AI panel: streaming chat, live trace, inline approvals, threads
@@ -103,5 +103,5 @@ Goals per phase list above; detailed when each phase is planned (`/gsd-plan-phas
 | 0. Architecture | - | Complete | 2026-10-07 |
 | 1. Foundation | 3/3 | Complete | 2026-10-07 |
 | 2. Shell | 13/13 | Complete   | 2026-10-07 |
-| 3. Agents + GitHub | 11/19 | In Progress|  |
+| 3. Agents + GitHub | 12/19 | In Progress|  |
 | 4–11 | - | Not started | - |
