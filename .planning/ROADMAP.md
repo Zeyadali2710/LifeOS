@@ -90,7 +90,7 @@ From an empty repo to a personal OS: secure foundation and deploy path first, th
 ### Phase 03.1: Model routing (INSERTED)
 
 **Goal:** Routine agent work runs on free models so spend goes only where reasoning is needed; the orchestrator stays on claude-opus-5-5.
-**Requirements**: TBD (AGT-07 model routing, proposed)
+**Requirements**: AGT-07
 **Depends on:** Phase 3
 **Success Criteria**:
   1. Simple delegated tasks (e.g. Projects agent listing/summarising synced repos, PRs, issues, commits) run on a free OpenRouter model (e.g. DeepSeek free) at US$0, and the run shows which model answered

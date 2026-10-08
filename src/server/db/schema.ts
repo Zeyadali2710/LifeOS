@@ -15,6 +15,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import type { RouteEvent } from "../../lib/agent-types";
 
 // Column names are snake_case via `casing: "snake_case"` (see client.ts, drizzle.config.ts).
 const timestamps = {
@@ -209,7 +210,11 @@ export const agentRuns = pgTable(
     parentRunId: uuid().references((): AnyPgColumn => agentRuns.id, { onDelete: "set null" }),
     retryOf: uuid(),
     prompt: text().notNull(),
-    model: text().notNull(),
+    model: text().notNull(), // current/final model; updated when a run switches (D-05)
+    tier: text(), // null | "simple" | "reasoning" (D-01)
+    routeMode: text(), // null = not routed, "auto" = tiered with Sonnet fallback, "free" = pinned Free only (D-04)
+    routeEvents: jsonb().$type<RouteEvent[]>().notNull().default([]),
+    sawPrivate: boolean().notNull().default(false), // D-09 thread-level private-data taint
     status: runStatus().notNull().default("queued"),
     messages: jsonb().$type<unknown[]>().notNull().default([]),
     answer: text(),
@@ -265,6 +270,23 @@ export const toolCalls = pgTable(
     uniqueIndex().on(t.runId, t.toolUseId),
     index().on(t.runId, t.seq),
   ],
+);
+
+export const runTurns = pgTable(
+  "run_turns",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    runId: uuid().notNull().references(() => agentRuns.id, { onDelete: "cascade" }),
+    seq: integer().notNull(),
+    model: text().notNull(),
+    inputTokens: integer().notNull().default(0),
+    outputTokens: integer().notNull().default(0),
+    cacheWriteTokens: integer().notNull().default(0),
+    cacheReadTokens: integer().notNull().default(0),
+    costUsd: numeric({ precision: 12, scale: 6 }).notNull().default("0"),
+    createdAt: tstz().notNull().defaultNow(),
+  },
+  (t) => [index().on(t.runId)],
 );
 
 export const approvals = pgTable(

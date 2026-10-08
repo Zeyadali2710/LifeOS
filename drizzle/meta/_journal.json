@@ -15,6 +15,13 @@
       "when": 1791458060307,
       "tag": "0001_agents_github",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791483285858,
+      "tag": "0002_model_routing",
+      "breakpoints": true
     }
   ]
 }

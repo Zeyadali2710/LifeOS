@@ -12,11 +12,15 @@ export type ApprovalStatus = (typeof APPROVAL_STATUSES)[number];
 
 export type StepState = "queued" | "running" | "done" | "waiting" | "failed" | "cancelled";
 
+export type RouteEventKind = "routed" | "fallback" | "escalated" | "private" | "blocked";
+// seq orders the event among tool steps; fractional allowed.
+export type RouteEvent = { at: string; kind: RouteEventKind; from: string | null; to: string | null; reason: string; seq: number };
+
 export type StepDTO = {
   id: string;
   runId: string;
   seq: number;
-  kind: "tool" | "delegate";
+  kind: "tool" | "delegate" | "route";
   actor: string;
   action: string;
   tool: string | null;
@@ -36,6 +40,7 @@ export type RunDTO = {
   retryOf: string | null;
   prompt: string;
   model: string;
+  tier: "simple" | "reasoning" | null;
   status: RunStatus;
   answer: string | null;
   error: string | null;
@@ -95,7 +100,7 @@ export type AgentStatusDTO = {
   firstRepo: string | null;
 };
 
-export type ConnectionId = "github_read" | "github_write";
+export type ConnectionId = "github_read" | "github_write" | "openrouter";
 
 export type ConnectionDTO = {
   id: ConnectionId;

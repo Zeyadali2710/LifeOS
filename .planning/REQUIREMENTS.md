@@ -30,6 +30,7 @@
 - [x] **AGT-04**: Orchestrator chat streams responses, shows tool status, delegates to domain agents
 - [x] **AGT-05**: Agent Command Centre: status, queue, runs, tool calls, errors, latency, tokens, cost; pause/resume/retry/cancel
 - [x] **AGT-06**: GitHub read-only integration feeds Career data and activity
+- [ ] **AGT-07**: Agent runs are routed per run to the cheapest capable model: simple delegated tasks on a free OpenRouter model at US$0, reasoning tasks and any free-model failure on claude-sonnet-5-5, orchestrator always claude-opus-5-5; routing is visible (trace, Command Centre), overridable per agent, priced per turn, private-repo data gated; with no OpenRouter key behaviour is unchanged.
 
 ### Organization
 - [ ] **ORG-01**: Google Calendar + iCloud CalDAV via CalendarProvider; day/week/month views
@@ -73,6 +74,7 @@ See PROJECT.md.
 | FND-* | 1 |
 | SHL-* | 2 |
 | AGT-* | 3 |
+| AGT-07 | 3.1 |
 | ORG-* | 4 |
 | CAR-* | 5 |
 | OUT-* | 6 |
