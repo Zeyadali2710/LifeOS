@@ -1,8 +1,10 @@
+import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChatEvent } from "@/lib/agent-types";
 import { setGlobalPause } from "@/server/agents/runs";
+import { createThread } from "@/server/agents/threads";
 import { threadDetail } from "@/server/agents/chat";
-import { activityEvents, agentRuns, settings, threads } from "@/server/db/schema";
+import { activityEvents, agentRuns, settings, threadMessages, threads } from "@/server/db/schema";
 import { scriptedLlm } from "../helpers/fake-llm";
 import { setupTestDb } from "./helpers";
 
@@ -42,6 +44,16 @@ describe("POST /api/chat", () => {
     expect((await post({ prompt: "" }, { origin: "https://lifeos.example.ts.net" })).status).toBe(400);
     expect((await post({ prompt: "" })).status).toBe(400);
     expect((await post({ prompt: "x".repeat(8001) })).status).toBe(400);
+  });
+
+  it("returns 400 for an unknown thread and leaves no message behind when blocked", async () => {
+    const bad = await post({ prompt: "hi", threadId: "00000000-0000-4000-8000-000000000000" });
+    expect(bad.status).toBe(400);
+    expect((await bad.json()).code).toBe("invalid");
+    await setGlobalPause(h(), true);
+    const thId = await createThread(h(), "t");
+    expect((await post({ prompt: "hi", threadId: thId })).status).toBe(409);
+    expect(await h().select().from(threadMessages).where(eq(threadMessages.threadId, thId))).toHaveLength(0);
   });
 
   it("blocks before any run is created", async () => {

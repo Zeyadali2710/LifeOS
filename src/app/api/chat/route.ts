@@ -1,9 +1,11 @@
+import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { startChat } from "@/server/agents/chat";
 import { getLlm } from "@/server/agents/llm";
 import { advance } from "@/server/agents/loop";
 import { auth } from "@/server/auth";
 import { db } from "@/server/db/client";
+import { threads } from "@/server/db/schema";
 import { env } from "@/server/env";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +24,9 @@ export async function POST(request: Request) {
   if (!parsed.success) return Response.json({ code: "invalid" }, { status: 400 });
 
   const h = db();
+  if (parsed.data.threadId && !(await h.select({ id: threads.id }).from(threads).where(eq(threads.id, parsed.data.threadId)))[0]) {
+    return Response.json({ code: "invalid" }, { status: 400 });
+  }
   const started = await startChat(h, parsed.data);
   if (!started.ok) return Response.json({ code: started.code, capUsd: started.capUsd }, { status: started.code === "rate_limited" ? 429 : 409 });
   const llm = getLlm()!;

@@ -36,9 +36,10 @@ export async function startChat(h: DB, p: { prompt: string; threadId?: string },
   const cap = await capStatus(h, now);
   if (cap.reached) return { ok: false, code: "cap", capUsd: cap.capUsd };
   const threadId = p.threadId ?? (await createThread(h, p.prompt));
-  await appendMessage(h, threadId, "user", p.prompt);
   const made = await createRun(h, { agentId: "orchestrator", prompt: p.prompt, threadId, now: () => now });
   if (!made.ok) return { ok: false, code: made.code === "cap" ? "cap" : "paused", capUsd: made.capUsd };
+  // Appended only once the run exists, so a refused request doesn't leave a duplicate prompt behind on retry.
+  await appendMessage(h, threadId, "user", p.prompt);
   return { ok: true, runId: made.runId, threadId };
 }
 
