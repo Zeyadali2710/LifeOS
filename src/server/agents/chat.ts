@@ -2,7 +2,7 @@ import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { AgentStatusDTO, ApprovalDTO, ChatBlockCode, ThreadDetailDTO, TurnDTO } from "@/lib/agent-types";
 import type { DB } from "../db/client";
 import { agentRuns, approvals, githubRepos, threadMessages, threads, toolCalls } from "../db/schema";
-import { toApprovalDTO, toRunDTO, toStepDTO } from "./dto";
+import { routeSteps, toApprovalDTO, toRunDTO, toStepDTO } from "./dto";
 import { getLlm } from "./llm";
 import { createRun } from "./loop";
 import { getAgent } from "./registry";
@@ -56,12 +56,13 @@ export async function threadDetail(h: DB, id: string): Promise<ThreadDetailDTO |
   const aps = ids.length ? await h.select().from(approvals).where(inArray(approvals.runId, ids)).orderBy(desc(approvals.createdAt)) : [];
   const turns: TurnDTO[] = tops.map((r) => {
     const family = new Set([r.id, ...kids.filter((k) => k.parentRunId === r.id).map((k) => k.id)]);
-    const steps = calls
+    const toolSteps = calls
       .filter((c) => family.has(c.runId))
       .map((c) => {
         const target = c.kind === "delegate" ? getAgent(String((c.input as { agentId?: string } | null)?.agentId))?.name : undefined;
         return toStepDTO(c, byId.get(c.runId)!, (x) => target ?? toolLabel(x));
       });
+    const steps = [...toolSteps, ...[...family].flatMap((id) => routeSteps(byId.get(id)!))];
     const approvalDtos: ApprovalDTO[] = aps.filter((a) => family.has(a.runId)).map((a) => toApprovalDTO(a));
     return { id: r.id, prompt: r.prompt, at: r.createdAt.toISOString(), run: toRunDTO(r), steps, approvals: approvalDtos };
   });

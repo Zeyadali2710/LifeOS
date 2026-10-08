@@ -91,4 +91,14 @@ describe("agent read models", () => {
     expect(d.run).not.toHaveProperty("messages");
     expect(await runDetail(h(), "00000000-0000-4000-8000-000000000000")).toBeNull();
   });
+
+  it("merges route steps and counts free vs paid runs this month", async () => {
+    const ev = { kind: "fallback", seq: 0.5, at: now.toISOString(), reason: "timeout", to: "claude-sonnet-5-5" };
+    const r = await mkRun({ status: "completed", model: "claude-sonnet-5-5", startedAt: ago(HR), routeEvents: [ev] as never });
+    await mkRun({ model: "x/y:free", startedAt: ago(HR) });
+    expect((await runDetail(h(), r.id))!.steps.map((s) => s.kind)).toEqual(["route"]);
+    expect((await agentsOverview(h(), now)).routing).toEqual({ free: 1, paid: 1 });
+    const d = (await agentDetail(h(), "projects", now))!;
+    expect(d.config).toMatchObject({ routable: true, freeAvailable: false });
+  });
 });

@@ -3,9 +3,11 @@ import type { RunDTO, StepDTO } from "@/lib/agent-types";
 import type { DB } from "../db/client";
 import { agentRuns, toolCalls } from "../db/schema";
 import { getConnections } from "../github/connections";
-import { toRunDTO, toStepDTO } from "./dto";
+import { routeSteps, toRunDTO, toStepDTO } from "./dto";
 import { redact } from "./redact";
-import { AGENTS, getAgent, RUN_LIMITS } from "./registry";
+import { AGENTS, getAgent, MODELS, RUN_LIMITS } from "./registry";
+import { sydneyMonthBounds } from "./pricing";
+import { effectivePref, hasFreeKey } from "./routing";
 import { agentConfig, isPaused } from "./runs";
 import { capStatus } from "./spend";
 import { TOOLS, toolLabel } from "./tools";
@@ -33,7 +35,8 @@ async function runningPrompt(h: DB, agentId: string): Promise<string | null> {
 export async function agentsOverview(h: DB, now: Date = new Date()) {
   const since24 = new Date(now.getTime() - D);
   const since7 = new Date(now.getTime() - 7 * D);
-  const [latest, agg, buckets, health, hero, cap, conns, global] = await Promise.all([
+  const month = sydneyMonthBounds(now);
+  const [latest, agg, buckets, health, hero, cap, conns, global, mix] = await Promise.all([
     h.selectDistinctOn([agentRuns.agentId]).from(agentRuns).orderBy(agentRuns.agentId, desc(agentRuns.createdAt)),
     h.execute<{ agent_id: string; running: number; queued: number }>(sql`
       select agent_id, count(*) filter (where status = 'running')::int as running,
@@ -54,6 +57,10 @@ export async function agentsOverview(h: DB, now: Date = new Date()) {
     capStatus(h, now),
     getConnections(h),
     isGlobalPaused(h),
+    h.execute<{ free: number; paid: number }>(sql`
+      select count(*) filter (where model like '%:free')::int as free,
+        count(*) filter (where model not like '%:free')::int as paid
+      from agent_runs where started_at >= ${month.start} and started_at < ${month.end}`),
   ]);
   const lastBy = new Map(latest.map((r) => [r.agentId, r]));
   const aggBy = byAgent(agg.rows);
@@ -103,6 +110,7 @@ export async function agentsOverview(h: DB, now: Date = new Date()) {
     },
     spend: { mtdUsd: cap.mtdUsd, capUsd: cap.capUsd, label: `US$${cap.mtdUsd.toFixed(2)} of US$${cap.capUsd}` },
     globalPaused: global,
+    routing: { free: mix.rows[0]?.free ?? 0, paid: mix.rows[0]?.paid ?? 0 },
   };
 }
 
@@ -129,14 +137,18 @@ export async function recentRuns(
   return { items: page.map((r) => toRunDTO(r.run)), nextCursor: rows.length > limit ? page[limit - 1]!.cur : null };
 }
 
-const stepsFor = async (h: DB, run: { id: string; agentId: string }): Promise<StepDTO[]> =>
-  (await h.select().from(toolCalls).where(eq(toolCalls.runId, run.id)).orderBy(asc(toolCalls.seq))).map((r) => toStepDTO(r, run, toolLabel));
+const stepsFor = async (h: DB, run: typeof agentRuns.$inferSelect): Promise<StepDTO[]> =>
+  [
+    ...(await h.select().from(toolCalls).where(eq(toolCalls.runId, run.id)).orderBy(asc(toolCalls.seq))).map((r) => toStepDTO(r, run, toolLabel)),
+    ...routeSteps(run),
+  ].sort((a, b) => a.seq - b.seq);
 
 export async function agentDetail(h: DB, agentId: string, now: Date = new Date()) {
   const agent = getAgent(agentId);
   if (!agent) return null;
-  const [cfg, conns, [latest], queued, [hl], recent] = await Promise.all([
+  const [cfg, hasKey, conns, [latest], queued, [hl], recent] = await Promise.all([
     agentConfig(h, agentId),
+    hasFreeKey(h),
     getConnections(h),
     h.select().from(agentRuns).where(eq(agentRuns.agentId, agentId)).orderBy(desc(agentRuns.createdAt)).limit(1),
     h.select().from(agentRuns).where(and(eq(agentRuns.agentId, agentId), eq(agentRuns.status, "queued"))).orderBy(asc(agentRuns.createdAt)).limit(50),
@@ -164,7 +176,14 @@ export async function agentDetail(h: DB, agentId: string, now: Date = new Date()
   const permissions = [...new Set(tools.map((t) => t.tier))].map((tier) => ({ tier, tools: tools.filter((t) => t.tier === tier).map((t) => t.name) }));
   return {
     agent,
-    config: { model: cfg.model, defaultModel: agent.defaultModel, paused: cfg.paused, limits: RUN_LIMITS },
+    config: {
+      model: agent.id === "orchestrator" ? MODELS.opus : agent.routable ? effectivePref({ pref: cfg.pref, routable: true, hasKey, defaultModel: agent.defaultModel }) : cfg.model,
+      defaultModel: agent.defaultModel,
+      paused: cfg.paused,
+      limits: RUN_LIMITS,
+      routable: !!agent.routable,
+      freeAvailable: hasKey,
+    },
     tools,
     permissions,
     latestRun: latest ? { run: toRunDTO(latest), steps: await stepsFor(h, latest) } : null,
@@ -185,7 +204,7 @@ export async function runDetail(h: DB, runId: string) {
   return {
     run: toRunDTO(run),
     agent: getAgent(run.agentId) ?? null,
-    steps: calls.map((c) => toStepDTO(c, run, toolLabel)),
+    steps: [...calls.map((c) => toStepDTO(c, run, toolLabel)), ...routeSteps(run)].sort((a, b) => a.seq - b.seq),
     toolCalls: calls.map((c) => ({
       seq: c.seq,
       tool: c.tool,
