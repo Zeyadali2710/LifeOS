@@ -5,6 +5,10 @@ import { settings } from "@/server/db/schema";
 import { env } from "@/server/env";
 import { HEARTBEAT_KEY } from "@/server/health";
 import { log } from "@/server/log";
+import { QUEUES } from "@/server/queue";
+import { handleExpire, handleResume } from "./jobs/agents";
+import { handleGithubSync } from "./jobs/github-sync";
+import { handleSweep } from "./jobs/sweep";
 
 const HEARTBEAT = "system.heartbeat";
 
@@ -23,6 +27,23 @@ async function main() {
   await boss.schedule(HEARTBEAT, "* * * * *");
   await boss.work(HEARTBEAT, async () => beat());
   await beat();
+
+  await boss.createQueue(QUEUES.githubSync);
+  await boss.createQueue(QUEUES.resume, { retryLimit: 3, retryBackoff: true });
+  await boss.createQueue(QUEUES.expire);
+  await boss.createQueue(QUEUES.sweep);
+  await boss.schedule(QUEUES.githubSync, "*/15 * * * *", {}, { singletonKey: "github.sync" });
+  await boss.schedule(QUEUES.expire, "*/5 * * * *");
+  await boss.schedule(QUEUES.sweep, "*/5 * * * *");
+  await boss.work(QUEUES.githubSync, async () => handleGithubSync());
+  await boss.work(QUEUES.expire, async () => handleExpire());
+  await boss.work(QUEUES.sweep, async () => handleSweep());
+  await boss.work(QUEUES.resume, async (jobs) => {
+    for (const j of jobs) await handleResume(j.data);
+  });
+  // Fresh deploys should not wait 15 minutes for the first sync.
+  await boss.send(QUEUES.githubSync, {}, { singletonKey: "github.sync", startAfter: 10 }).catch(() => undefined);
+
   await emitActivity({ type: "system.worker_started", source: "system", title: "Worker started", detail: `v${process.env.LIFEOS_VERSION ?? "dev"}` });
   log.info("worker started");
 
