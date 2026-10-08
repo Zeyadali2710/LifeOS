@@ -1,0 +1,6 @@
+{
+  "id": "gen-2",
+  "model": "vendor/x:free",
+  "choices": [{ "finish_reason": "stop", "message": { "role": "assistant", "content": "All clear.", "reasoning": "ignored" } }],
+  "usage": { "prompt_tokens": 50, "completion_tokens": 5 }
+}

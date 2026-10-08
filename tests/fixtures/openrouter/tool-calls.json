@@ -1,0 +1,17 @@
+{
+  "id": "gen-1",
+  "model": "vendor/x:free",
+  "choices": [
+    {
+      "finish_reason": "tool_calls",
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          { "id": "provider_abc", "type": "function", "function": { "name": "github_list_pull_requests", "arguments": "{\"repo\":\"a/b\"}" } }
+        ]
+      }
+    }
+  ],
+  "usage": { "prompt_tokens": 120, "completion_tokens": 30, "cost": 0 }
+}
