@@ -9,6 +9,7 @@ Open LifeOS and immediately know: what is happening, what matters, what needs at
 ## Requirements
 ### Validated
 - SHL-01..05 — OS shell: navigation across all domains, live activity over SSE, notifications (read/snooze/dismiss), command palette, honest health. Validated in Phase 2: Shell (desktop visual + Windows shortcut UAT pending).
+- AGT-01..06 — Agent core: tiered tool gateway, approvals that suspend/resume runs, idempotent side effects, streaming orchestrator chat with delegation, Agent Command Centre, read-only GitHub sync. Validated in Phase 3: Agent infrastructure + GitHub (live on the homelab behind tailscale serve; review follow-ups CR-01/CR-02/WR-02 open).
 
 ### Active
 See `REQUIREMENTS.md`.
@@ -42,11 +43,11 @@ See `REQUIREMENTS.md`.
 | ADR-005 activity_events + LISTEN/NOTIFY | durable event bus, zero infra | Accepted |
 | ADR-006 Better Auth single owner | self-hosted auth, secure sessions | Accepted |
 | ADR-007 env secrets + AES-GCM token encryption | no Vault needed | Accepted |
-| ADR-008 Anthropic SDK + own tool gateway | control permissions/observability | Accepted |
+| ADR-008 Anthropic SDK + own tool gateway | control permissions/observability | Accepted; shipped in Phase 3 |
 | ADR-009 Debian VM + Compose + Tailscale | simple, isolated, private | Accepted |
 | ADR-010 capability providers + labelled mocks | honest UI over uneven APIs | Accepted |
 
 ## Project Reference
 Docs: `docs/` · ADRs: `docs/decisions/` · Roadmap: `.planning/ROADMAP.md`
 
-_Last updated: 2026-10-08 — Phase 2 (Shell) complete._
+_Last updated: 2026-10-09 — Phase 3 (Agent infrastructure + GitHub) complete._
