@@ -15,7 +15,7 @@ export class ToolError extends Error {
   }
 }
 
-export type LlmUsage = { input: number; output: number; cacheWrite: number; cacheRead: number };
+export type LlmUsage = { input: number; output: number; cacheWrite: number; cacheRead: number; /** provider-reported spend; only OpenRouter sets it */ providerCostUsd?: number };
 export type LlmTurn = { content: Anthropic.ContentBlock[]; stopReason: string | null; usage: LlmUsage };
 
 export type AnthropicTool = { name: string; description: string; input_schema: Anthropic.Tool.InputSchema };

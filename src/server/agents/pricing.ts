@@ -9,6 +9,8 @@ export const PRICES = {
 } as const;
 
 export function costUsd(model: string, u: LlmUsage): number {
+  // :free is $0 unless the provider reports spend (then Opus, D-14 under-count guard).
+  if (model.endsWith(":free") && !(u.providerCostUsd && u.providerCostUsd > 0)) return 0;
   // Unknown model -> Opus (most expensive) so the cap is never under-counted.
   const p = PRICES[model as keyof typeof PRICES] ?? PRICES["claude-opus-5-5"];
   return (u.input * p.in + u.output * p.out + u.cacheWrite * p.w5m + u.cacheRead * p.read) / 1e6;

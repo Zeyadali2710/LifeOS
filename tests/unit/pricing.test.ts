@@ -15,6 +15,12 @@ describe("costUsd", () => {
   it("falls back to Opus prices for unknown models", () => {
     expect(costUsd("mystery", { ...z, input: 1e6 })).toBe(4);
   });
+  it("prices :free at $0 unless the provider reports cost", () => {
+    const u = { ...z, input: 1e6, output: 1e6 };
+    expect(costUsd("vendor/x:free", u)).toBe(0);
+    expect(costUsd("vendor/x:free", { ...u, providerCostUsd: 0.01 })).toBe(costUsd("claude-opus-5-5", u));
+    expect(costUsd("vendor/x", u)).toBe(costUsd("claude-opus-5-5", u));
+  });
 });
 
 describe("sydneyMonthBounds", () => {
