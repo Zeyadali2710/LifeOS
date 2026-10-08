@@ -47,7 +47,7 @@ Progress: [██████████] 100%
 
 ### Blockers/Concerns
 
-- Phase 3 review findings CR-01/CR-02/WR-01..08 fixed (03-REVIEW-FIX.md); security verified 81/81 (03-SECURITY.md). Fixes not yet redeployed to the homelab VM. Residual info items IN-01/03/04 open.
+- Phase 3 review findings CR-01/CR-02/WR-01..08 fixed (03-REVIEW-FIX.md); security verified 81/81 (03-SECURITY.md). Fixes redeployed; UAT 13/13 passed on the homelab (03-UAT.md). Residual info items IN-01/03/04 open.
 
 ## Session Continuity
 
