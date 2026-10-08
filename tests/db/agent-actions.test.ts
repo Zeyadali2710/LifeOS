@@ -104,5 +104,9 @@ describe("agent actions", () => {
     expect(await setAgentModelAction("projects", "claude-sonnet-5-5")).toEqual({ ok: true });
     expect(await setAgentModelAction("projects", "gpt-9")).toEqual({ ok: false });
     expect(await setAgentModelAction("home", "claude-sonnet-5-5")).toEqual({ ok: false });
+    expect(await setAgentModelAction("projects", "auto")).toEqual({ ok: true });
+    expect(await setAgentModelAction("projects", "free")).toEqual({ ok: true });
+    expect(await setAgentModelAction("orchestrator", "free")).toEqual({ ok: false });
+    expect(await setAgentModelAction("orchestrator", "auto")).toEqual({ ok: false });
   });
 });

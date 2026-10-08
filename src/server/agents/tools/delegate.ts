@@ -10,17 +10,25 @@ const ids = AGENTS.filter((a) => a.live && a.id !== "orchestrator").map((a) => a
 
 const out = z.object({ status: z.string(), answer: z.string().nullable(), childRunId: z.string().optional() });
 
-export const delegateTool: Tool<{ agentId: string; task: string }, z.infer<typeof out>> = {
+export const delegateTool: Tool<{ agentId: string; task: string; tier: "simple" | "reasoning"; tierReason?: string }, z.infer<typeof out>> = {
   name: "delegate",
   label: "Delegating",
-  description: "Hand a task to another agent (for example the projects agent for GitHub questions) and get its answer.",
-  input: z.object({ agentId: z.enum(ids), task: z.string().min(1).max(2000) }),
+  description:
+    "Hand a task to another agent (for example the projects agent for GitHub questions) and get its answer. Set tier: simple for lookups/listing/summaries, reasoning otherwise.",
+  input: z.object({
+    agentId: z.enum(ids),
+    task: z.string().min(1).max(2000),
+    tier: z.enum(["simple", "reasoning"]).default("reasoning"),
+    tierReason: z.string().max(200).optional(),
+  }),
   output: out,
   tier: "READ",
   sideEffect: false,
-  async handler({ agentId, task }, ctx) {
+  async handler({ agentId, task, tier, tierReason }, ctx) {
     if (!ctx.llm) throw new ToolError("unavailable", "The assistant isn't available.");
-    const made = await createRun(ctx.handle, { agentId, prompt: task, threadId: null, parentRunId: ctx.runId, now: ctx.now });
+    const made = await createRun(ctx.handle, { agentId, prompt: task, threadId: null, parentRunId: ctx.runId, tier, tierReason, now: ctx.now });
+    if (!made.ok && made.code === "private_blocked")
+      throw new ToolError("unavailable", "This agent is pinned to Free only and this conversation includes private-repo data, which isn't sent to free models.");
     if (!made.ok) throw new ToolError(made.code === "paused" ? "paused" : "unavailable", made.code === "paused" ? "Paused by you" : "Agent unavailable");
     await ctx.handle
       .update(toolCalls)

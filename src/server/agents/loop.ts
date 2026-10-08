@@ -3,7 +3,7 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import type { ChatEvent, RunStatus } from "@/lib/agent-types";
 import { formatDuration } from "@/lib/format";
 import { db, type DB } from "../db/client";
-import { agentRuns, approvals, toolCalls } from "../db/schema";
+import { agentRuns, approvals, runTurns, toolCalls } from "../db/schema";
 import { emitActivity, notifyLive } from "../events";
 import { log } from "../log";
 import { enqueue as realEnqueue, QUEUES, type Enqueue } from "../queue";
@@ -12,6 +12,7 @@ import { callTool } from "./gateway";
 import { getLlm } from "./llm";
 import { costUsd } from "./pricing";
 import { getAgent, RUN_LIMITS } from "./registry";
+import { freeCoolingDown, getFreePrivateOk, hasFreeKey, isFree, privateInTree, resolveModel } from "./routing";
 import { agentConfig, isPaused } from "./runs";
 import { assertUnderCap } from "./spend";
 import { appendMessage, threadHistory } from "./threads";
@@ -20,12 +21,12 @@ import { toAnthropicTool, type LlmClient, type LlmUsage, type Tool } from "./typ
 
 type Msg = Anthropic.MessageParam;
 
-export type CreateRunResult = { ok: true; runId: string } | { ok: false; code: "paused" | "cap" | "not_live"; capUsd?: number };
+export type CreateRunResult = { ok: true; runId: string } | { ok: false; code: "paused" | "cap" | "not_live" | "private_blocked"; capUsd?: number };
 
 /** Preflight (live, pause, spend cap) then insert a queued run. Child runs skip the cap (D-15). */
 export async function createRun(
   h: DB,
-  p: { agentId: string; prompt: string; threadId?: string | null; parentRunId?: string; retryOf?: string; now?: () => Date; emit?: typeof emitActivity },
+  p: { agentId: string; prompt: string; threadId?: string | null; parentRunId?: string; retryOf?: string; tier?: "simple" | "reasoning" | null; tierReason?: string; privacyAnchor?: string | null; now?: () => Date; emit?: typeof emitActivity },
 ): Promise<CreateRunResult> {
   if (!getAgent(p.agentId)?.live) return { ok: false, code: "not_live" };
   if (await isPaused(h, p.agentId)) return { ok: false, code: "paused" };
@@ -33,7 +34,21 @@ export async function createRun(
     const cap = await assertUnderCap(h, (p.now ?? (() => new Date()))(), p.emit);
     if (!cap.ok) return { ok: false, code: "cap", capUsd: cap.capUsd };
   }
-  const { model } = await agentConfig(h, p.agentId);
+  const agent = getAgent(p.agentId)!;
+  const cfg = await agentConfig(h, p.agentId);
+  const at = (p.now ?? (() => new Date()))();
+  const { model, mode, reason, blocked } = resolveModel({
+    agentId: p.agentId,
+    pref: cfg.pref,
+    routable: !!agent.routable,
+    defaultModel: agent.defaultModel,
+    tier: p.tier ?? null,
+    hasKey: await hasFreeKey(h),
+    coolingDown: freeCoolingDown(at),
+    privateTainted: await privateInTree(h, p.parentRunId ?? p.privacyAnchor ?? null),
+    privateOk: await getFreePrivateOk(h),
+  });
+  if (blocked) return { ok: false, code: blocked };
   const history: Msg[] = p.threadId ? await threadHistory(h, p.threadId, 20) : [];
   const last = history.at(-1);
   // The chat route may already have stored this prompt in the thread; don't send it twice.
@@ -47,6 +62,11 @@ export async function createRun(
       retryOf: p.retryOf ?? null,
       prompt: p.prompt,
       model,
+      tier: p.tier ?? null,
+      routeMode: mode,
+      routeEvents: mode
+        ? [{ at: at.toISOString(), kind: "routed", from: null, to: model, reason: (reason ?? "") + (p.tierReason ? `: ${p.tierReason.slice(0, 200)}` : ""), seq: 0 }]
+        : [],
       messages: history,
     })
     .returning({ id: agentRuns.id });
@@ -177,6 +197,7 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
       }
     }
 
+    const curModel = run0.model; // plan 06 makes this `let` for mid-run switches
     for (;;) {
       const [cur] = await h.select({ c: agentRuns.cancelRequestedAt }).from(agentRuns).where(eq(agentRuns.id, runId));
       if (cur?.c) return await finish({ status: "cancelled", error: "Cancelled by you" });
@@ -184,22 +205,35 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
       if (active >= RUN_LIMITS.activeMs) return await fail("limit:time", "This run took too long and was stopped.");
 
       const t0 = now().getTime();
-      const addUsage = (u: LlmUsage) =>
-        h
+      const model = curModel; // one turn is priced with exactly the model that served it (D-14)
+      const addUsage = async (u: LlmUsage, m: string) => {
+        const cost = costUsd(m, u).toFixed(6);
+        await h
           .update(agentRuns)
           .set({
             inputTokens: sql`${agentRuns.inputTokens} + ${u.input}`,
             outputTokens: sql`${agentRuns.outputTokens} + ${u.output}`,
             cacheWriteTokens: sql`${agentRuns.cacheWriteTokens} + ${u.cacheWrite}`,
             cacheReadTokens: sql`${agentRuns.cacheReadTokens} + ${u.cacheRead}`,
-            costUsd: sql`${agentRuns.costUsd} + (${costUsd(run0.model, u).toFixed(6)})::numeric`,
+            costUsd: sql`${agentRuns.costUsd} + (${cost})::numeric`,
           })
           .where(eq(agentRuns.id, runId));
+        await h.insert(runTurns).values({
+          runId,
+          seq: sql`(select coalesce(max(seq), 0) + 1 from run_turns where run_id = ${runId})`,
+          model: m,
+          inputTokens: u.input,
+          outputTokens: u.output,
+          cacheWriteTokens: u.cacheWrite,
+          cacheReadTokens: u.cacheRead,
+          costUsd: cost,
+        });
+      };
       let streamedChars = 0;
       let turn;
       try {
         turn = await opts.llm.stream(
-          { model: run0.model, system: agent.systemPrompt, messages, tools: anthropicTools, maxTokens: RUN_LIMITS.turnMaxTokens },
+          { model, system: agent.systemPrompt, messages, tools: anthropicTools, maxTokens: RUN_LIMITS.turnMaxTokens },
           (text) => {
             streamedChars += text.length;
             emit({ k: "delta", runId, text });
@@ -208,14 +242,14 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
         );
       } catch (err) {
         // Tokens that streamed were billed even though the turn failed; estimate (~4 chars/token) so the spend cap sees them.
-        if (streamedChars > 0) {
-          await addUsage({ input: Math.ceil(JSON.stringify(messages).length / 4), output: Math.ceil(streamedChars / 4), cacheWrite: 0, cacheRead: 0 }).catch(() => undefined);
+        if (streamedChars > 0 && !isFree(model)) {
+          await addUsage({ input: Math.ceil(JSON.stringify(messages).length / 4), output: Math.ceil(streamedChars / 4), cacheWrite: 0, cacheRead: 0 }, model).catch(() => undefined);
         }
         throw err;
       }
       const u = turn.usage;
       tokens += u.input + u.output;
-      await addUsage(u);
+      await addUsage(u, model);
       messages.push({ role: "assistant", content: turn.content as Msg["content"] });
 
       const uses = turn.content.filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use");
@@ -293,7 +327,7 @@ export async function retryRun(
 ): Promise<CreateRunResult | { ok: false; code: "not_retryable" }> {
   const [old] = await h.select().from(agentRuns).where(eq(agentRuns.id, runId));
   if (!old || !["failed", "cancelled", "expired"].includes(old.status)) return { ok: false, code: "not_retryable" };
-  const made = await createRun(h, { agentId: old.agentId, prompt: old.prompt, threadId: old.threadId, retryOf: old.id, now: opts.now });
+  const made = await createRun(h, { agentId: old.agentId, prompt: old.prompt, threadId: old.threadId, retryOf: old.id, tier: old.tier as "simple" | "reasoning" | null, privacyAnchor: old.parentRunId ?? old.id, now: opts.now });
   if (made.ok) await (opts.enqueue ?? realEnqueue)(QUEUES.resume, { runId: made.runId }, { singletonKey: `run:${made.runId}` });
   return made;
 }

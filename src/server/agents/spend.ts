@@ -1,6 +1,6 @@
 import { and, eq, gte, lt, sql } from "drizzle-orm";
 import { db, type DB } from "../db/client";
-import { agentRuns, settings } from "../db/schema";
+import { agentRuns, runTurns, settings } from "../db/schema";
 import { emitActivity } from "../events";
 import { sydneyMonthBounds } from "./pricing";
 
@@ -20,15 +20,16 @@ export async function monthToDate(handle: DB = db(), now: Date = new Date()): Pr
 export async function spendByModel(handle: DB = db(), now: Date = new Date()) {
   const rows = await handle
     .select({
-      model: agentRuns.model,
-      input: sql<string>`coalesce(sum(${agentRuns.inputTokens}), 0)`,
-      output: sql<string>`coalesce(sum(${agentRuns.outputTokens}), 0)`,
-      cache: sql<string>`coalesce(sum(${agentRuns.cacheWriteTokens} + ${agentRuns.cacheReadTokens}), 0)`,
-      costUsd: sql<string>`coalesce(sum(${agentRuns.costUsd}), 0)`,
+      model: runTurns.model,
+      input: sql<string>`coalesce(sum(${runTurns.inputTokens}), 0)`,
+      output: sql<string>`coalesce(sum(${runTurns.outputTokens}), 0)`,
+      cache: sql<string>`coalesce(sum(${runTurns.cacheWriteTokens} + ${runTurns.cacheReadTokens}), 0)`,
+      costUsd: sql<string>`coalesce(sum(${runTurns.costUsd}), 0)`,
     })
-    .from(agentRuns)
+    .from(runTurns)
+    .innerJoin(agentRuns, eq(runTurns.runId, agentRuns.id))
     .where(inMonth(now))
-    .groupBy(agentRuns.model);
+    .groupBy(runTurns.model);
   return rows.map((r) => ({ model: r.model, input: Number(r.input), output: Number(r.output), cache: Number(r.cache), costUsd: Number(r.costUsd) }));
 }
 

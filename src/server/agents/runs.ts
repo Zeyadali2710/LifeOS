@@ -28,14 +28,16 @@ export async function setAgentPaused(handle: DB = db(), agentId: string, paused:
 }
 
 export async function setAgentModel(handle: DB = db(), agentId: string, model: string): Promise<boolean> {
-  if (!getAgent(agentId)?.live || !(Object.values(MODELS) as string[]).includes(model)) return false;
+  const agent = getAgent(agentId);
+  const routing = model === "auto" || model === "free";
+  if (!agent?.live || !(routing ? agent.routable : (Object.values(MODELS) as string[]).includes(model))) return false;
   await handle.insert(agents).values({ id: agentId, model }).onConflictDoUpdate({ target: agents.id, set: { model } });
   return true;
 }
 
-export async function agentConfig(handle: DB = db(), agentId: string): Promise<{ paused: boolean; model: string }> {
+export async function agentConfig(handle: DB = db(), agentId: string): Promise<{ paused: boolean; pref: string | null; model: string }> {
   const [a] = await handle.select().from(agents).where(eq(agents.id, agentId));
-  return { paused: a?.paused ?? false, model: a?.model ?? getAgent(agentId)?.defaultModel ?? MODELS.sonnet };
+  return { paused: a?.paused ?? false, pref: a?.model ?? null, model: a?.model ?? getAgent(agentId)?.defaultModel ?? MODELS.sonnet };
 }
 
 export async function cancelRun(handle: DB = db(), runId: string, now: Date = new Date()): Promise<boolean> {

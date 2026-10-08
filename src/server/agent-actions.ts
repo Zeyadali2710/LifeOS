@@ -12,7 +12,7 @@ import { requireOwner } from "./session";
 type Result = Promise<{ ok: boolean; code?: string; runId?: string }>;
 const agentId = z.enum(AGENTS.map((a) => a.id) as [string, ...string[]]);
 const runId = z.uuid();
-const model = z.enum(Object.values(MODELS) as [string, ...string[]]);
+const model = z.enum([...Object.values(MODELS), "auto", "free"] as unknown as [string, ...string[]]);
 
 async function guarded(action: string, target: string | null, fn: () => Promise<Awaited<Result>>, metadata?: Record<string, unknown>): Result {
   try {

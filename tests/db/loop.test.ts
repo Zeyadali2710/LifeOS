@@ -3,9 +3,10 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ChatEvent } from "@/lib/agent-types";
 import { advance, buildToolResults, createRun, resumeParent, retryRun } from "@/server/agents/loop";
 import { costUsd } from "@/server/agents/pricing";
+import { freeModel } from "@/server/agents/routing";
 import { setAgentPaused, setGlobalPause } from "@/server/agents/runs";
 import { appendMessage, createThread } from "@/server/agents/threads";
-import { activityEvents, agentRuns, approvals, githubRepos, settings, threadMessages, toolCalls } from "@/server/db/schema";
+import { activityEvents, agents, agentRuns, approvals, connections, githubRepos, runTurns, settings, threadMessages, toolCalls } from "@/server/db/schema";
 import { saveToken } from "@/server/github/connections";
 import { QUEUES } from "@/server/queue";
 import user from "../fixtures/github/user.json";
@@ -45,6 +46,79 @@ beforeEach(async () => {
   await h().delete(agentRuns);
   await h().delete(settings);
   await h().delete(activityEvents);
+  await h().delete(connections);
+  await h().delete(agents);
+});
+const withKey = () => h().insert(connections).values({ id: "openrouter", ciphertext: "x", last4: "abcd" } as never).onConflictDoNothing();
+
+describe("routing in createRun", () => {
+  it("no key: agent default model, no route mode or events", async () => {
+    const r = await run(await mk("projects"));
+    expect(r).toMatchObject({ model: "claude-sonnet-5-5", routeMode: null, routeEvents: [] });
+  });
+
+  it("orchestrator is always Opus even if a pref row says otherwise", async () => {
+    await h().insert(agents).values({ id: "orchestrator", model: "claude-sonnet-5-5" });
+    expect((await run(await mk("orchestrator"))).model).toBe("claude-opus-5-5");
+  });
+
+  it("tier simple routes to the free model with a routed event; default tier is Sonnet", async () => {
+    await withKey();
+    const parent = await mk("orchestrator");
+    const simple = await run(await mk("projects", "x", { parentRunId: parent, tier: "simple", tierReason: "list repos" }));
+    expect(simple).toMatchObject({ model: freeModel(), tier: "simple", routeMode: "auto" });
+    expect(simple.routeEvents).toMatchObject([{ kind: "routed", from: null, to: freeModel(), reason: "tag simple: list repos", seq: 0 }]);
+    const reasoning = await run(await mk("projects", "x", { parentRunId: parent, tier: "reasoning" }));
+    expect(reasoning.model).toBe("claude-sonnet-5-5");
+  });
+
+  it("private data in the tree: Sonnet unless opted in; Free-only is refused", async () => {
+    await withKey();
+    const parent = await mk("orchestrator");
+    await h().update(agentRuns).set({ sawPrivate: true }).where(eq(agentRuns.id, parent));
+    const c = await run(await mk("projects", "x", { parentRunId: parent, tier: "simple" }));
+    expect(c.model).toBe("claude-sonnet-5-5");
+    expect(c.routeEvents).toMatchObject([{ reason: "private data in thread" }]);
+    await h().insert(agents).values({ id: "projects", model: "free" });
+    const before = (await h().select().from(agentRuns)).length;
+    expect(await createRun(h(), { agentId: "projects", prompt: "x", parentRunId: parent, tier: "simple" })).toEqual({ ok: false, code: "private_blocked" });
+    expect((await h().select().from(agentRuns)).length).toBe(before);
+    await h().insert(settings).values({ key: "ai.free_private_ok", value: true });
+    expect((await run(await mk("projects", "x", { parentRunId: parent, tier: "simple" }))).model).toBe(freeModel());
+  });
+
+  it("retryRun copies the tier", async () => {
+    await withKey();
+    const parent = await mk("orchestrator");
+    const id = await mk("projects", "x", { parentRunId: parent, tier: "simple" });
+    await h().update(agentRuns).set({ status: "failed" }).where(eq(agentRuns.id, id));
+    const r = await retryRun(h(), id, { enqueue: vi.fn() });
+    if (!r.ok) throw new Error(r.code);
+    expect((await run(r.runId)).tier).toBe("simple");
+  });
+});
+
+describe("per-turn ledger", () => {
+  it("writes a run_turns row per turn priced with the serving model; free costs 0", async () => {
+    await withKey();
+    const parent = await mk("orchestrator");
+    const id = await mk("projects", "x", { parentRunId: parent, tier: "simple" });
+    const llm = scriptedLlm([{ toolUses: [{ name: "github.list_pull_requests", input: {} }] }, { text: "done" }]);
+    await connectWrite();
+    expect(await advance(id, { handle: h(), llm })).toBe("completed");
+    const turns = await h().select().from(runTurns).where(eq(runTurns.runId, id));
+    expect(turns.map((x) => [x.seq, x.model, Number(x.costUsd)])).toEqual([[1, freeModel(), 0], [2, freeModel(), 0]]);
+    expect(Number((await run(id)).costUsd)).toBe(0);
+  });
+
+  it("prices with the run's current model and sums into agent_runs.cost_usd", async () => {
+    const id = await mk("projects");
+    const llm = scriptedLlm([{ text: "ok" }]);
+    await advance(id, { handle: h(), llm });
+    const [turn] = await h().select().from(runTurns).where(eq(runTurns.runId, id));
+    expect(turn!.model).toBe("claude-sonnet-5-5");
+    expect(Number((await run(id)).costUsd)).toBeCloseTo(Number(turn!.costUsd));
+  });
 });
 
 describe("createRun", () => {
