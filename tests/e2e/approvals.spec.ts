@@ -27,7 +27,8 @@ test("desktop: pending approval, edit validation, missing token, create issue", 
   const id = await seed(title);
   await page.goto(`/approvals?id=${id}`);
 
-  await expect(page.getByText(/decisions? (is|are) waiting on you\./)).toBeVisible();
+  // Next can keep a hidden copy of the route during transitions; assert on the visible heading only.
+  await expect(page.getByText(/decisions? (is|are) waiting on you\./).filter({ visible: true })).toBeVisible();
   const detail = page.getByRole("article", { name: "Approval detail" });
   await expect(detail.getByText("WHAT WILL HAPPEN")).toBeVisible();
   await expect(detail.getByText(title).first()).toBeVisible();
