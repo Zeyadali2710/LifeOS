@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: phase_complete
-stopped_at: Phase 3 complete and verified; Phase 4 needs detailing in ROADMAP
-last_updated: 2026-10-08T15:19:45.585Z
-last_activity: 2026-10-09 -- Phase 03 complete (verified live on homelab)
+status: verifying
+stopped_at: Phase 03.1 context gathered
+last_updated: "2026-10-08T17:44:25.653Z"
+last_activity: 2026-10-09
 progress:
-  total_phases: 3
-  completed_phases: 1
+  total_phases: 4
+  completed_phases: 2
   total_plans: 32
   completed_plans: 33
-  percent: 33
+  percent: 50
 ---
 
 # Project State
@@ -21,18 +21,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-07)
 
 **Core value:** Know what matters, what needs attention, and what to do next — in one place.
-**Current focus:** Phase 4 — Organization (not yet detailed/planned)
+**Current focus:** Phase 3.1 — Model routing (inserted; discuss/plan next), then Phase 4 — Organization
 
 ## Current Position
 
 Phase: 03 (agent-infrastructure-github) — COMPLETE
 Plan: 19 of 19
-Status: Phase 3 verified (03-VERIFICATION.md passed); next is Phase 4
+Status: Phase 3 verified (03-VERIFICATION.md passed); next is Phase 3.1 Model routing
 Last activity: 2026-10-09
 
 Progress: [██████████] 100%
 
 ## Accumulated Context
+
+### Roadmap Evolution
+
+- Phase 03.1 inserted after Phase 3: Model routing: free OpenRouter models for routine agent work, Sonnet escalation, orchestrator stays on Opus 5.5
 
 ### Decisions
 
@@ -51,6 +55,6 @@ Progress: [██████████] 100%
 
 ## Session Continuity
 
-Last session: 2026-10-08T07:07:47.290Z
-Stopped at: Phase 3 complete
-Resume file: .planning/phases/03-agent-infrastructure-github/03-VERIFICATION.md
+Last session: 2026-10-08T17:44:25.640Z
+Stopped at: Phase 03.1 context gathered
+Resume file: .planning/phases/03.1-model-routing/03.1-CONTEXT.md
