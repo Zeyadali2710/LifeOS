@@ -29,8 +29,11 @@ describe("idempotency", () => {
   it("concurrent calls run the handler once", async () => {
     const [a, b] = await Promise.all([call("u2"), call("u2")]);
     expect(ft.calls.exec).toBe(1);
-    expect([a, b].map((r) => r.status).sort()).toEqual(["error", "ok"]);
-    expect([a, b].find((r) => r.status === "error")).toMatchObject({ error: "already running" });
+    // The loser either sees the in-flight claim or, if the winner already finished, the stored result.
+    const loser = [a, b].find((r) => r.status === "error" || ("duplicate" in r && r.duplicate));
+    expect(loser).toBeDefined();
+    if (loser!.status === "error") expect(loser).toMatchObject({ error: "already running" });
+    else expect(loser).toMatchObject({ status: "ok", duplicate: true, output: { echoed: "a" } });
   });
 
   it("different toolUseId runs again", async () => {
