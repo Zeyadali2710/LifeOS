@@ -34,12 +34,15 @@ describe("planDay", () => {
       slots: [{ start: at(10), end: at(12) }],
       dayEnd: at(23, 59),
     });
-    expect(out).toEqual([{ kind: "conflict", taskId: "a", dueAt: at(9), why: { key: "no_slot", params: { due: at(9) } } }]);
+    expect(out.filter((i) => i.kind === "conflict")).toEqual([{ kind: "conflict", taskId: "a", dueAt: at(9), why: { key: "no_slot", params: { due: at(9) } } }]);
+    expect(out.find((i) => i.taskId === "later")).toMatchObject({ kind: "task", start: at(10) });
+    // a later-due task that cannot be placed is omitted, not a conflict
+    expect(planDay({ tasks: [task("later", { dueAt: at(9, 0, 9) })], slots: [], dayEnd: at(23, 59) })).toEqual([]);
   });
   it("why keys", () => {
     const out = planDay({
       tasks: [task("p", { dueAt: at(20), priority: 1 }), task("o", { dueAt: at(12) }), task("d", { dueAt: at(21) })],
-      slots: [{ start: at(11, 30), end: at(12) }, { start: at(13), end: at(15) }],
+      slots: [{ start: at(11, 30), end: at(12) }, { start: at(13), end: at(15) }, { start: at(16), end: at(17) }],
       dayEnd: at(23, 59),
     });
     const why = Object.fromEntries(out.map((i) => [i.taskId, i.why]));
