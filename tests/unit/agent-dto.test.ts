@@ -27,7 +27,14 @@ describe("dto", () => {
       id: "a", runId: "r", agentId: "dev", tool: "github.create_issue", status: "pending", originalPayload: { repo: "o/r", title: "T" },
       editedPayload: null, reason: null, createdAt: t0, expiresAt: t0, decidedAt: null, result: null, error: null,
     } as never;
+    expect(toApprovalDTO(row)).toMatchObject({ kind: "issue" });
     expect(toApprovalDTO(row).original).toEqual({ repo: "o/r", title: "T", body: "", labels: [] });
+    expect(() => toApprovalDTO({ ...(row as object), originalPayload: {} } as never)).toThrow();
+  });
+  it("maps calendar approval by kind", () => {
+    const ev = { calendarId: "11111111-1111-4111-8111-111111111111", calendarLabel: "Home", provider: "google", eventId: "22222222-2222-4222-8222-222222222222", etag: null, scope: "this", instanceStart: null, title: "T", start: "2026-01-01T00:00:00Z", end: "2026-01-01T01:00:00Z", allDay: false };
+    const row = { id: "a", runId: "r", agentId: "org", tool: "calendar.delete_event", status: "pending", originalPayload: ev, editedPayload: null, reason: null, createdAt: t0, expiresAt: t0, decidedAt: null, result: null, error: null } as never;
+    expect(toApprovalDTO(row)).toMatchObject({ kind: "event_delete", original: ev });
     expect(() => toApprovalDTO({ ...(row as object), originalPayload: {} } as never)).toThrow();
   });
   it("maps tier", () => {

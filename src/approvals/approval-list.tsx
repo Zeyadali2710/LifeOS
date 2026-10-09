@@ -2,6 +2,7 @@
 
 import { useRef } from "react";
 import type { ApprovalDTO, ApprovalStatus } from "@/lib/agent-types";
+import type { ApprovalKind } from "@/lib/approval-kinds";
 import { getAgent } from "@/server/agents/registry";
 import { formatHM, sydneyParts } from "@/server/time";
 import { Badge } from "@/ui/badge";
@@ -12,6 +13,8 @@ export const stamp = (iso: string) => {
   const p = sydneyParts(new Date(iso));
   return `${p.weekday} ${p.day} ${MONTHS[p.month - 1]} ${formatHM(new Date(iso))}`;
 };
+
+const BADGE: Record<ApprovalKind, string> = { issue: "CREATE ISSUE", event_create: "CREATE EVENT", event_update: "EDIT EVENT", event_delete: "DELETE EVENT" };
 
 const STATE: Record<ApprovalStatus, [string, string]> = {
   pending: ["PENDING", "text-amber"],
@@ -81,7 +84,7 @@ export function ApprovalList({
       ) : (
         <div ref={listRef} role="listbox" aria-label={tab === "pending" ? "Pending approvals" : "Resolved approvals"} onKeyDown={onKey} className="flex flex-col gap-2">
           {items.map((a, n) => {
-            const p = a.edited ?? a.original;
+            const p = (a.edited ?? a.original) as { title?: unknown; repo?: unknown };
             const agent = getAgent(a.agentId);
             const sel = a.id === selectedId;
             const [label, tone] = STATE[a.status];
@@ -101,17 +104,17 @@ export function ApprovalList({
                     {agent?.name ?? a.agentId}
                   </span>
                   <span className="flex-1" />
-                  <Badge kind="tag" tone="neutral">
-                    CREATE ISSUE
+                  <Badge kind="tag" tone={a.kind === "event_delete" ? "red" : "neutral"}>
+                    {BADGE[a.kind]}
                   </Badge>
                 </div>
                 <p className="text-[14px] leading-[1.4] break-words">
-                  Create an issue in {p.repo}: &quot;{p.title}&quot;
+                  {a.kind === "issue" ? `Create an issue in ${String(p.repo)}: ` : ""}&quot;{String(p.title ?? "")}&quot;
                 </p>
                 <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] text-text-3">
                   <span>Requested {formatHM(new Date(a.createdAt))}</span>
                   <span className={tone}>{label}</span>
-                  {a.edited && (
+                  {a.edited != null && (
                     <Badge kind="tag" tone="amber">
                       EDITED
                     </Badge>

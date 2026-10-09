@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { ApprovalDTO } from "@/lib/agent-types";
-import type { IssuePayload } from "@/lib/issue-payload";
+import { nothingText, type ApprovalKind } from "@/lib/approval-kinds";
+import { issuePayloadSchema, type IssuePayload } from "@/lib/issue-payload";
 import { isSafeGithubUrl } from "@/lib/safe-url";
 import { approveAction, rejectAction, retryApprovalAction, saveEditAction } from "@/server/approval-actions";
 import { getAgent } from "@/server/agents/registry";
@@ -17,6 +18,13 @@ import { ApprovalEditForm, toDraft, toPayload, validateDraft, type Draft, type D
 import { stamp } from "./approval-list";
 
 export type WriteFacts = { connected: boolean; login: string | null; last4: string | null };
+
+/** Narrow a kind-tagged approval to its issue payloads (null for event kinds). */
+export function issueOf(a: { kind: ApprovalKind; edited: unknown; original: unknown }): { original: IssuePayload; current: IssuePayload } | null {
+  if (a.kind !== "issue") return null;
+  const original = issuePayloadSchema.parse(a.original);
+  return { original, current: a.edited == null ? original : issuePayloadSchema.parse(a.edited) };
+}
 
 const same = (a: IssuePayload, b: IssuePayload) => a.title === b.title && a.body === b.body && a.labels.join("\n") === b.labels.join("\n");
 
@@ -49,40 +57,43 @@ function Resolved({ a, onRetry, retrying }: { a: ApprovalDTO; onRetry: () => voi
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => ref.current?.focus(), []);
   const at = formatHM(new Date(a.decidedAt ?? a.createdAt));
-  const repo = (a.edited ?? a.original).repo;
+  const issue = a.kind === "issue";
+  const nothing = nothingText(a.kind);
+  const res = a.result as { number?: number; url?: string } | null;
+  const repo = issue ? ((a.edited ?? a.original) as { repo: string }).repo : "";
   let icon: IconName = "block";
   let tone = "text-red";
   let bg = "bg-[rgba(240,122,110,.06)]";
-  let text = `Rejected at ${at}. Nothing was created and the run was cancelled.`;
+  let text = `Rejected at ${at}. ${nothing} The run was cancelled.`;
   if (a.status === "approved" || a.status === "executing") {
     icon = "schedule";
     tone = "text-indigo-text";
     bg = "bg-fill-1";
-    text = "Creating the issue on GitHub…";
+    text = issue ? "Creating the issue on GitHub…" : "Applying the change…";
   } else if (a.status === "executed") {
     icon = "check_circle";
     tone = "text-green";
     bg = "bg-[rgba(79,209,161,.06)]";
-    text = `Issue created: ${repo}#${a.result?.number ?? ""}. Approved at ${at}.`;
+    text = issue ? `Issue created: ${repo}#${res?.number ?? ""}. Approved at ${at}.` : `Done. Approved at ${at}.`;
   } else if (a.status === "failed") {
     icon = "error";
-    text = `Approved, but GitHub rejected it: ${a.error ?? "unknown error"}. Nothing was created.`;
+    text = issue ? `Approved, but GitHub rejected it: ${a.error ?? "unknown error"}. Nothing was created.` : `Approved, but it was rejected: ${a.error ?? "unknown error"}. ${nothing}`;
   } else if (a.status === "expired") {
     icon = "schedule";
     tone = "text-text-3";
     bg = "bg-[rgba(255,255,255,.03)]";
-    text = `Expired ${stamp(a.expiresAt)}. Nothing was created and the run was cancelled.`;
+    text = `Expired ${stamp(a.expiresAt)}. ${nothing} The run was cancelled.`;
   } else if (a.status === "cancelled") {
     tone = "text-text-3";
     bg = "bg-[rgba(255,255,255,.03)]";
-    text = "The run was cancelled before this was decided. Nothing was created.";
+    text = `The run was cancelled before this was decided. ${nothing}`;
   }
   return (
     <div ref={ref} role="status" tabIndex={-1} className={`flex animate-[lo-fade_200ms_ease-out] flex-wrap items-center gap-3 px-[22px] py-4 text-[13px] text-text-2 outline-none ${bg}`}>
       <Icon name={icon} size={18} className={tone} />
       <span className="min-w-0 flex-1 break-words">{text}</span>
-      {a.status === "executed" && isSafeGithubUrl(a.result?.url) && (
-        <a href={a.result.url} target="_blank" rel="noopener noreferrer" className="rounded-6 border border-[rgba(255,255,255,.1)] px-2.5 py-1 text-[12.5px] text-text hover:bg-fill-2">
+      {issue && a.status === "executed" && isSafeGithubUrl(res?.url) && (
+        <a href={res.url} target="_blank" rel="noopener noreferrer" className="rounded-6 border border-[rgba(255,255,255,.1)] px-2.5 py-1 text-[12.5px] text-text hover:bg-fill-2">
           View on GitHub
         </a>
       )}
@@ -95,9 +106,84 @@ function Resolved({ a, onRetry, retrying }: { a: ApprovalDTO; onRetry: () => voi
   );
 }
 
-export function ApprovalDetail({ approval: a, write, onChange }: { approval: ApprovalDTO; write: WriteFacts; onChange: (a: ApprovalDTO) => void }) {
+type DetailProps = { approval: ApprovalDTO; write: WriteFacts; onChange: (a: ApprovalDTO) => void };
+
+/** Dispatches on kind; the GitHub issue view is IssueApprovalBody, unchanged from Phase 3. */
+export function ApprovalDetail(props: DetailProps & { renderEvent?: (a: ApprovalDTO) => ReactNode }) {
+  const issue = issueOf(props.approval);
+  if (issue) return <IssueApprovalBody {...props} issue={issue} />;
+  return <EventApprovalShell {...props} />;
+}
+
+const EVENT_VERB: Record<ApprovalKind, string> = {
+  issue: "",
+  event_create: "add a calendar event",
+  event_update: "change a calendar event",
+  event_delete: "delete a calendar event",
+};
+const EVENT_OK: Record<ApprovalKind, string> = { issue: "", event_create: "ADD TO CALENDAR", event_update: "UPDATE EVENT", event_delete: "DELETE EVENT" };
+
+// Shared header, reason, expiry and decisions for event kinds; plan 04-20 supplies the body via renderEvent.
+function EventApprovalShell({ approval: a, onChange, renderEvent }: DetailProps & { renderEvent?: (a: ApprovalDTO) => ReactNode }) {
   const { toast } = useShell();
-  const saved = a.edited ?? a.original;
+  const [busy, setBusy] = useState<"approve" | "reject" | "retry" | null>(null);
+  const agent = getAgent(a.agentId);
+  const title = String(((a.edited ?? a.original) as { title?: unknown }).title ?? "");
+  const guard = async (k: NonNullable<typeof busy>, fn: () => Promise<{ ok: boolean; approval?: ApprovalDTO }>, done?: string) => {
+    setBusy(k);
+    const r = await fn();
+    setBusy(null);
+    if (r.approval) onChange(r.approval);
+    if (!r.ok) return toast("Couldn't record that decision. Try again.", "error");
+    if (done) toast(done);
+  };
+  const del = a.kind === "event_delete";
+  return (
+    <article aria-label="Approval detail" className="overflow-hidden rounded-16 border border-[rgba(255,255,255,.08)]">
+      <header className="border-b border-[rgba(255,255,255,.06)] bg-[linear-gradient(180deg,rgba(232,184,106,.06),transparent)] px-[22px] py-5">
+        <div className="mb-2 font-mono text-[10.5px] font-medium tracking-[0.07em]">
+          <span className="uppercase" style={{ color: agent?.color }}>
+            {agent?.name ?? a.agentId}
+          </span>{" "}
+          <span className="text-text-3">wants to</span> <span>{EVENT_VERB[a.kind]}</span>
+        </div>
+        <h2 className="text-[20px] leading-[1.3] font-medium break-words">{title}</h2>
+      </header>
+      {a.reason && (
+        <section className="border-b border-[rgba(255,255,255,.06)] px-[22px] py-5">
+          <Fact k="WHY">{a.reason}</Fact>
+        </section>
+      )}
+      {renderEvent?.(a)}
+      {a.status === "pending" ? (
+        <footer className="flex flex-wrap items-center gap-2.5 px-[22px] py-4 max-[719px]:flex-col max-[719px]:items-stretch [&_button]:text-[13px] [&_button]:font-semibold [&_button]:tracking-[0.06em] [&_button]:uppercase max-[719px]:[&_button]:h-12">
+          <Button
+            className={`h-[38px] min-w-[150px] rounded-9 px-[18px] ${del ? "bg-[#f07a6e] text-[#0b0c10]" : ""}`}
+            loading={busy === "approve"}
+            disabled={busy !== null && busy !== "approve"}
+            onClick={() => void guard("approve", () => approveAction(a.id), "Calendar updated")}
+          >
+            <Icon name="check" size={16} />
+            {EVENT_OK[a.kind]}
+          </Button>
+          <Button variant="destructive" className="h-[38px]" loading={busy === "reject"} disabled={busy !== null && busy !== "reject"} onClick={() => void guard("reject", () => rejectAction(a.id), "Approval rejected")}>
+            REJECT
+          </Button>
+          <span className="flex-1" />
+          <span className="font-mono text-[11px] text-text-3">
+            requested {formatHM(new Date(a.createdAt))} · expires {stamp(a.expiresAt)}
+          </span>
+        </footer>
+      ) : (
+        <Resolved a={a} retrying={busy === "retry"} onRetry={() => void guard("retry", () => retryApprovalAction(a.id))} />
+      )}
+    </article>
+  );
+}
+
+function IssueApprovalBody({ approval: a, write, onChange, issue }: DetailProps & { issue: { original: IssuePayload; current: IssuePayload } }) {
+  const { toast } = useShell();
+  const saved = issue.current;
   const [draft, setDraft] = useState<Draft>(() => toDraft(saved));
   const [editing, setEditing] = useState(false);
   const [errors, setErrors] = useState<DraftErrors>({});
@@ -106,7 +192,7 @@ export function ApprovalDetail({ approval: a, write, onChange }: { approval: App
   const current = toPayload(saved.repo, draft);
   const shown: IssuePayload = current;
   const dirty = !same(current, saved);
-  const edited = !same(current, a.original);
+  const edited = !same(current, issue.original);
   const pending = a.status === "pending";
   const canApprove = write.connected;
 
@@ -198,7 +284,7 @@ export function ApprovalDetail({ approval: a, write, onChange }: { approval: App
           <div className="mt-3 text-[12.5px] text-text-2">
             <Disclosure summary={<span>View agent&apos;s original</span>}>
               <div className="pt-2">
-                <Preview p={a.original} />
+                <Preview p={issue.original} />
               </div>
             </Disclosure>
           </div>
