@@ -1,5 +1,5 @@
 import { cloneElement, useId } from "react";
-import type { InputHTMLAttributes, ReactElement, Ref, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
+import type { InputHTMLAttributes, ReactElement, ReactNode, Ref, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
 import { Icon } from "./icon";
 
 const base =
@@ -50,6 +50,67 @@ export function Field({ label, error, helper, children }: { label: string; error
           {error}
         </p>
       )}
+    </div>
+  );
+}
+
+const ctl =
+  "peer m-0 size-4 shrink-0 appearance-none border-[1.5px] border-[rgba(255,255,255,.25)] bg-transparent [color-scheme:dark] checked:border-indigo checked:bg-indigo focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo disabled:cursor-not-allowed disabled:opacity-50";
+
+export function Checkbox({
+  ref,
+  label,
+  hitArea,
+  className = "",
+  ...p
+}: Omit<InputHTMLAttributes<HTMLInputElement>, "type"> & { ref?: Ref<HTMLInputElement>; label?: ReactNode; hitArea?: boolean }) {
+  return (
+    <label className={`inline-flex items-center gap-2 text-[13.5px] text-text-2 ${hitArea ? "min-h-11 min-w-11 tab:min-h-0 tab:min-w-0" : ""} ${className}`}>
+      <span className="relative inline-grid size-4 place-items-center">
+        <input ref={ref} type="checkbox" className={`${ctl} rounded-5`} {...p} />
+        <span className="pointer-events-none absolute inset-0 hidden place-items-center text-[#0b0c10] peer-checked:grid">
+          <Icon name="check" size={13} />
+        </span>
+      </span>
+      {label}
+    </label>
+  );
+}
+
+export function RadioGroup({
+  name,
+  label,
+  value,
+  options,
+  onChange,
+  disabled,
+}: {
+  name: string;
+  label: string;
+  value: string;
+  options: { value: string; label: string; hint?: string }[];
+  onChange: (v: string) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div role="radiogroup" aria-label={label} className="flex flex-col gap-2">
+      {options.map((o) => (
+        <label key={o.value} className="flex items-start gap-2 text-[13.5px] text-text-2">
+          <input
+            type="radio"
+            name={name}
+            value={o.value}
+            checked={value === o.value}
+            disabled={disabled}
+            onChange={() => onChange(o.value)}
+            className={`${ctl} mt-0.5 rounded-full checked:shadow-[inset_0_0_0_3px_#14161c]`}
+          />
+          <span>
+            {o.label}
+            {o.hint && <span className="block text-[12.5px] text-text-3">{o.hint}</span>}
+          </span>
+        </label>
+      ))}
     </div>
   );
 }
