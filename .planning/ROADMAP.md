@@ -118,29 +118,31 @@ Plans:
 **Requirements**: ORG-01..03
 **Success Criteria**:
   1. Google Calendar and iCloud CalDAV events appear together in day/week/month views via a CalendarProvider seam
-  2. Creating/editing/deleting an event (incl. recurring) on an external calendar goes through an APPROVE-tier approval before it runs
+  2. Creating/editing/deleting an event (incl. recurring) on an external calendar works; owner UI writes run directly and are audit-logged, while agent-initiated create/edit goes through an APPROVE-tier approval and agent delete through HIGH_RISK before it runs (Phase 4 D-06/D-07)
   3. Tasks and reminders can be created and completed; overlapping events/tasks are flagged and scheduling suggestions are offered
-**Plans**: 20 plans in 8 waves
-- [ ] 04-01-PLAN.md — Generalise the approval machine per tool kind (event payloads, ProviderError), GitHub regression gate
-- [ ] 04-02-PLAN.md — Package legitimacy check + install tsdav/ical.js, optional Google env, owner Google Cloud setup (redirect + In production)
-- [ ] 04-03-PLAN.md — TDD pure conflicts, free slots, Today's plan, header numbers
-- [ ] 04-04-PLAN.md — UI primitives: Dialog width/sheet, Checkbox, RadioGroup, isSafeUrl, icon subset
-- [ ] 04-05-PLAN.md — Schema calendars/calendar_events/tasks + [BLOCKING] migration 0003, client DTO + category contracts
-- [ ] 04-06-PLAN.md — CalendarProvider seam, ical.js expander, recurring-edit transforms (ICS + Google)
-- [ ] 04-07-PLAN.md — Encrypted calendar connection store + calendar list store
-- [ ] 04-08-PLAN.md — Read model: range instances, conflicts, plan, header, tasks, agent query helpers
-- [ ] 04-09-PLAN.md — Live calendar/task SSE signals, tasks service + actions, reminder job
-- [ ] 04-10-PLAN.md — Google client, provider and OAuth routes (state + PKCE)
-- [ ] 04-11-PLAN.md — iCloud CalDAV provider + connectIcloud
-- [ ] 04-12-PLAN.md — Provider-agnostic sync service (activity, conflicts, RECONNECT)
-- [ ] 04-13-PLAN.md — Wire providers + worker sync, event write service, owner event actions
-- [ ] 04-14-PLAN.md — Settings: calendar connection rows, iCloud form, calendar list
-- [ ] 04-15-PLAN.md — Organization page: header, legend, Day/Week grid, event detail, states
-- [ ] 04-16-PLAN.md — Organization agent live: calendar/task tools, tiers, taint, clock
-- [ ] 04-17-PLAN.md — Today's plan card, tasks card, task dialog
-- [ ] 04-18-PLAN.md — Month view, event dialog with recurring scopes, page wiring
-- [ ] 04-19-PLAN.md — Calendar approval views and AI panel events card
-- [ ] 04-20-PLAN.md — Palette scopes, e2e, docs, validation, owner VM verification
+**Plans**: 22 plans in 8 waves
+- [ ] 04-01-PLAN.md — Approval machine per tool kind, server side (approval-kinds, event payloads, ProviderError, approvals/gateway)
+- [ ] 04-02-PLAN.md — Kind-tagged ApprovalDTO + approval UI dispatch, GitHub regression pass
+- [ ] 04-03-PLAN.md — Package legitimacy check + install tsdav/ical.js, optional Google env, owner Google Cloud setup (redirect + In production)
+- [ ] 04-04-PLAN.md — TDD pure conflicts, free slots, Today's plan, header numbers
+- [ ] 04-05-PLAN.md — UI primitives: Dialog width/sheet, Checkbox, RadioGroup, isSafeUrl, icon subset
+- [ ] 04-06-PLAN.md — Schema + [BLOCKING] migration 0003, DTO/category contracts, VM DB test runner, owner VM migrate gate
+- [ ] 04-07-PLAN.md — CalendarProvider seam, ical.js expander, recurring-edit transforms (ICS + Google)
+- [ ] 04-08-PLAN.md — Encrypted calendar connection store (incl. rotation) + calendar list store
+- [ ] 04-09-PLAN.md — Read model: range instances, conflicts, plan, header, tasks, agent query helpers
+- [ ] 04-10-PLAN.md — Live calendar/task SSE signals, tasks service + actions, reminder job
+- [ ] 04-11-PLAN.md — Google client, provider and OAuth routes (state + PKCE)
+- [ ] 04-12-PLAN.md — iCloud CalDAV provider + connectIcloud
+- [ ] 04-13-PLAN.md — Provider-agnostic sync service (D-03 7-day activity, conflicts, RECONNECT)
+- [ ] 04-14-PLAN.md — Wire providers + worker sync, event write service, owner event actions
+- [ ] 04-15-PLAN.md — Settings: calendar connection rows, iCloud form, calendar list
+- [ ] 04-16-PLAN.md — Organization page: header, legend, Day/Week grid, event detail, states
+- [ ] 04-17-PLAN.md — Organization agent live: calendar/task tools, tiers, taint, clock
+- [ ] 04-18-PLAN.md — Today's plan card, tasks card, task dialog
+- [ ] 04-19-PLAN.md — Month view, event dialog with recurring scopes, page wiring
+- [ ] 04-20-PLAN.md — Calendar approval views and AI panel events card
+- [ ] 04-21-PLAN.md — Palette scopes, e2e, validation, owner VM verification
+- [ ] 04-22-PLAN.md — Docs: integrations, database, third-party, agents, permissions, security
 
 ### Phase 5–11
 Goals per phase list above; detailed when each phase is planned (`/gsd-plan-phase N`).

@@ -289,12 +289,12 @@ export function conflicts(xs: Busy[]) {
 | A6 | "In production" unverified single-user app avoids 7-day refresh expiry | Pitfall 2 | Weekly reconnect; documented in RECONNECT flow |
 | A7 | ical.js 2.x `RecurExpansion` handles overrides + VTIMEZONE as described | Don't Hand-Roll | Spike in plan 1 (unit test with fixtures) |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Does Google accept the tailnet redirect URI?** Unknown until tried; plan a checkpoint on the VM early; implement manual-paste fallback only if it fails.
-2. **Multiple Google accounts?** Context implies one Google + one iCloud. Recommend single connection per provider (`connections` ids `google_calendar`, `icloud_calendar`); extend `ConnectionId`/`getConnections` IDS list.
-3. **Agent task writes (D-19 discretion):** recommend READ-only tasks tool plus `tasks.create` at APPROVE for consistency; local-only completion could be EXECUTE-tier later. Default: READ + APPROVE.
-4. **Instance identity for "this event" via the agent:** payload should carry `{eventId, instanceStart, scope}`; planner defines in zod schema.
+1. **Does Google accept the tailnet redirect URI?** RESOLVED: verified by the owner at the 04-03 checkpoint (Task 3) before any OAuth code exists; the SUMMARY records `redirect: accepted|rejected`. If rejected, plan 04-11 Task 3 also builds the manual-paste fallback (Desktop client, loopback `http://127.0.0.1`, owner pastes the final URL in Settings).
+2. **Multiple Google accounts?** RESOLVED: one connection per provider (`connections` ids `google_calendar` and `icloud_calendar`), each with its own calendar list (plans 04-06, 04-08).
+3. **Agent task writes (D-19 discretion):** RESOLVED: the Organization agent gets a READ-only `tasks.list` tool; no agent task create/complete in this phase (D-19 default, plan 04-17; UI-SPEC permissions row shows READ).
+4. **Instance identity for "this event" via the agent:** RESOLVED: update/delete payloads carry `{ eventId (local calendar_events uuid), instanceStart (original start ISO instant or YYYY-MM-DD, null for non-recurring), scope: "this" | "following" | "all" }` plus the stored `etag`, defined in `src/lib/event-payload.ts` (plan 04-01) and locked against edits in approvals.
 
 ## Environment Availability
 

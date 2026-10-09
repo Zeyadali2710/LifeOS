@@ -34,7 +34,7 @@
 
 ### Organization
 - [ ] **ORG-01**: Google Calendar + iCloud CalDAV via CalendarProvider; day/week/month views
-- [ ] **ORG-02**: Create/edit/delete events (APPROVE tier for external calendars), recurring events
+- [ ] **ORG-02**: Create/edit/delete events, recurring events (owner UI writes direct + audit-logged; agent writes to external calendars APPROVE tier, agent deletes HIGH_RISK — Phase 4 D-06/D-07)
 - [ ] **ORG-03**: Tasks + reminders; conflict detection; scheduling suggestions
 
 ### Career & Projects

@@ -42,35 +42,39 @@ Filled by the planner. Task IDs and threat refs are assigned in PLAN.md files. T
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
 | 04-01-T1 | 04-01 | 1 | ORG-02 | T-04-01, T-04-02 | Locked fields per kind, schema per tool | unit | `npx vitest run tests/unit/approval-kinds.test.ts` | ❌ W0 | ⬜ pending |
 | 04-01-T2 | 04-01 | 1 | ORG-02 | T-04-01, T-04-03 | GitHub approval flow unchanged; ProviderError mapped | db | `npx vitest run tests/db/approvals.test.ts tests/db/approval-actions.test.ts tests/db/github-tools.test.ts tests/db/gateway.test.ts` | ✅ | ⬜ pending |
-| 04-02-T2 | 04-02 | 1 | ORG-01 | T-04-SC, T-04-05 | Deps only after legitimacy sign-off; optional Google env | unit | `npx vitest run tests/unit/env.test.ts` | ✅ | ⬜ pending |
-| 04-03-T1 | 04-03 | 1 | ORG-03 | T-04-08 | N/A | unit | `npx vitest run tests/unit/conflicts.test.ts tests/unit/plan.test.ts` | ❌ W0 | ⬜ pending |
-| 04-04-T1 | 04-04 | 1 | ORG-01 | T-04-09 | isSafeUrl https-only | unit | `npx vitest run tests/unit/safe-url.test.ts tests/unit/icons.test.ts` | ✅ | ⬜ pending |
-| 04-05-T2 | 04-05 | 2 | ORG-01..03 | T-04-12 | Unique keys, cascade on disconnect | db | `npx vitest run tests/db/migrations.test.ts tests/db/schema-organization.test.ts` | ❌ W0 | ⬜ pending |
-| 04-06-T1 | 04-06 | 2 | ORG-01 | T-04-14 | Bounded expansion | unit | `npx vitest run tests/unit/expand.test.ts` | ❌ W0 | ⬜ pending |
-| 04-06-T2 | 04-06 | 2 | ORG-02 | T-04-13 | ICS built via setters (CRLF-safe) | unit | `npx vitest run tests/unit/recurrence-edit.test.ts` | ❌ W0 | ⬜ pending |
-| 04-07-T1/T2 | 04-07 | 3 | ORG-01 | T-04-16, T-04-17 | Secrets encrypted, never in DTO/audit | db | `npx vitest run tests/db/calendar-store.test.ts` | ❌ W0 | ⬜ pending |
-| 04-08-T1/T2 | 04-08 | 3 | ORG-01, ORG-03 | T-04-19 | DTOs carry display fields only | db | `npx vitest run tests/db/calendar-queries.test.ts` | ❌ W0 | ⬜ pending |
-| 04-09-T1 | 04-09 | 3 | ORG-03 | T-04-23 | Signal frames carry ids only | db | `npx vitest run tests/db/hub.test.ts` | ✅ | ⬜ pending |
-| 04-09-T2 | 04-09 | 3 | ORG-03 | T-04-21 | Owner-guarded task actions | db | `npx vitest run tests/db/tasks.test.ts` | ❌ W0 | ⬜ pending |
-| 04-09-T3 | 04-09 | 3 | ORG-03 | T-04-22 | Reminder fires exactly once | db | `npx vitest run tests/db/task-reminders.test.ts` | ❌ W0 | ⬜ pending |
-| 04-10-T1/T2 | 04-10 | 4 | ORG-01, ORG-02 | T-04-26, T-04-28, T-04-29 | Least-privilege scopes, fixed hosts, idempotent create | unit | `npx vitest run tests/unit/google-client.test.ts tests/unit/google-provider.test.ts` | ❌ W0 | ⬜ pending |
-| 04-10-T3 | 04-10 | 4 | ORG-01 | T-04-24, T-04-25, T-04-27 | OAuth state + PKCE, owner-only callback, encrypted tokens | db | `npx vitest run tests/db/google-oauth.test.ts` | ❌ W0 | ⬜ pending |
-| 04-11-T1 | 04-11 | 4 | ORG-01, ORG-02 | T-04-31, T-04-32, T-04-33 | icloud.com host pinning, If-Match, size caps | unit | `npx vitest run tests/unit/caldav-provider.test.ts` | ❌ W0 | ⬜ pending |
-| 04-11-T2 | 04-11 | 4 | ORG-01 | T-04-30 | App password encrypted, never returned | db | `npx vitest run tests/db/icloud-connect.test.ts` | ❌ W0 | ⬜ pending |
-| 04-12-T1 | 04-12 | 4 | ORG-01 | T-04-36, T-04-37 | Meaningful-only activity, cursor after persist | db | `npx vitest run tests/db/calendar-sync.test.ts` | ❌ W0 | ⬜ pending |
-| 04-12-T2 | 04-12 | 4 | ORG-01 | T-04-35 | Auth failure pauses sync, one RECONNECT notification | db | `npx vitest run tests/db/calendar-sync-auth.test.ts` | ❌ W0 | ⬜ pending |
-| 04-13-T1 | 04-13 | 5 | ORG-01 | — | N/A | db | `npx vitest run tests/db/calendar-sync-google.test.ts tests/db/calendar-sync-caldav.test.ts` | ❌ W0 | ⬜ pending |
-| 04-13-T2/T3 | 04-13 | 5 | ORG-02, ORG-03 | T-04-38, T-04-39, T-04-40 | Owner UI writes audit-logged; stale etag refused | db | `npx vitest run tests/db/calendar-actions.test.ts` | ❌ W0 | ⬜ pending |
-| 04-14-T1 | 04-14 | 6 | ORG-01 | T-04-43 | Owner-guarded settings actions | db | `npx vitest run tests/db/calendar-settings-actions.test.ts` | ❌ W0 | ⬜ pending |
-| 04-15-T1 | 04-15 | 6 | ORG-01 | — | N/A | unit | `npx vitest run tests/unit/org-layout.test.ts` | ❌ W0 | ⬜ pending |
-| 04-16-T1 | 04-16 | 6 | ORG-02 | T-04-47, T-04-48, T-04-49 | No provider call before APPROVE; delete is HIGH_RISK floor | db | `npx vitest run tests/db/calendar-tools.test.ts` | ❌ W0 | ⬜ pending |
-| 04-16-T2 | 04-16 | 6 | Security | T-04-50, T-04-51 | Calendar tool output taints run; no secrets in tool output | db | `npx vitest run tests/db/calendar-privacy.test.ts` | ❌ W0 | ⬜ pending |
-| 04-17-T1 | 04-17 | 6 | ORG-03 | T-04-52 | N/A | unit | `npx vitest run tests/unit/plan-skips.test.ts` | ❌ W0 | ⬜ pending |
-| 04-19-T1 | 04-19 | 7 | ORG-02 | T-04-57 | Same-origin result links | unit | `npx vitest run tests/unit/agent-dto.test.ts` | ✅ | ⬜ pending |
-| 04-20-T1 | 04-20 | 8 | ORG-01 | T-04-58 | Owner-guarded palette search | unit | `npx vitest run tests/unit/palette.test.ts` | ✅ | ⬜ pending |
-| 04-20-T2 | 04-20 | 8 | UI | — | N/A | e2e (VM) | `npx playwright test tests/e2e/organization.spec.ts` | ❌ W0 | ⬜ pending |
+| 04-02-T1 | 04-02 | 2 | ORG-02 | T-04-61 | Kind-tagged DTO, event kinds private | unit | `npx vitest run tests/unit/agent-dto.test.ts` | ✅ | ⬜ pending |
+| 04-03-T2 | 04-03 | 1 | ORG-01 | T-04-SC, T-04-05 | Deps only after legitimacy sign-off; optional Google env | unit | `npx vitest run tests/unit/env.test.ts` | ✅ | ⬜ pending |
+| 04-04-T1 | 04-04 | 1 | ORG-03 | T-04-08 | N/A | unit | `npx vitest run tests/unit/conflicts.test.ts tests/unit/plan.test.ts` | ❌ W0 | ⬜ pending |
+| 04-05-T1 | 04-05 | 1 | ORG-01 | T-04-09 | isSafeUrl https-only | unit | `npx vitest run tests/unit/safe-url.test.ts tests/unit/icons.test.ts` | ✅ | ⬜ pending |
+| 04-06-T2 | 04-06 | 2 | ORG-01..03 | T-04-12 | Unique keys, cascade on disconnect | db | `npx vitest run tests/db/migrations.test.ts tests/db/schema-organization.test.ts` | ❌ W0 | ⬜ pending |
+| 04-06-T3 | 04-06 | 2 | ORG-01..03 | T-04-12 | 0003 applied on VM; DB suites on throwaway test Postgres | db (VM) | `bash scripts/vm-db-test.sh tests/db/migrations.test.ts tests/db/schema-organization.test.ts tests/db/approvals.test.ts tests/db/approval-actions.test.ts tests/db/github-tools.test.ts tests/db/gateway.test.ts` | ❌ W0 | ⬜ pending |
+| 04-07-T1 | 04-07 | 2 | ORG-01 | T-04-14 | Bounded expansion | unit | `npx vitest run tests/unit/expand.test.ts` | ❌ W0 | ⬜ pending |
+| 04-07-T2 | 04-07 | 2 | ORG-02 | T-04-13 | ICS built via setters (CRLF-safe) | unit | `npx vitest run tests/unit/recurrence-edit.test.ts` | ❌ W0 | ⬜ pending |
+| 04-08-T1/T2 | 04-08 | 3 | ORG-01 | T-04-16, T-04-17 | Secrets encrypted, never in DTO/audit; rotation overwrites the stored secret (D-05) | db | `npx vitest run tests/db/calendar-store.test.ts` | ❌ W0 | ⬜ pending |
+| 04-09-T1/T2 | 04-09 | 3 | ORG-01, ORG-03 | T-04-19 | DTOs carry display fields only | db | `npx vitest run tests/db/calendar-queries.test.ts` | ❌ W0 | ⬜ pending |
+| 04-10-T1 | 04-10 | 3 | ORG-03 | T-04-23 | Signal frames carry ids only | db | `npx vitest run tests/db/hub.test.ts` | ✅ | ⬜ pending |
+| 04-10-T2 | 04-10 | 3 | ORG-03 | T-04-21 | Owner-guarded task actions | db | `npx vitest run tests/db/tasks.test.ts` | ❌ W0 | ⬜ pending |
+| 04-10-T3 | 04-10 | 3 | ORG-03 | T-04-22 | Reminder fires exactly once | db | `npx vitest run tests/db/task-reminders.test.ts` | ❌ W0 | ⬜ pending |
+| 04-11-T1/T2 | 04-11 | 4 | ORG-01, ORG-02 | T-04-26, T-04-28, T-04-29 | Least-privilege scopes, fixed hosts, idempotent create | unit | `npx vitest run tests/unit/google-client.test.ts tests/unit/google-provider.test.ts` | ❌ W0 | ⬜ pending |
+| 04-11-T3 | 04-11 | 4 | ORG-01 | T-04-24, T-04-25, T-04-27 | OAuth state + PKCE, owner-only callback, encrypted tokens | db | `npx vitest run tests/db/google-oauth.test.ts` | ❌ W0 | ⬜ pending |
+| 04-12-T1 | 04-12 | 4 | ORG-01, ORG-02 | T-04-31, T-04-32, T-04-33 | icloud.com host pinning, If-Match, size caps | unit | `npx vitest run tests/unit/caldav-provider.test.ts` | ❌ W0 | ⬜ pending |
+| 04-12-T2 | 04-12 | 4 | ORG-01 | T-04-30 | App password encrypted, never returned | db | `npx vitest run tests/db/icloud-connect.test.ts` | ❌ W0 | ⬜ pending |
+| 04-13-T1 | 04-13 | 4 | ORG-01 | T-04-36, T-04-37 | Meaningful-only activity, cursor after persist | db | `npx vitest run tests/db/calendar-sync.test.ts` | ❌ W0 | ⬜ pending |
+| 04-13-T2 | 04-13 | 4 | ORG-01 | T-04-35 | Auth failure pauses sync, one RECONNECT notification | db | `npx vitest run tests/db/calendar-sync-auth.test.ts` | ❌ W0 | ⬜ pending |
+| 04-14-T1 | 04-14 | 5 | ORG-01 | — | N/A | db | `npx vitest run tests/db/calendar-sync-google.test.ts tests/db/calendar-sync-caldav.test.ts` | ❌ W0 | ⬜ pending |
+| 04-14-T2/T3 | 04-14 | 5 | ORG-02, ORG-03 | T-04-38, T-04-39, T-04-40 | Owner UI writes audit-logged; stale etag refused | db | `npx vitest run tests/db/calendar-actions.test.ts` | ❌ W0 | ⬜ pending |
+| 04-15-T1 | 04-15 | 6 | ORG-01 | T-04-43 | Owner-guarded settings actions | db | `npx vitest run tests/db/calendar-settings-actions.test.ts` | ❌ W0 | ⬜ pending |
+| 04-16-T1 | 04-16 | 6 | ORG-01 | — | N/A | unit | `npx vitest run tests/unit/org-layout.test.ts` | ❌ W0 | ⬜ pending |
+| 04-17-T1 | 04-17 | 6 | ORG-02 | T-04-47, T-04-48, T-04-49 | No provider call before APPROVE; delete is HIGH_RISK floor | db | `npx vitest run tests/db/calendar-tools.test.ts` | ❌ W0 | ⬜ pending |
+| 04-17-T2 | 04-17 | 6 | Security | T-04-50, T-04-51 | Calendar tool output taints run; no secrets in tool output | db | `npx vitest run tests/db/calendar-privacy.test.ts` | ❌ W0 | ⬜ pending |
+| 04-18-T1 | 04-18 | 6 | ORG-03 | T-04-52 | N/A | unit | `npx vitest run tests/unit/plan-skips.test.ts` | ❌ W0 | ⬜ pending |
+| 04-20-T1 | 04-20 | 7 | ORG-02 | T-04-57 | Same-origin result links | unit | `npx vitest run tests/unit/agent-dto.test.ts` | ✅ | ⬜ pending |
+| 04-21-T1 | 04-21 | 8 | ORG-01 | T-04-58 | Owner-guarded palette search | unit | `npx vitest run tests/unit/palette.test.ts` | ✅ | ⬜ pending |
+| 04-21-T2 | 04-21 | 8 | UI | — | N/A | e2e (VM) | `npx playwright test tests/e2e/organization.spec.ts` | ❌ W0 | ⬜ pending |
 
-UI-only tasks without their own test (04-04-T2, 04-14-T2/T3, 04-15-T2/T3, 04-17-T2, 04-18-T1..T3, 04-19-T2/T3) verify with `npm run typecheck && npm run lint` (04-18-T3 adds `npm run build`) and are covered by 04-20-T2 e2e and the owner VM checkpoint 04-20-T3. DB tests need Postgres; when the executor has none they run on the VM (Phase 3.1 practice).
+UI-only tasks without their own test (04-02-T2, 04-05-T2, 04-15-T2/T3, 04-16-T2/T3, 04-18-T2, 04-19-T1..T3, 04-20-T2/T3, 04-22) verify with `npm run typecheck && npm run lint` (04-19-T3 adds `npm run build`; 04-22 uses greps) and are covered by 04-21-T2 e2e and the owner VM checkpoint 04-21-T3.
+
+DB mechanism: from the 04-06 gate on, every `tests/db/*` command runs against a separate throwaway test Postgres on the VM via `ssh <vm_ssh> "cd ~/lifeos && git pull -q && bash scripts/vm-db-test.sh <files>"` (alias recorded in 04-06-SUMMARY; owner-run with the same command if no SSH). Never against the production database. Wave 1 DB regression suites run at the gate.
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
