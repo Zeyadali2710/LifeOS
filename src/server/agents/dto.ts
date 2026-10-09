@@ -111,7 +111,7 @@ export function toApprovalDTO(r: typeof approvals.$inferSelect, repoPrivate: boo
     createdAt: r.createdAt.toISOString(),
     expiresAt: r.expiresAt.toISOString(),
     decidedAt: iso(r.decidedAt),
-    result: r.result ?? null,
+    result: (r.result ?? null) as ApprovalDTO["result"],
     error: r.error,
     repoPrivate,
   };

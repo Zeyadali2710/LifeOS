@@ -5,7 +5,7 @@ import type { DB } from "../db/client";
 import { agentRuns, approvals, permissions, toolCalls } from "../db/schema";
 import { emitActivity, notifyLive } from "../events";
 import { log } from "../log";
-import { formatHM, sydneyParts, TZ } from "../time";
+import { approvalSummary } from "@/lib/approval-kinds";
 import { resolvePolicy } from "./policy";
 import { redact, summarize } from "./redact";
 import { getAgent } from "./registry";
@@ -42,12 +42,6 @@ const canon = (v: unknown): string =>
           .map(([k, x]) => `${JSON.stringify(k)}:${canon(x)}`)
           .join(",")}}`
       : (JSON.stringify(v) ?? "null");
-
-function expiryText(d: Date) {
-  const mon = new Intl.DateTimeFormat("en-AU", { timeZone: TZ, month: "short" }).format(d);
-  const p = sydneyParts(d);
-  return `${p.weekday} ${p.day} ${mon} ${formatHM(d)}`;
-}
 
 export async function callTool(
   ctx: GatewayCtx,
@@ -171,11 +165,7 @@ export async function callTool(
   const callId = claimed;
 
   if (needsApproval) {
-    const p = (payload ?? {}) as { repo?: unknown; title?: unknown };
-    const body =
-      typeof p.repo === "string" && typeof p.title === "string"
-        ? `${p.repo}: "${p.title}". Expires ${expiryText(new Date(now().getTime() + EXPIRY_MS))}.`
-        : undefined;
+    const s = approvalSummary(tool.name, payload, new Date(now().getTime() + EXPIRY_MS));
     await (ctx.emit ?? emitActivity)(
       {
         type: "agent.approval.requested",
@@ -184,7 +174,7 @@ export async function callTool(
         detail: `${agent.name} · ${tool.label}`,
         tone: "amber",
       },
-      { category: "APPROVAL", title: `Approval waiting: ${tool.label}`, body, actionUrl: `/approvals?id=${approvalId}` },
+      { category: "APPROVAL", title: s.title || `Approval waiting: ${tool.label}`, body: s.body, actionUrl: `/approvals?id=${approvalId}` },
       h,
     );
     await notifyLive(h, "approval", approvalId!);

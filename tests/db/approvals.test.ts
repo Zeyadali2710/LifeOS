@@ -1,5 +1,8 @@
 import { eq } from "drizzle-orm";
+import { z } from "zod";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { eventCreatePayload } from "@/lib/event-payload";
+import { ProviderError } from "@/server/calendar/errors";
 import { decide, executeApproved, expireDue, getApproval, listApprovals, retryApproval, saveEdit } from "@/server/agents/approvals";
 import { advance, createRun, runQueued } from "@/server/agents/loop";
 import { cancelRun } from "@/server/agents/runs";
@@ -197,5 +200,52 @@ describe("expireDue and lists", () => {
     expect(await listApprovals(h(), "resolved")).toEqual([]);
     expect(await getApproval(h(), id)).toMatchObject({ id, repoPrivate: true });
     expect(await getApproval(h(), "00000000-0000-4000-8000-000000000000")).toBeNull();
+  });
+});
+
+describe("calendar kind", () => {
+  const ev = {
+    calendarId: "11111111-1111-4111-8111-111111111111",
+    calendarLabel: "Personal",
+    provider: "google",
+    title: "Lunch",
+    start: "2026-10-12T01:00:00Z",
+    end: "2026-10-12T02:00:00Z",
+  };
+
+  it("validates, locks, maps ProviderError and expires per kind", async () => {
+    const { id } = await suspended();
+    await h().update(approvals).set({ tool: "calendar.create_event", originalPayload: ev, editedPayload: null }).where(eq(approvals.id, id));
+    let n = 0;
+    const tools = {
+      "calendar.create_event": {
+        name: "calendar.create_event",
+        label: "create calendar event",
+        description: "x",
+        input: eventCreatePayload,
+        output: z.unknown(),
+        tier: "APPROVE",
+        sideEffect: true,
+        handler: async () => {
+          if (n++ === 0) throw new ProviderError("google", "client", 400, "Invalid time");
+          return { eventId: "e1" };
+        },
+      },
+    } as never;
+    const enqueue = async () => {};
+    expect(await decide(h(), id, "approve", { enqueue, edited: { ...ev, calendarId: "22222222-2222-4222-8222-222222222222" } })).toMatchObject({
+      ok: false,
+      errors: { calendarId: "Calendar can't be changed." },
+    });
+    expect(await decide(h(), id, "approve", { enqueue, edited: { ...ev, title: "Brunch" } })).toMatchObject({ ok: true });
+    expect(await executeApproved(h(), id, { tools })).toEqual({ status: "failed", error: "Google rejected it: Invalid time", ambiguous: false });
+    expect(await retryApproval(h(), id, { enqueue })).toEqual({ ok: true });
+    expect(await executeApproved(h(), id, { tools })).toEqual({ status: "executed", result: { eventId: "e1" } });
+
+    const s2 = await suspended();
+    await h().update(approvals).set({ tool: "calendar.create_event", originalPayload: ev, expiresAt: new Date(Date.now() - 1000) }).where(eq(approvals.id, s2.id));
+    await expireDue(h());
+    const [note] = await h().select().from(notifications);
+    expect(note!.body).toContain("Nothing was created.");
   });
 });

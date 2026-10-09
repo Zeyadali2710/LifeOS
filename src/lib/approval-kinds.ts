@@ -56,13 +56,15 @@ function when(d: Date, withTime = true) {
 
 export function approvalSummary(tool: string, payload: unknown, expiresAt: Date): { title: string; body: string | undefined } {
   const kind = approvalKind(tool);
-  const parsed = payloadSchemaFor(tool).safeParse(payload);
-  if (!parsed.success) return { title: "", body: undefined };
   const exp = when(expiresAt);
   if (kind === "issue") {
-    const p = parsed.data as { repo: string; title: string };
-    return { title: "", body: `${p.repo}: "${p.title}". Expires ${exp}.` };
+    // Loose on purpose: Phase 3 notified for any payload with string repo/title.
+    const p = (payload ?? {}) as { repo?: unknown; title?: unknown };
+    const ok = typeof p.repo === "string" && typeof p.title === "string";
+    return { title: "", body: ok ? `${p.repo}: "${p.title}". Expires ${exp}.` : undefined };
   }
+  const parsed = payloadSchemaFor(tool).safeParse(payload);
+  if (!parsed.success) return { title: "", body: undefined };
   const p = parsed.data as { title: string; start: string; allDay: boolean; calendarLabel: string };
   const s = new Date(p.allDay ? `${p.start}T12:00:00Z` : p.start);
   const st = Number.isNaN(s.getTime()) ? "" : ` · ${when(s, !p.allDay)}`;

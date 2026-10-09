@@ -1,6 +1,7 @@
 import { and, desc, eq, inArray, lte, sql } from "drizzle-orm";
 import type { ApprovalDTO } from "@/lib/agent-types";
-import { issuePayloadSchema, type IssuePayload } from "@/lib/issue-payload";
+import { approvalKind, checkLocked, nothingText, payloadSchemaFor } from "@/lib/approval-kinds";
+import { ProviderError, providerLabel } from "../calendar/errors";
 import type { DB } from "../db/client";
 import { agentRuns, approvals, auditLog, githubRepos, toolCalls } from "../db/schema";
 import { emitActivity, notifyLive } from "../events";
@@ -34,7 +35,11 @@ const live = async (h: DB, a: { id: string; runId: string }) => {
   await notifyLive(h, "run", a.runId);
 };
 
-const payloadOf = (r: Row) => (r.editedPayload ?? r.originalPayload) as IssuePayload;
+const payloadOf = (r: Row): unknown => r.editedPayload ?? r.originalPayload;
+const titleOf = (r: Row) => {
+  const t = (payloadOf(r) as { title?: unknown } | null)?.title;
+  return typeof t === "string" ? t : "";
+};
 
 function fieldErrors(err: { issues: { path: PropertyKey[]; message: string }[] }): FieldErrors {
   const out: FieldErrors = {};
@@ -76,10 +81,11 @@ export async function decide(
 
   // Approve: the executed payload is edited ?? original, re-validated server-side (D-04).
   const candidate = opts.edited ?? payloadOf(cur);
-  const parsed = issuePayloadSchema.safeParse(candidate);
+  const parsed = payloadSchemaFor(cur.tool).safeParse(candidate);
   if (!parsed.success) return { ok: false, reason: "invalid", errors: fieldErrors(parsed.error) };
-  const orig = cur.originalPayload as IssuePayload;
-  if (parsed.data.repo !== orig.repo) return { ok: false, reason: "invalid", errors: { repo: "Repository can't be changed." } };
+  const orig = cur.originalPayload;
+  const locked = checkLocked(approvalKind(cur.tool), orig, parsed.data);
+  if (locked) return { ok: false, reason: "invalid", errors: locked };
 
   const [won] = await h
     .update(approvals)
@@ -105,10 +111,11 @@ export async function saveEdit(
 ): Promise<{ ok: true } | { ok: false; reason: "not_pending" } | { ok: false; errors: FieldErrors }> {
   const cur = await load(h, id);
   if (!cur || cur.status !== "pending") return { ok: false, reason: "not_pending" };
-  const parsed = issuePayloadSchema.safeParse(edited);
+  const parsed = payloadSchemaFor(cur.tool).safeParse(edited);
   if (!parsed.success) return { ok: false, errors: fieldErrors(parsed.error) };
-  const orig = cur.originalPayload as IssuePayload;
-  if (parsed.data.repo !== orig.repo) return { ok: false, errors: { repo: "Repository can't be changed." } };
+  const orig = cur.originalPayload;
+  const locked = checkLocked(approvalKind(cur.tool), orig, parsed.data);
+  if (locked) return { ok: false, errors: locked };
   const [won] = await h
     .update(approvals)
     .set({ editedPayload: parsed.data })
@@ -121,7 +128,7 @@ export async function saveEdit(
 }
 
 export type ExecOutcome =
-  | { status: "executed"; result: { number: number; url: string } }
+  | { status: "executed"; result: unknown }
   | { status: "failed"; error: string; ambiguous: boolean }
   | { status: "skipped" };
 
@@ -184,9 +191,23 @@ export async function executeApproved(
       const definite = err.kind === "client" || err.kind === "auth" || err.kind === "not_found" || err.kind === "rate_limit";
       return fail(definite ? `GitHub rejected it: ${err.message}` : "GitHub didn't respond. It may or may not have been created; Retry will check first.", !definite);
     }
+    if (err instanceof ProviderError) {
+      const definite = err.kind !== "unavailable";
+      return fail(
+        definite
+          ? `${providerLabel(err.provider)} rejected it: ${err.message}`
+          : `${providerLabel(err.provider)} didn't respond. It may or may not have been applied; Retry will check first.`,
+        !definite,
+      );
+    }
     if (err instanceof ToolError) return fail(err.message, false);
     log.error({ err, approvalId: id }, "approved execution failed");
-    return fail("Something went wrong while creating the issue. Retry will check first.", true);
+    return fail(
+      approvalKind(row.tool) === "issue"
+        ? "Something went wrong while creating the issue. Retry will check first."
+        : "Something went wrong while applying the change. Retry will check first.",
+      true,
+    );
   }
 }
 
@@ -228,12 +249,16 @@ export async function expireDue(h: DB, now: Date = new Date(), opts: { enqueue?:
         .set({ status: "expired", endedAt: now })
         .where(and(eq(agentRuns.id, run.parentRunId), eq(agentRuns.status, "waiting_approval")));
     }
+    const kind = approvalKind(a.tool);
     await emitActivity(
-      { type: "agent.approval.expired", source: a.agentId, title: "Approval expired", detail: payloadOf(a).title },
+      { type: "agent.approval.expired", source: a.agentId, title: "Approval expired", detail: titleOf(a) },
       {
         category: "FYI",
         title: "Approval expired",
-        body: `The issue "${payloadOf(a).title}" was not created. Nothing ran after the request expired.`,
+        body:
+          kind === "issue"
+            ? `The issue "${titleOf(a)}" was not created. Nothing ran after the request expired.`
+            : `The calendar request "${titleOf(a)}" expired. ${nothingText(kind)} Nothing ran after the request expired.`,
         actionUrl: `/approvals?id=${a.id}`,
       },
       h,
@@ -245,7 +270,11 @@ export async function expireDue(h: DB, now: Date = new Date(), opts: { enqueue?:
   // A worker that died mid-execution leaves 'executing' behind: mark it failed+ambiguous so Retry adopts via the marker.
   const hung = await h
     .update(approvals)
-    .set({ status: "failed", ambiguous: true, error: "Interrupted while creating. Retry will check first." })
+    .set({
+      status: "failed",
+      ambiguous: true,
+      error: sql`case when ${approvals.tool} like 'calendar.%' then 'Interrupted while applying. Retry will check first.' else 'Interrupted while creating. Retry will check first.' end`,
+    })
     .where(and(eq(approvals.status, "executing"), lte(approvals.updatedAt, new Date(now.getTime() - STUCK_MS))))
     .returning();
   for (const a of hung) await live(h, a);
@@ -269,8 +298,9 @@ async function toDTOs(h: DB, rows: Row[]): Promise<ApprovalDTO[]> {
     (await h.select({ n: githubRepos.fullName, p: githubRepos.private }).from(githubRepos)).map((r) => [r.n, r.p]),
   );
   return rows.flatMap((r) => {
+    if (approvalKind(r.tool) !== "issue") return []; // event kinds rendered from plan 04-02
     try {
-      return [toApprovalDTO(r, repos.get((r.originalPayload as IssuePayload).repo) ?? null)];
+      return [toApprovalDTO(r, repos.get(String((r.originalPayload as { repo?: unknown }).repo)) ?? null)];
     } catch (err) {
       log.error({ err, id: r.id }, "approval DTO failed");
       return [];

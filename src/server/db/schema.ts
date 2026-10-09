@@ -304,7 +304,8 @@ export const approvals = pgTable(
     reason: text(),
     expiresAt: tstz().notNull(),
     decidedAt: tstz(),
-    result: jsonb().$type<{ number: number; url: string } | null>(),
+    // tool-specific result (issue: {number,url}; calendar: {eventId, remoteId, ...})
+    result: jsonb().$type<unknown>(),
     error: text(),
     ambiguous: boolean().notNull().default(false),
     ...timestamps,
