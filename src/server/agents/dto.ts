@@ -1,5 +1,5 @@
 import type { ApprovalDTO, RouteEvent, RunDTO, StepDTO, StepState } from "@/lib/agent-types";
-import { issuePayloadSchema } from "@/lib/issue-payload";
+import { approvalKind, payloadSchemaFor } from "@/lib/approval-kinds";
 import { modelLabel } from "./registry";
 import type { agentRuns, approvals, toolCalls } from "../db/schema";
 
@@ -99,19 +99,21 @@ export function routeSteps(r: Pick<typeof agentRuns.$inferSelect, "id" | "agentI
 
 /** Throws on an invalid stored payload; caller logs. */
 export function toApprovalDTO(r: typeof approvals.$inferSelect, repoPrivate: boolean | null = null): ApprovalDTO {
+  const schema = payloadSchemaFor(r.tool);
   return {
     id: r.id,
     runId: r.runId,
     agentId: r.agentId,
     tool: r.tool,
+    kind: approvalKind(r.tool),
     status: r.status,
-    original: issuePayloadSchema.parse(r.originalPayload),
-    edited: r.editedPayload == null ? null : issuePayloadSchema.parse(r.editedPayload),
+    original: schema.parse(r.originalPayload),
+    edited: r.editedPayload == null ? null : schema.parse(r.editedPayload),
     reason: r.reason,
     createdAt: r.createdAt.toISOString(),
     expiresAt: r.expiresAt.toISOString(),
     decidedAt: iso(r.decidedAt),
-    result: (r.result ?? null) as ApprovalDTO["result"],
+    result: r.result ?? null,
     error: r.error,
     repoPrivate,
   };

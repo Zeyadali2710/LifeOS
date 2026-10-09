@@ -1,5 +1,5 @@
 // Client-safe agent contracts (no server imports). ISO strings, null not undefined.
-import type { IssuePayload } from "./issue-payload";
+import type { ApprovalKind } from "./approval-kinds";
 
 export const TOOL_TIERS = ["READ", "PREPARE", "APPROVE", "EXECUTE", "HIGH_RISK"] as const;
 export type ToolTier = (typeof TOOL_TIERS)[number];
@@ -62,13 +62,14 @@ export type ApprovalDTO = {
   agentId: string;
   tool: string;
   status: ApprovalStatus;
-  original: IssuePayload;
-  edited: IssuePayload | null;
+  kind: ApprovalKind;
+  original: unknown;
+  edited: unknown | null;
   reason: string | null;
   createdAt: string;
   expiresAt: string;
   decidedAt: string | null;
-  result: { number: number; url: string } | null;
+  result: unknown;
   error: string | null;
   repoPrivate: boolean | null;
 };

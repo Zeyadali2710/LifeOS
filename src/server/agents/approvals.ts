@@ -298,9 +298,10 @@ async function toDTOs(h: DB, rows: Row[]): Promise<ApprovalDTO[]> {
     (await h.select({ n: githubRepos.fullName, p: githubRepos.private }).from(githubRepos)).map((r) => [r.n, r.p]),
   );
   return rows.flatMap((r) => {
-    if (approvalKind(r.tool) !== "issue") return []; // event kinds rendered from plan 04-02
     try {
-      return [toApprovalDTO(r, repos.get(String((r.originalPayload as { repo?: unknown }).repo)) ?? null)];
+      // Event kinds: calendar data is always private (repoPrivate null).
+      const priv = approvalKind(r.tool) === "issue" ? (repos.get(String((r.originalPayload as { repo?: unknown }).repo)) ?? null) : null;
+      return [toApprovalDTO(r, priv)];
     } catch (err) {
       log.error({ err, id: r.id }, "approval DTO failed");
       return [];
