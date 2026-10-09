@@ -111,7 +111,17 @@ Plans:
 - [x] 03.1-08-PLAN.md — Command Centre: route steps in traces, model chip, free/paid counts, 4-option picker
 - [x] 03.1-09-PLAN.md — Docs/ADR, full suite and live OpenRouter smoke test on the VM
 
-### Phase 4–11
+### Phase 4: Organization
+**Goal**: Calendars and tasks live in LifeOS: Google + iCloud events in one view, tasks and reminders alongside, with conflicts flagged and free time suggested.
+**Depends on**: Phase 3
+**Requirements**: ORG-01..03
+**Success Criteria**:
+  1. Google Calendar and iCloud CalDAV events appear together in day/week/month views via a CalendarProvider seam
+  2. Creating/editing/deleting an event (incl. recurring) on an external calendar goes through an APPROVE-tier approval before it runs
+  3. Tasks and reminders can be created and completed; overlapping events/tasks are flagged and scheduling suggestions are offered
+**Plans**: TBD
+
+### Phase 5–11
 Goals per phase list above; detailed when each phase is planned (`/gsd-plan-phase N`).
 
 ## Credentials & external access needed
