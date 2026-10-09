@@ -35,7 +35,7 @@ describe("migrations", () => {
     await client.end();
 
     expect(rows.map((r) => r.table_name)).toEqual(
-      expect.arrayContaining(["users", "sessions", "accounts", "verifications", "rate_limits", "audit_log", "settings", "activity_events", "notifications", "run_turns"]),
+      expect.arrayContaining(["users", "sessions", "accounts", "verifications", "rate_limits", "audit_log", "settings", "activity_events", "notifications", "run_turns", "calendars", "calendar_events", "tasks"]),
     );
   });
 

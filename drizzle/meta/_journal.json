@@ -22,6 +22,13 @@
       "when": 1791483285858,
       "tag": "0002_model_routing",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791525316595,
+      "tag": "0003_organization",
+      "breakpoints": true
     }
   ]
 }
