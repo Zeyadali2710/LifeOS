@@ -420,3 +420,78 @@ export const githubEtags = pgTable("github_etags", {
   etag: text().notNull(),
   updatedAt: tstz().notNull().defaultNow().$onUpdate(() => new Date()),
 });
+
+// ── Phase 4: organization ───────────────────────────────────────────────────
+export const calendars = pgTable(
+  "calendars",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    connectionId: text().notNull().references(() => connections.id, { onDelete: "cascade" }),
+    remoteId: text().notNull(), // Google calendar id / CalDAV collection URL
+    name: text().notNull(),
+    account: text(), // login/email shown in UI
+    access: text().notNull().default("reader"), // "owner" | "writer" | "reader"
+    kind: text().notNull().default("other"), // "primary" | "owned" | "subscribed" | "holiday" | "birthday" | "other"
+    enabled: boolean().notNull().default(false), // D-01 opt-in
+    category: text(), // "work" | "personal" | "social" | "career" | "events" | "deadlines"; null until chosen (D-02)
+    isDefault: boolean().notNull().default(false), // D-09
+    syncCursor: text(), // Google nextSyncToken / CalDAV sync token
+    ctag: text(),
+    lastSyncedAt: tstz(),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex().on(t.connectionId, t.remoteId)],
+);
+
+export const calendarEvents = pgTable(
+  "calendar_events",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    calendarId: uuid().notNull().references(() => calendars.id, { onDelete: "cascade" }),
+    remoteId: text().notNull(), // Google event id, or iCalendar UID for CalDAV
+    url: text(), // CalDAV resource href
+    etag: text(),
+    title: text().notNull().default(""),
+    description: text(),
+    location: text(),
+    startAt: tstz(), // timed events: UTC instants
+    endAt: tstz(),
+    allDay: boolean().notNull().default(false),
+    startDate: text(), // all-day "YYYY-MM-DD"
+    endDate: text(), // end exclusive
+    tz: text(), // IANA zone of the event
+    recurrence: jsonb().$type<string[] | null>(), // RRULE/EXDATE/RDATE lines for masters
+    recurringRemoteId: text(), // Google override rows: master id
+    originalStart: text(), // override identity: ISO instant or date
+    status: text().notNull().default("confirmed"), // "confirmed" | "tentative" | "cancelled"
+    transparency: text().notNull().default("opaque"), // "opaque" | "transparent"
+    declined: boolean().notNull().default(false),
+    raw: jsonb().notNull(), // Google event JSON or { ics: string } for CalDAV
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex().on(t.calendarId, t.remoteId),
+    index().on(t.calendarId, t.startAt),
+    index().on(t.calendarId, t.recurringRemoteId),
+  ],
+);
+
+// Editing remindAt resets remindedAt to null (enforced in src/server/tasks.ts).
+export const tasks = pgTable(
+  "tasks",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    title: text().notNull(),
+    notes: text().notNull().default(""),
+    dueDate: text(), // Sydney "YYYY-MM-DD"
+    dueTime: text(), // "HH:mm"
+    dueAt: tstz(), // derived instant (dueDate+dueTime Sydney, or dueDate 23:59)
+    priority: integer(), // 1 high, 2 medium, 3 low, null none
+    remindAt: tstz(),
+    remindedAt: tstz(),
+    completedAt: tstz(),
+    projectId: uuid(), // nullable, no FK until Phase 5 (D-10)
+    ...timestamps,
+  },
+  (t) => [index().on(t.completedAt, t.dueAt), index().on(t.remindAt)],
+);
