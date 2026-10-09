@@ -122,11 +122,11 @@ Plans:
   3. Tasks and reminders can be created and completed; overlapping events/tasks are flagged and scheduling suggestions are offered
 **Plans**: 22 plans in 8 waves
 - [x] 04-01-PLAN.md — Approval machine per tool kind, server side (approval-kinds, event payloads, ProviderError, approvals/gateway)
-- [ ] 04-02-PLAN.md — Kind-tagged ApprovalDTO + approval UI dispatch, GitHub regression pass
+- [x] 04-02-PLAN.md — Kind-tagged ApprovalDTO + approval UI dispatch, GitHub regression pass
 - [ ] 04-03-PLAN.md — Package legitimacy check + install tsdav/ical.js, optional Google env, owner Google Cloud setup (redirect + In production)
 - [x] 04-04-PLAN.md — TDD pure conflicts, free slots, Today's plan, header numbers
 - [x] 04-05-PLAN.md — UI primitives: Dialog width/sheet, Checkbox, RadioGroup, isSafeUrl, icon subset
-- [ ] 04-06-PLAN.md — Schema + [BLOCKING] migration 0003, DTO/category contracts, VM DB test runner, owner VM migrate gate
+- [x] 04-06-PLAN.md — Schema + [BLOCKING] migration 0003, DTO/category contracts, VM DB test runner, owner VM migrate gate
 - [ ] 04-07-PLAN.md — CalendarProvider seam, ical.js expander, recurring-edit transforms (ICS + Google)
 - [ ] 04-08-PLAN.md — Encrypted calendar connection store (incl. rotation) + calendar list store
 - [ ] 04-09-PLAN.md — Read model: range instances, conflicts, plan, header, tasks, agent query helpers
