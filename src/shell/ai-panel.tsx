@@ -58,14 +58,14 @@ export function AIPanel() {
   };
 
   useEffect(() => {
-    if (!aiOpen) return;
+    if (!aiOpen || !status) return; // wait for status so a blocked assistant (no key, cap) never POSTs
     const t = setTimeout(() => {
       const p = consumeAIPrompt(); // deferred so setState never runs synchronously in the effect
       if (p) void submit(p);
     }, 0);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- submit is recreated each render; only the open edge should consume a prompt
-  }, [aiOpen, consumeAIPrompt]);
+  }, [aiOpen, status === null, consumeAIPrompt]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView?.({ block: "end" });
