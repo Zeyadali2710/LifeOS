@@ -137,7 +137,7 @@ Plans:
 - [x] 04-14-PLAN.md — Wire providers + worker sync, event write service, owner event actions
 - [x] 04-15-PLAN.md — Settings: calendar connection rows, iCloud form, calendar list
 - [ ] 04-16-PLAN.md — Organization page: header, legend, Day/Week grid, event detail, states
-- [ ] 04-17-PLAN.md — Organization agent live: calendar/task tools, tiers, taint, clock
+- [x] 04-17-PLAN.md — Organization agent live: calendar/task tools, tiers, taint, clock
 - [ ] 04-18-PLAN.md — Today's plan card, tasks card, task dialog
 - [ ] 04-19-PLAN.md — Month view, event dialog with recurring scopes, page wiring
 - [ ] 04-20-PLAN.md — Calendar approval views and AI panel events card
