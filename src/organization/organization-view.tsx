@@ -17,6 +17,7 @@ import { CategoryLegend } from "./category-legend";
 import { EventDetail } from "./event-detail";
 import { OrganizationHeader, type ViewKey } from "./header";
 import { rangeLabel } from "./layout";
+import { MonthGrid } from "./month-grid";
 import { TimeGrid } from "./time-grid";
 
 export type OrgInstance = InstanceDTO & { repeatText: string | null };
@@ -213,7 +214,19 @@ export function OrganizationView({
   } else if (navPending) {
     body = <Skeleton className="h-[480px] w-full rounded-14" />;
   } else if (view === "month") {
-    body = month ?? null;
+    body = (
+      month ?? (
+        <MonthGrid
+          days={data.range.days}
+          month={date.slice(0, 7)}
+          instances={visible}
+          today={today}
+          selected={date}
+          onOpenDay={(d) => go("day", d)}
+          onMonth={(dir) => go("month", shift("month", date, dir))}
+        />
+      )
+    );
   } else {
     body = (
       <TimeGrid
