@@ -83,7 +83,7 @@ const num = (x?: string) => Number(x);
 const unfold = (s: string) => s.replace(/\r?\n[ \t]/g, "");
 
 type Conv = (t: ICAL.Time) => Date;
-type Zones = Map<string, ICAL.Timezone>;
+export type Zones = Map<string, ICAL.Timezone>;
 
 function converter(tzid: string | null, utc: boolean, zones: Zones): Conv {
   const f = (t: ICAL.Time) => [t.year, t.month, t.day, t.hour, t.minute, t.second] as const;
@@ -98,7 +98,7 @@ function converter(tzid: string | null, utc: boolean, zones: Zones): Conv {
 }
 
 /** EXDATE/RDATE/RECURRENCE-ID content line -> comparable keys (instant ms, or YYYY-MM-DD). */
-function lineKeys(line: string, defTz: string | null, zones: Zones): string[] {
+export function lineKeys(line: string, defTz: string | null, zones: Zones): string[] {
   const i = line.indexOf(":");
   if (i < 0) return [];
   const params = line.slice(0, i).split(";").slice(1);
@@ -119,7 +119,7 @@ function lineKeys(line: string, defTz: string | null, zones: Zones): string[] {
 }
 
 // ---- series ----
-type Series = {
+export type Series = {
   title: string;
   description: string | null;
   location: string | null;
@@ -216,7 +216,7 @@ function googleSeries(row: StoredEvent): Series {
   };
 }
 
-function icsSeries(v: ICAL.Component, zones: Zones): Series {
+export function icsSeries(v: ICAL.Component, zones: Zones): Series {
   const ds = v.getFirstProperty("dtstart");
   if (!ds) throw new Error("no dtstart");
   const raw = String(ds.jCal[3]);
@@ -254,7 +254,7 @@ function icsSeries(v: ICAL.Component, zones: Zones): Series {
   };
 }
 
-function loadZones(root: ICAL.Component): Zones {
+export function loadZones(root: ICAL.Component): Zones {
   const zones: Zones = new Map();
   for (const z of root.getAllSubcomponents("vtimezone")) {
     const id = z.getFirstPropertyValue("tzid") as string | null;
