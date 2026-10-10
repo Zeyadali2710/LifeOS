@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ProviderError } from "@/server/calendar/errors";
 import type { providerFor } from "@/server/calendar/providers";
 import type { CalendarProvider, NormalizedEvent } from "@/server/calendar/types";
-import { auditLog, calendarEvents, calendars, connections, settings } from "@/server/db/schema";
+import { auditLog, calendarEvents, calendars, connections, settings, tasks } from "@/server/db/schema";
 import { fakeCalendarProvider, type FakeCalendarProvider } from "../helpers/fake-calendar";
 import { setupTestDb } from "./helpers";
 
@@ -17,8 +17,11 @@ vi.mock("@/server/session", () => ({
 }));
 let current: CalendarProvider;
 vi.mock("@/server/calendar/providers", () => ({ providerFor: async () => current }));
+const enqueue = vi.fn<(...a: unknown[]) => Promise<void>>(async () => undefined);
+vi.mock("@/server/queue", () => ({ enqueue: (...a: unknown[]) => enqueue(...a), QUEUES: { calendarSync: "calendar.sync" } }));
 
 import { createEvent, deleteEvent, updateEvent, type WriteCtx } from "@/server/calendar/events";
+import { addPlanItemAction, createEventAction, deleteEventAction, reloadEventAction, syncCalendarsNowAction, updateEventAction } from "@/server/calendar-actions";
 
 const NOW = new Date("2026-10-08T00:00:00Z");
 const ctx = (o: Partial<WriteCtx> = {}): WriteCtx => ({ actor: "owner", providerFor: (async () => current) as unknown as typeof providerFor, now: () => NOW, ...o });
@@ -41,6 +44,7 @@ let fake: FakeCalendarProvider;
 beforeEach(async () => {
   const h = t.handle();
   denied = false;
+  enqueue.mockClear();
   await h.delete(auditLog);
   await h.delete(connections);
   await h.delete(settings);
@@ -165,4 +169,67 @@ describe("event write service", () => {
   });
 });
 
-void denied;
+describe("calendar server actions", () => {
+  const form = () => ({ ...input, calendarId: gid });
+  const rej = (p: Promise<unknown>) => p.then(() => "ok", (e: Error) => e.message);
+
+  it("reject without owner and call no provider", async () => {
+    denied = true;
+    const id = "00000000-0000-4000-8000-000000000000";
+    for (const p of [createEventAction(form()), updateEventAction({ eventId: id }), deleteEventAction({ eventId: id }), reloadEventAction(id), addPlanItemAction({}), syncCalendarsNowAction()]) expect(await rej(p)).toBe("redirect");
+    expect(fake.calls.create.length + fake.calls.update.length + fake.calls.remove.length).toBe(0);
+    expect(enqueue).not.toHaveBeenCalled();
+  });
+
+  it("validates input with the UI-SPEC messages", async () => {
+    expect(await createEventAction({ ...form(), title: " " })).toEqual({ ok: false, errors: { title: "Add a title." } });
+    expect(await createEventAction({ ...form(), end: input.start })).toEqual({ ok: false, errors: { end: "End must be after start." } });
+    expect(await createEventAction({ ...form(), calendarId: "nope" })).toEqual({ ok: false, errors: { calendarId: "Pick a calendar." } });
+    expect(fake.calls.create).toHaveLength(0);
+  });
+
+  it("create succeeds and maps provider errors to fixed codes", async () => {
+    expect(await createEventAction(form())).toMatchObject({ ok: true, calendarName: "Main", start: input.start, overlaps: null });
+    const err = (kind: ConstructorParameters<typeof ProviderError>[1]) => {
+      current = fakeCalendarProvider("google", { calendars: [], results: {}, create: async () => { throw new ProviderError("google", kind, 400, "x"); } });
+    };
+    err("auth");
+    expect(await createEventAction(form())).toEqual({ ok: false, error: "reconnect", provider: "google" });
+    err("conflict");
+    expect(await createEventAction(form())).toEqual({ ok: false, error: "changed", provider: "google" });
+    err("unavailable");
+    expect(await createEventAction(form())).toEqual({ ok: false, error: "provider", provider: "google" });
+    expect(await createEventAction({ ...form(), calendarId: rid })).toEqual({ ok: false, error: "read_only", provider: "google" });
+  });
+
+  it("update and delete take the instance fields; reload returns the stored event", async () => {
+    const [row] = await t.handle().insert(calendarEvents).values({ calendarId: gid, ...ev("ev9", { etag: '"e9"', title: "Stored", location: "Here" }) }).returning();
+    const eventId = row!.id;
+    const target = { eventId, etag: '"e9"', scope: "all", instanceStart: null };
+    expect(await updateEventAction({ ...target, ...input })).toMatchObject({ ok: true, eventId });
+    expect(await updateEventAction({ ...target, ...input, etag: '"old"' })).toEqual({ ok: false, error: "changed", provider: "google" });
+    expect(await reloadEventAction(eventId)).toMatchObject({ ok: true, title: "Edited", etag: '"v2"', allDay: false, showAs: "busy", rrule: null });
+    expect(await reloadEventAction("00000000-0000-4000-8000-000000000000")).toEqual({ ok: false, error: "not_found" });
+    expect(await deleteEventAction({ ...target, etag: '"v2"' })).toMatchObject({ ok: true });
+    expect(await deleteEventAction({ ...target, eventId: "bad" })).toMatchObject({ ok: false });
+  });
+
+  it("addPlanItemAction creates a titled event on the default calendar and leaves the task open", async () => {
+    const h = t.handle();
+    await h.update(calendars).set({ isDefault: true }).where(eq(calendars.id, gid));
+    const [task] = await h.insert(tasks).values({ title: "Write report" }).returning();
+    const r = await addPlanItemAction({ taskId: task!.id, start: input.start, end: input.end });
+    expect(r).toMatchObject({ ok: true, calendarName: "Main", start: input.start });
+    expect(fake.calls.create[0]![1]).toMatchObject({ title: "Write report", start: input.start });
+    const [after] = await h.select().from(tasks).where(eq(tasks.id, task!.id));
+    expect(after!.completedAt).toBeNull();
+    expect(await addPlanItemAction({ taskId: "00000000-0000-4000-8000-000000000000", start: input.start, end: input.end })).toMatchObject({ ok: false, error: "not_found" });
+  });
+
+  it("syncCalendarsNowAction enqueues with a singleton key and reports failure", async () => {
+    expect(await syncCalendarsNowAction()).toEqual({ ok: true });
+    expect(enqueue).toHaveBeenCalledWith("calendar.sync", {}, { singletonKey: "calendar.sync" });
+    enqueue.mockRejectedValueOnce(new Error("down"));
+    expect(await syncCalendarsNowAction()).toEqual({ ok: false });
+  });
+});
