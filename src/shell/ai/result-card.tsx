@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
-import type { TurnDTO } from "@/lib/agent-types";
+import { CATEGORY, isCategory } from "@/lib/calendar-categories";
+import type { ResultItemDTO, TurnDTO } from "@/lib/agent-types";
 import { retryRunAction } from "@/server/agent-actions";
 import { formatHM } from "@/server/time";
 import { InlineError } from "@/ui/inline-error";
@@ -10,8 +12,36 @@ import { AnswerText } from "./answer-text";
 
 const LIMIT_KIND: Record<string, string> = { "limit:tool_calls": "tool-call", "limit:tokens": "token", "limit:time": "time" };
 
+const KEY_COLOR = { FREE: "text-green", TASK: "text-indigo-text", EVENT: "text-text-2" } as const;
+
+function Items({ items, more, onNavigate }: { items: ResultItemDTO[]; more: number; onNavigate: () => void }) {
+  return (
+    <div className="flex flex-col gap-1 rounded-12 border border-[rgba(255,255,255,.07)] bg-fill-1 p-1.5">
+      {items.map((it, i) => (
+        <Link key={i} href={it.href} onClick={onNavigate} className="flex min-h-11 items-start gap-2.5 rounded-8 px-2.5 py-2 hover:bg-fill-2 tab:min-h-0">
+          <span
+            className={`mt-0.5 w-9 shrink-0 font-mono text-[10.5px] font-medium tracking-[0.08em] ${KEY_COLOR[it.key]}`}
+            style={it.key === "EVENT" && isCategory(it.category) ? { color: CATEGORY[it.category].color } : undefined}
+          >
+            {it.key}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[13.5px] break-words">{it.title}</span>
+            <span className="block text-[12.5px] text-text-2">{it.subtitle}</span>
+          </span>
+        </Link>
+      ))}
+      {more > 0 && (
+        <Link href="/organization" onClick={onNavigate} className="px-2.5 py-1.5 text-[12.5px] text-indigo-text hover:text-indigo-soft">
+          Show {more} more
+        </Link>
+      )}
+    </div>
+  );
+}
+
 export function ResultCard({ turn, streaming, onRetried }: { turn: TurnDTO; streaming: boolean; onRetried: () => void }) {
-  const { toast } = useShell();
+  const { toast, closeAI } = useShell();
   const [retrying, setRetrying] = useState(false);
   const run = turn.run;
   const live = streaming && (!run || run.status === "queued" || run.status === "running");
@@ -24,14 +54,26 @@ export function ResultCard({ turn, streaming, onRetried }: { turn: TurnDTO; stre
     if (r.ok) onRetried();
     else toast("Couldn't start another run. Try again.", "error");
   };
+  const withItems = [...turn.steps].reverse().find((s) => s.items && s.items.length > 0);
+  const noCalendar = /no calendar is connected/i.test(answer);
+  // The panel covers the page on small screens: close it after following a link.
+  const onNavigate = () => {
+    if (window.matchMedia("(max-width: 719px)").matches) closeAI();
+  };
   const limit = run?.errorKind ? LIMIT_KIND[run.errorKind] : undefined;
   const calls = run?.toolCalls ?? 0;
   return (
     <div className="flex flex-col gap-2.5" aria-busy={live}>
+      {withItems?.items && <Items items={withItems.items} more={withItems.itemsMore} onNavigate={onNavigate} />}
       {(answer || live) && (
         <div className="flex flex-col gap-2 rounded-12 border border-[rgba(255,255,255,.07)] bg-fill-1 p-3.5">
           <div className="font-mono text-[10px] tracking-[0.08em] text-text-3">RESULT</div>
           <AnswerText text={answer} streaming={live} />
+          {noCalendar && (
+            <Link href="/settings?section=connections" onClick={onNavigate} className="self-start rounded-6 px-2 py-1 text-[12.5px] text-text-2 hover:bg-fill-2 hover:text-text">
+              Open Connections
+            </Link>
+          )}
           {run?.status === "cancelled" && run.endedAt && (
             <div className="font-mono text-[11px] text-text-3">Stopped at {formatHM(new Date(run.endedAt))}.</div>
           )}
