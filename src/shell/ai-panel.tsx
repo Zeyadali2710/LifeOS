@@ -87,12 +87,20 @@ export function AIPanel() {
   };
   const iconBtn = "grid size-11 place-items-center rounded-8 text-text-3 hover:bg-fill-2 hover:text-text tab:size-[30px]";
   const modal = mode !== "docked";
-  const examples: { icon: IconName; text: string }[] = [
+  const repoRows: { icon: IconName; text: string }[] = [
     { icon: "priority_high", text: "What's happening in my repos?" },
     { icon: "code", text: "Which pull requests need my review?" },
     { icon: "check_circle", text: "Is CI passing on my default branches?" },
     ...(status?.firstRepo ? [{ icon: "edit_note" as IconName, text: `Create an issue in ${status.firstRepo}` }] : []),
   ];
+  const org: { icon: IconName; text: string }[] = [
+    { icon: "event", text: "What's on my calendar this week?" },
+    { icon: "schedule", text: "When am I free on Thursday?" },
+    { icon: "event_busy", text: "Do I have any conflicts?" },
+    { icon: "task_alt", text: "What's due today?" },
+  ];
+  // Four rows total: two of each when both are connected, all Organization when there is no repo.
+  const examples = !status?.calendarConnected ? repoRows : status.firstRepo ? [...repoRows.slice(0, 2), ...org.slice(0, 2)] : org;
 
   const newConversation = () => {
     if (turns.length > 0) chat.newThread();
@@ -179,7 +187,7 @@ export function AIPanel() {
           <div className="flex flex-col gap-4 p-5">
             <h2 className="text-[20px] leading-[1.3] font-medium tracking-[-0.01em]">What should we look at?</h2>
             <p className="text-[13px] leading-normal text-text-2">
-              Ask about your repositories, pull requests and CI. Anything that creates or changes something waits for your approval.
+              Ask about your repositories, pull requests and CI{status?.calendarConnected ? ", or look at your calendar and tasks" : ""}. Anything that creates or changes something waits for your approval.
             </p>
             <div className="font-mono text-[10px] tracking-[0.08em] text-text-3">EXAMPLES</div>
             <div className="flex flex-col gap-2">

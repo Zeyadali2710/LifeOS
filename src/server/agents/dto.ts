@@ -1,5 +1,7 @@
-import type { ApprovalDTO, RouteEvent, RunDTO, StepDTO, StepState } from "@/lib/agent-types";
+import type { ApprovalDTO, ResultItemDTO, RouteEvent, RunDTO, StepDTO, StepState } from "@/lib/agent-types";
 import { approvalKind, payloadSchemaFor } from "@/lib/approval-kinds";
+import { CATEGORY, isCategory } from "@/lib/calendar-categories";
+import { formatHM, sydneyParts } from "@/server/time";
 import { modelLabel } from "./registry";
 import type { agentRuns, approvals, toolCalls } from "../db/schema";
 
@@ -41,6 +43,66 @@ const STATE: Record<string, StepState> = {
   cancelled: "cancelled",
 };
 
+const YMD = /^\d{4}-\d{2}-\d{2}$/;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MAX_ITEMS = 8;
+const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const pad = (n: number) => String(n).padStart(2, "0");
+const ymdOf = (d: Date) => {
+  const p = sydneyParts(d);
+  return `${p.year}-${pad(p.month)}-${pad(p.day)}`;
+};
+const str = (v: unknown) => (typeof v === "string" ? v : "");
+const validDate = (v: unknown) => {
+  const d = new Date(str(v));
+  return str(v) && !Number.isNaN(d.getTime()) ? d : null;
+};
+const dayHref = (ymd: string, event?: string) => `/organization?view=day&date=${ymd}${event ? `&event=${event}` : ""}`;
+const mins = (n: number) => (n >= 60 ? `${Math.floor(n / 60)} h${n % 60 ? ` ${n % 60} min` : ""}` : `${n} min`);
+
+function itemOf(tool: string, o: Record<string, unknown>): ResultItemDTO | null {
+  if (tool === "calendar.list_events") {
+    const allDay = o.allDay === true;
+    const s = allDay ? validDate(`${str(o.start)}T12:00:00Z`) : validDate(o.start);
+    if (!s) return null;
+    const e = allDay ? null : validDate(o.end);
+    const p = sydneyParts(s);
+    const cat = isCategory(o.category) ? o.category : null;
+    const time = allDay ? "All day" : `${formatHM(s)}${e ? `–${formatHM(e)}` : ""}`;
+    const day = allDay ? `${p.weekday} ${p.day} ${MON[p.month - 1]}` : p.weekday;
+    const ymd = allDay ? str(o.start) : ymdOf(s);
+    return {
+      key: "EVENT",
+      category: cat,
+      title: str(o.title).slice(0, 200),
+      subtitle: `${day} ${time}${cat ? ` · ${CATEGORY[cat].label}` : ""}`,
+      href: dayHref(YMD.test(ymd) ? ymd : ymdOf(s), UUID.test(str(o.id)) ? str(o.id) : undefined),
+    };
+  }
+  if (tool === "calendar.find_free_slots") {
+    const s = validDate(o.start);
+    if (!s || typeof o.minutes !== "number") return null;
+    return { key: "FREE", category: null, title: "Free", subtitle: `${mins(o.minutes)} · ${formatHM(s)}–${formatHM(validDate(o.end) ?? s)}`, href: dayHref(ymdOf(s)) };
+  }
+  if (tool === "tasks.list") {
+    const due = validDate(o.due);
+    const p = due && sydneyParts(due);
+    return { key: "TASK", category: null, title: str(o.title).slice(0, 200), subtitle: p ? `Due ${p.weekday} ${p.day} ${MON[p.month - 1]}` : "No due date", href: "/organization#tasks" };
+  }
+  return null;
+}
+
+const ITEM_TOOLS = new Set(["calendar.list_events", "calendar.find_free_slots", "tasks.list"]);
+
+function itemsOf(r: typeof toolCalls.$inferSelect): { items: ResultItemDTO[] | null; itemsMore: number } {
+  const none = { items: null, itemsMore: 0 };
+  if (r.status !== "done" || !ITEM_TOOLS.has(r.tool)) return none;
+  const raw = (r.output as { items?: unknown } | null)?.items;
+  if (!Array.isArray(raw)) return none;
+  const all = raw.flatMap((x) => (x && typeof x === "object" ? [itemOf(r.tool, x as Record<string, unknown>)] : [])).filter((x): x is ResultItemDTO => x !== null);
+  return { items: all.slice(0, MAX_ITEMS), itemsMore: Math.max(0, all.length - MAX_ITEMS) };
+}
+
 export function toStepDTO(
   r: typeof toolCalls.$inferSelect,
   run: { agentId: string },
@@ -61,6 +123,7 @@ export function toStepDTO(
     inputSummary: r.inputSummary,
     outputSummary: r.outputSummary,
     error: r.error,
+    ...itemsOf(r),
   };
 }
 
@@ -93,12 +156,14 @@ export function routeSteps(r: Pick<typeof agentRuns.$inferSelect, "id" | "agentI
       inputSummary: null,
       outputSummary: null,
       error: blocked ? reason : null,
+      items: null,
+      itemsMore: 0,
     };
   });
 }
 
 /** Throws on an invalid stored payload; caller logs. */
-export function toApprovalDTO(r: typeof approvals.$inferSelect, repoPrivate: boolean | null = null): ApprovalDTO {
+export function toApprovalDTO(r: typeof approvals.$inferSelect, repoPrivate: boolean | null = null, targetChanged: boolean | null = null): ApprovalDTO {
   const schema = payloadSchemaFor(r.tool);
   return {
     id: r.id,
@@ -116,5 +181,6 @@ export function toApprovalDTO(r: typeof approvals.$inferSelect, repoPrivate: boo
     result: r.result ?? null,
     error: r.error,
     repoPrivate,
+    targetChanged,
   };
 }

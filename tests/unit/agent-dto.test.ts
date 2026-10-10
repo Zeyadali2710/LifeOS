@@ -60,3 +60,32 @@ describe("dto", () => {
     expect(modelShort("a/b-c")).toBe("b-c");
   });
 });
+
+describe("step items", () => {
+  const row = (tool: string, items: unknown[], status = "done") =>
+    ({ id: "s", runId: "r", seq: 1, kind: "tool", tool, status, startedAt: null, durationMs: null, inputSummary: null, outputSummary: null, error: null, output: { connected: true, items } }) as never;
+  const id = "22222222-2222-4222-8222-222222222222";
+  it("maps events, free slots and tasks", () => {
+    const ev = { id, category: "work", title: "Gym", start: "2026-10-08T08:00:00.000Z", end: "2026-10-08T09:30:00.000Z", allDay: false };
+    const s = toStepDTO(row("calendar.list_events", [ev]), { agentId: "o" });
+    expect(s.items).toEqual([{ key: "EVENT", category: "work", title: "Gym", subtitle: "Thu 19:00–20:30 · Work", href: `/organization?view=day&date=2026-10-08&event=${id}` }]);
+    const f = toStepDTO(row("calendar.find_free_slots", [{ start: "2026-10-08T00:00:00.000Z", end: "2026-10-08T02:30:00.000Z", minutes: 150 }]), { agentId: "o" });
+    expect(f.items?.[0]).toMatchObject({ key: "FREE", title: "Free", href: "/organization?view=day&date=2026-10-08" });
+    expect(f.items?.[0]?.subtitle.startsWith("2 h 30 min")).toBe(true);
+    const t = toStepDTO(row("tasks.list", [{ title: "A", due: null }]), { agentId: "o" });
+    expect(t.items?.[0]).toMatchObject({ key: "TASK", subtitle: "No due date", href: "/organization#tasks" });
+  });
+  it("caps at 8, null otherwise", () => {
+    const ev = { id, title: "x", start: "2026-10-08T08:00:00.000Z", end: "2026-10-08T09:00:00.000Z", allDay: false };
+    const s = toStepDTO(row("calendar.list_events", Array(10).fill(ev)), { agentId: "o" });
+    expect(s.items).toHaveLength(8);
+    expect(s.itemsMore).toBe(2);
+    expect(toStepDTO(row("calendar.list_events", [ev], "failed"), { agentId: "o" }).items).toBeNull();
+    expect(toStepDTO(row("github.list", [ev]), { agentId: "o" }).items).toBeNull();
+  });
+  it("passes targetChanged", () => {
+    const a = { id: "a", runId: "r", agentId: "o", tool: "github.create_issue", status: "pending", originalPayload: { repo: "o/r", title: "T" }, editedPayload: null, reason: null, createdAt: t0, expiresAt: t0, decidedAt: null, result: null, error: null } as never;
+    expect(toApprovalDTO(a).targetChanged).toBeNull();
+    expect(toApprovalDTO(a, null, true).targetChanged).toBe(true);
+  });
+});
