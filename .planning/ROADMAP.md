@@ -131,7 +131,7 @@ Plans:
 - [x] 04-08-PLAN.md — Encrypted calendar connection store (incl. rotation) + calendar list store
 - [x] 04-09-PLAN.md — Read model: range instances, conflicts, plan, header, tasks, agent query helpers
 - [x] 04-10-PLAN.md — Live calendar/task SSE signals, tasks service + actions, reminder job
-- [ ] 04-11-PLAN.md — Google client, provider and OAuth routes (state + PKCE)
+- [x] 04-11-PLAN.md — Google client, provider and OAuth routes (state + PKCE)
 - [x] 04-12-PLAN.md — iCloud CalDAV provider + connectIcloud
 - [x] 04-13-PLAN.md — Provider-agnostic sync service (D-03 7-day activity, conflicts, RECONNECT)
 - [ ] 04-14-PLAN.md — Wire providers + worker sync, event write service, owner event actions
