@@ -1,12 +1,12 @@
-import { eq } from "drizzle-orm";
+import { and, eq, isNull, lte } from "drizzle-orm";
 import { toTaskDTO, type TaskDTO } from "@/lib/calendar-types";
 import { taskInput } from "@/lib/task-payload";
 import type { FieldErrors } from "./agents/approvals";
 import type { DB } from "./db/client";
 import { auditLog, tasks } from "./db/schema";
-import { notifyLive } from "./events";
+import { emitActivity, notifyLive } from "./events";
 import { log } from "./log";
-import { sydneyInstant } from "./time";
+import { sydneyInstant, sydneyParts } from "./time";
 
 export type TaskResult = { ok: true; task: TaskDTO } | { ok: false; errors: FieldErrors };
 
@@ -103,4 +103,33 @@ export async function deleteTask(h: DB, id: string): Promise<{ ok: boolean }> {
   await aud(h, "task.delete", id);
   await notifyLive(h, "task", id);
   return { ok: true };
+}
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function dueBody(r: { dueDate: string | null; dueTime: string | null; dueAt: Date | null }, now: Date): string {
+  if (!r.dueDate || !r.dueAt) return "No due date.";
+  const p = sydneyParts(r.dueAt);
+  const day = `${p.weekday} ${p.day} ${MONTHS[p.month - 1]}`;
+  if (r.dueTime) return `Due ${day} ${r.dueTime}.`;
+  const n = sydneyParts(now);
+  const today = `${n.year}-${String(n.month).padStart(2, "0")}-${String(n.day).padStart(2, "0")}`;
+  return r.dueDate === today ? "Due today." : `Due ${day}.`;
+}
+
+/** Claim due, unreminded, open tasks in one UPDATE ... RETURNING (exactly once per arming), then notify each. */
+export async function fireDueReminders(h: DB, now: Date, emit: typeof emitActivity = emitActivity): Promise<number> {
+  const claimed = await h
+    .update(tasks)
+    .set({ remindedAt: now })
+    .where(and(lte(tasks.remindAt, now), isNull(tasks.remindedAt), isNull(tasks.completedAt)))
+    .returning();
+  for (const r of claimed) {
+    await emit(
+      { type: "task.reminder", source: "calendar", title: "Reminder", detail: r.title },
+      { category: "REMINDER", title: `Reminder: ${r.title}`, body: dueBody(r, now), actionUrl: "/organization#tasks" },
+      h,
+    );
+  }
+  return claimed.length;
 }
