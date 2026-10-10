@@ -5,14 +5,23 @@ test.beforeEach(async ({ page }) => {
   await signIn(page);
 });
 
-test("connections: three rows and empty token validation", async ({ page }) => {
+test("connections: five rows and empty token validation", async ({ page }) => {
   await page.goto("/settings");
   await expect(page.getByText("GitHub · read access")).toBeVisible();
   await expect(page.getByText("GitHub · create issues")).toBeVisible();
   await expect(page.getByText("Anthropic API")).toBeVisible();
-  await page.getByRole("button", { name: "Connect" }).first().click();
+  await expect(page.getByText("Google Calendar", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("iCloud Calendar", { exact: true }).first()).toBeVisible();
+  await page.getByRole("button", { name: "Connect", exact: true }).first().click();
   await page.getByRole("button", { name: "Save token" }).click();
   await expect(page.getByText("Paste a token to continue.")).toBeVisible();
+});
+
+test("iCloud form rejects an empty app-specific password", async ({ page }) => {
+  await page.goto("/settings");
+  await page.getByRole("button", { name: "Connect iCloud Calendar" }).click();
+  await page.getByRole("button", { name: "Save and connect" }).click();
+  await expect(page.getByText("Paste the app-specific password to continue.")).toBeVisible();
 });
 
 test("spend cap saves with a toast", async ({ page }, info) => {

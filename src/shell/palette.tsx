@@ -1,12 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import { Icon } from "@/ui/icon";
 import { Kbd } from "@/ui/kbd";
+import { paletteSearchAction } from "@/server/palette-actions";
 import { buildPalette } from "./palette-items";
-import type { PaletteItem } from "./palette-items";
+import type { PaletteData, PaletteItem, PaletteScope } from "./palette-items";
 import { useAgentStatus } from "./use-agent-status";
 import { useShell } from "./shell-provider";
 import { useDialog } from "./use-dialog";
@@ -28,7 +29,27 @@ function PaletteDialog() {
   const [wide] = useState(() => window.innerWidth >= 1100);
   const ref = useDialog<HTMLDivElement>(true, closePalette, { modal: true, initialFocus: () => inputRef.current });
 
-  const { groups, noMatch } = useMemo(() => buildPalette(query, { wide, approvalsWaiting }), [query, wide, approvalsWaiting]);
+  const [data, setData] = useState<PaletteData | undefined>();
+  const [scope, setScope] = useState<PaletteScope>("all");
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) return;
+    let stale = false;
+    const t = setTimeout(() => {
+      paletteSearchAction(q).then(
+        (d) => !stale && setData(d),
+        () => !stale && setData(undefined),
+      );
+    }, 200);
+    return () => {
+      stale = true;
+      clearTimeout(t);
+    };
+  }, [query]);
+  const shown = query.trim().length >= 2 ? data : undefined;
+  const hasData = Boolean(shown && (shown.events.length || shown.tasks.length));
+
+  const { groups, noMatch } = useMemo(() => buildPalette(query, { wide, approvalsWaiting, data: shown, scope }), [query, wide, approvalsWaiting, shown, scope]);
   const flat = useMemo(() => groups.flatMap((g) => g.items), [groups]);
   const rowId = (i: PaletteItem) => `${listId}-${i.id}`;
   const active = flat[Math.min(sel, flat.length - 1)];
@@ -80,7 +101,11 @@ function PaletteDialog() {
         run(active);
         break;
       case "Tab":
-        e.preventDefault(); // reserved for scopes (D-06): no-op while there is one scope
+        e.preventDefault(); // D-06 scopes: All -> Events -> Tasks; no-op without search results
+        if (hasData) {
+          setScope(scope === "all" ? "events" : scope === "events" ? "tasks" : "all");
+          setSel(0);
+        }
         break;
     }
   };
@@ -112,7 +137,7 @@ function PaletteDialog() {
             onChange={(e) => {
               setQuery(e.target.value);
               // Default to the best match, not the Ask row; Ask stays one ArrowUp away (and is the only row when nothing matches).
-              setSel(buildPalette(e.target.value, { wide, approvalsWaiting }).noMatch || !e.target.value.trim() ? 0 : 1);
+              setSel(buildPalette(e.target.value, { wide, approvalsWaiting, scope }).noMatch || !e.target.value.trim() ? 0 : 1);
             }}
             onKeyDown={onKeyDown}
             className="min-w-0 flex-1 bg-transparent text-[16px] text-text outline-none placeholder:text-text-3"
@@ -157,6 +182,7 @@ function PaletteDialog() {
         <div className="flex items-center gap-4 border-t border-[rgba(255,255,255,.06)] px-4 py-2.5 font-mono text-[11px] text-text-3">
           <span>↑↓ navigate</span>
           <span>↵ open</span>
+          {hasData && <span>tab {scope === "all" ? "events" : scope === "events" ? "tasks" : "all"}</span>}
           <span>esc close</span>
           <span className="flex-1" />
           <span className="text-[#a5a6ff]">{isApple ? "⌘ J" : "Ctrl J"} ask LifeOS</span>
