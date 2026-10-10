@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ApprovalDTO } from "@/lib/agent-types";
 import { nothingText, type ApprovalKind } from "@/lib/approval-kinds";
 import { issuePayloadSchema, type IssuePayload } from "@/lib/issue-payload";
@@ -16,6 +16,7 @@ import { Icon } from "@/ui/icon";
 import type { IconName } from "@/ui/icon-names";
 import { ApprovalEditForm, toDraft, toPayload, validateDraft, type Draft, type DraftErrors } from "./approval-edit-form";
 import { stamp } from "./approval-list";
+import { EventApprovalBody, eventOf, eventResolved, sameEvent, toEventDraft, validateEventDraft, type EventDraft, type EventDraftErrors, type EventPayload } from "./event-approval";
 
 export type WriteFacts = { connected: boolean; login: string | null; last4: string | null };
 
@@ -61,6 +62,7 @@ function Resolved({ a, onRetry, retrying }: { a: ApprovalDTO; onRetry: () => voi
   const nothing = nothingText(a.kind);
   const res = a.result as { number?: number; url?: string } | null;
   const repo = issue ? ((a.edited ?? a.original) as { repo: string }).repo : "";
+  const ev = issue ? null : eventResolved(a, at);
   let icon: IconName = "block";
   let tone = "text-red";
   let bg = "bg-[rgba(240,122,110,.06)]";
@@ -74,10 +76,10 @@ function Resolved({ a, onRetry, retrying }: { a: ApprovalDTO; onRetry: () => voi
     icon = "check_circle";
     tone = "text-green";
     bg = "bg-[rgba(79,209,161,.06)]";
-    text = issue ? `Issue created: ${repo}#${res?.number ?? ""}. Approved at ${at}.` : `Done. Approved at ${at}.`;
+    text = issue ? `Issue created: ${repo}#${res?.number ?? ""}. Approved at ${at}.` : (ev?.text ?? `Done. Approved at ${at}.`);
   } else if (a.status === "failed") {
     icon = "error";
-    text = issue ? `Approved, but GitHub rejected it: ${a.error ?? "unknown error"}. Nothing was created.` : `Approved, but it was rejected: ${a.error ?? "unknown error"}. ${nothing}`;
+    text = issue ? `Approved, but GitHub rejected it: ${a.error ?? "unknown error"}. Nothing was created.` : (ev?.text ?? `Approved, but it was rejected: ${a.error ?? "unknown error"}. ${nothing}`);
   } else if (a.status === "expired") {
     icon = "schedule";
     tone = "text-text-3";
@@ -97,6 +99,11 @@ function Resolved({ a, onRetry, retrying }: { a: ApprovalDTO; onRetry: () => voi
           View on GitHub
         </a>
       )}
+      {ev?.href && (
+        <a href={ev.href} className="rounded-6 border border-[rgba(255,255,255,.1)] px-2.5 py-1 text-[12.5px] text-text hover:bg-fill-2">
+          View in calendar
+        </a>
+      )}
       {a.status === "failed" && (
         <Button size="xs" loading={retrying} onClick={onRetry}>
           Retry
@@ -109,7 +116,7 @@ function Resolved({ a, onRetry, retrying }: { a: ApprovalDTO; onRetry: () => voi
 type DetailProps = { approval: ApprovalDTO; write: WriteFacts; onChange: (a: ApprovalDTO) => void };
 
 /** Dispatches on kind; the GitHub issue view is IssueApprovalBody, unchanged from Phase 3. */
-export function ApprovalDetail(props: DetailProps & { renderEvent?: (a: ApprovalDTO) => ReactNode }) {
+export function ApprovalDetail(props: DetailProps) {
   const issue = issueOf(props.approval);
   if (issue) return <IssueApprovalBody {...props} issue={issue} />;
   return <EventApprovalShell {...props} />;
@@ -123,23 +130,59 @@ const EVENT_VERB: Record<ApprovalKind, string> = {
 };
 const EVENT_OK: Record<ApprovalKind, string> = { issue: "", event_create: "ADD TO CALENDAR", event_update: "UPDATE EVENT", event_delete: "DELETE EVENT" };
 
-// Shared header, reason, expiry and decisions for event kinds; plan 04-20 supplies the body via renderEvent.
-function EventApprovalShell({ approval: a, onChange, renderEvent }: DetailProps & { renderEvent?: (a: ApprovalDTO) => ReactNode }) {
+// Event kinds: shared header, reason, expiry and decisions around EventApprovalBody.
+function EventApprovalShell({ approval: a, onChange }: DetailProps) {
   const { toast } = useShell();
-  const [busy, setBusy] = useState<"approve" | "reject" | "retry" | null>(null);
+  const [busy, setBusy] = useState<"approve" | "reject" | "save" | "retry" | null>(null);
+  const saved = eventOf(a);
+  const [draft, setDraft] = useState<EventDraft>(() => toEventDraft(saved));
+  const [editing, setEditing] = useState(false);
+  const [errors, setErrors] = useState<EventDraftErrors>({});
   const agent = getAgent(a.agentId);
-  const title = String(((a.edited ?? a.original) as { title?: unknown }).title ?? "");
-  const guard = async (k: NonNullable<typeof busy>, fn: () => Promise<{ ok: boolean; approval?: ApprovalDTO }>, done?: string) => {
+  const del = a.kind === "event_delete";
+  const pending = a.status === "pending";
+  const edited = a.edited != null && !sameEvent(saved, a.original as EventPayload);
+  const stale = a.targetChanged === true;
+  const guard = async (k: NonNullable<typeof busy>, fn: () => Promise<{ ok: boolean; approval?: ApprovalDTO; errors?: Record<string, string> }>, done?: string) => {
     setBusy(k);
     const r = await fn();
     setBusy(null);
     if (r.approval) onChange(r.approval);
-    if (!r.ok) return toast("Couldn't record that decision. Try again.", "error");
+    if (r.errors) {
+      setErrors(r.errors);
+      setEditing(true);
+      return false;
+    }
+    if (!r.ok) {
+      toast("Couldn't record that decision. Try again.", "error");
+      return false;
+    }
     if (done) toast(done);
+    return true;
   };
-  const del = a.kind === "event_delete";
+  const check = () => {
+    const v = validateEventDraft(a.tool, saved, draft);
+    if ("errors" in v) {
+      setErrors(v.errors);
+      setEditing(true);
+      return null;
+    }
+    setErrors({});
+    return v.payload;
+  };
+  const approve = () => {
+    const payload = editing ? check() : saved;
+    if (!payload) return;
+    void guard("approve", () => approveAction(a.id, editing && !sameEvent(payload, saved) ? payload : undefined), "Calendar updated");
+  };
+  const done = async () => {
+    const payload = check();
+    if (!payload) return;
+    if (!sameEvent(payload, saved) && !(await guard("save", () => saveEditAction(a.id, payload)))) return;
+    setEditing(false);
+  };
   return (
-    <article aria-label="Approval detail" className="overflow-hidden rounded-16 border border-[rgba(255,255,255,.08)]">
+    <article aria-label="Approval detail" className={`overflow-hidden rounded-16 border ${del ? "border-[rgba(240,122,110,.35)]" : "border-[rgba(255,255,255,.08)]"}`}>
       <header className="border-b border-[rgba(255,255,255,.06)] bg-[linear-gradient(180deg,rgba(232,184,106,.06),transparent)] px-[22px] py-5">
         <div className="mb-2 font-mono text-[10.5px] font-medium tracking-[0.07em]">
           <span className="uppercase" style={{ color: agent?.color }}>
@@ -147,32 +190,40 @@ function EventApprovalShell({ approval: a, onChange, renderEvent }: DetailProps 
           </span>{" "}
           <span className="text-text-3">wants to</span> <span>{EVENT_VERB[a.kind]}</span>
         </div>
-        <h2 className="text-[20px] leading-[1.3] font-medium break-words">{title}</h2>
+        <h2 className="text-[20px] leading-[1.3] font-medium break-words">{editing ? draft.title : saved.title}</h2>
       </header>
       {a.reason && (
         <section className="border-b border-[rgba(255,255,255,.06)] px-[22px] py-5">
           <Fact k="WHY">{a.reason}</Fact>
         </section>
       )}
-      {renderEvent?.(a)}
-      {a.status === "pending" ? (
-        <footer className="flex flex-wrap items-center gap-2.5 px-[22px] py-4 max-[719px]:flex-col max-[719px]:items-stretch [&_button]:text-[13px] [&_button]:font-semibold [&_button]:tracking-[0.06em] [&_button]:uppercase max-[719px]:[&_button]:h-12">
-          <Button
-            className={`h-[38px] min-w-[150px] rounded-9 px-[18px] ${del ? "bg-[#f07a6e] text-[#0b0c10]" : ""}`}
-            loading={busy === "approve"}
-            disabled={busy !== null && busy !== "approve"}
-            onClick={() => void guard("approve", () => approveAction(a.id), "Calendar updated")}
-          >
-            <Icon name="check" size={16} />
-            {EVENT_OK[a.kind]}
-          </Button>
-          <Button variant="destructive" className="h-[38px]" loading={busy === "reject"} disabled={busy !== null && busy !== "reject"} onClick={() => void guard("reject", () => rejectAction(a.id), "Approval rejected")}>
-            REJECT
-          </Button>
-          <span className="flex-1" />
-          <span className="font-mono text-[11px] text-text-3">
-            requested {formatHM(new Date(a.createdAt))} · expires {stamp(a.expiresAt)}
-          </span>
+      <EventApprovalBody approval={a} editing={editing} draft={draft} errors={errors} onDraft={setDraft} edited={edited} />
+      {pending ? (
+        <footer className="px-[22px] py-4">
+          {stale && <p className="mb-3 text-[12.5px] text-amber">This event changed after the request was prepared, so it can&apos;t be applied. Reject it and ask again.</p>}
+          <div className="flex flex-wrap items-center gap-2.5 max-[719px]:flex-col max-[719px]:items-stretch [&_button]:text-[13px] [&_button]:font-semibold [&_button]:tracking-[0.06em] [&_button]:uppercase max-[719px]:[&_button]:h-12">
+            <Button
+              className={`h-[38px] min-w-[150px] rounded-9 px-[18px] ${del ? "bg-[#f07a6e] text-[#0b0c10] hover:bg-[#f07a6e]" : ""}`}
+              loading={busy === "approve"}
+              disabled={stale || (busy !== null && busy !== "approve")}
+              onClick={approve}
+            >
+              <Icon name="check" size={16} />
+              {EVENT_OK[a.kind]}
+            </Button>
+            {!del && (
+              <Button variant="secondary" className="h-[38px]" loading={busy === "save"} disabled={busy !== null && busy !== "save"} onClick={() => (editing ? void done() : setEditing(true))}>
+                {editing ? "DONE" : "EDIT"}
+              </Button>
+            )}
+            <Button variant="destructive" className="h-[38px]" autoFocus={del} loading={busy === "reject"} disabled={busy !== null && busy !== "reject"} onClick={() => void guard("reject", () => rejectAction(a.id), "Approval rejected")}>
+              REJECT
+            </Button>
+            <span className="flex-1" />
+            <span className="font-mono text-[11px] text-text-3">
+              requested {formatHM(new Date(a.createdAt))} · expires {stamp(a.expiresAt)}
+            </span>
+          </div>
         </footer>
       ) : (
         <Resolved a={a} retrying={busy === "retry"} onRetry={() => void guard("retry", () => retryApprovalAction(a.id))} />

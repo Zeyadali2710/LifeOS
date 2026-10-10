@@ -6,6 +6,7 @@ import { nothingText, type ApprovalKind } from "@/lib/approval-kinds";
 import { isSafeGithubUrl } from "@/lib/safe-url";
 import { approveAction, rejectAction } from "@/server/approval-actions";
 import { issueOf } from "@/approvals/approval-detail";
+import { eventOf, whenText } from "@/approvals/event-approval";
 import { sydneyParts, formatHM } from "@/server/time";
 import { Badge } from "@/ui/badge";
 import { Button } from "@/ui/button";
@@ -105,6 +106,14 @@ export function ApprovalCard({ approval, onDecided }: { approval: ApprovalDTO; o
         {iss ? `${a.agentId} wants to create a GitHub issue in ${p.repo}` : `Organization agent wants to ${EV[a.kind].verb} ${String(ev.calendarLabel ?? "")}`}
       </p>
       <h4 className="text-[15px] font-medium break-words">{p.title}</h4>
+      {!iss && (
+        <div className="font-mono text-[11px] text-text-3">
+          {(() => {
+            const e = eventOf(a);
+            return a.kind === "event_delete" ? `Removes · ${whenText(e.start, e.end, e.allDay)}` : whenText(e.start, e.end, e.allDay);
+          })()}
+        </div>
+      )}
       {p.body && (
         <div>
           <p className={`${open ? "" : "line-clamp-4"} text-[13px] leading-normal break-words whitespace-pre-wrap text-text-2`}>{p.body}</p>
