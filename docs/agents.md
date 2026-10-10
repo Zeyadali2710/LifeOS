@@ -1,6 +1,6 @@
 # Agents
 
-Status: **implemented (Phase 3).** Orchestrator and Projects agent are live; the other nine domain agents are registered but show NOT CONNECTED until their phase.
+Status: **implemented (Phase 3; Organization agent added in Phase 4, see below).** Orchestrator, Projects and Organization (`organization`) agents are live; the other eight domain agents are registered but show NOT CONNECTED until their phase.
 
 ## Contract
 Every agent is a registry entry plus a set of tools:
@@ -67,3 +67,6 @@ DB is the source of truth. Context is assembled per call by deterministic retrie
 - **Free only** never falls back: it fails the run (`free_unavailable` or `private_blocked`) with a FAILED route step.
 - **Pricing.** Each LLM turn is stored in `run_turns` and priced with the model that served it; `:free` models cost US$0. The spend cap (D-15) applies to all runs. Settings -> AI and spend groups by turn model.
 - **Visibility.** Route steps (Routed / Fell back / Escalated / Switched / Failed) appear in run detail, the latest run on the agent page and reloaded threads (after the tool steps). Runs show a FREE/SONNET/OPUS chip; the Command Centre shows free vs paid counts.
+
+## Organization agent (Phase 4)
+Live. Tools: `calendar.list_events`, `calendar.find_free_slots`, `calendar.detect_conflicts`, `tasks.list` (READ), `calendar.create_event`, `calendar.update_event` (APPROVE), `calendar.delete_event` (HIGH_RISK). Tasks are READ-only for the agent. No tool can create recurring events. Every system prompt carries a Sydney "Current time" line. Calendar tool output marks the run private, so free models never see it unless `ai.free_private_ok` is on. Tiers: `permissions.md`.
