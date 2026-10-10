@@ -32,6 +32,14 @@ describe("env", () => {
     expect(() => parseEnv({ ...valid, DATABASE_URL: "mysql://u:p@h/db" })).toThrow(/DATABASE_URL/);
   });
 
+  it("treats GOOGLE_CLIENT_ID/SECRET as optional but non-empty", () => {
+    expect(parseEnv(valid).GOOGLE_CLIENT_ID).toBeUndefined();
+    const set = parseEnv({ ...valid, GOOGLE_CLIENT_ID: "id", GOOGLE_CLIENT_SECRET: "sec" });
+    expect(set.GOOGLE_CLIENT_ID).toBe("id");
+    expect(set.GOOGLE_CLIENT_SECRET).toBe("sec");
+    expect(() => parseEnv({ ...valid, GOOGLE_CLIENT_ID: "" })).toThrow(/GOOGLE_CLIENT_ID/);
+  });
+
   it("validates OPENROUTER_FREE_MODEL ends in :free", () => {
     expect(parseEnv(valid).OPENROUTER_FREE_MODEL).toBeUndefined();
     expect(parseEnv({ ...valid, OPENROUTER_FREE_MODEL: "a/b:free" }).OPENROUTER_FREE_MODEL).toBe("a/b:free");
