@@ -83,3 +83,12 @@ export function rangeLabel(view: "day" | "week" | "month", days: string[] | stri
 export function earlierCount(items: { start: string; end: string; allDay: boolean }[], ymd: string): number {
   return items.filter((i) => !i.allDay && ymdOf(new Date(i.start)) === ymd && ymdOf(new Date(i.end)) === ymd && hourOf(new Date(i.end)) <= START_HOUR).length;
 }
+
+/** "Thu 8 Oct" in Sydney. */
+export function shortDate(iso: string): string {
+  const p = sydneyParts(new Date(iso));
+  return `${p.weekday} ${p.day} ${MONTHS[p.month - 1]}`;
+}
+
+/** "HH:mm" in Sydney. */
+export const hmOf = (iso: string) => hm(new Date(iso));
