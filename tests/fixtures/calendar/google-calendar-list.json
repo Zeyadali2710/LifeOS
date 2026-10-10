@@ -1,0 +1,12 @@
+{
+  "kind": "calendar#calendarList",
+  "items": [
+    { "id": "me@gmail.com", "summary": "me@gmail.com", "accessRole": "owner", "primary": true, "timeZone": "Australia/Sydney" },
+    { "id": "family123@group.calendar.google.com", "summary": "Family", "summaryOverride": "Family stuff", "accessRole": "owner" },
+    { "id": "en.australian#holiday@group.v.calendar.google.com", "summary": "Holidays in Australia", "accessRole": "reader" },
+    { "id": "addressbook#contacts@group.v.calendar.google.com", "summary": "Birthdays", "accessRole": "reader" },
+    { "id": "team@example.com", "summary": "Team", "accessRole": "reader" },
+    { "id": "shared@example.com", "summary": "Shared", "accessRole": "writer" },
+    { "id": "old@example.com", "summary": "Old", "accessRole": "owner", "deleted": true }
+  ]
+}

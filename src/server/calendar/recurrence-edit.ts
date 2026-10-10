@@ -57,7 +57,7 @@ function setText(v: ICAL.Component, name: string, value: string) {
   else v.removeAllProperties(name);
 }
 
-function ruleFor(repeat: EventWrite["repeat"], start: string, allDay: boolean, tz: string): string | null {
+export function ruleFor(repeat: EventWrite["repeat"], start: string, allDay: boolean, tz: string): string | null {
   const p = zonedParts(tz, new Date(start));
   const day = allDay ? new Date(`${start.slice(0, 10)}T00:00:00Z`) : new Date(Date.UTC(p.y, p.m - 1, p.d));
   const by = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"][day.getUTCDay()];
