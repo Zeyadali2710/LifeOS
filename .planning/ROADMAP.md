@@ -139,7 +139,7 @@ Plans:
 - [x] 04-16-PLAN.md — Organization page: header, legend, Day/Week grid, event detail, states
 - [x] 04-17-PLAN.md — Organization agent live: calendar/task tools, tiers, taint, clock
 - [x] 04-18-PLAN.md — Today's plan card, tasks card, task dialog
-- [ ] 04-19-PLAN.md — Month view, event dialog with recurring scopes, page wiring
+- [x] 04-19-PLAN.md — Month view, event dialog with recurring scopes, page wiring
 - [x] 04-20-PLAN.md — Calendar approval views and AI panel events card
 - [ ] 04-21-PLAN.md — Palette scopes, e2e, validation, owner VM verification
 - [ ] 04-22-PLAN.md — Docs: integrations, database, third-party, agents, permissions, security
