@@ -130,7 +130,7 @@ Plans:
 - [ ] 04-07-PLAN.md — CalendarProvider seam, ical.js expander, recurring-edit transforms (ICS + Google)
 - [ ] 04-08-PLAN.md — Encrypted calendar connection store (incl. rotation) + calendar list store
 - [ ] 04-09-PLAN.md — Read model: range instances, conflicts, plan, header, tasks, agent query helpers
-- [ ] 04-10-PLAN.md — Live calendar/task SSE signals, tasks service + actions, reminder job
+- [x] 04-10-PLAN.md — Live calendar/task SSE signals, tasks service + actions, reminder job
 - [ ] 04-11-PLAN.md — Google client, provider and OAuth routes (state + PKCE)
 - [ ] 04-12-PLAN.md — iCloud CalDAV provider + connectIcloud
 - [ ] 04-13-PLAN.md — Provider-agnostic sync service (D-03 7-day activity, conflicts, RECONNECT)
