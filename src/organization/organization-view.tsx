@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import type { ReactNode } from "react";
 import type { CategoryKey } from "@/lib/calendar-categories";
@@ -20,6 +20,7 @@ import { OrganizationHeader, type ViewKey } from "./header";
 import { rangeLabel } from "./layout";
 import { MonthGrid } from "./month-grid";
 import { TasksCard } from "./tasks-card";
+import { TaskDialog } from "./task-dialog";
 import { TimeGrid } from "./time-grid";
 import { TodaysPlanCard } from "./plan-card";
 
@@ -90,6 +91,18 @@ export function OrganizationView({
     (prefill?: { start: string; end: string }) => (data.calendars.length > 0 ? setDlg({ kind: "create", prefill }) : router.push(CONNECTIONS)),
     [data.calendars.length, router],
   );
+  // palette commands: ?new=event|task opens the dialog, then the param is dropped
+  const newParam = useSearchParams().get("new");
+  const [taskOpen, setTaskOpen] = useState(false);
+  useEffect(() => {
+    if (newParam !== "event" && newParam !== "task") return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot URL command, param is dropped right after
+    if (newParam === "event") onNewEvent();
+    else setTaskOpen(true);
+    router.replace(`/organization?view=${view}&date=${date}`);
+    // only when the param changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [newParam]);
   const onEditEvent = (inst: OrgInstance) => setDlg({ kind: "edit", inst });
   const onDeleteEvent = (inst: OrgInstance) => setDlg({ kind: "delete", inst });
 
@@ -333,6 +346,7 @@ export function OrganizationView({
           </div>
         </aside>
       </div>
+      <TaskDialog open={taskOpen} onClose={() => setTaskOpen(false)} />
       <EventDetail
         key={sel?.key ?? "none"}
         inst={sel}

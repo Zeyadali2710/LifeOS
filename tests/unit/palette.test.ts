@@ -7,10 +7,10 @@ describe("buildPalette", () => {
     expect(groups.map((g) => g.label)).toEqual(["Commands", "Jump to"]);
     expect(noMatch).toBe(false);
     const cmds = groups[0]!.items;
-    expect(cmds.map((i) => i.label)).toEqual(["Open notifications", "Open approvals", "View agent activity", "Ask LifeOS", "Toggle compact sidebar", "Sign out"]);
+    expect(cmds.map((i) => i.label)).toEqual(["Open notifications", "Open approvals", "View agent activity", "New event", "New task", "Ask LifeOS", "Toggle compact sidebar", "Sign out"]);
     expect(cmds[1]!.hint).toBe("0 waiting");
-    expect(cmds[3]!.hint).toBe("Ctrl J");
-    expect(cmds[4]!.hint).toBe("Ctrl \\");
+    expect(cmds[5]!.hint).toBe("Ctrl J");
+    expect(cmds[6]!.hint).toBe("Ctrl \\");
     const jump = groups[1]!.items;
     expect(jump.map((i) => i.label)).toEqual(["Home", "Career", "Socials", "Outreach", "Organization", "Projects", "Knowledge", "Goals", "Agents", "Approvals", "Settings"]);
     expect(jump[0]!.hint).toBe("Alt 1");
@@ -41,6 +41,23 @@ describe("buildPalette", () => {
   it("caps groups at 4 items", () => {
     const { groups } = buildPalette("o", { wide: true });
     for (const g of groups.slice(1)) expect(g.items.length).toBeLessThanOrEqual(4);
+  });
+
+  it("data adds Events and Tasks groups, capped at 4, and scope narrows them", () => {
+    const hit = (n: number) => ({ id: `h${n}`, title: `Gym ${n}`, subtitle: "Thu 8 Oct 18:00 · Work", href: `/x${n}` });
+    const data = { events: [1, 2, 3, 4, 5].map(hit), tasks: [hit(9)] };
+    const all = buildPalette("gym", { wide: true, data });
+    expect(all.groups.map((g) => g.label)).toEqual(["Ask LifeOS", "Events", "Tasks"]);
+    expect(all.groups[1]!.items).toHaveLength(4);
+    expect(all.groups[1]!.items[0]!.run).toEqual({ type: "nav", href: "/x1" });
+    expect(buildPalette("gym", { wide: true, data, scope: "tasks" }).groups.map((g) => g.label)).toEqual(["Ask LifeOS", "Tasks"]);
+    expect(buildPalette("gym", { wide: true, data }).noMatch).toBe(false);
+  });
+
+  it("creation commands navigate to the organization page", () => {
+    const cmds = buildPalette("", { wide: true }).groups[0]!.items;
+    expect(cmds.find((i) => i.id === "cmd-new-event")!.run).toEqual({ type: "nav", href: "/organization?new=event" });
+    expect(cmds.find((i) => i.id === "cmd-new-task")!.run).toEqual({ type: "nav", href: "/organization?new=task" });
   });
 
   it("no match leaves only the Ask group", () => {
