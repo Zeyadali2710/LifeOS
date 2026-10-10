@@ -97,3 +97,26 @@ describe("hub", () => {
     expect(await count()).toBe(before! - 1);
   });
 });
+
+describe("hub signal frames", () => {
+  it("forwards calendar/task as id-only frames without a row load and drops overlong ids", async () => {
+    const load = vi.fn(async () => null);
+    const hub = createHub(t.url(), load);
+    hubs.push(hub);
+    const a = collect(hub);
+    await a.wait((e) => e.k === "resync");
+    const id = "00000000-0000-0000-0000-000000000001";
+    await notifyLive(t.handle(), "task", id);
+    await notifyLive(t.handle(), "calendar", "google_calendar");
+    await notifyLive(t.handle(), "task", "x".repeat(65));
+    await notifyLive(t.handle(), "calendar", "icloud_calendar"); // sentinel: arrives after the dropped frame
+    await a.wait((e) => e.k === "calendar", 2);
+    const sig = a.events.filter((e) => e.k === "task" || e.k === "calendar");
+    expect(sig).toEqual([
+      { k: "task", json: JSON.stringify({ id }) },
+      { k: "calendar", json: JSON.stringify({ id: "google_calendar" }) },
+      { k: "calendar", json: JSON.stringify({ id: "icloud_calendar" }) },
+    ]);
+    expect(load).not.toHaveBeenCalled();
+  });
+});
