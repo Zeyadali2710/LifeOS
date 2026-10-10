@@ -38,6 +38,7 @@ export function TimeGrid({
   view,
   canWrite,
   pending,
+  saving,
   onOpen,
   onOpenDay,
   onNewEvent,
@@ -51,6 +52,7 @@ export function TimeGrid({
   view: "day" | "week";
   canWrite: boolean;
   pending: boolean;
+  saving?: string | null; // instance key being written
   onOpen(i: OrgInstance): void;
   onOpenDay(ymd: string): void;
   onNewEvent(prefill?: { start: string; end: string }): void;
@@ -220,6 +222,7 @@ export function TimeGrid({
                           lane={lanes[i.key]!.lane}
                           lanes={lanes[i.key]!.lanes}
                           past={Date.parse(i.end) < now}
+                          saving={saving === i.key}
                           onOpen={onOpen}
                         />
                       ))}
