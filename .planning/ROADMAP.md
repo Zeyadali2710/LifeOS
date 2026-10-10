@@ -127,7 +127,7 @@ Plans:
 - [x] 04-04-PLAN.md — TDD pure conflicts, free slots, Today's plan, header numbers
 - [x] 04-05-PLAN.md — UI primitives: Dialog width/sheet, Checkbox, RadioGroup, isSafeUrl, icon subset
 - [x] 04-06-PLAN.md — Schema + [BLOCKING] migration 0003, DTO/category contracts, VM DB test runner, owner VM migrate gate
-- [ ] 04-07-PLAN.md — CalendarProvider seam, ical.js expander, recurring-edit transforms (ICS + Google)
+- [x] 04-07-PLAN.md — CalendarProvider seam, ical.js expander, recurring-edit transforms (ICS + Google)
 - [ ] 04-08-PLAN.md — Encrypted calendar connection store (incl. rotation) + calendar list store
 - [ ] 04-09-PLAN.md — Read model: range instances, conflicts, plan, header, tasks, agent query helpers
 - [x] 04-10-PLAN.md — Live calendar/task SSE signals, tasks service + actions, reminder job
