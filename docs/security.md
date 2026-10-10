@@ -28,3 +28,13 @@ LifeOS holds tokens to email, calendars, socials and code. Treat it as highly se
 - **Thread taint.** `agent_runs.saw_private` is set from a run's prompt and tool results (any model) and backfilled by migration 0002 for runs that existed before the upgrade. Once private data has entered a thread, further delegations in it are not routed free. This closes the paraphrase gap, where the model rewords a private repo name.
 - **Provider logging.** Requests set `data_collection: deny` (best effort; if no provider matches, one retry without it). Redaction paths cover the key.
 - **Residual risk.** Public data sent to a free model may be logged or trained on by the provider. Only public data should reach it; opt-in on removes the guarantee for private data too.
+
+## Calendar (Phase 4)
+- **OAuth state + PKCE.** Google connect keeps state and verifier in an encrypted, single-use cookie, behind the owner session. Redirects use `BETTER_AUTH_URL`.
+- **Secrets and rotation.** Google tokens and the iCloud app password are AES-256-GCM encrypted in `integrations`; no `last4` fragment is kept. Reconnecting overwrites the secret; no redeploy. The iCloud password is entered in Settings, never `.env`.
+- **SSRF pinning.** Google calls go to fixed Google hosts; CalDAV URLs must be https on `*.icloud.com`.
+- **ICS safety.** ICS is written only via ical.js setters (no string concatenation, so CRLF injection is not possible).
+- **Prompt injection.** Event text is untrusted; agent writes need approval and locked fields are rebuilt from the DB.
+- **Private-data taint.** Calendar tools are marked private: reading calendar data taints the run (`agent_runs.saw_private`), so free models are moved to Sonnet unless `ai.free_private_ok` is on.
+- **Audit.** Event metadata in `audit_log` carries ids and actor only, never event text.
+- **DB tests.** `scripts/vm-db-test.sh` uses a separate throwaway test Postgres on the VM, never production.

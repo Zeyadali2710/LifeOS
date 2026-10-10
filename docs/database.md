@@ -19,12 +19,20 @@ Postgres 17 + pgvector. Schema in `src/server/db/schema.ts` (Drizzle), migration
 | `activity_events` | Append-only global event stream; index `(occurred_at desc)`, `(type)` |
 | `notifications` | Category, priority, source, entity link, read/snooze/dismiss; partial index on unread |
 
+## Phase 4 tables (migration `0003_organization.sql`)
+| Table | Purpose |
+|---|---|
+| `calendars` | One row per synced calendar, FK to the connection (`integrations`) |
+| `calendar_events` | One row per Google event/override or per CalDAV resource (raw ICS kept for CalDAV). Recurring instances are expanded at read time, not stored |
+| `tasks` | Owner tasks; nullable `project_id` reserved for Phase 5 |
+
+Deletes cascade connections -> calendars -> calendar_events. Calendar secrets live encrypted in `integrations` (no `last4` kept).
+
 ## Planned (added by the phase that needs them)
 - Integrations: `integrations`, `sync_cursors`
 - Agents: `agents`, `agent_tools`, `permissions`, `agent_tasks`, `agent_runs`, `tool_calls`, `approvals`, `conversations`, `messages`
-- Work: `projects`, `project_links`, `milestones`, `tasks`, `task_dependencies`, `repositories`, `repo_activity`
+- Work: `projects`, `project_links`, `milestones`, `task_dependencies`, `repositories`, `repo_activity`
 - Goals: `visions`, `goals`, `objectives`, `goal_projects`
-- Calendar: `calendars`, `calendar_events`
 - Comms: `contacts`, `email_threads`, `emails`, `email_labels`
 - Outreach: `outreach_events` (SAVED→INTERESTED→ATTENDING→ATTENDED→FOLLOW_UP), `outreach_event_contacts`
 - Social: `social_accounts`, `social_posts`, `social_metrics`
