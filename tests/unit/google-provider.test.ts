@@ -104,4 +104,18 @@ describe("google provider", () => {
     expect(rd.upserts[0]).toMatchObject({ remoteId: "weekly1_20261026T093000Z", status: "cancelled", recurringRemoteId: "weekly1" });
     for (const call of [...a.f.calls, ...b.f.calls, ...c.f.calls, ...d.f.calls]) expect(call.url).toContain("sendUpdates=none");
   });
+
+  it("following on a COUNT series keeps the remaining COUNT; PATCH clears the other date field", async () => {
+    const counted = { ...weekly!, recurrence: ["RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=6"] };
+    const ok = { id: "x", start: { dateTime: "2026-10-20T11:00:00+11:00" }, end: { dateTime: "2026-10-20T12:00:00+11:00" } };
+    const { p, f } = make({ [`PATCH ${EV}/weekly1`]: json({ ...ok, id: "weekly1" }), [`POST ${EV}`]: json({ ...ok, id: "new1" }) });
+    // weekly1 starts Mon 5 Oct; editing from 19 Oct leaves 2 occurrences before it.
+    await p.update(ref, counted, input, "following", "2026-10-18T22:30:00.000Z");
+    expect((f.calls[1]!.body as { recurrence: string[] }).recurrence).toEqual(["RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=4"]);
+    expect(f.calls[0]!.body).toMatchObject({ recurrence: [expect.stringContaining("UNTIL=")] });
+
+    const a = make({ [`PATCH ${EV}/single1`]: json({ ...ok, id: "single1" }) });
+    await a.p.update(ref, single!, { ...input, allDay: true, start: "2026-10-20", end: "2026-10-21" }, "all", null);
+    expect(a.f.calls[0]!.body).toMatchObject({ start: { date: "2026-10-20", dateTime: null }, end: { date: "2026-10-21", dateTime: null } });
+  });
 });
