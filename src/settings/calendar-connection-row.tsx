@@ -10,6 +10,7 @@ import { useShell } from "@/shell/shell-provider";
 import { Button } from "@/ui/button";
 import { Dialog } from "@/ui/dialog";
 import { Icon } from "@/ui/icon";
+import { CalendarList } from "./calendar-list";
 import { ConnectionRow, type RowStatus } from "./connection-row";
 import { IcloudForm } from "./icloud-form";
 
@@ -108,7 +109,7 @@ export function CalendarConnectionRow({ conn, notice, open = false }: { conn: Ca
         )}
         {connected && (
           <div className="flex flex-col gap-3 rounded-12 border border-[rgba(255,255,255,.07)] bg-surface px-4 py-3">
-            {/* calendar list mounts here (Task 3) */}
+            <CalendarList calendars={conn.calendars} defaultOpen={open} />
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[rgba(255,255,255,.07)] pt-3">
               {conn.lastSyncError ? (
                 <span className="font-mono text-[11px] text-red">
