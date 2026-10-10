@@ -15,6 +15,7 @@ export function EventBlock({
   lane,
   lanes,
   past,
+  saving = false,
   onOpen,
 }: {
   inst: OrgInstance;
@@ -24,6 +25,7 @@ export function EventBlock({
   lane: number;
   lanes: number;
   past: boolean;
+  saving?: boolean;
   onOpen(inst: OrgInstance): void;
 }) {
   const cat = inst.category;
@@ -49,6 +51,7 @@ export function EventBlock({
         style={{
           top,
           height,
+          opacity: saving ? 0.7 : undefined,
           left: `calc(${lane * w}% + 4px)`,
           width: `calc(${w}% - 8px)`,
           background: past ? color + "14" : fill(cat ?? "work"),

@@ -14,10 +14,14 @@ import { EmptyState } from "@/ui/empty-state";
 import { InlineError } from "@/ui/inline-error";
 import { Skeleton } from "@/ui/skeleton";
 import { CategoryLegend } from "./category-legend";
+import { DeleteFlow, EventDialog } from "./event-dialog";
 import { EventDetail } from "./event-detail";
 import { OrganizationHeader, type ViewKey } from "./header";
 import { rangeLabel } from "./layout";
+import { MonthGrid } from "./month-grid";
+import { TasksCard } from "./tasks-card";
 import { TimeGrid } from "./time-grid";
+import { TodaysPlanCard } from "./plan-card";
 
 export type OrgInstance = InstanceDTO & { repeatText: string | null };
 export type OrgData = Omit<Awaited<ReturnType<typeof organizationData>>, "instances"> & { instances: OrgInstance[] };
@@ -62,12 +66,6 @@ export function OrganizationView({
   today,
   nowIso,
   eventParam,
-  month,
-  aside,
-  dialogs,
-  onNewEvent = () => {},
-  onEditEvent = () => {},
-  onDeleteEvent = () => {},
 }: {
   data: OrgData;
   view: ViewKey;
@@ -76,19 +74,24 @@ export function OrganizationView({
   today: string;
   nowIso: string;
   eventParam: string | null;
-  /** slots for plan 04-19: month grid, plan/tasks column, event dialogs */
-  month?: ReactNode;
-  aside?: ReactNode;
-  dialogs?: ReactNode;
-  onNewEvent?(prefill?: { start: string; end: string }): void;
-  onEditEvent?(i: OrgInstance): void;
-  onDeleteEvent?(i: OrgInstance): void;
 }) {
   const router = useRouter();
   const { toast } = useShell();
   const [navPending, startNav] = useTransition();
   const [selected, setSelected] = useState<string | null>(null);
   const { state } = data;
+  const [dlg, setDlg] = useState<
+    { kind: "create"; prefill?: { start: string; end: string } } | { kind: "edit" | "delete"; inst: OrgInstance } | null
+  >(null);
+  const [saving, setSaving] = useState<string | null>(null);
+  const gridRef = useRef<HTMLDivElement>(null);
+  // no writable calendar: every New event path goes to Settings instead
+  const onNewEvent = useCallback(
+    (prefill?: { start: string; end: string }) => (data.calendars.length > 0 ? setDlg({ kind: "create", prefill }) : router.push(CONNECTIONS)),
+    [data.calendars.length, router],
+  );
+  const onEditEvent = (inst: OrgInstance) => setDlg({ kind: "edit", inst });
+  const onDeleteEvent = (inst: OrgInstance) => setDlg({ kind: "delete", inst });
 
   const go = useCallback(
     (v: ViewKey, d: string) => startNav(() => router.push(`/organization?view=${v}&date=${d}`)),
@@ -213,7 +216,17 @@ export function OrganizationView({
   } else if (navPending) {
     body = <Skeleton className="h-[480px] w-full rounded-14" />;
   } else if (view === "month") {
-    body = month ?? null;
+    body = (
+      <MonthGrid
+        days={data.range.days}
+        month={date.slice(0, 7)}
+        instances={visible}
+        today={today}
+        selected={date}
+        onOpenDay={(d) => go("day", d)}
+        onMonth={(dir) => go("month", shift("month", date, dir))}
+      />
+    );
   } else {
     body = (
       <TimeGrid
@@ -225,6 +238,7 @@ export function OrganizationView({
         view={view}
         canWrite={data.calendars.length > 0}
         pending={navPending}
+        saving={saving}
         onOpen={(i) => setSelected(i.key)}
         onOpenDay={(d) => go("day", d)}
         onNewEvent={onNewEvent}
@@ -293,9 +307,31 @@ export function OrganizationView({
           ) : null}
         </>
       )}
+      <a
+        href="#todays-plan"
+        className="sr-only focus:not-sr-only focus:mb-3 focus:inline-block focus:rounded-7 focus:bg-fill-2 focus:px-3 focus:py-1.5 focus:text-[13px] focus:text-text"
+      >
+        Skip to today&apos;s plan
+      </a>
       <div className="flex flex-wrap items-start gap-5">
-        <div className="order-2 min-w-0 flex-[1_1_640px] tab:order-1">{body}</div>
-        {aside && <aside className="order-1 min-w-[280px] flex-[0_1_340px] tab:order-2 max-tab:w-full max-tab:flex-[1_1_100%]">{aside}</aside>}
+        <div
+          ref={gridRef}
+          role="region"
+          aria-label="Calendar"
+          tabIndex={-1}
+          className="order-2 min-w-0 flex-[1_1_640px] outline-none tab:order-1"
+        >
+          {body}
+        </div>
+        {/* desktop: one column; below 720 the plan sits above the grid and tasks below it */}
+        <aside className="order-1 min-w-[280px] flex-[0_1_340px] tab:order-2 max-tab:contents">
+          <div id="todays-plan" tabIndex={-1} className="mb-4 outline-none max-tab:order-1 max-tab:w-full max-tab:flex-[1_1_100%]">
+            <TodaysPlanCard plan={data.plan} conflicts={data.conflicts} calendars={data.calendars} defaultCalendarId={data.defaultCalendarId} today={today} />
+          </div>
+          <div className="max-tab:order-3 max-tab:w-full max-tab:flex-[1_1_100%]">
+            <TasksCard tasks={data.tasks.today} allOpen={data.tasks.open} completed={data.tasks.completed} today={today} />
+          </div>
+        </aside>
       </div>
       <EventDetail
         key={sel?.key ?? "none"}
@@ -312,7 +348,31 @@ export function OrganizationView({
           onDeleteEvent(i);
         }}
       />
-      {dialogs}
+      {dlg?.kind === "create" && (
+        <EventDialog mode="create" prefill={dlg.prefill} calendars={data.calendars} defaultCalendarId={data.defaultCalendarId} onClose={() => setDlg(null)} onSaving={setSaving} />
+      )}
+      {dlg?.kind === "edit" && (
+        <EventDialog
+          key={dlg.inst.key}
+          mode="edit"
+          instance={dlg.inst}
+          calendars={data.calendars}
+          defaultCalendarId={data.defaultCalendarId}
+          onClose={() => setDlg(null)}
+          onSaving={setSaving}
+          onDelete={onDeleteEvent}
+        />
+      )}
+      {dlg?.kind === "delete" && (
+        <DeleteFlow
+          instance={dlg.inst}
+          calendars={data.calendars}
+          onClose={(deleted) => {
+            setDlg(null);
+            if (deleted) requestAnimationFrame(() => gridRef.current?.focus());
+          }}
+        />
+      )}
     </div>
   );
 }
