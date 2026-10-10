@@ -1,0 +1,25 @@
+{
+  "pages": [
+    {
+      "kind": "calendar#events",
+      "nextPageToken": "PAGE2",
+      "items": [
+        { "kind": "calendar#event", "id": "single1", "etag": "\"e-single1\"", "status": "confirmed", "htmlLink": "https://www.google.com/calendar/event?eid=single1", "summary": "Dentist", "location": "Clinic", "start": { "dateTime": "2026-10-14T09:00:00+11:00", "timeZone": "Australia/Sydney" }, "end": { "dateTime": "2026-10-14T10:00:00+11:00", "timeZone": "Australia/Sydney" } },
+        { "kind": "calendar#event", "id": "weekly1", "etag": "\"e-weekly1\"", "status": "confirmed", "summary": "Standup", "start": { "dateTime": "2026-10-05T09:30:00+11:00", "timeZone": "Australia/Sydney" }, "end": { "dateTime": "2026-10-05T09:45:00+11:00", "timeZone": "Australia/Sydney" }, "recurrence": ["RRULE:FREQ=WEEKLY;BYDAY=MO", "EXDATE;TZID=Australia/Sydney:20261012T093000"] },
+        { "kind": "calendar#event", "id": "weekly1_20261019T223000Z", "etag": "\"e-exc1\"", "status": "confirmed", "summary": "Standup (moved)", "recurringEventId": "weekly1", "originalStartTime": { "dateTime": "2026-10-19T09:30:00+11:00", "timeZone": "Australia/Sydney" }, "start": { "dateTime": "2026-10-20T11:00:00+11:00", "timeZone": "Australia/Sydney" }, "end": { "dateTime": "2026-10-20T11:15:00+11:00", "timeZone": "Australia/Sydney" } }
+      ]
+    },
+    {
+      "kind": "calendar#events",
+      "nextSyncToken": "SYNC1",
+      "items": [
+        { "kind": "calendar#event", "id": "weekly1_20261026T223000Z", "etag": "\"e-exc2\"", "status": "cancelled", "recurringEventId": "weekly1", "originalStartTime": { "dateTime": "2026-10-26T09:30:00+11:00", "timeZone": "Australia/Sydney" } },
+        { "kind": "calendar#event", "id": "gone1", "status": "cancelled" },
+        { "kind": "calendar#event", "id": "allday1", "etag": "\"e-allday1\"", "status": "confirmed", "summary": "Trip", "start": { "date": "2026-11-02" }, "end": { "date": "2026-11-04" } },
+        { "kind": "calendar#event", "id": "declined1", "etag": "\"e-declined1\"", "status": "confirmed", "summary": "Optional sync", "start": { "dateTime": "2026-10-15T14:00:00+11:00" }, "end": { "dateTime": "2026-10-15T15:00:00+11:00" }, "attendees": [{ "email": "boss@example.com", "responseStatus": "accepted" }, { "email": "me@gmail.com", "self": true, "responseStatus": "declined" }] },
+        { "kind": "calendar#event", "id": "free1", "etag": "\"e-free1\"", "status": "confirmed", "summary": "Focus block", "transparency": "transparent", "start": { "dateTime": "2026-10-16T13:00:00+11:00", "timeZone": "Australia/Sydney" }, "end": { "dateTime": "2026-10-16T14:00:00+11:00", "timeZone": "Australia/Sydney" } },
+        { "kind": "calendar#event", "id": "ancient1", "etag": "\"e-ancient1\"", "status": "confirmed", "summary": "Years ago", "start": { "dateTime": "2020-01-01T09:00:00+11:00" }, "end": { "dateTime": "2020-01-01T10:00:00+11:00" } }
+      ]
+    }
+  ]
+}
