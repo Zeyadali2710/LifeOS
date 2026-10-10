@@ -9,6 +9,7 @@ import { QUEUES } from "@/server/queue";
 import { handleExpire, handleResume } from "./jobs/agents";
 import { handleGithubSync } from "./jobs/github-sync";
 import { handleSweep } from "./jobs/sweep";
+import { handleTaskReminders } from "./jobs/task-reminders";
 
 const HEARTBEAT = "system.heartbeat";
 
@@ -32,9 +33,12 @@ async function main() {
   await boss.createQueue(QUEUES.resume, { retryLimit: 3, retryBackoff: true });
   await boss.createQueue(QUEUES.expire);
   await boss.createQueue(QUEUES.sweep);
+  await boss.createQueue(QUEUES.taskReminders);
   await boss.schedule(QUEUES.githubSync, "*/15 * * * *", {}, { singletonKey: "github.sync" });
   await boss.schedule(QUEUES.expire, "*/5 * * * *");
   await boss.schedule(QUEUES.sweep, "*/5 * * * *");
+  await boss.schedule(QUEUES.taskReminders, "* * * * *", {}, { singletonKey: "task.reminders" });
+  await boss.work(QUEUES.taskReminders, async () => handleTaskReminders());
   await boss.work(QUEUES.githubSync, async () => handleGithubSync());
   await boss.work(QUEUES.expire, async () => handleExpire());
   await boss.work(QUEUES.sweep, async () => handleSweep());

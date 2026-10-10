@@ -21,7 +21,7 @@ type NotificationInput = { category: NotificationCategory; title: string; body?:
 const notify = (k: string, id: string) => sql`select pg_notify(${CHANNEL}, ${JSON.stringify({ k, id })})`;
 
 /** NOTIFY a run/approval change to live listeners. Never throws. */
-export async function notifyLive(handle: DB, k: "run" | "approval", id: string): Promise<void> {
+export async function notifyLive(handle: DB, k: "run" | "approval" | "calendar" | "task", id: string): Promise<void> {
   try {
     await handle.execute(notify(k, id));
   } catch (err) {
