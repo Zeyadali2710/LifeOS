@@ -134,7 +134,7 @@ Plans:
 - [x] 04-11-PLAN.md — Google client, provider and OAuth routes (state + PKCE)
 - [x] 04-12-PLAN.md — iCloud CalDAV provider + connectIcloud
 - [x] 04-13-PLAN.md — Provider-agnostic sync service (D-03 7-day activity, conflicts, RECONNECT)
-- [ ] 04-14-PLAN.md — Wire providers + worker sync, event write service, owner event actions
+- [x] 04-14-PLAN.md — Wire providers + worker sync, event write service, owner event actions
 - [ ] 04-15-PLAN.md — Settings: calendar connection rows, iCloud form, calendar list
 - [ ] 04-16-PLAN.md — Organization page: header, legend, Day/Week grid, event detail, states
 - [ ] 04-17-PLAN.md — Organization agent live: calendar/task tools, tiers, taint, clock
