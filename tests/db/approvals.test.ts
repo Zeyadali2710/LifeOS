@@ -245,7 +245,7 @@ describe("calendar kind", () => {
     const s2 = await suspended();
     await h().update(approvals).set({ tool: "calendar.create_event", originalPayload: ev, expiresAt: new Date(Date.now() - 1000) }).where(eq(approvals.id, s2.id));
     await expireDue(h());
-    const [note] = await h().select().from(notifications);
+    const [note] = await h().select().from(notifications).where(eq(notifications.title, "Approval expired"));
     expect(note!.body).toContain("Nothing was created.");
   });
 });
