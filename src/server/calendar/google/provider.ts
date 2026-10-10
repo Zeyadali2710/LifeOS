@@ -1,6 +1,7 @@
 // Google Calendar adapter (ORG-01/02): list, incremental sync via syncToken, writes with sendUpdates=none + If-Match.
 import { z } from "zod";
 import { ProviderError } from "../errors";
+import { expand } from "../expand";
 import { googlePlan, ruleFor } from "../recurrence-edit";
 import type { CalendarProvider, CalendarRef, EventWrite, NormalizedEvent, RemoteCalendar, StoredEvent, SyncResult, SyncWindow, WriteResult, WriteScope } from "../types";
 import type { createGoogle } from "./client";
@@ -77,15 +78,17 @@ const outside = (n: NormalizedEvent, w: SyncWindow) => {
   return !!n.startAt && !!n.endAt && (n.endAt < w.from || n.startAt > w.to);
 };
 
-const timeBody = (iso: string, allDay: boolean, tz: string) => (allDay ? { date: iso.slice(0, 10) } : { dateTime: iso, timeZone: tz });
+// patch: PATCH nulls the other field so switching all-day <-> timed does not leave the old one behind.
+const timeBody = (iso: string, allDay: boolean, tz: string, patch: boolean) =>
+  allDay ? { date: iso.slice(0, 10), ...(patch ? { dateTime: null } : {}) } : { dateTime: iso, timeZone: tz, ...(patch ? { date: null } : {}) };
 
-function bodyFor(input: EventWrite, withRecurrence: boolean) {
+function bodyFor(input: EventWrite, withRecurrence: boolean, patch = false) {
   const b: Record<string, unknown> = {
     summary: input.title,
     description: input.description,
     location: input.location,
-    start: timeBody(input.start, input.allDay, input.timeZone),
-    end: timeBody(input.end, input.allDay, input.timeZone),
+    start: timeBody(input.start, input.allDay, input.timeZone, patch),
+    end: timeBody(input.end, input.allDay, input.timeZone, patch),
     transparency: input.showAs === "free" ? "transparent" : "opaque",
   };
   if (input.marker) b.extendedProperties = { private: { lifeosApproval: input.marker } };
@@ -94,6 +97,15 @@ function bodyFor(input: EventWrite, withRecurrence: boolean) {
     b.recurrence = rule ? [`RRULE:${rule}`] : [];
   }
   return b;
+}
+
+// Occurrences before the edited one, so "this and following" on a COUNT series keeps the right remaining COUNT.
+function before(ev: StoredEvent, recurring: boolean, scope: WriteScope, instanceStart: string | null): number | undefined {
+  if (!recurring || scope !== "following" || !instanceStart) return undefined;
+  const t0 = (ev.startAt ?? new Date(`${ev.startDate}T00:00:00Z`)).getTime() - 86_400_000;
+  const at = ev.allDay ? Date.parse(`${instanceStart.slice(0, 10)}T00:00:00Z`) : Date.parse(instanceStart);
+  const ms = (s: string) => (ev.allDay ? Date.parse(`${s.slice(0, 10)}T00:00:00Z`) : Date.parse(s));
+  return expand([ev], new Date(t0), new Date(at + 86_400_000)).filter((i) => i.instanceStart !== null && ms(i.instanceStart) < at).length;
 }
 
 const cal = (id: string) => `/calendars/${encodeURIComponent(id)}/events`;
@@ -169,10 +181,10 @@ export function createGoogleProvider({ google }: { google: ReturnType<typeof cre
       kind,
       scope: recurring ? scope : "all",
       calendarRemoteId: ref.remoteId,
-      master: { remoteId: ev.remoteId, recurrence: ev.recurrence ?? [], allDay: ev.allDay, first },
+      master: { remoteId: ev.remoteId, recurrence: ev.recurrence ?? [], allDay: ev.allDay, first, occurrencesBefore: before(ev, recurring, scope, instanceStart) },
       instanceStart: recurring ? instanceStart : null,
       // recurrence is only rewritten when the whole series is edited
-      body: input ? bodyFor(input, scope === "all" || !recurring) : undefined,
+      body: input ? bodyFor(input, scope === "all" || !recurring, true) : undefined,
     });
     const upserts: NormalizedEvent[] = [];
     const deletes: string[] = [];

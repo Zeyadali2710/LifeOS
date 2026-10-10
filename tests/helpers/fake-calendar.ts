@@ -1,6 +1,6 @@
 // Labelled mock (ADR-010): tests only, never wired in production.
 import type { ProviderName } from "@/server/calendar/errors";
-import type { CalendarProvider, CalendarRef, RemoteCalendar, SyncResult, SyncWindow } from "@/server/calendar/types";
+import type { CalendarProvider, CalendarRef, RemoteCalendar, SyncResult, SyncWindow, WriteResult } from "@/server/calendar/types";
 
 export type FakeCalendarState = {
   calendars: RemoteCalendar[];
@@ -9,13 +9,20 @@ export type FakeCalendarState = {
   /** Thrown from listCalendars / sync when set. */
   listError?: Error;
   syncError?: Error;
+  /** Scripted writes; an unscripted write throws so a test notices an unexpected call. */
+  create?: CalendarProvider["create"];
+  update?: CalendarProvider["update"];
+  remove?: CalendarProvider["remove"];
 };
 
-export type FakeCalendarProvider = CalendarProvider & { calls: { list: number; sync: { ref: CalendarRef; window: SyncWindow }[] } };
+type Args<K extends "create" | "update" | "remove"> = Parameters<CalendarProvider[K]>;
+export type FakeCalendarProvider = CalendarProvider & {
+  calls: { list: number; sync: { ref: CalendarRef; window: SyncWindow }[]; create: Args<"create">[]; update: Args<"update">[]; remove: Args<"remove">[] };
+};
 
 export function fakeCalendarProvider(name: ProviderName, state: FakeCalendarState): FakeCalendarProvider {
-  const calls: FakeCalendarProvider["calls"] = { list: 0, sync: [] };
-  const unscripted = async () => {
+  const calls: FakeCalendarProvider["calls"] = { list: 0, sync: [], create: [], update: [], remove: [] };
+  const unscripted = async (): Promise<WriteResult> => {
     throw new Error("fake calendar provider: write not scripted");
   };
   return {
@@ -33,8 +40,17 @@ export function fakeCalendarProvider(name: ProviderName, state: FakeCalendarStat
       if (!r) return { upserts: [], deletes: [], cursor: ref.syncCursor, reset: false };
       return typeof r === "function" ? r() : r;
     },
-    create: unscripted,
-    update: unscripted,
-    remove: unscripted,
+    async create(...a) {
+      calls.create.push(a);
+      return (state.create ?? unscripted)(...a);
+    },
+    async update(...a) {
+      calls.update.push(a);
+      return (state.update ?? unscripted)(...a);
+    },
+    async remove(...a) {
+      calls.remove.push(a);
+      return (state.remove ?? unscripted)(...a);
+    },
   };
 }
