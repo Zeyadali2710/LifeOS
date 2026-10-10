@@ -1,4 +1,5 @@
 import { inArray } from "drizzle-orm";
+import { getCalendarConnections } from "@/server/calendar/connections";
 import { getFreePrivateOk } from "@/server/agents/routing";
 import { MODEL_LABELS } from "@/server/agents/registry";
 import { sydneyMonthBounds } from "@/server/agents/pricing";
@@ -17,10 +18,13 @@ import { SignOut } from "../sign-out";
 export const metadata = { title: "Settings · LifeOS" };
 export const dynamic = "force-dynamic";
 
-export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ section?: string }> }) {
+const GOOGLE_RESULTS = ["connected", "cancelled", "state", "scope", "failed", "not_configured"];
+
+export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ section?: string; google?: string; n?: string }> }) {
   await requireOwner();
-  const { section: raw } = await searchParams;
+  const { section: raw, google: g, n } = await searchParams;
   const section = raw === "ai" ? "ai" : "connections";
+  const googleResult = g && GOOGLE_RESULTS.includes(g) ? { google: g, n: n && /^\d{1,4}$/.test(n) ? Number(n) : null } : null;
   const now = new Date();
   const h = db();
 
@@ -50,6 +54,8 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         privacy={Object.fromEntries(priv.map((r) => [r.n, Boolean(r.p)]))}
         anthropic={Boolean(env().ANTHROPIC_API_KEY)}
         freePrivateOk={await getFreePrivateOk(h)}
+        calendarConnections={await getCalendarConnections(h, { googleConfigured: Boolean(env().GOOGLE_CLIENT_ID && env().GOOGLE_CLIENT_SECRET) })}
+        googleResult={googleResult}
       />
     );
   }

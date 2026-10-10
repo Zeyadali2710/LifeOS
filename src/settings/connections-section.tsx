@@ -1,37 +1,60 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { ConnectionDTO } from "@/lib/agent-types";
+import type { CalendarConnectionDTO } from "@/lib/calendar-types";
 import { setFreePrivateAction, syncNowAction } from "@/server/settings-actions";
 import { formatHM } from "@/server/time";
 import { useShell } from "@/shell/shell-provider";
 import { Button } from "@/ui/button";
 import { Disclosure } from "@/ui/disclosure";
 import { Icon } from "@/ui/icon";
+import { CalendarConnectionRow } from "./calendar-connection-row";
 import { ConnectionRow, type RowStatus } from "./connection-row";
 
 const SYNC_MS = 15 * 60_000;
 const expiry = (iso: string | null) =>
   iso ? ` · expires ${new Date(iso).toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric", timeZone: "Australia/Sydney" })}` : "";
 const mono = "font-mono";
+const GOOGLE_NOTES: Record<string, string> = {
+  cancelled: "Google sign-in was cancelled. Nothing was saved.",
+  scope: "Google didn't grant calendar access. Connect again and allow calendar access.",
+  not_configured: "Google sign-in isn't set up on the server yet.",
+};
 
 export function ConnectionsSection({
   connections,
   privacy,
   anthropic,
   freePrivateOk,
+  calendarConnections,
+  googleResult,
 }: {
   connections: ConnectionDTO[];
   privacy: Record<string, boolean>;
   anthropic: boolean;
   freePrivateOk: boolean;
+  calendarConnections: CalendarConnectionDTO[];
+  googleResult: { google: string; n: number | null } | null;
 }) {
   const router = useRouter();
   const { toast } = useShell();
   const [syncing, setSyncing] = useState(false);
   const [priv, setPriv] = useState(freePrivateOk);
   const or = connections.find((c) => c.id === "openrouter")!;
+  const g = googleResult?.google;
+  const [googleNote] = useState(() => GOOGLE_NOTES[g ?? ""]);
+  const [googleOpen] = useState(g === "connected");
+
+  // Announce the OAuth return once, then drop the params from the URL.
+  useEffect(() => {
+    if (!googleResult) return;
+    if (g === "connected") toast(`Google Calendar connected · ${googleResult.n ?? 0} calendars`);
+    else if (!GOOGLE_NOTES[g ?? ""]) toast("Couldn't save that. Try again.", "error");
+    router.replace("/settings?section=connections");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function togglePrivate(next: boolean) {
     setPriv(next);
@@ -176,6 +199,9 @@ export function ConnectionsSection({
             </>
           }
         />
+        {calendarConnections.map((c) => (
+          <CalendarConnectionRow key={c.id} conn={c} notice={c.id === "google_calendar" ? googleNote : undefined} open={c.id === "google_calendar" && googleOpen} />
+        ))}
       </div>
     </div>
   );
