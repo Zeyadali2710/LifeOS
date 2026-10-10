@@ -142,7 +142,7 @@ Plans:
 - [x] 04-19-PLAN.md — Month view, event dialog with recurring scopes, page wiring
 - [x] 04-20-PLAN.md — Calendar approval views and AI panel events card
 - [ ] 04-21-PLAN.md — Palette scopes, e2e, validation, owner VM verification
-- [ ] 04-22-PLAN.md — Docs: integrations, database, third-party, agents, permissions, security
+- [x] 04-22-PLAN.md — Docs: integrations, database, third-party, agents, permissions, security
 
 ### Phase 5–11
 Goals per phase list above; detailed when each phase is planned (`/gsd-plan-phase N`).
