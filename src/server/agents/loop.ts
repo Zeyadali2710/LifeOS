@@ -29,12 +29,20 @@ import {
   sensitiveRepoNames,
 } from "./routing";
 import { agentConfig, isPaused } from "./runs";
+import { formatHM, sydneyParts, TZ, tzLabel } from "../time";
 import { assertUnderCap } from "./spend";
 import { appendMessage, threadHistory } from "./threads";
 import { TOOLS, toolLabel } from "./tools";
-import { toAnthropicTool, type LlmClient, type LlmUsage, type Tool } from "./types";
+import { apiName, toAnthropicTool, type LlmClient, type LlmUsage, type Tool } from "./types";
 
 type Msg = Anthropic.MessageParam;
+
+/** "Thu 8 Oct 2026 19:44 AEDT (Australia/Sydney)" so agents can resolve relative days. */
+function clock(d: Date) {
+  const p = sydneyParts(d);
+  const mon = new Intl.DateTimeFormat("en-AU", { timeZone: TZ, month: "short" }).format(d);
+  return `${p.weekday} ${p.day} ${mon} ${p.year} ${formatHM(d)} ${tzLabel(d)} (${TZ})`;
+}
 
 export type CreateRunResult = { ok: true; runId: string } | { ok: false; code: "paused" | "cap" | "not_live" | "private_blocked"; capUsd?: number };
 
@@ -208,6 +216,12 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
       tainted = true;
       await h.update(agentRuns).set({ sawPrivate: true }).where(eq(agentRuns.id, runId));
     };
+    // Tools flagged private (calendar/tasks) taint the run as soon as they have been called.
+    const taintByTool = async (names: string[]) => {
+      if (tainted || !names.some((n) => Object.values(allowed).some((t) => t.private && (t.name === n || apiName(t.name) === n)))) return;
+      tainted = true;
+      await h.update(agentRuns).set({ sawPrivate: true }).where(eq(agentRuns.id, runId));
+    };
     // One-way switch (D-05). Persisting the model before the next turn keeps a resumed run on Sonnet.
     const switchToSonnet = async (kind: "fallback" | "escalated" | "private", rawReason: string): Promise<RunStatus | null> => {
       const reason = rawReason.slice(0, 200);
@@ -242,6 +256,7 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
         try {
           messages.push(await buildToolResults(h, runId, ids));
           await taint(messages.at(-1));
+          await taintByTool(tail.content.flatMap((b) => (b.type === "tool_use" ? [b.name] : [])));
         } catch (err) {
           if (!(err instanceof PendingToolError)) throw err;
           return await suspend();
@@ -304,7 +319,7 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
         turn = await opts.llm.stream(
           {
             model,
-            system: isFree(model) ? `${agent.systemPrompt} ${FREE_SUFFIX}` : agent.systemPrompt,
+            system: `${isFree(model) ? `${agent.systemPrompt} ${FREE_SUFFIX}` : agent.systemPrompt} Current time: ${clock(now())}.`,
             messages,
             tools: isFree(model) && !pinnedFree ? [...anthropicTools, ESCALATE_TOOL] : anthropicTools,
             maxTokens: RUN_LIMITS.turnMaxTokens,
@@ -393,6 +408,7 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
       if (waiting) return await suspend();
       messages.push(await buildToolResults(h, runId, uses.map((b) => b.id)));
       await taint(messages.at(-1));
+      await taintByTool(uses.map((u) => u.name));
       await persist();
     }
   } catch (err) {

@@ -5,19 +5,25 @@ import { redact, summarize } from "@/server/agents/redact";
 import { apiName, toAnthropicTool } from "@/server/agents/types";
 
 describe("registry", () => {
-  it("lists 11 agents in order with only orchestrator and projects live", () => {
+  it("lists 11 agents in order with orchestrator, organization and projects live", () => {
     expect(AGENTS.map((a) => a.id)).toEqual([
       "orchestrator", "home", "career", "social", "outreach", "organization", "projects", "knowledge", "goals", "finance", "agentops",
     ]);
-    expect(AGENTS.filter((a) => a.live).map((a) => a.id)).toEqual(["orchestrator", "projects"]);
+    expect(AGENTS.filter((a) => a.live).map((a) => a.id)).toEqual(["orchestrator", "organization", "projects"]);
     expect(Object.fromEntries(AGENTS.map((a) => [a.id, a.arrival]))).toMatchObject({
-      home: "Phase 9", career: "Phase 5", social: "Phase 7", outreach: "Phase 6", organization: "Phase 4",
+      home: "Phase 9", career: "Phase 5", social: "Phase 7", outreach: "Phase 6", organization: null,
       knowledge: "Phase 8", goals: "Phase 8", finance: null, agentops: null,
     });
   });
   it("uses the decided default models", () => {
     expect(getAgent("orchestrator")?.defaultModel).toBe(MODELS.opus);
     expect(getAgent("projects")?.defaultModel).toBe(MODELS.sonnet);
+  });
+  it("makes organization live with the seven calendar and task tools", () => {
+    const o = getAgent("organization");
+    expect(o).toMatchObject({ live: true, routable: true, requiresTools: true, defaultModel: MODELS.sonnet });
+    expect(o?.tools).toHaveLength(7);
+    expect(getAgent("orchestrator")?.systemPrompt).toContain("Delegate calendar, schedule and task questions to the organization agent.");
   });
   it("maps every tool name to a valid Anthropic name", () => {
     for (const t of AGENTS.flatMap((a) => a.tools)) expect(apiName(t)).toMatch(/^[a-zA-Z0-9_-]{1,64}$/);
