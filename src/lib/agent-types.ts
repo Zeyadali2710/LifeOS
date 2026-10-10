@@ -16,6 +16,8 @@ export type RouteEventKind = "routed" | "fallback" | "escalated" | "private" | "
 // seq orders the event among tool steps; fractional allowed.
 export type RouteEvent = { at: string; kind: RouteEventKind; from: string | null; to: string | null; reason: string; seq: number };
 
+export type ResultItemDTO = { key: "EVENT" | "FREE" | "TASK"; category: string | null; title: string; subtitle: string; href: string };
+
 export type StepDTO = {
   id: string;
   runId: string;
@@ -30,6 +32,8 @@ export type StepDTO = {
   inputSummary: string | null;
   outputSummary: string | null;
   error: string | null;
+  items: ResultItemDTO[] | null;
+  itemsMore: number;
 };
 
 export type RunDTO = {
@@ -72,6 +76,8 @@ export type ApprovalDTO = {
   result: unknown;
   error: string | null;
   repoPrivate: boolean | null;
+  /** Event update/delete only: the target changed since the request was prepared (server refuses regardless). */
+  targetChanged: boolean | null;
 };
 
 export type ThreadDTO = { id: string; title: string; updatedAt: string; messageCount: number };
@@ -99,6 +105,7 @@ export type AgentStatusDTO = {
   mtdUsd: number;
   capUsd: number;
   firstRepo: string | null;
+  calendarConnected: boolean;
 };
 
 export type ConnectionId = "github_read" | "github_write" | "openrouter";

@@ -1,7 +1,7 @@
 import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { AgentStatusDTO, ApprovalDTO, ChatBlockCode, ThreadDetailDTO, TurnDTO } from "@/lib/agent-types";
 import type { DB } from "../db/client";
-import { agentRuns, approvals, githubRepos, threadMessages, threads, toolCalls } from "../db/schema";
+import { agentRuns, approvals, connections, githubRepos, threadMessages, threads, toolCalls } from "../db/schema";
 import { routeSteps, toApprovalDTO, toRunDTO, toStepDTO } from "./dto";
 import { getLlm } from "./llm";
 import { createRun } from "./loop";
@@ -12,14 +12,15 @@ import { appendMessage, createThread } from "./threads";
 import { toolLabel } from "./tools";
 
 export async function assistantStatus(h: DB, now: Date = new Date()): Promise<AgentStatusDTO> {
-  const [c, cap, paused, repo] = await Promise.all([
+  const [c, cap, paused, repo, cal] = await Promise.all([
     counts(h),
     capStatus(h, now),
     isPaused(h, "orchestrator"),
     h.select({ n: githubRepos.fullName }).from(githubRepos).orderBy(sql`${githubRepos.pushedAt} desc nulls last`).limit(1),
+    h.select({ id: connections.id }).from(connections).where(and(inArray(connections.id, ["google_calendar", "icloud_calendar"]), eq(connections.status, "connected"))).limit(1),
   ]);
   const assistant = !getLlm() ? "no_key" : cap.reached ? "cap" : paused ? "paused" : c.running > 0 ? "working" : "ready";
-  return { assistant, running: c.running, queued: c.queued, approvalsWaiting: c.approvalsWaiting, mtdUsd: cap.mtdUsd, capUsd: cap.capUsd, firstRepo: repo[0]?.n ?? null };
+  return { assistant, running: c.running, queued: c.queued, approvalsWaiting: c.approvalsWaiting, mtdUsd: cap.mtdUsd, capUsd: cap.capUsd, firstRepo: repo[0]?.n ?? null, calendarConnected: cal.length > 0 };
 }
 
 export type StartChatResult = { ok: true; runId: string; threadId: string } | { ok: false; code: ChatBlockCode; capUsd?: number };

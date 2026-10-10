@@ -3,7 +3,7 @@ import type { ApprovalDTO } from "@/lib/agent-types";
 import { approvalKind, checkLocked, nothingText, payloadSchemaFor } from "@/lib/approval-kinds";
 import { ProviderError, providerLabel } from "../calendar/errors";
 import type { DB } from "../db/client";
-import { agentRuns, approvals, auditLog, githubRepos, toolCalls } from "../db/schema";
+import { agentRuns, approvals, auditLog, calendarEvents, githubRepos, toolCalls } from "../db/schema";
 import { emitActivity, notifyLive } from "../events";
 import { GithubError } from "../github/client";
 import { log } from "../log";
@@ -297,11 +297,17 @@ async function toDTOs(h: DB, rows: Row[]): Promise<ApprovalDTO[]> {
   const repos = new Map(
     (await h.select({ n: githubRepos.fullName, p: githubRepos.private }).from(githubRepos)).map((r) => [r.n, r.p]),
   );
+  // Event update/delete: is the stored etag still the one the request was prepared against?
+  const targets = (r: Row) => (r.status === "pending" && ["event_update", "event_delete"].includes(approvalKind(r.tool)) ? [String((r.originalPayload as { eventId?: unknown }).eventId)] : []);
+  const ids = [...new Set(rows.flatMap(targets))].filter((i) => /^[0-9a-f-]{36}$/i.test(i));
+  const etags = new Map(ids.length ? (await h.select({ id: calendarEvents.id, e: calendarEvents.etag }).from(calendarEvents).where(inArray(calendarEvents.id, ids))).map((x) => [x.id, x.e]) : []);
   return rows.flatMap((r) => {
     try {
       // Event kinds: calendar data is always private (repoPrivate null).
       const priv = approvalKind(r.tool) === "issue" ? (repos.get(String((r.originalPayload as { repo?: unknown }).repo)) ?? null) : null;
-      return [toApprovalDTO(r, priv)];
+      const p = r.originalPayload as { eventId?: string; etag?: string | null };
+      const changed = targets(r).length ? !etags.has(String(p.eventId)) || etags.get(String(p.eventId)) !== (p.etag ?? null) : null;
+      return [toApprovalDTO(r, priv, changed)];
     } catch (err) {
       log.error({ err, id: r.id }, "approval DTO failed");
       return [];

@@ -4,7 +4,7 @@ import type { StepDTO } from "@/lib/agent-types";
 
 const step = (o: Partial<StepDTO>): StepDTO => ({
   id: "s1", runId: "r1", seq: 1, kind: "tool", actor: "projects", action: "List PRs", tool: "github.list_prs",
-  state: "done", startedAt: null, durationMs: 2100, inputSummary: null, outputSummary: null, error: null, ...o,
+  state: "done", startedAt: null, durationMs: 2100, inputSummary: null, outputSummary: null, error: null, items: null, itemsMore: 0, ...o,
 });
 
 describe("stepView", () => {
