@@ -9,11 +9,11 @@ import { Dialog } from "@/ui/dialog";
 import { StatusDot } from "@/ui/status-dot";
 import { TokenForm } from "./token-form";
 
-export type RowStatus = "connected" | "none" | "error";
+export type RowStatus = "connected" | "none" | "error" | "syncing";
 
-const LABEL = { connected: "CONNECTED", none: "NOT CONNECTED", error: "RECONNECT" } as const;
-const DOT = { connected: "online", none: "none", error: "attention" } as const;
-const COLOR = { connected: "text-green", none: "text-text-3", error: "text-red" } as const;
+const LABEL = { connected: "CONNECTED", none: "NOT CONNECTED", error: "RECONNECT", syncing: "SYNCING" } as const;
+const DOT = { connected: "online", none: "none", error: "attention", syncing: "running" } as const;
+const COLOR = { connected: "text-green", none: "text-text-3", error: "text-red", syncing: "text-indigo-text" } as const;
 
 export function ConnectionRow({
   id,
@@ -25,6 +25,7 @@ export function ConnectionRow({
   noun,
   removeBody,
   readOnly = false,
+  action,
   onChanged,
   children,
 }: {
@@ -37,6 +38,7 @@ export function ConnectionRow({
   noun?: string;
   removeBody?: string;
   readOnly?: boolean;
+  action?: ReactNode;
   onChanged?: (message: string) => void;
   children?: ReactNode;
 }) {
@@ -65,10 +67,11 @@ export function ConnectionRow({
           <div className="text-[12.5px] text-text-3">{detail}</div>
         </div>
         <span className={`inline-flex items-center gap-1.5 font-mono text-[10.5px] font-semibold tracking-[0.1em] ${COLOR[status]}`}>
-          <StatusDot state={DOT[status]} />
+          <StatusDot state={DOT[status]} pulse={status === "syncing"} />
           {LABEL[status]}
         </span>
-        {!readOnly && (
+        {action}
+        {!readOnly && !action && (
           <Button
             size="md"
             className="h-8 min-w-[110px]"
