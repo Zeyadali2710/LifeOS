@@ -110,7 +110,7 @@ export function createGoogle({ getToken, fetch = globalThis.fetch, timeoutMs = 1
     let sync: string | null = null;
     for (let i = 0; i < maxPages; i++) {
       const sep = path.includes("?") ? "&" : "?";
-      const r = (await call("GET", token ? `${path}${sep}pageToken=${encodeURIComponent(token)}` : path, page))!;
+      const r: z.infer<typeof page> = (await call("GET", token ? `${path}${sep}pageToken=${encodeURIComponent(token)}` : path, page))!;
       items.push(...(r.items ?? []));
       sync = r.nextSyncToken ?? sync;
       token = r.nextPageToken ?? null;

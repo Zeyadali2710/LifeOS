@@ -6,6 +6,7 @@ import events from "../fixtures/calendar/google-events.json";
 import list from "../fixtures/calendar/google-calendar-list.json";
 import { fakeGoogle, json } from "../helpers/fake-google";
 
+type GE = Parameters<typeof normalizeGoogleEvent>[0];
 const ref: CalendarRef = { id: "c1", connectionId: "google_calendar", remoteId: "me@gmail.com", access: "owner", syncCursor: null, ctag: null };
 const window = { from: new Date("2026-09-01T00:00:00Z"), to: new Date("2026-12-31T00:00:00Z") };
 const EV = "/calendar/v3/calendars/me%40gmail.com/events";
@@ -15,7 +16,7 @@ const make = (routes: Parameters<typeof fakeGoogle>[0]) => {
 };
 const input: EventWrite = { title: "T", start: "2026-10-20T00:00:00.000Z", end: "2026-10-20T01:00:00.000Z", allDay: false, timeZone: "Australia/Sydney", location: "", description: "", showAs: "busy", repeat: "keep", marker: null };
 const stored = (n: ReturnType<typeof normalizeGoogleEvent>): StoredEvent => ({ ...n, id: "row", calendarId: "c1" });
-const [single, weekly] = events.pages[0]!.items.map((i) => stored(normalizeGoogleEvent(i)));
+const [single, weekly] = (events.pages[0]!.items as unknown as GE[]).map((i) => stored(normalizeGoogleEvent(i)));
 
 describe("google provider", () => {
   it("lists calendars", async () => {
@@ -33,7 +34,7 @@ describe("google provider", () => {
   });
 
   it("normalises event shapes", () => {
-    const by = Object.fromEntries(events.pages.flatMap((p) => p.items).map((i) => [i.id, normalizeGoogleEvent(i)]));
+    const by = Object.fromEntries((events.pages as unknown as { items: GE[] }[]).flatMap((p) => p.items).map((i) => [i.id, normalizeGoogleEvent(i)]));
     expect(by.single1).toMatchObject({ allDay: false, tz: "Australia/Sydney", title: "Dentist" });
     expect(by.single1!.startAt!.toISOString()).toBe("2026-10-13T22:00:00.000Z");
     expect(by.weekly1!.recurrence).toHaveLength(2);
