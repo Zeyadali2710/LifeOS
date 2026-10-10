@@ -49,6 +49,8 @@ export type Tool<I = unknown, O = unknown> = {
   output: z.ZodType<O>;
   tier: ToolTier;
   sideEffect: boolean;
+  /** Output is private owner data; taints the run so free models never see it (D-09). */
+  private?: boolean;
   /** Reason the tool is unavailable, or null when usable. */
   available?(ctx: ToolContext): Promise<string | null>;
   /** Re-resolve entity ids against the DB; throws ToolError "not_found". */
