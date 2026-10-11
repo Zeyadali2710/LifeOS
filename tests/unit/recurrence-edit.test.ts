@@ -136,11 +136,13 @@ describe("googlePlan", () => {
 
   it("following update patches master UNTIL and posts a new series", () => {
     const ops = plan({ scope: "following" });
-    expect(ops[0]).toEqual({
+    // continuation first, truncation second (CR-A02)
+    expect(ops[1]).toEqual({
       method: "PATCH", path: `${root}/ev1?sendUpdates=none`,
       body: { recurrence: ["RRULE:FREQ=WEEKLY;BYDAY=TH;UNTIL=20261021T215959Z", "EXDATE;TZID=Australia/Sydney:20261015T090000"] },
     });
-    expect(ops[1]).toEqual({ method: "POST", path: `${root}?sendUpdates=none`, body: { summary: "S", recurrence: ["RRULE:FREQ=WEEKLY;BYDAY=TH"] } });
+    expect(ops[0]).toEqual({ method: "POST", path: `${root}?sendUpdates=none`, body: { summary: "S", recurrence: ["RRULE:FREQ=WEEKLY;BYDAY=TH"] } });
+    expect(plan({ scope: "following", newId: "lifeosabcf" })[0]!.body).toMatchObject({ id: "lifeosabcf" });
     expect(plan({ scope: "following", kind: "delete" })).toHaveLength(1);
   });
 
@@ -148,7 +150,7 @@ describe("googlePlan", () => {
     const m = { remoteId: "ad", recurrence: ["RRULE:FREQ=DAILY;COUNT=10"], allDay: true };
     expect(plan({ master: m, scope: "this", instanceStart: "2026-10-22" })[0]!.path).toBe(`${root}/ad_20261022?sendUpdates=none`);
     const ops = plan({ master: { ...m, occurrencesBefore: 4 }, scope: "following", instanceStart: "2026-10-22" });
-    expect(ops[0]!.body).toEqual({ recurrence: ["RRULE:FREQ=DAILY;UNTIL=20261021"] });
-    expect(ops[1]!.body).toMatchObject({ recurrence: ["RRULE:FREQ=DAILY;COUNT=6"] });
+    expect(ops[1]!.body).toEqual({ recurrence: ["RRULE:FREQ=DAILY;UNTIL=20261021"] });
+    expect(ops[0]!.body).toMatchObject({ recurrence: ["RRULE:FREQ=DAILY;COUNT=6"] });
   });
 });

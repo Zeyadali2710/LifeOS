@@ -91,10 +91,10 @@ describe("google provider", () => {
 
     const b = make({ [`PATCH ${EV}/weekly1`]: json({ ...ok, id: "weekly1" }), [`POST ${EV}`]: json({ ...ok, id: "new1" }) });
     const r = await b.p.update(ref, weekly!, input, "following", "2026-10-26T09:30:00+11:00");
-    expect(b.f.calls.map((c) => c.method)).toEqual(["PATCH", "POST"]);
-    expect(b.f.calls[0]!.headers.get("if-match")).toBe('"e-weekly1"');
-    expect(b.f.calls[1]!.headers.get("if-match")).toBeNull();
-    expect(r.upserts.map((u) => u.remoteId)).toEqual(["weekly1", "new1"]);
+    expect(b.f.calls.map((c) => c.method)).toEqual(["POST", "PATCH"]);
+    expect(b.f.calls[1]!.headers.get("if-match")).toBe('"e-weekly1"');
+    expect(b.f.calls[0]!.headers.get("if-match")).toBeNull();
+    expect(r.upserts.map((u) => u.remoteId)).toEqual(["new1", "weekly1"]);
 
     const c = make({ [`DELETE ${EV}/single1`]: () => new Response(null, { status: 410 }) });
     expect(await c.p.remove(ref, single!, "all", null)).toEqual({ upserts: [], deletes: ["single1"] });
@@ -105,14 +105,31 @@ describe("google provider", () => {
     for (const call of [...a.f.calls, ...b.f.calls, ...c.f.calls, ...d.f.calls]) expect(call.url).toContain("sendUpdates=none");
   });
 
+  it("following split creates the continuation first and removes it if truncating the master fails (CR-A02)", async () => {
+    const ok = { id: "x", start: { dateTime: "2026-10-20T11:00:00+11:00" }, end: { dateTime: "2026-10-20T12:00:00+11:00" } };
+    const { p, f } = make({
+      [`POST ${EV}`]: json({ ...ok, id: "lifeosappr1f" }),
+      [`PATCH ${EV}/weekly1`]: json({}, 503),
+      [`DELETE ${EV}/lifeosappr1f`]: () => new Response(null, { status: 204 }),
+    });
+    await expect(p.update(ref, weekly!, { ...input, marker: "appr-1" }, "following", "2026-10-26T09:30:00+11:00")).rejects.toMatchObject({ kind: "unavailable" });
+    expect(f.calls.map((c) => c.method)).toEqual(["POST", "PATCH", "DELETE"]);
+    expect(f.calls[0]!.body).toMatchObject({ id: "lifeosappr1f" });
+
+    // retry after a lost response: 409 adopts the continuation, then truncates
+    const r = make({ [`POST ${EV}`]: json({}, 409), [`GET ${EV}/lifeosappr1f`]: json({ ...ok, id: "lifeosappr1f" }), [`PATCH ${EV}/weekly1`]: json({ ...ok, id: "weekly1" }) });
+    const out = await r.p.update(ref, weekly!, { ...input, marker: "appr-1" }, "following", "2026-10-26T09:30:00+11:00");
+    expect(out.upserts.map((u) => u.remoteId)).toEqual(["lifeosappr1f", "weekly1"]);
+  });
+
   it("following on a COUNT series keeps the remaining COUNT; PATCH clears the other date field", async () => {
     const counted = { ...weekly!, recurrence: ["RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=6"] };
     const ok = { id: "x", start: { dateTime: "2026-10-20T11:00:00+11:00" }, end: { dateTime: "2026-10-20T12:00:00+11:00" } };
     const { p, f } = make({ [`PATCH ${EV}/weekly1`]: json({ ...ok, id: "weekly1" }), [`POST ${EV}`]: json({ ...ok, id: "new1" }) });
     // weekly1 starts Mon 5 Oct; editing from 19 Oct leaves 2 occurrences before it.
     await p.update(ref, counted, input, "following", "2026-10-18T22:30:00.000Z");
-    expect((f.calls[1]!.body as { recurrence: string[] }).recurrence).toEqual(["RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=4"]);
-    expect(f.calls[0]!.body).toMatchObject({ recurrence: [expect.stringContaining("UNTIL=")] });
+    expect((f.calls[0]!.body as { recurrence: string[] }).recurrence).toEqual(["RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=4"]);
+    expect(f.calls[1]!.body).toMatchObject({ recurrence: [expect.stringContaining("UNTIL=")] });
 
     const a = make({ [`PATCH ${EV}/single1`]: json({ ...ok, id: "single1" }) });
     await a.p.update(ref, single!, { ...input, allDay: true, start: "2026-10-20", end: "2026-10-21" }, "all", null);

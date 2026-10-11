@@ -191,6 +191,8 @@ type GEdit = {
   master: { remoteId: string; recurrence: string[]; allDay: boolean; occurrencesBefore?: number; first?: boolean };
   instanceStart: string | null;
   body?: Record<string, unknown>;
+  /** Deterministic id for the "following" continuation, so a retry adopts it instead of duplicating (CR-A02). */
+  newId?: string;
 };
 type Op = { method: "PATCH" | "POST" | "DELETE"; path: string; body?: Record<string, unknown> };
 
@@ -209,12 +211,11 @@ export function googlePlan(e: GEdit): Op[] {
   const until = m.allDay ? prevDay(inst).replaceAll("-", "") : basicUtc(new Date(Date.parse(inst) - 1000));
   const rrule = m.recurrence.find((l) => /^RRULE:/i.test(l))?.slice(6) ?? "";
   const lines = m.recurrence.map((l) => (/^RRULE:/i.test(l) ? `RRULE:${stripEnding(rrule)};UNTIL=${until}` : l));
-  const ops: Op[] = [{ method: "PATCH", path: ev(m.remoteId), body: { recurrence: lines } }];
-  if (e.kind === "update") {
-    const count = /COUNT=(\d+)/.exec(rrule);
-    // ponytail: without occurrencesBefore a COUNT series continues without its COUNT, callers pass it from expand()
-    const next = count && m.occurrencesBefore != null ? `${stripEnding(rrule)};COUNT=${Math.max(1, Number(count[1]) - m.occurrencesBefore)}` : stripEnding(rrule);
-    ops.push({ method: "POST", path: `${base}${Q}`, body: { ...e.body, recurrence: [`RRULE:${next}`] } });
-  }
-  return ops;
+  const truncate: Op = { method: "PATCH", path: ev(m.remoteId), body: { recurrence: lines } };
+  if (e.kind === "delete") return [truncate];
+  const count = /COUNT=(\d+)/.exec(rrule);
+  // ponytail: without occurrencesBefore a COUNT series continues without its COUNT, callers pass it from expand()
+  const next = count && m.occurrencesBefore != null ? `${stripEnding(rrule)};COUNT=${Math.max(1, Number(count[1]) - m.occurrencesBefore)}` : stripEnding(rrule);
+  // Create the continuation before truncating the master: a failure in between leaves a duplicated tail, never a lost one (CR-A02).
+  return [{ method: "POST", path: `${base}${Q}`, body: { ...e.body, ...(e.newId ? { id: e.newId } : {}), recurrence: [`RRULE:${next}`] } }, truncate];
 }

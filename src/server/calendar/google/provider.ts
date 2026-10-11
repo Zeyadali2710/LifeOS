@@ -185,11 +185,21 @@ export function createGoogleProvider({ google }: { google: ReturnType<typeof cre
       instanceStart: recurring ? instanceStart : null,
       // recurrence is only rewritten when the whole series is edited
       body: input ? bodyFor(input, scope === "all" || !recurring, true) : undefined,
+      newId: input?.marker ? `lifeos${input.marker.replaceAll("-", "")}f` : undefined,
     });
     const upserts: NormalizedEvent[] = [];
     const deletes: string[] = [];
     const own = `/${encodeURIComponent(ev.remoteId)}?`;
-    for (const op of ops) {
+    let created: string | null = null; // "following" continuation, removed again if the truncation fails (CR-A02)
+    try {
+      for (const op of ops) created = (await exec(op)) ?? created;
+    } catch (e) {
+      if (created) await google.call("DELETE", `${cal(ref.remoteId)}/${encodeURIComponent(created)}${Q}`, z.unknown()).catch(() => undefined);
+      throw e;
+    }
+    return { upserts, deletes };
+
+    async function exec(op: (typeof ops)[number]): Promise<string | null> {
       // If-Match only where the op targets the stored event itself (not a virtual instance id or a create).
       const ifMatch = op.method !== "POST" && op.path.includes(own) ? ev.etag : null;
       if (op.method === "DELETE") {
@@ -210,11 +220,21 @@ export function createGoogleProvider({ google }: { google: ReturnType<typeof cre
             }),
           );
         }
-      } else {
-        const n = await one(op.method, op.path, { body: op.body, ifMatch });
-        if (n) upserts.push(n);
+        return null;
       }
+      let n: NormalizedEvent | null;
+      try {
+        n = await one(op.method, op.path, { body: op.body, ifMatch });
+      } catch (e) {
+        // Retried approved split: the continuation from the first attempt exists, adopt it.
+        const id = op.method === "POST" ? op.body?.id : undefined;
+        if (!(typeof id === "string" && e instanceof ProviderError && e.kind === "conflict")) throw e;
+        n = await one("GET", `${cal(ref.remoteId)}/${encodeURIComponent(id)}`);
+        // A compensated (deleted) earlier attempt keeps its id; never truncate the master onto a cancelled continuation.
+        if (n?.status === "cancelled") throw new ProviderError("google", "client", 409, "Google rejected the change.");
+      }
+      if (n) upserts.push(n);
+      return op.method === "POST" ? (n?.remoteId ?? null) : null;
     }
-    return { upserts, deletes };
   }
 }

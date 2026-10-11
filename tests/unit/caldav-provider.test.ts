@@ -91,6 +91,16 @@ describe("caldav provider", () => {
     await expect(p.remove(cal(), { ...fresh, id: "e", calendarId: "c" }, "all", null)).resolves.toMatchObject({ deletes: [ev.remoteId] });
   });
 
+  it("following split creates the new series first and removes it again if the master write fails (CR-A02)", async () => {
+    const { f, p, ev } = await seeded();
+    const stale = { ...ev, etag: '"stale"' };
+    await expect(p.update(cal(), stale, { ...input, marker: "appr-1" }, "following", "2026-10-21T22:00:00.000Z")).rejects.toMatchObject({ kind: "conflict" });
+    expect(f.calls.filter((c) => c !== "object")).toEqual(["calendars", "objects", "create", "update", "remove"]);
+    expect([...f.store.keys()]).toEqual([URL1]);
+    const out = await p.update(cal(), ev, { ...input, marker: "appr-1" }, "following", "2026-10-21T22:00:00.000Z");
+    expect(out.upserts.map((u) => u.remoteId)).toContain("appr-1-f@lifeos");
+  });
+
   it("maps auth failures without leaking provider text", async () => {
     const f = fakeDav({ failWith: new Error("401 Unauthorized for secret-pw") });
     const e = await createCaldavProvider({ dav: f.dav }).listCalendars().catch((x: ProviderError) => x);

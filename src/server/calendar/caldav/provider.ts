@@ -160,7 +160,8 @@ export function createCaldavProvider({ dav }: { dav: DavClient }): CalendarProvi
     const calUrl = assertIcloudUrl(dir(cal.remoteId)).href;
     if (!ev.url) throw fail("client", 0);
     const url = assertIcloudUrl(ev.url).href;
-    const newUid = `${crypto.randomUUID()}@lifeos`;
+    // Deterministic per approval so a retried split adopts its continuation (put() treats 412 as "already there").
+    const newUid = input?.marker ? `${input.marker}-f@lifeos` : `${crypto.randomUUID()}@lifeos`;
     let r: { updated: string | null; created: string | null };
     try {
       r = icsApply(icsOf(ev), { kind, scope, instanceStart, input, newUid });
@@ -168,15 +169,22 @@ export function createCaldavProvider({ dav }: { dav: DavClient }): CalendarProvi
       throw fail("client", 0);
     }
     const out: WriteResult = { upserts: [], deletes: [] };
-    if (r.updated === null) {
-      const s = await guard(() => dav.remove({ url, etag: ev.etag }));
-      if (s !== 404) ok(s);
-      out.deletes.push(ev.remoteId);
-    } else {
-      ok(await guard(() => dav.update({ url, etag: ev.etag, data: r.updated! })));
-      out.upserts.push(await fetchOne(calUrl, url));
+    // Create the continuation before truncating the master: a failure in between leaves a duplicated tail, never a lost one (CR-A02).
+    const made = r.created ? await put(cal, newUid, r.created) : null;
+    if (made) out.upserts.push(made);
+    try {
+      if (r.updated === null) {
+        const s = await guard(() => dav.remove({ url, etag: ev.etag }));
+        if (s !== 404) ok(s);
+        out.deletes.push(ev.remoteId);
+      } else {
+        ok(await guard(() => dav.update({ url, etag: ev.etag, data: r.updated! })));
+        out.upserts.push(await fetchOne(calUrl, url));
+      }
+    } catch (e) {
+      if (made?.url) await dav.remove({ url: made.url, etag: made.etag }).catch(() => undefined);
+      throw e;
     }
-    if (r.created) out.upserts.push(await put(cal, newUid, r.created));
     return out;
   }
 
