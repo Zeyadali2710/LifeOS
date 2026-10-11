@@ -38,8 +38,10 @@ const MSG: Record<string, string> = {
 
 const fail = (kind: ProviderErrorKind, status: number) => new ProviderError("icloud", kind, status, MSG[kind] ?? MSG.client!);
 
+// Only 401 pauses the connection; 403 is a forbidden resource (e.g. a shared read-only calendar), not bad credentials (CR-A03).
 export function statusError(status: number): ProviderError {
-  if (status === 401 || status === 403) return fail("auth", status);
+  if (status === 401) return fail("auth", status);
+  if (status === 403) return fail("client", status);
   if (status === 404) return fail("not_found", status);
   if (status === 412) return fail("conflict", 412);
   if (status === 429) return fail("rate_limit", 429);
@@ -50,7 +52,8 @@ export function statusError(status: number): ProviderError {
 export function transportError(e: unknown): ProviderError {
   if (e instanceof ProviderError) return e;
   const m = e instanceof Error ? e.message : "";
-  return /\b401\b|unauthori|credential|\b403\b/i.test(m) ? fail("auth", 401) : fail("unavailable", 0);
+  if (/\b403\b|forbidden/i.test(m)) return fail("client", 403);
+  return /\b401\b|unauthori|credential/i.test(m) ? fail("auth", 401) : fail("unavailable", 0);
 }
 
 export function assertIcloudUrl(u: string): URL {
@@ -62,6 +65,25 @@ export function assertIcloudUrl(u: string): URL {
   }
   if (url.protocol !== "https:" || !url.hostname.endsWith(".icloud.com")) throw fail("client", 0);
   return url;
+}
+
+// tsdav's default calendar props plus DAV:current-user-privilege-set, so shared read-only calendars are detected.
+const CAL_PROPS = {
+  "c:calendar-description": {},
+  "c:calendar-timezone": {},
+  "d:displayname": {},
+  "ca:calendar-color": {},
+  "cs:getctag": {},
+  "d:resourcetype": {},
+  "c:supported-calendar-component-set": {},
+  "d:sync-token": {},
+  "d:current-user-privilege-set": {},
+};
+
+/** Read-only only when the server reported a privilege set without any write privilege; an unknown set stays writable. */
+export function readOnlyFrom(projected: unknown): boolean {
+  const priv = JSON.stringify((projected as { currentUserPrivilegeSet?: unknown } | undefined)?.currentUserPrivilegeSet ?? "");
+  return /read/i.test(priv) && !/write|bind|"all"/i.test(priv);
 }
 
 export async function realDav(creds: { appleId: string; password: string }): Promise<DavClient> {
@@ -87,13 +109,12 @@ export async function realDav(creds: { appleId: string; password: string }): Pro
   return {
     calendars: () =>
       wrap(async () =>
-        (await c.fetchCalendars()).map((x) => ({
+        (await c.fetchCalendars({ props: CAL_PROPS, projectedProps: { currentUserPrivilegeSet: true } })).map((x) => ({
           url: x.url,
           name: typeof x.displayName === "string" ? x.displayName : "Calendar",
           components: x.components ?? [],
           ctag: x.ctag ?? null,
-          // tsdav does not surface DAV:current-user-privilege-set; read-only is only detected if projected
-          readOnly: /read-only|readonly/i.test(JSON.stringify(x.projectedProps ?? {})),
+          readOnly: readOnlyFrom(x.projectedProps),
         })),
       ),
     objects: (calUrl, w) =>

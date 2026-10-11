@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { assertIcloudUrl, createCaldavProvider } from "@/server/calendar/caldav/provider";
+import { assertIcloudUrl, createCaldavProvider, readOnlyFrom, statusError, transportError } from "@/server/calendar/caldav/provider";
 import { ProviderError } from "@/server/calendar/errors";
 import type { CalendarRef, EventWrite, StoredEvent } from "@/server/calendar/types";
 import { CAL, fakeDav } from "../helpers/fake-dav";
@@ -99,6 +99,23 @@ describe("caldav provider", () => {
     expect([...f.store.keys()]).toEqual([URL1]);
     const out = await p.update(cal(), ev, { ...input, marker: "appr-1" }, "following", "2026-10-21T22:00:00.000Z");
     expect(out.upserts.map((u) => u.remoteId)).toContain("appr-1-f@lifeos");
+  });
+
+  it("403 is a per-resource refusal, never a connection-pausing auth error (CR-A03)", async () => {
+    expect(statusError(401).kind).toBe("auth");
+    expect(statusError(403).kind).toBe("client");
+    expect(transportError(new Error("403 Forbidden")).kind).toBe("client");
+    expect(transportError(new Error("401 Unauthorized")).kind).toBe("auth");
+    const { f, p, ev } = await seeded();
+    f.dav.update = async () => 403;
+    await expect(p.update(cal(), ev, input, "all", null)).rejects.toMatchObject({ kind: "client", status: 403 });
+  });
+
+  it("detects read-only calendars from DAV:current-user-privilege-set (CR-A03)", () => {
+    expect(readOnlyFrom({ currentUserPrivilegeSet: { privilege: [{ read: {} }, { readCurrentUserPrivilegeSet: {} }] } })).toBe(true);
+    expect(readOnlyFrom({ currentUserPrivilegeSet: { privilege: [{ read: {} }, { write: {} }] } })).toBe(false);
+    expect(readOnlyFrom({ currentUserPrivilegeSet: { privilege: { all: {} } } })).toBe(false);
+    expect(readOnlyFrom(undefined)).toBe(false);
   });
 
   it("maps auth failures without leaking provider text", async () => {
