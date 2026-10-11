@@ -72,7 +72,6 @@ function toWrite(input: EventFieldsLike, ctx: WriteCtx, kind: "create" | "update
   };
 }
 
-const DAY_MS = 86_400_000;
 const dayMs = (ymd: string) => Date.parse(`${ymd.slice(0, 10)}T00:00:00Z`);
 const ymdOf = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 const localYmd = (tz: string, d: Date) => {
