@@ -240,7 +240,7 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
         return await fail(
           priv ? "private_blocked" : "free_unavailable",
           priv
-            ? "This run needs private-repo data, which isn't sent to free models. Allow it in Settings → Connections or pick another model for this agent."
+            ? "This run needs private data (private repos, calendar or tasks), which isn't sent to free models. Allow it in Settings → Connections or pick another model for this agent."
             : "The free model couldn't complete this run. The agent is pinned to Free only.",
         );
       }
