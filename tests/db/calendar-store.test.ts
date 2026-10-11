@@ -64,7 +64,14 @@ describe("calendar connections", () => {
     await recordCalendarSync(h, "google_calendar", { at, error: null });
     expect((await getCalendarConnections(h, { googleConfigured: true }))[0]!.lastSyncAt).toBe(at.toISOString());
     await refreshCalendarList(h, "google_calendar", [primary], "g@x");
-    await removeCalendarConnection(h, "google_calendar");
+    // revokes the refresh token at Google first (IN-A02); a failing revoke never blocks the disconnect
+    const sent: { url: string; body: string }[] = [];
+    const fetch = (async (u: RequestInfo | URL, init?: RequestInit) => {
+      sent.push({ url: String(u), body: String(init?.body) });
+      return new Response("", { status: 503 });
+    }) as typeof globalThis.fetch;
+    await removeCalendarConnection(h, "google_calendar", { fetch, key });
+    expect(sent).toEqual([{ url: "https://oauth2.googleapis.com/revoke", body: "token=NEW-REFRESH" }]);
     expect(await h.select().from(connections).where(eq(connections.id, "google_calendar"))).toHaveLength(0);
     expect((await h.select().from(calendars)).filter((c) => c.connectionId === "google_calendar")).toHaveLength(0);
     expect(await h.select().from(auditLog).where(eq(auditLog.action, "connection.remove"))).toHaveLength(1);

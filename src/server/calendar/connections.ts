@@ -50,8 +50,28 @@ export async function recordCalendarSync(h: DB = db(), id: CalendarConnectionId,
   await h.update(connections).set({ lastSyncAt: s.at, lastSyncError: s.error, updatedAt: new Date() }).where(eq(connections.id, id));
 }
 
-/** Cascades to calendars and their events. */
-export async function removeCalendarConnection(h: DB = db(), id: CalendarConnectionId): Promise<void> {
+const GOOGLE_REVOKE_URL = "https://oauth2.googleapis.com/revoke";
+
+/** Best effort: never blocks or fails the disconnect, never logs the token (IN-A02). */
+async function revokeGoogle(h: DB, opts: { fetch?: typeof fetch; key?: Buffer }) {
+  try {
+    const s = await readCalendarSecret<{ refreshToken?: string }>(h, "google_calendar", opts.key);
+    if (!s?.refreshToken) return;
+    const res = await (opts.fetch ?? globalThis.fetch)(GOOGLE_REVOKE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ token: s.refreshToken }),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) log.warn({ status: res.status }, "google token revoke failed");
+  } catch {
+    log.warn("google token revoke failed");
+  }
+}
+
+/** Cascades to calendars and their events. Google's refresh token is revoked first (best effort). */
+export async function removeCalendarConnection(h: DB = db(), id: CalendarConnectionId, opts: { fetch?: typeof fetch; key?: Buffer } = {}): Promise<void> {
+  if (id === "google_calendar") await revokeGoogle(h, opts);
   await h.delete(connections).where(eq(connections.id, id));
   await aud(h, "connection.remove", id, { id });
 }
