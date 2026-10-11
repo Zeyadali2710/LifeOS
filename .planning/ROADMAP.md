@@ -11,7 +11,7 @@ From an empty repo to a personal OS: secure foundation and deploy path first, th
  (completed 2026-10-09)
 - [x] **Phase 3.1: Model routing** (INSERTED) - Free OpenRouter models for routine agent work, Sonnet escalation, orchestrator stays on Opus
  (completed 2026-10-08)
-- [ ] **Phase 4: Organization** - Calendars (Google, iCloud), tasks, conflicts, scheduling suggestions
+- [x] **Phase 4: Organization** - Calendars (Google, iCloud), tasks, conflicts, scheduling suggestions (completed 2026-10-11)
 - [ ] **Phase 5: Career + Projects** - Repo dashboards, cross-domain projects, project workspaces
 - [ ] **Phase 6: Outreach** - Sydney event discovery, pipeline, email intelligence, drafting
 - [ ] **Phase 7: Socials** - Social providers, drafts, content calendar, analytics
@@ -141,7 +141,7 @@ Plans:
 - [x] 04-18-PLAN.md — Today's plan card, tasks card, task dialog
 - [x] 04-19-PLAN.md — Month view, event dialog with recurring scopes, page wiring
 - [x] 04-20-PLAN.md — Calendar approval views and AI panel events card
-- [ ] 04-21-PLAN.md — Palette scopes, e2e, validation, owner VM verification
+- [x] 04-21-PLAN.md — Palette scopes, e2e, validation, owner VM verification
 - [x] 04-22-PLAN.md — Docs: integrations, database, third-party, agents, permissions, security
 
 ### Phase 5–11
