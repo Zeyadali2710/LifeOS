@@ -21,6 +21,15 @@ describe("taskInput", () => {
     expect(taskInput.safeParse({ title: "a", notes: "n".repeat(4001) }).success).toBe(false);
     expect(taskInput.safeParse({ title: "a" }).success).toBe(true);
   });
+
+  it("rejects impossible due dates and offset-less reminder times (WR-C06)", () => {
+    const msg = (v: unknown) => taskInput.safeParse(v).error?.issues[0]?.message;
+    expect(msg({ title: "a", dueDate: "2026-02-31" })).toBe("Enter a valid date.");
+    expect(msg({ title: "a", dueDate: "2026-13-45" })).toBe("Enter a valid date.");
+    expect(msg({ title: "a", remindAt: "2026-10-13T09:00" })).toBe("Enter a valid reminder time.");
+    expect(taskInput.safeParse({ title: "a", dueDate: "2028-02-29", remindAt: "2026-10-12T22:00:00.000Z" }).success).toBe(true);
+    expect(taskInput.safeParse({ title: "a", remindAt: "2026-10-13T09:00:00+11:00" }).success).toBe(true);
+  });
 });
 
 describe("tasks service", () => {
