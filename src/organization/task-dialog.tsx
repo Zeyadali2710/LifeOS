@@ -59,6 +59,7 @@ function Form({ task, initialTitle, onClose }: { task?: TaskDTO; initialTitle: s
   const hasDue = !!date && !!time;
 
   const submit = async () => {
+    if (busy) return; // Enter during the round-trip must not create a second task
     const remindAt = remindISO(remind, custom, date, time);
     const parsed = taskInput.safeParse({ title, notes, dueDate: date || null, dueTime: time || null, priority: priority ? Number(priority) : null, remindAt });
     const errs: Record<string, string> = {};
@@ -209,7 +210,7 @@ function Form({ task, initialTitle, onClose }: { task?: TaskDTO; initialTitle: s
           </Field>
         )}
         {task && <Checkbox label="Completed" checked={done} onChange={(e) => setDone(e.target.checked)} />}
-        <button type="submit" hidden />
+        <button type="submit" hidden disabled={busy} />
       </form>
     </Dialog>
   );
