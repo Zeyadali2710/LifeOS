@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray, lte, sql } from "drizzle-orm";
 import type { ApprovalDTO } from "@/lib/agent-types";
-import { approvalKind, checkLocked, nothingText, payloadSchemaFor } from "@/lib/approval-kinds";
+import { approvalKind, changedKeys, checkLocked, nothingText, payloadSchemaFor } from "@/lib/approval-kinds";
 import { ProviderError, providerLabel } from "../calendar/errors";
 import type { DB } from "../db/client";
 import { agentRuns, approvals, auditLog, calendarEvents, githubRepos, toolCalls } from "../db/schema";
@@ -20,6 +20,11 @@ type Row = typeof approvals.$inferSelect;
 export type FieldErrors = Record<string, string>;
 
 const STUCK_MS = 2 * 60_000;
+
+// Issue edits keep both versions; calendar payloads carry event text, so only the changed field names are kept (T-04-40).
+function editMeta(tool: string, id: string, orig: unknown, edited: unknown): Record<string, unknown> {
+  return approvalKind(tool) === "issue" ? { original: orig, edited } : { approvalId: id, changed: changedKeys(orig, edited) };
+}
 
 // Audit via the caller's handle so it lands in the same database (audit() uses the global one).
 async function aud(h: DB, action: string, id: string, metadata: Record<string, unknown>) {
@@ -93,7 +98,7 @@ export async function decide(
     .where(and(eq(approvals.id, id), eq(approvals.status, "pending"), sql`${approvals.expiresAt} > ${now}`))
     .returning();
   if (!won) return { ok: false, reason: "not_pending" };
-  if (opts.edited) await aud(h, "approval.edit", id, { original: orig, edited: parsed.data });
+  if (opts.edited) await aud(h, "approval.edit", id, editMeta(cur.tool, id, orig, parsed.data));
   await aud(h, "approval.approve", id, { approvalId: id, edited: Boolean(opts.edited) });
   await live(h, won);
   try {
@@ -122,7 +127,7 @@ export async function saveEdit(
     .where(and(eq(approvals.id, id), eq(approvals.status, "pending")))
     .returning();
   if (!won) return { ok: false, reason: "not_pending" };
-  await aud(h, "approval.edit", id, { original: orig, edited: parsed.data });
+  await aud(h, "approval.edit", id, editMeta(cur.tool, id, orig, parsed.data));
   await notifyLive(h, "approval", id);
   return { ok: true };
 }

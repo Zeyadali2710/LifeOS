@@ -34,6 +34,13 @@ const stable = (v: unknown) =>
     x && typeof x === "object" && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) : x,
   );
 
+/** Names of the top-level fields that differ, never their values. */
+export function changedKeys(orig: unknown, next: unknown): string[] {
+  const o = (orig ?? {}) as Record<string, unknown>;
+  const n = (next ?? {}) as Record<string, unknown>;
+  return [...new Set([...Object.keys(o), ...Object.keys(n)])].filter((k) => stable(o[k]) !== stable(n[k])).sort();
+}
+
 export function checkLocked(kind: ApprovalKind, orig: unknown, next: unknown): Record<string, string> | null {
   const o = (orig ?? {}) as Record<string, unknown>;
   const n = (next ?? {}) as Record<string, unknown>;

@@ -238,6 +238,10 @@ describe("calendar kind", () => {
       errors: { calendarId: "Calendar can't be changed." },
     });
     expect(await decide(h(), id, "approve", { enqueue, edited: { ...ev, title: "Brunch" } })).toMatchObject({ ok: true });
+    // calendar edits audit field names only, never event text (WR-A06)
+    const [edit] = await h().select().from(auditLog).where(eq(auditLog.action, "approval.edit"));
+    expect((edit!.metadata as { changed: string[] }).changed).toContain("title");
+    expect(JSON.stringify(edit!.metadata)).not.toMatch(/Lunch|Brunch/);
     expect(await executeApproved(h(), id, { tools })).toEqual({ status: "failed", error: "Google rejected it: Invalid time", ambiguous: false });
     expect(await retryApproval(h(), id, { enqueue })).toEqual({ ok: true });
     expect(await executeApproved(h(), id, { tools })).toEqual({ status: "executed", result: { eventId: "e1" } });
