@@ -135,6 +135,21 @@ describe("calendar tools", () => {
     expect(p.calls.update).toHaveLength(0);
   });
 
+  it("instanceStart is matched in canonical form; an unparseable one is a clear input error (IN-A05)", async () => {
+    prov.cur = fakeCalendarProvider("google", { calendars: [], results: {} });
+    const [row] = await h()
+      .insert(calendarEvents)
+      .values({ calendarId: writeCal, remoteId: "standup", title: "Standup", startAt: at(9), endAt: at(10), tz: "Australia/Sydney", etag: "s1", recurrence: ["RRULE:FREQ=DAILY"], raw: {} })
+      .returning();
+    const noMs = at(9).toISOString().replace(".000Z", "Z");
+    const ap = await approvalOf(await call("calendar.update_event", { eventId: row!.id, instanceStart: noMs, scope: "this", title: "Standup (moved)" }));
+    expect(ap.originalPayload).toMatchObject({ instanceStart: at(9).toISOString(), scope: "this" });
+    expect(await call("calendar.update_event", { eventId: row!.id, instanceStart: "next tuesday", scope: "this", title: "x" })).toMatchObject({
+      error: "Give the instanceStart of the occurrence from list_events.",
+    });
+    await h().delete(calendarEvents).where(eq(calendarEvents.id, row!.id));
+  });
+
   it("delete is HIGH_RISK even with a READ permission override; read-only targets are rejected", async () => {
     await h().insert(permissions).values({ agentId: "organization", tool: "calendar.delete_event", tier: "READ" });
     const ap = await approvalOf(await call("calendar.delete_event", { eventId: gymId }));
