@@ -94,6 +94,9 @@ export function createGoogle({ getToken, fetch = globalThis.fetch, timeoutMs = 1
         const ra = Number(res.headers.get("retry-after"));
         throw fail("rate_limit", s, Number.isFinite(ra) && ra > 0 ? ra : undefined);
       }
+      // A removed scope needs a reconnect. Plain "forbidden" (e.g. writing a read-only calendar) stays a client error,
+      // so one refused write never pauses sync (IN-A07).
+      if (s === 403 && reason === "insufficientPermissions") throw fail("auth", s);
       if (s === 404) throw fail("not_found", s);
       if (s === 409 || s === 412) throw fail("conflict", s);
       if (s === 410) throw fail("gone", s);

@@ -38,6 +38,8 @@ describe("google client", () => {
     expect(await run(429, {}, { "retry-after": "7" })).toBe("rate_limit:429");
     expect(await run(403, { error: { errors: [{ reason: "userRateLimitExceeded" }] } })).toBe("rate_limit:403");
     expect(await run(403)).toBe("client:403");
+    expect(await run(403, { error: { errors: [{ reason: "forbidden" }] } })).toBe("client:403");
+    expect(await run(403, { error: { errors: [{ reason: "insufficientPermissions" }] } })).toBe("auth:403"); // IN-A07
     expect(await run(404)).toBe("not_found:404");
     expect(await run(409)).toBe("conflict:409");
     expect(await run(412)).toBe("conflict:412");
@@ -64,7 +66,7 @@ describe("google client", () => {
 
   it("paginates and returns the sync token", async () => {
     const f = fakeGoogle({ "GET /calendar/v3/e": [json({ items: [1], nextPageToken: "p2" }), json({ items: [2], nextSyncToken: "S" })] });
-    expect(await g(f).paginate("/e?a=1", z.number())).toEqual({ items: [1, 2], nextSyncToken: "S" });
+    expect(await g(f).paginate("/e?a=1", z.number())).toEqual({ items: [1, 2], nextSyncToken: "S", truncated: false });
     expect(f.calls[1]!.url).toContain("pageToken=p2");
   });
 });
