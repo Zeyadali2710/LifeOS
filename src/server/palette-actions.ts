@@ -21,10 +21,16 @@ export async function paletteSearchAction(raw: unknown): Promise<PaletteData> {
   try {
     const now = new Date();
     const today = sydneyYmd(now);
-    const [events, open] = await Promise.all([
-      listEvents(db(), addDaysYmd(today, -7), addDaysYmd(today, 60), q, 4),
+    // 7 back + 55 ahead = the 62-day listEvents cap, so nothing is silently clamped (IN-C03).
+    const [hits, open] = await Promise.all([
+      listEvents(db(), addDaysYmd(today, -7), addDaysYmd(today, 55), q),
       loadTasks(db(), "open", now),
     ]);
+    // Upcoming/ongoing first (soonest first), then past (most recent first), so last week can't crowd out next week.
+    const nowIso = now.toISOString();
+    const upcoming = hits.filter((e) => e.end >= nowIso);
+    const past = hits.filter((e) => e.end < nowIso).reverse();
+    const events = [...upcoming, ...past].slice(0, 4);
     return {
       events: events.map((e) => {
         const d = new Date(e.start);
