@@ -96,6 +96,8 @@ export function OrganizationView({
   const [taskOpen, setTaskOpen] = useState(false);
   useEffect(() => {
     if (newParam !== "event" && newParam !== "task") return;
+    // no writable calendar: onNewEvent pushes to Settings, and a replace here would cancel that push (WR-B04)
+    if (newParam === "event" && data.calendars.length === 0) return void router.push(CONNECTIONS);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot URL command, param is dropped right after
     if (newParam === "event") onNewEvent();
     else setTaskOpen(true);
