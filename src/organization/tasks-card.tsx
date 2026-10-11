@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { TaskDTO } from "@/lib/calendar-types";
 import { quickAddTaskAction, toggleTaskAction } from "@/server/task-actions";
@@ -30,7 +30,18 @@ export function TasksCard({ tasks, allOpen, completed, today }: { tasks: TaskDTO
   const [all, setAll] = useState(false);
   const [showDone, setShowDone] = useState(false);
   const [menu, setMenu] = useState(false);
-  const [optimistic, setOptimistic] = useState<Record<string, boolean>>({});
+  // ok: the server confirmed it, so the next server props win and the entry is dropped (WR-B08)
+  const [optimistic, setOptimistic] = useState<Record<string, { done: boolean; ok: boolean }>>({});
+  const [synced, setSynced] = useState(tasks);
+  if (synced !== tasks) {
+    setSynced(tasks);
+    setOptimistic((o) => Object.fromEntries(Object.entries(o).filter(([, v]) => !v.ok)));
+  }
+  const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  useEffect(() => {
+    const m = timers.current;
+    return () => m.forEach(clearTimeout);
+  }, []);
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [say, setSay] = useState("");
   const [title, setTitle] = useState("");
@@ -38,7 +49,7 @@ export function TasksCard({ tasks, allOpen, completed, today }: { tasks: TaskDTO
   const inputRef = useRef<HTMLInputElement>(null);
   const [now] = useState(() => Date.now());
 
-  const isDone = (t: TaskDTO) => optimistic[t.id] ?? !!t.completedAt;
+  const isDone = (t: TaskDTO) => optimistic[t.id]?.done ?? !!t.completedAt;
   const base = all ? allOpen : tasks;
   const list = showDone ? [...base, ...completed.filter((c) => !base.some((b) => b.id === c.id))] : base;
   const rows = [...list.filter((t) => !isDone(t)), ...list.filter((t) => isDone(t) && (showDone || !collapsed.has(t.id)))];
@@ -46,16 +57,19 @@ export function TasksCard({ tasks, allOpen, completed, today }: { tasks: TaskDTO
   const doneCount = base.filter(isDone).length;
 
   const toggle = async (t: TaskDTO, next: boolean) => {
-    setOptimistic((o) => ({ ...o, [t.id]: next }));
+    setOptimistic((o) => ({ ...o, [t.id]: { done: next, ok: false } }));
     setSay(next ? "Task completed" : "Task reopened");
-    if (next) setTimeout(() => setCollapsed((c) => new Set(c).add(t.id)), 4000);
+    clearTimeout(timers.current.get(t.id));
+    if (next) timers.current.set(t.id, setTimeout(() => setCollapsed((c) => new Set(c).add(t.id)), 4000));
     else setCollapsed((c) => (c.delete(t.id), new Set(c)));
     const r = await toggleTaskAction(t.id, next).catch(() => ({ ok: false, error: "failed" }) as const);
     if (!r.ok) {
-      setOptimistic((o) => ({ ...o, [t.id]: !next }));
+      clearTimeout(timers.current.get(t.id));
+      setOptimistic((o) => (o[t.id]?.done === next ? { ...o, [t.id]: { done: !next, ok: true } } : o));
       toast("Couldn't save that. Try again.", "error");
       return;
     }
+    setOptimistic((o) => (o[t.id]?.done === next ? { ...o, [t.id]: { done: next, ok: true } } : o)); // a newer toggle wins
     router.refresh();
   };
 
