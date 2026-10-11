@@ -14,7 +14,7 @@ import { formatHM, sydneyInstant, sydneyParts } from "@/server/time";
 import type { DB } from "../db/client";
 import { calendarEvents, calendars, connections, settings, tasks } from "../db/schema";
 import { busyOf, conflicts, type SchedItem } from "./conflicts";
-import { expand, humanRule, type Instance } from "./expand";
+import { expand, type Instance } from "./expand";
 import { addDaysYmd, freeSlots, type FreeSlot, sydneyYmd, wakingWindow } from "./free-slots";
 import { headline, planDay, type PlanTask, planSummary, type Why, weekStats } from "./plan";
 import type { StoredEvent } from "./types";
@@ -103,7 +103,7 @@ export async function loadInstances(h: DB, from: Date, to: Date): Promise<Instan
         category: isCategory(c.category) ? c.category : null,
         title: i.title, description: i.description, location: i.location,
         start: iso(i.start), end: iso(i.end), allDay: i.allDay, startDate: i.startDate, endDate: i.endDate, tz: i.tz,
-        recurring: i.recurring, rrule: i.rrule ? humanRule(i.rrule) : null, instanceStart: i.instanceStart,
+        recurring: i.recurring, rrule: i.rrule, instanceStart: i.instanceStart,
         status: i.status as InstanceDTO["status"], free: i.transparency === "transparent", declined: i.declined,
         readOnly: c.access === "reader", etag: etags.get(i.eventId) ?? null, conflictWith: conflictWith.get(i.key) ?? [],
       };

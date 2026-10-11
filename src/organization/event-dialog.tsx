@@ -207,6 +207,8 @@ export function EventDialog({
     let r: EventActionResult;
     try {
       const body = payload(f, tz);
+      // An untouched repeat keeps the stored rule (UNTIL/COUNT/EXDATE stay as they are); only a change rewrites it.
+      if (edit && instance.recurring && f.repeat === base.repeat) body.repeat = "custom";
       r = edit
         ? await updateEventAction({ eventId: instance.eventId, etag, scope, instanceStart: instance.instanceStart, ...body })
         : await createEventAction(body);

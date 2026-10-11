@@ -41,6 +41,7 @@ export interface InstanceDTO {
   endDate: string | null;
   tz: string | null;
   recurring: boolean;
+  /** Raw RRULE value (no "RRULE:" prefix); humanise only for display. */
   rrule: string | null;
   instanceStart: string | null;
   status: "confirmed" | "tentative" | "cancelled";

@@ -75,6 +75,12 @@ describe("calendar queries", () => {
     expect(days).toBe(2);
   });
 
+  it("instances carry the raw RRULE so the edit dialog can parse it (CR-B01)", async () => {
+    const r = viewRange("day", "2026-10-08");
+    const s = (await loadInstances(h(), r.from, r.to)).find((i) => i.title === "Standup")!;
+    expect(s.rrule).toBe("FREQ=DAILY;COUNT=3");
+  });
+
   it("listEvents filters by title", async () => {
     const l = await listEvents(h(), "2026-10-05", "2026-10-11", "GYM");
     expect(l.map((i) => i.title).sort()).toEqual(["Gym", "Gym class"]);
