@@ -5,7 +5,7 @@ const ROUTES = [
   ["/career", "Career"],
   ["/socials", "Socials"],
   ["/outreach", "Outreach"],
-  ["/organization", "Organization"],
+  ["/organization", /^(Your calendar, in one place\.|Nothing scheduled\.|You're free .+\.|Your schedule is full .+\.)$/],
   ["/projects", "Projects"],
   ["/knowledge", "Knowledge"],
   ["/goals", "Goals"],
