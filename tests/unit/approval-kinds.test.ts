@@ -55,3 +55,19 @@ describe("approval kinds", () => {
     expect(approvalSummary("calendar.create_event", { nope: 1 }, exp)).toEqual({ title: "", body: undefined });
   });
 });
+
+describe("event payload times (CR-A04)", () => {
+  const base = { title: "T", calendarId: "11111111-2222-4333-8444-555555555555", calendarLabel: "Google · Main", provider: "google" };
+  const ok = (o: object) => payloadSchemaFor("calendar.create_event").safeParse({ ...base, ...o }).success;
+
+  it("rejects timed values without a UTC offset, accepts Z and explicit offsets", () => {
+    expect(ok({ start: "2026-10-15T09:00:00", end: "2026-10-15T10:00:00" })).toBe(false);
+    expect(ok({ start: "2026-10-15T09:00:00+11:00", end: "2026-10-15T10:00:00+11:00" })).toBe(true);
+    expect(ok({ start: "2026-10-14T22:00:00.000Z", end: "2026-10-14T23:00:00.000Z" })).toBe(true);
+  });
+
+  it("all-day values must be plain dates", () => {
+    expect(ok({ allDay: true, start: "2026-10-15T09:00:00Z", end: "2026-10-16T09:00:00Z" })).toBe(false);
+    expect(ok({ allDay: true, start: "2026-10-15", end: "2026-10-16" })).toBe(true);
+  });
+});

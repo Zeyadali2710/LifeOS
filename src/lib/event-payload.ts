@@ -13,8 +13,16 @@ const eventBase = z.object({
 });
 
 type Range = { start: string; end: string; allDay: boolean };
+// Timed values must carry an offset: an offset-less time is read as server-local by the approval card but as
+// timeZone-local by Google, so the owner could approve one time and get another (CR-A04).
+const instant = z.iso.datetime({ offset: true });
+const okTime = (s: string, allDay: boolean) => (allDay ? /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(s)) : instant.safeParse(s).success);
 const checkRange = (v: Range, ctx: z.RefinementCtx) => {
   if (!v.start) return void ctx.addIssue({ code: "custom", path: ["start"], message: "Pick a start date." });
+  const message = v.allDay ? "Use a YYYY-MM-DD date." : "Use an ISO time with a UTC offset.";
+  const malformed = (["start", "end"] as const).filter((k) => v[k] && !okTime(v[k], v.allDay));
+  for (const k of malformed) ctx.addIssue({ code: "custom", path: [k], message });
+  if (malformed.length) return;
   const bad = v.allDay ? v.end <= v.start : !(Date.parse(v.end) > Date.parse(v.start));
   if (bad) ctx.addIssue({ code: "custom", path: ["end"], message: "End must be after start." });
 };
