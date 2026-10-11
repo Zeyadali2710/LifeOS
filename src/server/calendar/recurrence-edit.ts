@@ -105,6 +105,26 @@ type Edit = { kind: "update" | "delete"; scope: WriteScope; instanceStart: strin
 const keyOf = (s: string) => (/^\d{4}-\d\d-\d\d$/.test(s) ? s : String(Date.parse(s)));
 const isLater = (a: string, b: string) => (/^\d{4}-\d\d-\d\d$/.test(b) ? a >= b : Number(a) >= Number(b));
 
+const dayMs = (ymd: string) => Date.parse(`${ymd.slice(0, 10)}T00:00:00Z`);
+
+/**
+ * Excluded occurrences (keys: instant ms or YYYY-MM-DD) at or after a "following" split, moved by the edit's shift so
+ * they still match the new series (WR-A04). Callers skip this when the edit switches between all-day and timed.
+ * ponytail: timed keys shift by fixed ms, so an exclusion on the far side of a DST change from the split can miss by an hour.
+ */
+export function carriedExdates(keys: string[], instanceStart: string, input: EventWrite): string[] {
+  const split = keyOf(instanceStart);
+  const later = keys.filter((k) => isLater(k, split));
+  if (input.allDay) return later.map((k) => new Date(dayMs(k) + dayMs(input.start) - dayMs(split)).toISOString().slice(0, 10));
+  return later.map((k) => new Date(Number(k) + Date.parse(input.start) - Number(split)).toISOString());
+}
+
+/** Google recurrence line for a carried exclusion, in the same TZID form Google writes. */
+export function googleExdate(v: string, allDay: boolean, tz: string): string {
+  if (allDay) return `EXDATE;VALUE=DATE:${v.replaceAll("-", "")}`;
+  return isIanaZone(tz) ? `EXDATE;TZID=${tz}:${wall(tz, new Date(v)).replace(/[-:]/g, "")}` : `EXDATE:${basicUtc(new Date(v))}`;
+}
+
 function stripEnding(rule: string) {
   return rule.replace(/;?(COUNT|UNTIL)=[^;]*/g, "").replace(/^;/, "");
 }
@@ -180,6 +200,12 @@ export function icsApply(ics: string, edit: Edit): { updated: string | null; cre
   const countMatch = /COUNT=(\d+)/.exec(ruleText);
   nm.updatePropertyWithValue("rrule", ICAL.Recur.fromString(countMatch ? `${stripEnding(ruleText)};COUNT=${Math.max(1, Number(countMatch[1]) - before)}` : ruleText));
   applyFields(fresh, nm, edit.input!);
+  if (edit.input!.allDay === s.allDay) {
+    const exKeys = s.lines.filter((l) => /^EXDATE[;:]/i.test(l)).flatMap((l) => lineKeys(l, s.zoneId, zones));
+    const cancelled = vs.filter((v) => v !== master && v.hasProperty("recurrence-id") && String(v.getFirstPropertyValue("status") ?? "").toUpperCase() === "CANCELLED");
+    for (const k of cancelled.map(overrideKey)) if (k) exKeys.push(k);
+    for (const v of carriedExdates(exKeys, inst!, edit.input!)) nm.addProperty(timeProp(fresh, "exdate", v, edit.input!.allDay, edit.input!.timeZone));
+  }
   return { updated, created: fresh.toString() };
 }
 
@@ -193,6 +219,8 @@ type GEdit = {
   body?: Record<string, unknown>;
   /** Deterministic id for the "following" continuation, so a retry adopts it instead of duplicating (CR-A02). */
   newId?: string;
+  /** Extra recurrence lines for the continuation (carried EXDATEs, WR-A04). */
+  carry?: string[];
 };
 type Op = { method: "PATCH" | "POST" | "DELETE"; path: string; body?: Record<string, unknown> };
 
@@ -217,5 +245,5 @@ export function googlePlan(e: GEdit): Op[] {
   // ponytail: without occurrencesBefore a COUNT series continues without its COUNT, callers pass it from expand()
   const next = count && m.occurrencesBefore != null ? `${stripEnding(rrule)};COUNT=${Math.max(1, Number(count[1]) - m.occurrencesBefore)}` : stripEnding(rrule);
   // Create the continuation before truncating the master: a failure in between leaves a duplicated tail, never a lost one (CR-A02).
-  return [{ method: "POST", path: `${base}${Q}`, body: { ...e.body, ...(e.newId ? { id: e.newId } : {}), recurrence: [`RRULE:${next}`] } }, truncate];
+  return [{ method: "POST", path: `${base}${Q}`, body: { ...e.body, ...(e.newId ? { id: e.newId } : {}), recurrence: [`RRULE:${next}`, ...(e.carry ?? [])] } }, truncate];
 }

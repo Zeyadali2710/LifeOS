@@ -1,8 +1,8 @@
 // Google Calendar adapter (ORG-01/02): list, incremental sync via syncToken, writes with sendUpdates=none + If-Match.
 import { z } from "zod";
 import { ProviderError } from "../errors";
-import { expand } from "../expand";
-import { googlePlan, ruleFor } from "../recurrence-edit";
+import { expand, lineKeys } from "../expand";
+import { carriedExdates, googleExdate, googlePlan, ruleFor } from "../recurrence-edit";
 import type { CalendarProvider, CalendarRef, EventWrite, NormalizedEvent, RemoteCalendar, StoredEvent, SyncResult, SyncWindow, WriteResult, WriteScope } from "../types";
 import type { createGoogle } from "./client";
 
@@ -179,6 +179,20 @@ export function createGoogleProvider({ google }: { google: ReturnType<typeof cre
     },
   };
 
+  // Exclusions after the split: EXDATE lines plus cancelled instances (how Google stores single deletes), rebased (WR-A04).
+  async function carry(ref: CalendarRef, ev: StoredEvent, instanceStart: string, input: EventWrite): Promise<string[]> {
+    const tz = ev.tz ?? FALLBACK_TZ;
+    const keys = (ev.recurrence ?? []).filter((l) => /^EXDATE[;:]/i.test(l)).flatMap((l) => lineKeys(l, tz, new Map()));
+    const q = `?showDeleted=true&maxResults=250&timeMin=${encodeURIComponent(new Date(Date.parse(ev.allDay ? `${instanceStart.slice(0, 10)}T00:00:00Z` : instanceStart) - 86_400_000).toISOString())}`;
+    // ponytail: first 4 pages (1000 instances) only; exclusions further out are not carried
+    const { items } = await google.paginate(`${cal(ref.remoteId)}/${encodeURIComponent(ev.remoteId)}/instances${q}`, eventSchema, 4);
+    for (const i of items) {
+      const o = i.originalStartTime;
+      if (i.status === "cancelled" && o) keys.push(o.date ?? String(Date.parse(o.dateTime ?? "")));
+    }
+    return [...new Set(carriedExdates(keys, instanceStart, input))].map((v) => googleExdate(v, input.allDay, input.timeZone));
+  }
+
   async function run(ref: CalendarRef, ev: StoredEvent, kind: "update" | "delete", scope: WriteScope, instanceStart: string | null, input?: EventWrite): Promise<WriteResult> {
     const recurring = !!ev.recurrence?.length;
     const first = !!instanceStart && (ev.allDay ? instanceStart.slice(0, 10) === ev.startDate : !!ev.startAt && Date.parse(instanceStart) === ev.startAt.getTime());
@@ -191,6 +205,7 @@ export function createGoogleProvider({ google }: { google: ReturnType<typeof cre
       // recurrence is only rewritten when the whole series is edited
       body: input ? bodyFor(input, scope === "all" || !recurring, true) : undefined,
       newId: input?.marker ? `lifeos${input.marker.replaceAll("-", "")}f` : undefined,
+      carry: kind === "update" && recurring && scope === "following" && !first && instanceStart && input && input.allDay === ev.allDay ? await carry(ref, ev, instanceStart, input) : undefined,
     });
     const upserts: NormalizedEvent[] = [];
     const deletes: string[] = [];

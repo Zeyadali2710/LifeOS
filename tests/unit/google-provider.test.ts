@@ -11,9 +11,10 @@ const ref: CalendarRef = { id: "c1", connectionId: "google_calendar", remoteId: 
 const window = { from: new Date("2026-09-01T00:00:00Z"), to: new Date("2026-12-31T00:00:00Z") };
 const EV = "/calendar/v3/calendars/me%40gmail.com/events";
 const make = (routes: Parameters<typeof fakeGoogle>[0]) => {
-  const f = fakeGoogle(routes);
+  const f = fakeGoogle({ [`GET ${EV}/weekly1/instances`]: json({ items: [] }), ...routes });
   return { f, p: createGoogleProvider({ google: createGoogle({ getToken: async () => "tok", fetch: f }) }) };
 };
+const writes = (f: { calls: { method: string; url: string }[] }) => f.calls.filter((c) => !c.url.includes("/instances"));
 const input: EventWrite = { title: "T", start: "2026-10-20T00:00:00.000Z", end: "2026-10-20T01:00:00.000Z", allDay: false, timeZone: "Australia/Sydney", location: "", description: "", showAs: "busy", repeat: "keep", marker: null };
 const stored = (n: ReturnType<typeof normalizeGoogleEvent>): StoredEvent => ({ ...n, id: "row", calendarId: "c1" });
 const [single, weekly] = (events.pages[0]!.items as unknown as GE[]).map((i) => stored(normalizeGoogleEvent(i)));
@@ -105,9 +106,10 @@ describe("google provider", () => {
 
     const b = make({ [`PATCH ${EV}/weekly1`]: json({ ...ok, id: "weekly1" }), [`POST ${EV}`]: json({ ...ok, id: "new1" }) });
     const r = await b.p.update(ref, weekly!, input, "following", "2026-10-26T09:30:00+11:00");
-    expect(b.f.calls.map((c) => c.method)).toEqual(["POST", "PATCH"]);
-    expect(b.f.calls[1]!.headers.get("if-match")).toBe('"e-weekly1"');
-    expect(b.f.calls[0]!.headers.get("if-match")).toBeNull();
+    const bw = writes(b.f) as typeof b.f.calls;
+    expect(bw.map((c) => c.method)).toEqual(["POST", "PATCH"]);
+    expect(bw[1]!.headers.get("if-match")).toBe('"e-weekly1"');
+    expect(bw[0]!.headers.get("if-match")).toBeNull();
     expect(r.upserts.map((u) => u.remoteId)).toEqual(["new1", "weekly1"]);
 
     const c = make({ [`DELETE ${EV}/single1`]: () => new Response(null, { status: 410 }) });
@@ -116,7 +118,7 @@ describe("google provider", () => {
     const d = make({ [`DELETE ${EV}/weekly1_20261026T093000Z`]: () => new Response(null, { status: 204 }) });
     const rd = await d.p.remove(ref, weekly!, "this", "2026-10-26T09:30:00Z");
     expect(rd.upserts[0]).toMatchObject({ remoteId: "weekly1_20261026T093000Z", status: "cancelled", recurringRemoteId: "weekly1" });
-    for (const call of [...a.f.calls, ...b.f.calls, ...c.f.calls, ...d.f.calls]) expect(call.url).toContain("sendUpdates=none");
+    for (const call of [a.f, b.f, c.f, d.f].flatMap(writes)) expect(call.url).toContain("sendUpdates=none");
   });
 
   it("following split creates the continuation first and removes it if truncating the master fails (CR-A02)", async () => {
@@ -127,13 +129,24 @@ describe("google provider", () => {
       [`DELETE ${EV}/lifeosappr1f`]: () => new Response(null, { status: 204 }),
     });
     await expect(p.update(ref, weekly!, { ...input, marker: "appr-1" }, "following", "2026-10-26T09:30:00+11:00")).rejects.toMatchObject({ kind: "unavailable" });
-    expect(f.calls.map((c) => c.method)).toEqual(["POST", "PATCH", "DELETE"]);
-    expect(f.calls[0]!.body).toMatchObject({ id: "lifeosappr1f" });
+    const w = writes(f) as typeof f.calls;
+    expect(w.map((c) => c.method)).toEqual(["POST", "PATCH", "DELETE"]);
+    expect(w[0]!.body).toMatchObject({ id: "lifeosappr1f" });
 
     // retry after a lost response: 409 adopts the continuation, then truncates
     const r = make({ [`POST ${EV}`]: json({}, 409), [`GET ${EV}/lifeosappr1f`]: json({ ...ok, id: "lifeosappr1f" }), [`PATCH ${EV}/weekly1`]: json({ ...ok, id: "weekly1" }) });
     const out = await r.p.update(ref, weekly!, { ...input, marker: "appr-1" }, "following", "2026-10-26T09:30:00+11:00");
     expect(out.upserts.map((u) => u.remoteId)).toEqual(["lifeosappr1f", "weekly1"]);
+  });
+
+  it("following split carries exclusions after the split into the new series (WR-A04)", async () => {
+    const ok = { id: "x", start: { dateTime: "2026-10-20T11:00:00+11:00" }, end: { dateTime: "2026-10-20T12:00:00+11:00" } };
+    const cancelled = { id: "weekly1_20261102T223000Z", status: "cancelled", recurringEventId: "weekly1", originalStartTime: { dateTime: "2026-11-02T22:30:00Z" } };
+    const { p, f } = make({ [`GET ${EV}/weekly1/instances`]: json({ items: [cancelled] }), [`PATCH ${EV}/weekly1`]: json({ ...ok, id: "weekly1" }), [`POST ${EV}`]: json({ ...ok, id: "new1" }) });
+    // same time of day as the split occurrence: the exclusion keeps its time
+    await p.update(ref, weekly!, { ...input, start: "2026-10-26T22:30:00.000Z", end: "2026-10-26T23:30:00.000Z" }, "following", "2026-10-26T22:30:00.000Z");
+    const post = writes(f).find((c) => c.method === "POST") as (typeof f.calls)[number];
+    expect((post.body as { recurrence: string[] }).recurrence).toContain("EXDATE;TZID=Australia/Sydney:20261103T093000");
   });
 
   it("following on a COUNT series keeps the remaining COUNT; PATCH clears the other date field", async () => {
@@ -142,8 +155,9 @@ describe("google provider", () => {
     const { p, f } = make({ [`PATCH ${EV}/weekly1`]: json({ ...ok, id: "weekly1" }), [`POST ${EV}`]: json({ ...ok, id: "new1" }) });
     // weekly1 starts Mon 5 Oct; editing from 19 Oct leaves 2 occurrences before it.
     await p.update(ref, counted, input, "following", "2026-10-18T22:30:00.000Z");
-    expect((f.calls[0]!.body as { recurrence: string[] }).recurrence).toEqual(["RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=4"]);
-    expect(f.calls[1]!.body).toMatchObject({ recurrence: [expect.stringContaining("UNTIL=")] });
+    const w = writes(f) as typeof f.calls;
+    expect((w[0]!.body as { recurrence: string[] }).recurrence).toEqual(["RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=4"]);
+    expect(w[1]!.body).toMatchObject({ recurrence: [expect.stringContaining("UNTIL=")] });
 
     const a = make({ [`PATCH ${EV}/single1`]: json({ ...ok, id: "single1" }) });
     await a.p.update(ref, single!, { ...input, allDay: true, start: "2026-10-20", end: "2026-10-21" }, "all", null);

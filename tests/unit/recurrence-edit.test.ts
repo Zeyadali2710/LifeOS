@@ -89,6 +89,15 @@ describe("icsApply", () => {
     expect(n.hasProperty("exdate")).toBe(false);
   });
 
+  it("following carries exclusions after the split into the new series, rebased (WR-A04)", () => {
+    const ics = recurring.replace("EXDATE;TZID=Australia/Sydney:20261015T090000", "EXDATE;TZID=Australia/Sydney:20261015T090000,20261029T090000");
+    const { created } = icsApply(ics, { kind: "update", scope: "following", instanceStart: "2026-10-21T22:00:00.000Z", newUid: "new@lifeos", input: input({ title: "Later", repeat: "keep" }) });
+    const ex = props(created!, "exdate");
+    // occurrence moved 09:00 -> 18:00, so the 29 Oct exclusion follows it; 15 Oct (before the split) is dropped
+    expect(ex.some((l) => l.includes("20261029T180000"))).toBe(true);
+    expect(ex.some((l) => l.includes("20261015"))).toBe(false);
+  });
+
   it("UNTIL is the instance minus one second in UTC", () => {
     const ics = icsCreate("u4@lifeos", input({ start: "2026-10-15T23:00:00.000Z", end: "2026-10-16T00:00:00.000Z" }), null);
     const { updated } = icsApply(ics, { kind: "delete", scope: "following", instanceStart: "2026-10-21T23:00:00.000Z" });
