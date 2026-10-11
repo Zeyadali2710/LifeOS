@@ -1,4 +1,4 @@
-import { and, eq, notInArray } from "drizzle-orm";
+import { and, eq, notInArray, sql } from "drizzle-orm";
 import { isCategory } from "../../lib/calendar-categories";
 import type { CalendarConnectionId } from "../../lib/calendar-types";
 import { db, type DB } from "../db/client";
@@ -7,6 +7,12 @@ import { aud } from "./connections";
 import type { CalendarRef, RemoteCalendar } from "./types";
 
 type Row = typeof calendars.$inferSelect;
+type Tx = Parameters<Parameters<DB["transaction"]>[0]>[0];
+
+// Serialises every default-calendar write: under READ COMMITTED two clear-then-set transactions could both commit
+// and leave two defaults. Statements after the lock see the other writer's committed change (IN-C02).
+// ponytail: app-level guarantee only; add a partial unique index on is_default with the next migration if needed.
+const lockDefault = (tx: Tx) => tx.execute(sql`select pg_advisory_xact_lock(hashtext('lifeos.calendars.default'))`);
 
 /** Sync the owner's calendar list. Keeps their enabled/category/default choices; new primary/owned calendars start ticked as Personal (D-01, D-02). */
 export async function refreshCalendarList(h: DB = db(), connectionId: CalendarConnectionId, remote: RemoteCalendar[], account: string | null): Promise<void> {
@@ -25,6 +31,7 @@ export async function refreshCalendarList(h: DB = db(), connectionId: CalendarCo
     // cascade away the owner's settings and cached events (WR-A03). Disconnect removes everything explicitly.
     const keep = remote.map((r) => r.remoteId);
     if (keep.length) await tx.delete(calendars).where(and(eq(calendars.connectionId, connectionId), notInArray(calendars.remoteId, keep)));
+    await lockDefault(tx);
     const all = await tx.select().from(calendars);
     if (!all.some((c) => c.isDefault)) {
       const first = all.find((c) => c.enabled && c.access !== "reader");
@@ -51,6 +58,7 @@ export async function setCalendarCategory(h: DB = db(), id: string, category: st
 
 export async function setDefaultCalendar(h: DB = db(), id: string): Promise<{ ok: true } | { ok: false; error: "not_writable" }> {
   const r = await h.transaction(async (tx) => {
+    await lockDefault(tx);
     const [c] = await tx.select().from(calendars).where(eq(calendars.id, id));
     if (!c || !c.enabled || c.access === "reader") return { ok: false as const, error: "not_writable" as const };
     await tx.update(calendars).set({ isDefault: false }).where(eq(calendars.isDefault, true));

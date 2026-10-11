@@ -96,4 +96,16 @@ describe("calendar settings actions", () => {
     const id = await seed("reader");
     expect(await setDefaultCalendarAction(id)).toEqual({ ok: false, error: "not_writable" });
   });
+
+  it("concurrent default changes leave exactly one default (IN-C02)", async () => {
+    await seed("owner");
+    const rows = await t
+      .handle()
+      .insert(calendars)
+      .values(["r2", "r3", "r4", "r5", "r6"].map((remoteId) => ({ connectionId: "icloud_calendar", remoteId, name: remoteId, access: "owner", kind: "owned", enabled: true, category: "personal" })))
+      .returning();
+    const { setDefaultCalendar } = await import("@/server/calendar/calendars");
+    await Promise.all(rows.map((c) => setDefaultCalendar(t.handle(), c.id)));
+    expect((await t.handle().select().from(calendars).where(eq(calendars.isDefault, true))).length).toBe(1);
+  });
 });
