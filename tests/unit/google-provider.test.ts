@@ -58,6 +58,15 @@ describe("google provider", () => {
     expect(f.calls[1]!.url).toContain("pageToken=PAGE2");
   });
 
+  it("a truncated fetch never resets and keeps the old cursor (WR-A02)", async () => {
+    const page = json({ items: [{ id: "p", status: "confirmed", start: { dateTime: "2026-10-10T10:00:00Z" }, end: { dateTime: "2026-10-10T11:00:00Z" } }], nextPageToken: "MORE" });
+    const full = make({ [`GET ${EV}`]: page });
+    expect(await full.p.sync(ref, window)).toMatchObject({ reset: false, cursor: null });
+    expect(full.f.calls).toHaveLength(40);
+    const inc = make({ [`GET ${EV}`]: page });
+    expect(await inc.p.sync({ ...ref, syncCursor: "OLD" }, window)).toMatchObject({ reset: false, cursor: "OLD" });
+  });
+
   it("incremental sync sends syncToken only; 410 forces a full resync", async () => {
     const inc = make({ [`GET ${EV}`]: json({ items: [], nextSyncToken: "SYNC2" }) });
     const r = await inc.p.sync({ ...ref, syncCursor: "SYNC1" }, window);

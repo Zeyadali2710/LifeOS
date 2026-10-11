@@ -120,7 +120,7 @@ export function createGoogleProvider({ google }: { google: ReturnType<typeof cre
     const q = cursor
       ? `?singleEvents=false&showDeleted=true&maxResults=250&syncToken=${encodeURIComponent(cursor)}`
       : "?singleEvents=false&showDeleted=true&maxResults=250";
-    const { items, nextSyncToken } = await google.paginate(`${cal(ref.remoteId)}${q}`, eventSchema);
+    const { items, nextSyncToken, truncated } = await google.paginate(`${cal(ref.remoteId)}${q}`, eventSchema);
     const upserts: NormalizedEvent[] = [];
     const deletes: string[] = [];
     for (const e of items) {
@@ -132,6 +132,8 @@ export function createGoogleProvider({ google }: { google: ReturnType<typeof cre
         else upserts.push(n);
       }
     }
+    // Truncated: never prune on a partial set, and keep the old cursor so the missed changes are fetched again (WR-A02).
+    if (truncated) return { upserts, deletes, cursor, reset: false } satisfies SyncResult;
     return { upserts, deletes, cursor: nextSyncToken, reset: !cursor } satisfies SyncResult;
   }
 
@@ -139,7 +141,8 @@ export function createGoogleProvider({ google }: { google: ReturnType<typeof cre
     name: "google",
 
     async listCalendars() {
-      const { items } = await google.paginate("/users/me/calendarList?maxResults=250", calendarSchema);
+      const { items, truncated } = await google.paginate("/users/me/calendarList?maxResults=250", calendarSchema);
+      if (truncated) throw new ProviderError("google", "unavailable", 0, "Google didn't respond."); // a partial list would prune calendars
       return items.filter((c) => !c.deleted).map((c) => ({ remoteId: c.id, name: c.summaryOverride ?? c.summary ?? c.id, access: access(c.accessRole), kind: remoteKind(c) }));
     },
 

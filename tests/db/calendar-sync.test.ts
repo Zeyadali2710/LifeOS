@@ -99,6 +99,16 @@ describe("calendar sync", () => {
     expect((await h.select().from(calendarEvents)).map((r) => r.remoteId)).toEqual(["a"]);
   });
 
+  it("reset keeps rows whose resource exists but could not be read (WR-A02)", async () => {
+    const h = t.handle();
+    const [cal] = await h.select().from(calendars).where(eq(calendars.remoteId, "main"));
+    await h.insert(calendarEvents).values({ calendarId: cal!.id, ...event("unreadable", "Kept", 10), url: "https://p01-caldav.icloud.com/x/bad.ics", raw: {} });
+    const state = { calendars: remote, results: { main: { upserts: [event("a", "Standup moved", 6, 1, "e2")], deletes: [], cursor: "c3", reset: true, keepUrls: ["https://p01-caldav.icloud.com/x/bad.ics"] } } };
+    await createCalendarSync({ handle: h, providerFor: async () => fakeCalendarProvider("google", state), emit, now: () => NOW }).run();
+    expect((await h.select().from(calendarEvents)).map((r) => r.remoteId).sort()).toEqual(["a", "unreadable"]);
+    await h.delete(calendarEvents).where(eq(calendarEvents.remoteId, "unreadable"));
+  });
+
   it("caps activity at 5 plus one summary", async () => {
     const h = t.handle();
     const ups = [1, 2, 3, 4, 5, 6, 7].map((i) => event(`m${i}`, `Meet ${i}`, 60 + i * 3));

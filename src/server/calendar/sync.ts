@@ -82,7 +82,8 @@ export function createCalendarSync(opts: Opts) {
           const prev = new Map((await h.select().from(calendarEvents).where(eq(calendarEvents.calendarId, cal.id))).map((e) => [e.remoteId, e]));
           const seen = new Set(r.upserts.map((e) => e.remoteId));
           const gone = new Set(r.deletes.filter((x) => prev.has(x)));
-          if (r.reset) for (const k of prev.keys()) if (!seen.has(k)) gone.add(k);
+          const keep = new Set(r.keepUrls ?? []);
+          if (r.reset) for (const [k, o] of prev) if (!seen.has(k) && !(o.url && keep.has(o.url))) gone.add(k);
           const local: Change[] = [];
           for (const e of r.upserts) {
             const o = prev.get(e.remoteId);

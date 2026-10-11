@@ -50,6 +50,7 @@ describe("caldav provider", () => {
     const f = fakeDav({ objects: { [URL1]: fx("icloud-recurring"), [`${CAL}bad.ics`]: "garbage", [`${CAL}big.ics`]: "x".repeat(300 * 1024) } });
     const r = await createCaldavProvider({ dav: f.dav }).sync(cal(), win);
     expect(r.upserts).toHaveLength(1);
+    expect(r.keepUrls?.sort()).toEqual([`${CAL}bad.ics`, `${CAL}big.ics`]);
   });
 
   it("rejects non-icloud and non-https urls", () => {

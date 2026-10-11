@@ -47,8 +47,11 @@ export type RemoteCalendar = {
 
 export type SyncWindow = { from: Date; to: Date };
 
-/** reset true = upserts are the complete current set for that calendar; the caller deletes every other row of it. */
-export type SyncResult = { upserts: NormalizedEvent[]; deletes: string[]; cursor: string | null; ctag?: string | null; reset: boolean };
+/**
+ * reset true = upserts are the complete current set for that calendar; the caller deletes every other row of it,
+ * except rows whose url is in keepUrls (resources that exist remotely but could not be read this time).
+ */
+export type SyncResult = { upserts: NormalizedEvent[]; deletes: string[]; cursor: string | null; ctag?: string | null; reset: boolean; keepUrls?: string[] };
 
 export type WriteScope = "this" | "following" | "all";
 

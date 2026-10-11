@@ -103,7 +103,8 @@ export function createGoogle({ getToken, fetch = globalThis.fetch, timeoutMs = 1
     return schema.parse(await res.json());
   }
 
-  async function paginate<T>(path: string, itemSchema: z.ZodType<T>, maxPages = 40): Promise<{ items: T[]; nextSyncToken: string | null }> {
+  /** truncated: the page limit was hit, so items is not the complete set (WR-A02). */
+  async function paginate<T>(path: string, itemSchema: z.ZodType<T>, maxPages = 40): Promise<{ items: T[]; nextSyncToken: string | null; truncated: boolean }> {
     const page = z.object({ items: z.array(itemSchema).nullish(), nextPageToken: z.string().nullish(), nextSyncToken: z.string().nullish() });
     const items: T[] = [];
     let token: string | null = null;
@@ -116,7 +117,7 @@ export function createGoogle({ getToken, fetch = globalThis.fetch, timeoutMs = 1
       token = r.nextPageToken ?? null;
       if (!token) break;
     }
-    return { items, nextSyncToken: sync };
+    return { items, nextSyncToken: sync, truncated: token !== null };
   }
 
   return { call, paginate };

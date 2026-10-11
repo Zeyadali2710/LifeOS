@@ -119,7 +119,7 @@ export async function realDav(creds: { appleId: string; password: string }): Pro
       ),
     objects: (calUrl, w) =>
       wrap(async () =>
-        (await c.fetchCalendarObjects({ calendar: { url: calUrl }, timeRange: { start: w.from.toISOString(), end: w.to.toISOString() } })).slice(0, MAX_OBJECTS).map(obj),
+        (await c.fetchCalendarObjects({ calendar: { url: calUrl }, timeRange: { start: w.from.toISOString(), end: w.to.toISOString() } })).map(obj),
       ),
     object: (calUrl, url) => wrap(async () => (await c.fetchCalendarObjects({ calendar: { url: calUrl }, objectUrls: [url] })).map(obj)[0] ?? null),
     create: (calUrl, filename, ics) => wrap(async () => (await c.createCalendarObject({ calendar: { url: calUrl }, filename, iCalString: ics })).status),
@@ -222,20 +222,23 @@ export function createCaldavProvider({ dav }: { dav: DavClient }): CalendarProvi
       const calUrl = assertIcloudUrl(dir(cal.remoteId)).href;
       const current = (await guard(() => dav.calendars())).find((c) => dir(c.url) === calUrl);
       if (current?.ctag && current.ctag === cal.ctag) return { upserts: [], deletes: [], cursor: cal.syncCursor, ctag: cal.ctag, reset: false };
-      const objs = await guard(() => dav.objects(calUrl, window));
+      const all = await guard(() => dav.objects(calUrl, window));
+      const truncated = all.length > MAX_OBJECTS;
       const upserts: NormalizedEvent[] = [];
-      let skipped = 0;
-      for (const o of objs) {
+      const keepUrls: string[] = []; // exist remotely but unreadable now: their stored rows must survive the reset (WR-A02)
+      for (const o of all.slice(0, MAX_OBJECTS)) {
         try {
           assertIcloudUrl(o.url);
           if (o.data.length > MAX_BYTES) throw new Error("too large");
           upserts.push(normalizeIcs(o.data, o.url, o.etag));
         } catch {
-          skipped++;
+          keepUrls.push(o.url);
         }
       }
-      if (skipped) log.warn({ skipped }, "icloud resources skipped");
-      return { upserts, deletes: [], cursor: cal.syncCursor, ctag: current?.ctag ?? null, reset: true };
+      if (keepUrls.length || truncated) log.warn({ skipped: keepUrls.length, truncated }, "icloud resources skipped");
+      // Truncated: no prune, and keep the old ctag so the next run fetches again instead of short-circuiting.
+      if (truncated) return { upserts, deletes: [], cursor: cal.syncCursor, ctag: cal.ctag, reset: false };
+      return { upserts, deletes: [], cursor: cal.syncCursor, ctag: current?.ctag ?? null, reset: true, keepUrls };
     },
 
     async create(cal, input, opts) {
