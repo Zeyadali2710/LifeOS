@@ -8,7 +8,7 @@ import { Field, Input } from "@/ui/field";
 const ERRORS: Record<string, string> = {
   rejected: "Apple rejected this sign-in. Check the Apple ID and app-specific password (not your Apple ID password) and try again.",
   unreachable: "Couldn't reach iCloud. Nothing was saved. Try again.",
-  invalid: "Couldn't reach iCloud. Nothing was saved. Try again.",
+  invalid: "Check the Apple ID format (it looks like an email address) and the app-specific password. Nothing was saved.",
   failed: "Couldn't reach iCloud. Nothing was saved. Try again.",
 };
 
