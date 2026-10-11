@@ -18,7 +18,7 @@ function Items({ items, more, onNavigate }: { items: ResultItemDTO[]; more: numb
   return (
     <div className="flex flex-col gap-1 rounded-12 border border-[rgba(255,255,255,.07)] bg-fill-1 p-1.5">
       {items.map((it, i) => (
-        <Link key={i} href={it.href} onClick={onNavigate} className="flex min-h-11 items-start gap-2.5 rounded-8 px-2.5 py-2 hover:bg-fill-2 tab:min-h-0">
+        <Link key={`${it.key}|${it.href}|${it.title}|${it.subtitle}|${i}`} href={it.href} onClick={onNavigate} className="flex min-h-11 items-start gap-2.5 rounded-8 px-2.5 py-2 hover:bg-fill-2 tab:min-h-0">
           <span
             className={`mt-0.5 w-9 shrink-0 font-mono text-[10.5px] font-medium tracking-[0.08em] ${KEY_COLOR[it.key]}`}
             style={it.key === "EVENT" && isCategory(it.category) ? { color: CATEGORY[it.category].color } : undefined}
