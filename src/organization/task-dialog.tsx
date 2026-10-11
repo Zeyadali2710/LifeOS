@@ -75,7 +75,14 @@ function Form({ task, initialTitle, onClose }: { task?: TaskDTO; initialTitle: s
       if ("errors" in r) return setErrors(r.errors);
       return toast("Couldn't save that. Try again.", "error");
     }
-    if (task && done !== !!task.completedAt) await toggleTaskAction(task.id, done);
+    if (task && done !== !!task.completedAt) {
+      const t = await toggleTaskAction(task.id, done).catch(() => ({ ok: false }) as const);
+      if (!t.ok) {
+        setBusy(false);
+        router.refresh();
+        return toast("Saved, but couldn't change completion. Try again.", "error");
+      }
+    }
     setBusy(false);
     toast(task ? "Task saved" : "Task added");
     router.refresh();
