@@ -109,7 +109,7 @@ export async function deleteTask(h: DB, id: string): Promise<{ ok: boolean }> {
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-function dueBody(r: { dueDate: string | null; dueTime: string | null; dueAt: Date | null }, now: Date): string {
+export function dueBody(r: { dueDate: string | null; dueTime: string | null; dueAt: Date | null }, now: Date): string {
   if (!r.dueDate || !r.dueAt) return "No due date.";
   const p = sydneyParts(r.dueAt);
   const day = `${p.weekday} ${p.day} ${MONTHS[p.month - 1]}`;

@@ -7,6 +7,7 @@ import { addDaysYmd, sydneyYmd } from "./calendar/free-slots";
 import { listEvents, loadTasks } from "./calendar/queries";
 import { log } from "./log";
 import { requireOwner } from "./session";
+import { dueBody } from "./tasks";
 import { formatHM, sydneyParts } from "./time";
 
 const EMPTY: PaletteData = { events: [], tasks: [] };
@@ -46,15 +47,13 @@ export async function paletteSearchAction(raw: unknown): Promise<PaletteData> {
       tasks: open
         .filter((t) => t.title.toLowerCase().includes(q))
         .slice(0, 4)
-        .map((t) => {
-          const due = t.dueAt ? new Date(t.dueAt) : null;
-          return {
-            id: t.id,
-            title: t.title,
-            subtitle: due ? `Due ${sydneyParts(due).weekday} ${formatHM(due)}` : "No due date",
-            href: "/organization#tasks",
-          };
-        }),
+        .map((t) => ({
+          id: t.id,
+          title: t.title,
+          // Shared with reminders: day + month, time only when one was set (IN-C04).
+          subtitle: dueBody({ ...t, dueAt: t.dueAt ? new Date(t.dueAt) : null }, now).replace(/\.$/, ""),
+          href: "/organization#tasks",
+        })),
     };
   } catch (err) {
     log.error({ err }, "palette search failed"); // never log the query
