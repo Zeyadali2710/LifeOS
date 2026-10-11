@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { CalendarDTO, ConflictDTO, PlanItemDTO } from "@/lib/calendar-types";
-import { addPlanItemAction } from "@/server/calendar-actions";
+import { addPlanItemAction, type EventActionResult } from "@/server/calendar-actions";
 import { formatHM, sydneyParts } from "@/server/time";
 import { useShell } from "@/shell/shell-provider";
 import { Button } from "@/ui/button";
@@ -63,7 +63,7 @@ export function TodaysPlanCard({
     if (!it.start || !it.end) return;
     setBusy(it.id);
     setPicking(null);
-    const r = await addPlanItemAction({ taskId: it.taskId, start: it.start, end: it.end, calendarId });
+    const r = await addPlanItemAction({ taskId: it.taskId, start: it.start, end: it.end, calendarId }).catch((): EventActionResult => ({ ok: false, error: "provider", provider: null }));
     setBusy(null);
     if (r.ok) {
       setAdded((s) => new Set(s).add(it.id));

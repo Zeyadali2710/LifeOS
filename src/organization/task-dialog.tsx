@@ -69,7 +69,7 @@ function Form({ task, initialTitle, onClose }: { task?: TaskDTO; initialTitle: s
     setErrors(errs);
     if (Object.keys(errs).length || !parsed.success) return;
     setBusy(true);
-    const r = task ? await updateTaskAction(task.id, parsed.data) : await createTaskAction(parsed.data);
+    const r = await (task ? updateTaskAction(task.id, parsed.data) : createTaskAction(parsed.data)).catch(() => ({ ok: false, error: "failed" }) as const);
     if (!r.ok) {
       setBusy(false);
       if ("errors" in r) return setErrors(r.errors);
@@ -85,7 +85,7 @@ function Form({ task, initialTitle, onClose }: { task?: TaskDTO; initialTitle: s
   const remove = async () => {
     if (!task) return;
     setBusy(true);
-    const r = await deleteTaskAction(task.id);
+    const r = await deleteTaskAction(task.id).catch(() => ({ ok: false, error: "failed" }) as const);
     setBusy(false);
     if (!r.ok) return toast("Couldn't save that. Try again.", "error");
     toast("Task deleted");

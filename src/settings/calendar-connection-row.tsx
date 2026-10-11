@@ -82,7 +82,7 @@ export function CalendarConnectionRow({ conn, notice, open = false }: { conn: Ca
 
   async function disconnect() {
     setConfirm(false);
-    const r = await disconnectCalendarAction(conn.id);
+    const r = await disconnectCalendarAction(conn.id).catch(() => ({ ok: false }));
     if (r.ok) {
       toast(`${m.name} disconnected`);
       router.refresh();

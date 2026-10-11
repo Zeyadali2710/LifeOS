@@ -145,7 +145,7 @@ function EventApprovalShell({ approval: a, onChange }: DetailProps) {
   const stale = a.targetChanged === true;
   const guard = async (k: NonNullable<typeof busy>, fn: () => Promise<{ ok: boolean; approval?: ApprovalDTO; errors?: Record<string, string> }>, done?: string) => {
     setBusy(k);
-    const r = await fn();
+    const r = await fn().catch(() => ({ ok: false }) as { ok: boolean; approval?: ApprovalDTO; errors?: Record<string, string> });
     setBusy(null);
     if (r.approval) onChange(r.approval);
     if (r.errors) {
@@ -249,7 +249,7 @@ function IssueApprovalBody({ approval: a, write, onChange, issue }: DetailProps 
 
   const guard = async (kind: NonNullable<typeof busy>, fn: () => Promise<{ ok: boolean; approval?: ApprovalDTO; errors?: Record<string, string> }>, done?: string) => {
     setBusy(kind);
-    const r = await fn();
+    const r = await fn().catch(() => ({ ok: false }) as { ok: boolean; approval?: ApprovalDTO; errors?: Record<string, string> });
     setBusy(null);
     if (r.approval) onChange(r.approval);
     if (r.errors) {

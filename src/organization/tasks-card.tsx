@@ -50,7 +50,7 @@ export function TasksCard({ tasks, allOpen, completed, today }: { tasks: TaskDTO
     setSay(next ? "Task completed" : "Task reopened");
     if (next) setTimeout(() => setCollapsed((c) => new Set(c).add(t.id)), 4000);
     else setCollapsed((c) => (c.delete(t.id), new Set(c)));
-    const r = await toggleTaskAction(t.id, next);
+    const r = await toggleTaskAction(t.id, next).catch(() => ({ ok: false, error: "failed" }) as const);
     if (!r.ok) {
       setOptimistic((o) => ({ ...o, [t.id]: !next }));
       toast("Couldn't save that. Try again.", "error");
@@ -63,7 +63,7 @@ export function TasksCard({ tasks, allOpen, completed, today }: { tasks: TaskDTO
     const v = title.trim();
     if (!v) return;
     setTitle("");
-    const r = await quickAddTaskAction(v);
+    const r = await quickAddTaskAction(v).catch(() => ({ ok: false, error: "failed" }) as const);
     if (!r.ok) {
       setTitle(v);
       return toast("Couldn't save that. Try again.", "error");
