@@ -64,6 +64,11 @@ describe("icsApply", () => {
     expect(String(rid.jCal[3])).toBe("2026-10-22T09:00:00");
     expect(String(ov.getFirstProperty("dtstart")!.jCal[3])).toBe("2026-10-22T18:00:00");
     expect(ov.hasProperty("rrule")).toBe(false);
+    // a new override keeps the master's alarm and X- props, never its exclusions (IN-A06)
+    expect(ov.getAllSubcomponents("valarm")).toHaveLength(1);
+    expect(ov.hasProperty("x-apple-travel-advisory-behavior")).toBe(true);
+    expect(ov.hasProperty("exdate")).toBe(false);
+    expect(ov.getFirstPropertyValue("uid")).toBe("rec1@icloud");
   });
 
   it("this/delete adds EXDATE and removes the override", () => {

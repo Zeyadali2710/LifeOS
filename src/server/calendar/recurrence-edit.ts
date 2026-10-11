@@ -164,8 +164,9 @@ export function icsApply(ics: string, edit: Edit): { updated: string | null; cre
     } else {
       let ov = findOverrides((k) => k === key)[0];
       if (!ov) {
-        ov = new ICAL.Component("vevent");
-        ov.updatePropertyWithValue("uid", master.getFirstPropertyValue("uid") as string);
+        // Clone the master so VALARM, attendees, URL, categories and X- props carry over to the occurrence (IN-A06).
+        ov = new ICAL.Component(JSON.parse(JSON.stringify(master.jCal)) as unknown[]);
+        for (const p of ["rrule", "rdate", "exdate"]) ov.removeAllProperties(p);
         ov.addProperty(refProp("recurrence-id"));
         root.addSubcomponent(ov);
       }
