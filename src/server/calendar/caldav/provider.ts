@@ -221,7 +221,10 @@ export function createCaldavProvider({ dav }: { dav: DavClient }): CalendarProvi
     async sync(cal, window) {
       const calUrl = assertIcloudUrl(dir(cal.remoteId)).href;
       const current = (await guard(() => dav.calendars())).find((c) => dir(c.url) === calUrl);
-      if (current?.ctag && current.ctag === cal.ctag) return { upserts: [], deletes: [], cursor: cal.syncCursor, ctag: cal.ctag, reset: false };
+      // The window slides daily, so an unchanged ctag only short-circuits within the same window day; syncCursor holds
+      // the day of the last full fetch (CalDAV has no other use for it) (WR-A08).
+      const day = window.from.toISOString().slice(0, 10);
+      if (current?.ctag && current.ctag === cal.ctag && cal.syncCursor === day) return { upserts: [], deletes: [], cursor: cal.syncCursor, ctag: cal.ctag, reset: false };
       const all = await guard(() => dav.objects(calUrl, window));
       const truncated = all.length > MAX_OBJECTS;
       const upserts: NormalizedEvent[] = [];
@@ -238,7 +241,7 @@ export function createCaldavProvider({ dav }: { dav: DavClient }): CalendarProvi
       if (keepUrls.length || truncated) log.warn({ skipped: keepUrls.length, truncated }, "icloud resources skipped");
       // Truncated: no prune, and keep the old ctag so the next run fetches again instead of short-circuiting.
       if (truncated) return { upserts, deletes: [], cursor: cal.syncCursor, ctag: cal.ctag, reset: false };
-      return { upserts, deletes: [], cursor: cal.syncCursor, ctag: current?.ctag ?? null, reset: true, keepUrls };
+      return { upserts, deletes: [], cursor: day, ctag: current?.ctag ?? null, reset: true, keepUrls };
     },
 
     async create(cal, input, opts) {

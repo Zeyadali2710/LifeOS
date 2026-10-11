@@ -435,7 +435,7 @@ export const calendars = pgTable(
     enabled: boolean().notNull().default(false), // D-01 opt-in
     category: text(), // "work" | "personal" | "social" | "career" | "events" | "deadlines"; null until chosen (D-02)
     isDefault: boolean().notNull().default(false), // D-09
-    syncCursor: text(), // Google nextSyncToken / CalDAV sync token
+    syncCursor: text(), // Google nextSyncToken / CalDAV: day (YYYY-MM-DD) of the last full fetch
     ctag: text(),
     lastSyncedAt: tstz(),
     ...timestamps,

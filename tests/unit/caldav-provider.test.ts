@@ -42,9 +42,14 @@ describe("caldav provider", () => {
     expect(r.upserts[0]).toMatchObject({ remoteId: "rec1@icloud", title: "Standup", transparency: "opaque" });
     expect(r.upserts[0]!.recurrence?.[0]).toMatch(/^RRULE:FREQ=WEEKLY/);
     f.calls.length = 0;
-    const again = await createCaldavProvider({ dav: f.dav }).sync(cal({ ctag: "c1" }), win);
+    expect(r.cursor).toBe("2026-09-01");
+    const again = await createCaldavProvider({ dav: f.dav }).sync(cal({ ctag: "c1", syncCursor: r.cursor }), win);
     expect(again).toMatchObject({ reset: false, upserts: [] });
     expect(f.calls).not.toContain("objects");
+    // a new window day forces a full fetch even with the same ctag (WR-A08)
+    const next = { from: new Date("2026-09-02"), to: new Date("2027-01-02") };
+    const later = await createCaldavProvider({ dav: f.dav }).sync(cal({ ctag: "c1", syncCursor: r.cursor }), next);
+    expect(later).toMatchObject({ reset: true, cursor: "2026-09-02" });
   });
 
   it("skips oversized and malformed resources", async () => {
