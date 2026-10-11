@@ -26,10 +26,21 @@ export function CalendarList({ calendars, defaultOpen = false }: { calendars: Ca
   // Optimistic: apply, call, revert + toast on failure. No per-change toast on success.
   async function change(id: string, patch: (r: CalendarDTO[]) => CalendarDTO[], call: () => Promise<{ ok: boolean }>) {
     const before = rows;
-    setRows(patch(rows));
+    const want = patch(before);
+    setRows((cur) => patch(cur));
     const r = await call().catch(() => ({ ok: false }));
     if (!r.ok) {
-      setRows(before);
+      // Undo only the fields this change set, so a concurrent edit to another row or field survives (WR-B12).
+      setRows((cur) =>
+        cur.map((x) => {
+          const b = before.find((y) => y.id === x.id);
+          const w = want.find((y) => y.id === x.id);
+          if (!b || !w) return x;
+          const o: Record<string, unknown> = { ...x };
+          for (const k of Object.keys(w) as (keyof CalendarDTO)[]) if (w[k] !== b[k] && x[k] === w[k]) o[k] = b[k];
+          return o as unknown as CalendarDTO;
+        }),
+      );
       return toast("Couldn't save that. Try again.", "error");
     }
     setSaved(id);
