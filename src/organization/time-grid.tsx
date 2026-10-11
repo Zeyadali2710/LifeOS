@@ -71,10 +71,13 @@ export function TimeGrid({
     return () => clearInterval(t);
   }, []);
 
-  // initial scroll: now (today) or 08:00 sits ~120px from the top
+  // initial scroll: now (today) or 08:00 sits ~120px from the top. Once per range/start hour, so a refresh keeps the scroll.
+  const scrolledFor = useRef<string | null>(null);
   useEffect(() => {
     const el = scroller.current;
-    if (!el) return;
+    const k = `${days[0]}:${days.length}:${startHour}`;
+    if (!el || scrolledFor.current === k) return;
+    scrolledFor.current = k;
     const p = sydneyParts(new Date(nowMs));
     const h = days.includes(today) ? p.hour + p.minute / 60 : 8;
     el.scrollTop = Math.max(0, (h - startHour) * HOUR_PX - 120);
