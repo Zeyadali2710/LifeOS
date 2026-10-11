@@ -22,7 +22,7 @@ metrics:
 
 # Phase 4 Plan 06: Organization schema Summary
 
-calendars, calendar_events and tasks tables with generated migration 0003, client-safe DTO/category contracts, and a VM test-Postgres runner. Tasks 1 and 2 done; Task 3 (owner VM gate) is PENDING.
+calendars, calendar_events and tasks tables with generated migration 0003, client-safe DTO/category contracts, and a VM test-Postgres runner. All 3 tasks done; owner VM gate passed.
 
 ## Commits
 - 2964c14 feat(04-06): Phase 4 tables and client DTO/category contracts
@@ -30,12 +30,12 @@ calendars, calendar_events and tasks tables with generated migration 0003, clien
 
 ## Verification
 - `npm run typecheck` clean. Migration generated offline (3 CREATE TABLE, 2 FK cascades, 2 unique indexes, 2 ALTER ADD CONSTRAINT for those FKs only).
-- DB tests NOT run (no Postgres in worktree); to be run at the VM gate.
+- DB tests run at the VM gate (see below); all green.
 
-## Pending (Task 3)
-- migrate: pending
-- vitest summary: pending
-- vm_ssh: pending
+## VM gate (Task 3)
+- migrate: 0003_organization applied (migrations.test + schema-organization green; app running on 0003)
+- vitest summary: Test Files 1 failed | 5 passed (6); Tests 1 failed | 33 passed (34). The one failure was a test bug in approvals.test.ts, fixed in 2cf834b, then green in the full run.
+- vm_ssh: owner-run
 
 ## Deviations
 - Worktree base corrected with `git reset --hard e0527e3` per startup check.
