@@ -53,6 +53,13 @@ describe("earlierCount", () => {
     ];
     expect(earlierCount(items, d)).toBe(1);
   });
+  it("hides and counts a zero-length event before 07:00, shows one at 07:00 (IN-B03)", () => {
+    const d = "2026-10-08";
+    expect(blockGeometry(at(d, "05:00"), at(d, "05:00"), d)).toBeNull();
+    expect(earlierCount([{ start: at(d, "05:00"), end: at(d, "05:00"), allDay: false }], d)).toBe(1);
+    expect(blockGeometry(at(d, "07:00"), at(d, "07:00"), d)).not.toBeNull();
+    expect(earlierCount([{ start: at(d, "07:00"), end: at(d, "07:00"), allDay: false }], d)).toBe(0);
+  });
   it("counts an overnight event whose tail ends before 07:00 (WR-B02)", () => {
     const night = { start: at("2026-10-07", "22:00"), end: at("2026-10-08", "06:00"), allDay: false };
     expect(earlierCount([night], "2026-10-08")).toBe(1);

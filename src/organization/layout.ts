@@ -26,7 +26,7 @@ export function blockGeometry(startIso: string, endIso: string, ymd: string, sta
   const endsAfter = ymdOf(e) > ymd;
   const sh = startsBefore ? 0 : hourOf(s);
   const eh = endsAfter ? 24 : hourOf(e);
-  if (eh <= startHour && sh < eh) return null;
+  if (eh <= startHour && sh < startHour) return null; // zero-length events before the window are hidden too
   const from = Math.max(sh, startHour);
   const top = (from - startHour) * HOUR_PX + 1;
   const height = Math.max(MIN_H, (Math.max(eh, from) - from) * HOUR_PX - 3);
