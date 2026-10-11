@@ -117,19 +117,26 @@ function dueBody(r: { dueDate: string | null; dueTime: string | null; dueAt: Dat
   return r.dueDate === today ? "Due today." : `Due ${day}.`;
 }
 
-/** Claim due, unreminded, open tasks in one UPDATE ... RETURNING (exactly once per arming), then notify each. */
+/**
+ * Claim due, unreminded, open tasks in one UPDATE ... RETURNING (no double-fire across runs), then notify each.
+ * emitActivity never throws; a failed notification un-claims its row so the next run retries it.
+ */
 export async function fireDueReminders(h: DB, now: Date, emit: typeof emitActivity = emitActivity): Promise<number> {
   const claimed = await h
     .update(tasks)
     .set({ remindedAt: now })
     .where(and(lte(tasks.remindAt, now), isNull(tasks.remindedAt), isNull(tasks.completedAt)))
     .returning();
+  let fired = 0;
   for (const r of claimed) {
-    await emit(
+    const sent = await emit(
       { type: "task.reminder", source: "calendar", title: "Reminder", detail: r.title },
       { category: "REMINDER", title: `Reminder: ${r.title}`, body: dueBody(r, now), actionUrl: "/organization#tasks" },
       h,
     );
+    // ponytail: a worker crash between claim and emit still drops the reminder; per-row claim+emit in one tx if that matters.
+    if (sent) fired++;
+    else await h.update(tasks).set({ remindedAt: null }).where(and(eq(tasks.id, r.id), eq(tasks.remindedAt, now)));
   }
-  return claimed.length;
+  return fired;
 }

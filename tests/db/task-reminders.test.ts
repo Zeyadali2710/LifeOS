@@ -7,11 +7,11 @@ const T0 = new Date("2026-10-05T00:00:00Z"); // 11:00 Sydney Mon 5 Oct
 const T1 = new Date("2026-10-05T02:00:00Z");
 
 type Em = { a: { type: string; source: string; title: string; detail?: string }; n?: { category: string; title: string; body?: string; actionUrl?: string } };
-function spy() {
+function spy(ok = true) {
   const calls: Em[] = [];
   const emit = (async (a: Em["a"], n?: Em["n"]) => {
     calls.push({ a, n });
-    return null;
+    return ok ? { activityId: "a" } : null;
   }) as unknown as Parameters<typeof fireDueReminders>[2];
   return { calls, emit };
 }
@@ -47,5 +47,13 @@ describe("fireDueReminders", () => {
     const re = spy();
     expect(await fireDueReminders(t.handle(), new Date("2026-10-05T04:00:00Z"), re.emit)).toBe(1);
     expect(re.calls[0]!.a.detail).toBe("Pay rent");
+  });
+
+  it("un-claims a reminder whose notification failed, so the next run retries it", async () => {
+    await mk({ title: "Retry", remindAt: "2026-10-05T01:00:00Z" });
+    expect(await fireDueReminders(t.handle(), T1, spy(false).emit)).toBe(0);
+    const s = spy();
+    expect(await fireDueReminders(t.handle(), new Date("2026-10-05T02:01:00Z"), s.emit)).toBe(1);
+    expect(s.calls[0]!.a.detail).toBe("Retry");
   });
 });
