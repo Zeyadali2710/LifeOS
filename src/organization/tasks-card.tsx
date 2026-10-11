@@ -61,7 +61,12 @@ export function TasksCard({ tasks, allOpen, completed, today }: { tasks: TaskDTO
     setSay(next ? "Task completed" : "Task reopened");
     clearTimeout(timers.current.get(t.id));
     if (next) timers.current.set(t.id, setTimeout(() => setCollapsed((c) => new Set(c).add(t.id)), 4000));
-    else setCollapsed((c) => (c.delete(t.id), new Set(c)));
+    else
+      setCollapsed((c) => {
+        const n = new Set(c);
+        n.delete(t.id);
+        return n;
+      });
     const r = await toggleTaskAction(t.id, next).catch(() => ({ ok: false, error: "failed" }) as const);
     if (!r.ok) {
       clearTimeout(timers.current.get(t.id));
