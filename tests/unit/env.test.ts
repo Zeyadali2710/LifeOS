@@ -32,12 +32,22 @@ describe("env", () => {
     expect(() => parseEnv({ ...valid, DATABASE_URL: "mysql://u:p@h/db" })).toThrow(/DATABASE_URL/);
   });
 
-  it("treats GOOGLE_CLIENT_ID/SECRET as optional but non-empty", () => {
+  it("treats GOOGLE_CLIENT_ID/SECRET as optional", () => {
     expect(parseEnv(valid).GOOGLE_CLIENT_ID).toBeUndefined();
     const set = parseEnv({ ...valid, GOOGLE_CLIENT_ID: "id", GOOGLE_CLIENT_SECRET: "sec" });
     expect(set.GOOGLE_CLIENT_ID).toBe("id");
     expect(set.GOOGLE_CLIENT_SECRET).toBe("sec");
-    expect(() => parseEnv({ ...valid, GOOGLE_CLIENT_ID: "" })).toThrow(/GOOGLE_CLIENT_ID/);
+  });
+
+  it("treats a blank `KEY=` line as unset for optional and defaulted keys", () => {
+    const e = parseEnv({ ...valid, GOOGLE_CLIENT_ID: "", GOOGLE_CLIENT_SECRET: "", ANTHROPIC_API_KEY: "", OPENROUTER_FREE_MODEL: "", LOG_LEVEL: "", NODE_ENV: "" });
+    expect(e.GOOGLE_CLIENT_ID).toBeUndefined();
+    expect(e.GOOGLE_CLIENT_SECRET).toBeUndefined();
+    expect(e.ANTHROPIC_API_KEY).toBeUndefined();
+    expect(e.OPENROUTER_FREE_MODEL).toBeUndefined();
+    expect(e.LOG_LEVEL).toBe("info");
+    expect(e.NODE_ENV).toBe("development");
+    expect(() => parseEnv({ ...valid, BETTER_AUTH_SECRET: "" })).toThrow(/BETTER_AUTH_SECRET/);
   });
 
   it("validates OPENROUTER_FREE_MODEL ends in :free", () => {
