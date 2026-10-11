@@ -298,7 +298,8 @@ export async function expireDue(h: DB, now: Date = new Date(), opts: { enqueue?:
   return due.length;
 }
 
-async function toDTOs(h: DB, rows: Row[]): Promise<ApprovalDTO[]> {
+/** DTOs with repo privacy and, for pending event update/delete, whether the target changed since the request. */
+export async function toDTOs(h: DB, rows: Row[]): Promise<ApprovalDTO[]> {
   const repos = new Map(
     (await h.select({ n: githubRepos.fullName, p: githubRepos.private }).from(githubRepos)).map((r) => [r.n, r.p]),
   );

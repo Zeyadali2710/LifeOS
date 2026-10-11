@@ -2,7 +2,8 @@ import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import type { AgentStatusDTO, ApprovalDTO, ChatBlockCode, ThreadDetailDTO, TurnDTO } from "@/lib/agent-types";
 import type { DB } from "../db/client";
 import { agentRuns, approvals, connections, githubRepos, threadMessages, threads, toolCalls } from "../db/schema";
-import { routeSteps, toApprovalDTO, toRunDTO, toStepDTO } from "./dto";
+import { toDTOs as approvalDTOs } from "./approvals";
+import { routeSteps, toRunDTO, toStepDTO } from "./dto";
 import { getLlm } from "./llm";
 import { createRun } from "./loop";
 import { getAgent } from "./registry";
@@ -54,7 +55,8 @@ export async function threadDetail(h: DB, id: string): Promise<ThreadDetailDTO |
   const byId = new Map([...tops, ...kids].map((r) => [r.id, r]));
   const ids = [...byId.keys()];
   const calls = ids.length ? await h.select().from(toolCalls).where(inArray(toolCalls.runId, ids)).orderBy(asc(toolCalls.createdAt), asc(toolCalls.seq)) : [];
-  const aps = ids.length ? await h.select().from(approvals).where(inArray(approvals.runId, ids)).orderBy(desc(approvals.createdAt)) : [];
+  // Shared with the Approvals view, so the chat card also knows when an event target changed (IN-B08).
+  const aps = ids.length ? await approvalDTOs(h, await h.select().from(approvals).where(inArray(approvals.runId, ids)).orderBy(desc(approvals.createdAt))) : [];
   const turns: TurnDTO[] = tops.map((r) => {
     const family = new Set([r.id, ...kids.filter((k) => k.parentRunId === r.id).map((k) => k.id)]);
     const toolSteps = calls
@@ -64,7 +66,7 @@ export async function threadDetail(h: DB, id: string): Promise<ThreadDetailDTO |
         return toStepDTO(c, byId.get(c.runId)!, (x) => target ?? toolLabel(x));
       });
     const steps = [...toolSteps, ...[...family].flatMap((id) => routeSteps(byId.get(id)!))];
-    const approvalDtos: ApprovalDTO[] = aps.filter((a) => family.has(a.runId)).map((a) => toApprovalDTO(a));
+    const approvalDtos: ApprovalDTO[] = aps.filter((a) => family.has(a.runId));
     return { id: r.id, prompt: r.prompt, at: r.createdAt.toISOString(), run: toRunDTO(r), steps, approvals: approvalDtos };
   });
   return { thread: { id: t.id, title: t.title, updatedAt: t.updatedAt.toISOString(), messageCount: m?.n ?? 0 }, turns };

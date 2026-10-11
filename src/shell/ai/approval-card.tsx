@@ -133,9 +133,12 @@ export function ApprovalCard({ approval, onDecided }: { approval: ApprovalDTO; o
       <div className="font-mono text-[11px] text-text-3">
         {iss ? `GitHub · ${p.repo}` : "Calendar"} · expires {stamp(a.expiresAt)}
       </div>
+      {a.status === "pending" && a.targetChanged === true && (
+        <p className="text-[12.5px] text-amber">This event changed after the request was prepared, so it can&apos;t be applied. Reject it and ask again.</p>
+      )}
       {a.status === "pending" ? (
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="inverse" className={`h-8 ${a.kind === "event_delete" ? "bg-[#f07a6e] text-[#0b0c10]" : ""}`} loading={busy === "approve"} disabled={busy !== null} onClick={() => void decide("approve")}>
+          <Button variant="inverse" className={`h-8 ${a.kind === "event_delete" ? "bg-[#f07a6e] text-[#0b0c10]" : ""}`} loading={busy === "approve"} disabled={busy !== null || a.targetChanged === true} onClick={() => void decide("approve")}>
             <Icon name="check" size={15} />
             {EV[a.kind].ok}
           </Button>
