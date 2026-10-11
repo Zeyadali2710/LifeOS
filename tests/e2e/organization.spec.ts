@@ -56,12 +56,16 @@ test("quick add shows the task under TASKS · TODAY and the checkbox toggles it"
   await page.goto("/organization");
   await expect(page.getByRole("heading", { name: "TASKS · TODAY" })).toBeVisible();
   const input = page.getByLabel("New task", { exact: true });
+  // The task also shows in Today's plan, so assert inside the Tasks card. Retry only covers Enter before hydration:
+  // never resubmit once the task exists, or each retry adds a duplicate.
+  const box = page.getByRole("region", { name: "Tasks" }).getByRole("checkbox", { name: title });
   await expect(async () => {
-    await input.fill(title);
-    await input.press("Enter");
-    await expect(page.getByText(title)).toBeVisible({ timeout: 2000 });
+    if ((await box.count()) === 0) {
+      await input.fill(title);
+      await input.press("Enter");
+    }
+    await expect(box).toBeVisible({ timeout: 2000 });
   }).toPass();
-  const box = page.getByRole("checkbox", { name: title });
   await box.check();
   await expect(box).toBeChecked();
   await box.uncheck();
