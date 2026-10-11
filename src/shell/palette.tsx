@@ -136,8 +136,11 @@ function PaletteDialog() {
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
+              // A new query drops the old hits and scope, so stale results can't be opened and Commands/Jump to come back (WR-B09).
+              setScope("all");
+              setData(undefined);
               // Default to the best match, not the Ask row; Ask stays one ArrowUp away (and is the only row when nothing matches).
-              setSel(buildPalette(e.target.value, { wide, approvalsWaiting, scope }).noMatch || !e.target.value.trim() ? 0 : 1);
+              setSel(buildPalette(e.target.value, { wide, approvalsWaiting, scope: "all" }).noMatch || !e.target.value.trim() ? 0 : 1);
             }}
             onKeyDown={onKeyDown}
             className="min-w-0 flex-1 bg-transparent text-[16px] text-text outline-none placeholder:text-text-3"
