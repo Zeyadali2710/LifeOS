@@ -56,4 +56,14 @@ describe("fireDueReminders", () => {
     expect(await fireDueReminders(t.handle(), new Date("2026-10-05T02:01:00Z"), s.emit)).toBe(1);
     expect(s.calls[0]!.a.detail).toBe("Retry");
   });
+
+  it("reopening a task disarms a reminder that passed while it was done, but keeps a future one", async () => {
+    const past = await mk({ title: "Past", remindAt: "2026-10-05T01:00:00Z" });
+    const future = await mk({ title: "Future", remindAt: "2026-10-05T03:00:00Z" });
+    for (const id of [past, future]) await setTaskCompleted(t.handle(), id, true, T0);
+    for (const id of [past, future]) await setTaskCompleted(t.handle(), id, false, T1);
+    const s = spy();
+    expect(await fireDueReminders(t.handle(), new Date("2026-10-05T04:00:00Z"), s.emit)).toBe(1);
+    expect(s.calls[0]!.a.detail).toBe("Future");
+  });
 });

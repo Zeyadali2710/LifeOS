@@ -1,4 +1,4 @@
-import { and, eq, isNull, lte } from "drizzle-orm";
+import { and, eq, isNull, lte, sql } from "drizzle-orm";
 import { toTaskDTO, type TaskDTO } from "@/lib/calendar-types";
 import { taskInput } from "@/lib/task-payload";
 import type { FieldErrors } from "./agents/approvals";
@@ -90,7 +90,9 @@ export async function updateTask(h: DB, id: string, raw: unknown, now: Date): Pr
 }
 
 export async function setTaskCompleted(h: DB, id: string, done: boolean, now: Date): Promise<{ ok: true; task: TaskDTO } | { ok: false; error: "not_found" }> {
-  const [row] = await h.update(tasks).set({ completedAt: done ? now : null, updatedAt: now }).where(eq(tasks.id, id)).returning();
+  // Reopening disarms a reminder whose time passed while the task was done (it would otherwise fire at once, stale).
+  const disarm = done ? {} : { remindedAt: sql`case when ${tasks.remindAt} <= ${now} then coalesce(${tasks.remindedAt}, ${now}) else ${tasks.remindedAt} end` };
+  const [row] = await h.update(tasks).set({ completedAt: done ? now : null, ...disarm, updatedAt: now }).where(eq(tasks.id, id)).returning();
   if (!row) return { ok: false, error: "not_found" };
   await aud(h, done ? "task.complete" : "task.reopen", id);
   await notifyLive(h, "task", id);
