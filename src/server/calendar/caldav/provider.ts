@@ -214,7 +214,7 @@ export function createCaldavProvider({ dav }: { dav: DavClient }): CalendarProvi
     async listCalendars(): Promise<RemoteCalendar[]> {
       const all = await guard(() => dav.calendars());
       return all
-        .filter((c) => c.components.includes("VEVENT"))
+        .filter((c) => !c.components.length || c.components.includes("VEVENT")) // no component set reported = may hold events (WR-A03)
         .map((c) => ({ remoteId: assertIcloudUrl(c.url).href, name: c.name, access: c.readOnly ? ("reader" as const) : ("owner" as const), kind: "owned" as const }));
     },
 

@@ -93,6 +93,12 @@ describe("calendar list store", () => {
     expect(rows).toHaveLength(2);
     expect(rows.find((r) => r.remoteId === "p")).toMatchObject({ enabled: true, category: "work" });
 
+    // an empty list from the provider never wipes calendars or their settings (WR-A03)
+    await refreshCalendarList(h, "google_calendar", [], "me@x");
+    rows = await h.select().from(calendars).where(eq(calendars.connectionId, "google_calendar"));
+    expect(rows.find((r) => r.remoteId === "p")).toMatchObject({ enabled: true, category: "work" });
+    expect(rows).toHaveLength(2);
+
     // read-only / disabled cannot be default
     expect(await setDefaultCalendar(h, s.id)).toEqual({ ok: false, error: "not_writable" });
     await setCalendarEnabled(h, s.id, true);

@@ -20,8 +20,10 @@ export async function refreshCalendarList(h: DB = db(), connectionId: CalendarCo
         await tx.insert(calendars).values({ connectionId, remoteId: r.remoteId, ...base, enabled, category: enabled ? "personal" : null, isDefault: false });
       }
     }
+    // An empty list is far more likely a transient provider glitch than "every calendar deleted"; pruning on it would
+    // cascade away the owner's settings and cached events (WR-A03). Disconnect removes everything explicitly.
     const keep = remote.map((r) => r.remoteId);
-    await tx.delete(calendars).where(keep.length ? and(eq(calendars.connectionId, connectionId), notInArray(calendars.remoteId, keep)) : eq(calendars.connectionId, connectionId));
+    if (keep.length) await tx.delete(calendars).where(and(eq(calendars.connectionId, connectionId), notInArray(calendars.remoteId, keep)));
     const all = await tx.select().from(calendars);
     if (!all.some((c) => c.isDefault)) {
       const first = all.find((c) => c.enabled && c.access !== "reader");

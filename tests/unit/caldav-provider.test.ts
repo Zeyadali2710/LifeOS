@@ -28,10 +28,11 @@ describe("caldav provider", () => {
         { url: CAL, name: "Home", components: ["VEVENT"], ctag: "1", readOnly: false },
         { url: `${CAL}r/`, name: "Todo", components: ["VTODO"], ctag: "1", readOnly: false },
         { url: `${CAL}ro/`, name: "Shared", components: ["VEVENT"], ctag: "1", readOnly: true },
+        { url: `${CAL}u/`, name: "Unknown", components: [], ctag: "1", readOnly: false },
       ],
     });
     const l = await createCaldavProvider({ dav: f.dav }).listCalendars();
-    expect(l.map((c) => [c.name, c.access])).toEqual([["Home", "owner"], ["Shared", "reader"]]);
+    expect(l.map((c) => [c.name, c.access])).toEqual([["Home", "owner"], ["Shared", "reader"], ["Unknown", "owner"]]);
   });
 
   it("short-circuits on equal ctag, resets on change", async () => {
