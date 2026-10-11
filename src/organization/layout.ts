@@ -79,9 +79,9 @@ export function rangeLabel(view: "day" | "week" | "month", days: string[] | stri
   return `${DOW[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]} ${d} ${MONTHS[m - 1]}`;
 }
 
-/** Timed events of one day that end at or before 07:00 (hidden above the grid). */
+/** Timed events hidden above the 07:00 grid on this day, overnight tails included. Items must touch the day. */
 export function earlierCount(items: { start: string; end: string; allDay: boolean }[], ymd: string): number {
-  return items.filter((i) => !i.allDay && ymdOf(new Date(i.start)) === ymd && ymdOf(new Date(i.end)) === ymd && hourOf(new Date(i.end)) <= START_HOUR).length;
+  return items.filter((i) => !i.allDay && blockGeometry(i.start, i.end, ymd) === null).length;
 }
 
 /** "Thu 8 Oct" in Sydney. */

@@ -53,4 +53,9 @@ describe("earlierCount", () => {
     ];
     expect(earlierCount(items, d)).toBe(1);
   });
+  it("counts an overnight event whose tail ends before 07:00 (WR-B02)", () => {
+    const night = { start: at("2026-10-07", "22:00"), end: at("2026-10-08", "06:00"), allDay: false };
+    expect(earlierCount([night], "2026-10-08")).toBe(1);
+    expect(earlierCount([night], "2026-10-07")).toBe(0);
+  });
 });
