@@ -9,13 +9,10 @@ export type Scope = "this" | "following" | "all";
 
 export function ScopeDialog({
   kind,
-  firstInstance,
   onConfirm,
   onCancel,
 }: {
   kind: "edit" | "delete";
-  /** the first occurrence of the series: "This and following" would equal "All" */
-  firstInstance: boolean;
   onConfirm(scope: Scope): void;
   onCancel(): void;
 }) {
@@ -23,7 +20,8 @@ export function ScopeDialog({
   const del = kind === "delete";
   const options = [
     { value: "this", label: "This event" },
-    ...(firstInstance ? [] : [{ value: "following", label: "This and following events" }]),
+    // On the first occurrence the server treats "following" as "all", so it is always safe to offer.
+    { value: "following", label: "This and following events" },
     { value: "all", label: "All events" },
   ];
   return (

@@ -241,7 +241,7 @@ export function EventDialog({
   };
 
   if (step === "scope" && instance)
-    return <ScopeDialog kind="edit" firstInstance={false} onConfirm={(s) => void save(s)} onCancel={() => setStep("form")} />;
+    return <ScopeDialog kind="edit" onConfirm={(s) => void save(s)} onCancel={() => setStep("form")} />;
 
   const offset = tzLabel(new Date(instant(f.startDate, "12:00") || 0));
   const changed = fail && "error" in fail && fail.error === "changed";
@@ -396,7 +396,7 @@ export function DeleteFlow({ instance, calendars, onClose }: { instance: OrgInst
   const [pending, setPending] = useState(false);
   const [fail, setFail] = useState<Failure | null>(null);
 
-  if (!scope) return <ScopeDialog kind="delete" firstInstance={false} onConfirm={setScope} onCancel={() => onClose(false)} />;
+  if (!scope) return <ScopeDialog kind="delete" onConfirm={setScope} onCancel={() => onClose(false)} />;
 
   const account = calendars.find((c) => c.id === instance.calendarId)?.account;
   const body = instance.recurring
