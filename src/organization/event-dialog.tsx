@@ -161,7 +161,8 @@ export function EventDialog({
   const [fail, setFail] = useState<Failure | null>(null);
   const [pending, setPending] = useState(false);
   const [step, setStep] = useState<"form" | "scope">("form");
-  const [discard, setDiscard] = useState(false);
+  // what to do once unsaved changes are discarded (close, or go on to delete)
+  const [discard, setDiscard] = useState<(() => void) | null>(null);
   const [reloadAsk, setReloadAsk] = useState(false);
   const formId = "event-form";
   const dirty = JSON.stringify(f) !== JSON.stringify(base);
@@ -170,7 +171,8 @@ export function EventDialog({
   const cal = writable.find((c) => c.id === f.calendarId) ?? calendars.find((c) => c.id === f.calendarId);
   const cat = cal?.category ?? null;
 
-  const close = () => (dirty ? setDiscard(true) : onClose());
+  const leave = (then: () => void) => (dirty ? setDiscard(() => then) : then());
+  const close = () => leave(onClose);
 
   // moving the start keeps the duration (End defaults to Start + 1 h)
   const setStart = (date: string, time: string) =>
@@ -254,7 +256,7 @@ export function EventDialog({
       onClose={close}
       footerStart={
         edit && !instance.readOnly ? (
-          <Button variant="destructive" size="sm" onClick={() => onDelete?.(instance)} disabled={pending}>
+          <Button variant="destructive" size="sm" onClick={() => leave(() => onDelete?.(instance))} disabled={pending}>
             Delete event
           </Button>
         ) : undefined
@@ -376,10 +378,10 @@ export function EventDialog({
       {discard && (
         <div role="alert" className="mt-3 flex items-center gap-2 rounded-9 border border-[rgba(232,184,106,.3)] bg-[rgba(232,184,106,.08)] p-3 text-[13px] text-amber">
           <span className="mr-auto">Discard changes?</span>
-          <Button size="xs" variant="ghost" onClick={() => setDiscard(false)}>
+          <Button size="xs" variant="ghost" onClick={() => setDiscard(null)}>
             Keep editing
           </Button>
-          <Button size="xs" variant="secondary" onClick={onClose}>
+          <Button size="xs" variant="secondary" onClick={discard}>
             Discard
           </Button>
         </div>

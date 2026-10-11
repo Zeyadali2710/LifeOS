@@ -57,6 +57,10 @@ function Form({ task, initialTitle, onClose }: { task?: TaskDTO; initialTitle: s
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const hasDue = !!date && !!time;
+  const snap = JSON.stringify([title, date, time, priority, notes, remind, custom, done]);
+  const [initial] = useState(snap);
+  const [discard, setDiscard] = useState(false);
+  const close = () => (snap !== initial ? setDiscard(true) : onClose());
 
   const submit = async () => {
     if (busy) return; // Enter during the round-trip must not create a second task
@@ -128,7 +132,7 @@ function Form({ task, initialTitle, onClose }: { task?: TaskDTO; initialTitle: s
   return (
     <Dialog
       open
-      onClose={onClose}
+      onClose={close}
       title={task ? "Edit task" : "New task"}
       width={480}
       sheet
@@ -141,7 +145,7 @@ function Form({ task, initialTitle, onClose }: { task?: TaskDTO; initialTitle: s
       }
       actions={
         <>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="ghost" onClick={close}>
             Cancel
           </Button>
           <Button loading={busy} onClick={submit}>
@@ -212,6 +216,17 @@ function Form({ task, initialTitle, onClose }: { task?: TaskDTO; initialTitle: s
         {task && <Checkbox label="Completed" checked={done} onChange={(e) => setDone(e.target.checked)} />}
         <button type="submit" hidden disabled={busy} />
       </form>
+      {discard && (
+        <div role="alert" className="mt-3 flex items-center gap-2 rounded-9 border border-[rgba(232,184,106,.3)] bg-[rgba(232,184,106,.08)] p-3 text-[13px] text-amber">
+          <span className="mr-auto">Discard changes?</span>
+          <Button size="xs" variant="ghost" onClick={() => setDiscard(false)}>
+            Keep editing
+          </Button>
+          <Button size="xs" variant="secondary" onClick={onClose}>
+            Discard
+          </Button>
+        </div>
+      )}
     </Dialog>
   );
 }
