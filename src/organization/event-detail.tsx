@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CATEGORY } from "@/lib/calendar-categories";
+import { whenText } from "@/approvals/event-approval";
 import { isSafeUrl } from "@/lib/safe-url";
 import { tzLabel } from "@/server/time";
 import { Badge } from "@/ui/badge";
@@ -30,7 +31,9 @@ export function EventDetail({
   if (!inst) return null;
   const cat = inst.category;
   const when = inst.allDay
-    ? `${shortDate(inst.start)} · All day`
+    ? inst.startDate && inst.endDate
+      ? whenText(inst.startDate, inst.endDate, true) // shows the last day of a multi-day event
+      : `${shortDate(inst.start)} · All day`
     : `${shortDate(inst.start)} · ${hmOf(inst.start)}–${hmOf(inst.end)} ${tzLabel(new Date(inst.start))}`;
   const others = inst.conflictWith.map((k) => all.find((i) => i.key === k)).filter((i): i is OrgInstance => Boolean(i));
   const long = (inst.description?.length ?? 0) > 240 || (inst.description?.split("\n").length ?? 0) > 6;
