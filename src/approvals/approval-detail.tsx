@@ -20,11 +20,18 @@ import { EventApprovalBody, eventOf, eventResolved, sameEvent, toEventDraft, val
 
 export type WriteFacts = { connected: boolean; login: string | null; last4: string | null };
 
-/** Narrow a kind-tagged approval to its issue payloads (null for event kinds). */
+/** Narrow a kind-tagged approval to its issue payloads (null for event kinds, and for an issue row whose payload doesn't parse). */
 export function issueOf(a: { kind: ApprovalKind; edited: unknown; original: unknown }): { original: IssuePayload; current: IssuePayload } | null {
   if (a.kind !== "issue") return null;
-  const original = issuePayloadSchema.parse(a.original);
-  return { original, current: a.edited == null ? original : issuePayloadSchema.parse(a.edited) };
+  // safeParse: one malformed row must not throw during render and take the whole list or transcript down (WR-B10)
+  const original = issuePayloadSchema.safeParse(a.original);
+  const current = a.edited == null ? original : issuePayloadSchema.safeParse(a.edited);
+  return original.success && current.success ? { original: original.data, current: current.data } : null;
+}
+
+/** Shown instead of a request whose stored payload can't be read. */
+export function UnreadableApproval() {
+  return <p className="rounded-10 border border-[rgba(255,255,255,.06)] bg-inset p-4 text-[13.5px] text-text-2">This request can&apos;t be displayed. It expires on its own.</p>;
 }
 
 const same = (a: IssuePayload, b: IssuePayload) => a.title === b.title && a.body === b.body && a.labels.join("\n") === b.labels.join("\n");
@@ -119,6 +126,7 @@ type DetailProps = { approval: ApprovalDTO; write: WriteFacts; onChange: (a: App
 export function ApprovalDetail(props: DetailProps) {
   const issue = issueOf(props.approval);
   if (issue) return <IssueApprovalBody {...props} issue={issue} />;
+  if (props.approval.kind === "issue") return <UnreadableApproval />;
   return <EventApprovalShell {...props} />;
 }
 

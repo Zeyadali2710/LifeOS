@@ -5,7 +5,7 @@ import type { ApprovalDTO } from "@/lib/agent-types";
 import { nothingText, type ApprovalKind } from "@/lib/approval-kinds";
 import { isSafeGithubUrl } from "@/lib/safe-url";
 import { approveAction, rejectAction } from "@/server/approval-actions";
-import { issueOf } from "@/approvals/approval-detail";
+import { issueOf, UnreadableApproval } from "@/approvals/approval-detail";
 import { eventOf, whenText } from "@/approvals/event-approval";
 import { sydneyParts, formatHM } from "@/server/time";
 import { Badge } from "@/ui/badge";
@@ -85,6 +85,7 @@ export function ApprovalCard({ approval, onDecided }: { approval: ApprovalDTO; o
   // a local decision shows immediately; any newer server state (live frame) wins once the server says it is not pending
   const a = approval.status === "pending" && local ? local : approval;
   const iss = issueOf(a);
+  if (a.kind === "issue" && !iss) return <UnreadableApproval />;
   const ev = (a.edited ?? a.original) as { title?: unknown; calendarLabel?: unknown };
   const p = iss?.current ?? { repo: "", title: String(ev.title ?? ""), body: "", labels: [] as string[] };
   const decide = async (kind: "approve" | "reject") => {
