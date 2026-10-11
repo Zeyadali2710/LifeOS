@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CATEGORY } from "@/lib/calendar-categories";
 import type { CalendarDTO } from "@/lib/calendar-types";
-import { eventInput } from "@/lib/event-payload";
+import { eventInput, isTimeZone } from "@/lib/event-payload";
 import { createEventAction, deleteEventAction, reloadEventAction, updateEventAction, type EventActionResult } from "@/server/calendar-actions";
 import { formatHM, sydneyInstant, sydneyParts, tzLabel } from "@/server/time";
 import { useShell } from "@/shell/shell-provider";
@@ -166,7 +166,7 @@ export function EventDialog({
   const [reloadAsk, setReloadAsk] = useState(false);
   const formId = "event-form";
   const dirty = JSON.stringify(f) !== JSON.stringify(base);
-  const tz = instance?.tz ?? TZ;
+  const tz = isTimeZone(instance?.tz) ? instance.tz : TZ;
   const set = <K extends keyof Form>(k: K, v: Form[K]) => setF((x) => ({ ...x, [k]: v }));
   const cal = writable.find((c) => c.id === f.calendarId) ?? calendars.find((c) => c.id === f.calendarId);
   const cat = cal?.category ?? null;

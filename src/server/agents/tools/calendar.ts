@@ -2,7 +2,7 @@
 // Everything here is owner-private (Tool.private): it taints the run so free models never see it (D-09).
 import { inArray } from "drizzle-orm";
 import { z } from "zod";
-import { eventCreatePayload, eventDeletePayload, eventFields, eventUpdatePayload } from "@/lib/event-payload";
+import { eventCreatePayload, eventDeletePayload, eventFields, eventUpdatePayload, isTimeZone, timeZone } from "@/lib/event-payload";
 import { formatHM, sydneyParts, TZ } from "@/server/time";
 import { connections } from "../../db/schema";
 import type { DB } from "../../db/client";
@@ -161,9 +161,9 @@ const locked = {
 };
 const instanceIn = {
   eventId: z.uuid(),
-  instanceStart: z.string().nullable().optional(),
+  instanceStart: z.string().max(40).nullable().optional(),
   scope: z.enum(["this", "following", "all"]).optional(),
-  etag: z.string().nullable().optional(), // always overwritten by resolve
+  etag: z.string().max(512).nullable().optional(), // always overwritten by resolve
 };
 
 const createInput = z.object({ ...eventFields.shape, ...locked, reason });
@@ -250,7 +250,7 @@ const updateInput = z.object({
   start: z.string().optional(),
   end: z.string().optional(),
   allDay: z.boolean().optional(),
-  timeZone: z.string().optional(),
+  timeZone: timeZone.optional(),
   location: z.string().max(300).optional(),
   description: z.string().max(8000).optional(),
   showAs: z.enum(["busy", "free"]).optional(),
@@ -283,7 +283,7 @@ const updateEventTool: Tool<UpdateInput, WriteOut> = {
       start: i.start ?? l.now.start,
       end: i.end ?? l.now.end,
       allDay: i.allDay ?? l.now.allDay,
-      timeZone: i.timeZone ?? l.event.tz ?? TZ,
+      timeZone: i.timeZone ?? (isTimeZone(l.event.tz) ? l.event.tz : TZ),
       location: i.location ?? l.now.location,
       description: i.description ?? l.now.description,
       showAs: i.showAs ?? l.now.showAs,

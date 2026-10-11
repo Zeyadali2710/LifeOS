@@ -71,3 +71,25 @@ describe("event payload times (CR-A04)", () => {
     expect(ok({ allDay: true, start: "2026-10-15", end: "2026-10-16" })).toBe(true);
   });
 });
+
+describe("event payload bounds (WR-C05)", () => {
+  const ok = (kind: string, o: object) => payloadSchemaFor(kind).safeParse(o).success;
+
+  it("rejects impossible all-day dates", () => {
+    expect(ok("calendar.create_event", { ...ev, allDay: true, start: "2026-02-31", end: "2026-03-01" })).toBe(false);
+  });
+
+  it("time zones must be known and bounded", () => {
+    expect(ok("calendar.create_event", { ...ev, timeZone: "Europe/London" })).toBe(true);
+    expect(ok("calendar.create_event", { ...ev, timeZone: "Mars/Olympus" })).toBe(false);
+    expect(ok("calendar.create_event", { ...ev, timeZone: "x".repeat(65) })).toBe(false);
+  });
+
+  it("caps etag, instanceStart, before and delete fields", () => {
+    expect(ok("calendar.update_event", upd)).toBe(true);
+    expect(ok("calendar.update_event", { ...upd, etag: "e".repeat(513) })).toBe(false);
+    expect(ok("calendar.update_event", { ...upd, instanceStart: "2".repeat(41) })).toBe(false);
+    expect(ok("calendar.update_event", { ...upd, before: { ...upd.before, description: "d".repeat(16001) } })).toBe(false);
+    expect(ok("calendar.delete_event", { ...cal, ...inst, title: "L", start: "s".repeat(41), end: "e", allDay: false })).toBe(false);
+  });
+});
