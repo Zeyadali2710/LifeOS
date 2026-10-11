@@ -55,7 +55,7 @@ export function createCalendarSync(opts: Opts) {
     const h = opts.handle ?? db();
     const emit = opts.emit ?? emitActivity;
     const now = (opts.now ?? (() => new Date()))();
-    const rows = await h.select({ id: connections.id, status: connections.status, lastSyncAt: connections.lastSyncAt, login: connections.login }).from(connections).where(inArray(connections.id, IDS));
+    const rows = await h.select({ id: connections.id, status: connections.status, lastSyncAt: connections.lastSyncAt, lastSyncError: connections.lastSyncError, login: connections.login }).from(connections).where(inArray(connections.id, IDS));
     const out = {} as Record<CalendarConnectionId, CalendarSyncResult>;
     const changes: Change[] = [];
     let changedNonFirst = 0;
@@ -107,10 +107,9 @@ export function createCalendarSync(opts: Opts) {
           if (!firstSync) changes.push(...local);
         }
         await recordCalendarSync(h, id, { at: now, error: null });
-        if (changed > 0) {
-          await notifyLive(h, "calendar", id);
-          if (!firstSync) changedNonFirst += changed;
-        }
+        // A cleared error must reach open pages too, or the error banner stays up until the next poll (WR-B03).
+        if (changed > 0 || conn.lastSyncError) await notifyLive(h, "calendar", id);
+        if (changed > 0 && !firstSync) changedNonFirst += changed;
         out[id] = { ok: true, changed, calendars: cals.length };
       } catch (e) {
         if (e instanceof ProviderError && e.kind === "auth") {
@@ -129,6 +128,7 @@ export function createCalendarSync(opts: Opts) {
         if (!(e instanceof ProviderError)) log.error({ err: e }, "calendar sync failed");
         const msg = rate ? `${label} rate limit reached.` : e instanceof ProviderError && e.kind === "unavailable" ? `${label} didn't respond.` : "Sync failed. Retrying in 5 minutes.";
         await recordCalendarSync(h, id, { at: now, error: msg }).catch(() => {});
+        if (!conn.lastSyncError) await notifyLive(h, "calendar", id);
         out[id] = { error: rate ? "rate_limit" : "other" };
       }
     }

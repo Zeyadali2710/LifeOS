@@ -75,7 +75,7 @@ export function CalendarConnectionRow({ conn, notice, open = false }: { conn: Ca
     const r = await syncCalendarsNowAction().catch(() => ({ ok: false }));
     setSyncing(false);
     if (r.ok) {
-      setDone("Calendar synced");
+      setDone("Sync started");
       router.refresh();
     } else toast("Couldn't save that. Try again.", "error");
   }
