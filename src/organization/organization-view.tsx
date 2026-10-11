@@ -12,7 +12,6 @@ import { useShell } from "@/shell/shell-provider";
 import { Button } from "@/ui/button";
 import { EmptyState } from "@/ui/empty-state";
 import { InlineError } from "@/ui/inline-error";
-import { Skeleton } from "@/ui/skeleton";
 import { CategoryLegend } from "./category-legend";
 import { DeleteFlow, EventDialog } from "./event-dialog";
 import { EventDetail } from "./event-detail";
@@ -108,10 +107,22 @@ export function OrganizationView({
   const onEditEvent = (inst: OrgInstance) => setDlg({ kind: "edit", inst });
   const onDeleteEvent = (inst: OrgInstance) => setDlg({ kind: "delete", inst });
 
+  // The grid stays mounted (dimmed) while navigating; if the focused cell goes away, focus returns to the grid (WR-B11).
+  const refocus = useRef(false);
   const go = useCallback(
-    (v: ViewKey, d: string) => startNav(() => router.push(`/organization?view=${v}&date=${d}`)),
+    (v: ViewKey, d: string) => {
+      refocus.current = !!gridRef.current?.contains(document.activeElement);
+      startNav(() => router.push(`/organization?view=${v}&date=${d}`));
+    },
     [router],
   );
+  useEffect(() => {
+    if (navPending || !refocus.current) return;
+    refocus.current = false;
+    const grid = gridRef.current;
+    if (!grid || grid.contains(document.activeElement)) return;
+    (grid.querySelector<HTMLElement>('[tabindex="0"]') ?? grid).focus();
+  }, [navPending]);
 
   // legend filter: session only
   const hiddenRaw = useSyncExternalStore(subscribeHidden, readHidden, () => "");
@@ -228,19 +239,19 @@ export function OrganizationView({
         action={<Button onClick={() => router.push(CONNECTIONS)}>Choose calendars</Button>}
       />
     );
-  } else if (navPending) {
-    body = <Skeleton className="h-[480px] w-full rounded-14" />;
   } else if (view === "month") {
     body = (
-      <MonthGrid
-        days={data.range.days}
-        month={date.slice(0, 7)}
-        instances={visible}
-        today={today}
-        selected={date}
-        onOpenDay={(d) => go("day", d)}
-        onMonth={(dir) => go("month", shift("month", date, dir))}
-      />
+      <div className={navPending ? "opacity-60" : ""} aria-busy={navPending || undefined}>
+        <MonthGrid
+          days={data.range.days}
+          month={date.slice(0, 7)}
+          instances={visible}
+          today={today}
+          selected={date}
+          onOpenDay={(d) => go("day", d)}
+          onMonth={(dir) => go("month", shift("month", date, dir))}
+        />
+      </div>
     );
   } else {
     body = (
