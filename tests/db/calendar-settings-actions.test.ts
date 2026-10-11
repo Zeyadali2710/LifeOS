@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { calendars, connections } from "@/server/db/schema";
+import { auditLog, calendars, connections } from "@/server/db/schema";
 import { setupTestDb } from "./helpers";
 
 const t = setupTestDb();
@@ -80,6 +80,16 @@ describe("calendar settings actions", () => {
     expect(await setCalendarCategoryAction(id, "nope")).toEqual({ ok: false, error: "category" });
     expect(await setCalendarCategoryAction("not-a-uuid", "work")).toEqual({ ok: false, error: "invalid" });
     expect(await setDefaultCalendarAction(id)).toEqual({ ok: true });
+    // every settings write is audited with ids/enums only (WR-A07)
+    const a = await t.handle().select().from(auditLog).where(eq(auditLog.action, "calendar.settings"));
+    expect(a.filter((x) => x.target === id).map((x) => (x.metadata as { field: string; value: unknown }))).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ field: "enabled", value: false }),
+        expect.objectContaining({ field: "enabled", value: true }),
+        expect.objectContaining({ field: "category", value: "work" }),
+        expect.objectContaining({ field: "isDefault", value: true }),
+      ]),
+    );
   });
 
   it("default on a read-only calendar is refused", async () => {

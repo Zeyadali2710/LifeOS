@@ -3,6 +3,7 @@ import { isCategory } from "../../lib/calendar-categories";
 import type { CalendarConnectionId } from "../../lib/calendar-types";
 import { db, type DB } from "../db/client";
 import { calendarEvents, calendars, settings } from "../db/schema";
+import { aud } from "./connections";
 import type { CalendarRef, RemoteCalendar } from "./types";
 
 type Row = typeof calendars.$inferSelect;
@@ -38,22 +39,26 @@ export async function setCalendarEnabled(h: DB = db(), id: string, enabled: bool
     await tx.update(calendars).set(enabled ? { enabled } : { enabled, syncCursor: null, ctag: null, isDefault: false }).where(eq(calendars.id, id));
     if (!enabled) await tx.delete(calendarEvents).where(eq(calendarEvents.calendarId, id));
   });
+  await aud(h, "calendar.settings", id, { calendarId: id, field: "enabled", value: enabled }); // ids and enums only (WR-A07)
 }
 
 export async function setCalendarCategory(h: DB = db(), id: string, category: string): Promise<{ ok: true } | { ok: false; error: "category" }> {
   if (!isCategory(category)) return { ok: false, error: "category" };
   await h.update(calendars).set({ category }).where(eq(calendars.id, id));
+  await aud(h, "calendar.settings", id, { calendarId: id, field: "category", value: category });
   return { ok: true };
 }
 
 export async function setDefaultCalendar(h: DB = db(), id: string): Promise<{ ok: true } | { ok: false; error: "not_writable" }> {
-  return h.transaction(async (tx) => {
+  const r = await h.transaction(async (tx) => {
     const [c] = await tx.select().from(calendars).where(eq(calendars.id, id));
     if (!c || !c.enabled || c.access === "reader") return { ok: false as const, error: "not_writable" as const };
     await tx.update(calendars).set({ isDefault: false }).where(eq(calendars.isDefault, true));
     await tx.update(calendars).set({ isDefault: true }).where(eq(calendars.id, id));
     return { ok: true as const };
   });
+  if (r.ok) await aud(h, "calendar.settings", id, { calendarId: id, field: "isDefault", value: true });
+  return r;
 }
 
 export async function setLastUsedCalendar(h: DB = db(), id: string): Promise<void> {

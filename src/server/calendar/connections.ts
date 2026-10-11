@@ -8,7 +8,7 @@ import { log } from "../log";
 const IDS: CalendarConnectionId[] = ["google_calendar", "icloud_calendar"];
 
 // Per-handle audit (same style as agents/approvals.ts) so DB tests see the rows. Metadata is ids/account only (D-05).
-async function aud(h: DB, action: string, id: string, metadata: Record<string, unknown>) {
+export async function aud(h: DB, action: string, id: string, metadata: Record<string, unknown>) {
   try {
     await h.insert(auditLog).values({ actor: "owner", action, target: id, metadata });
   } catch (err) {
