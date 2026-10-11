@@ -108,6 +108,13 @@ describe("caldav provider", () => {
     expect(out.upserts.map((u) => u.remoteId)).toContain("appr-1-f@lifeos");
   });
 
+  it("a write with no stored etag uses the server etag only when the content is unchanged (IN-A03)", async () => {
+    const { f, p, ev } = await seeded();
+    await expect(p.update(cal(), { ...ev, etag: null }, input, "all", null)).resolves.toMatchObject({ upserts: [expect.objectContaining({ title: "Renamed" })] });
+    f.store.set(URL1, { data: f.store.get(URL1)!.data.replace("Renamed", "Changed elsewhere"), n: 9 });
+    await expect(p.update(cal(), { ...ev, etag: null }, input, "all", null)).rejects.toMatchObject({ kind: "conflict" });
+  });
+
   it("403 is a per-resource refusal, never a connection-pausing auth error (CR-A03)", async () => {
     expect(statusError(401).kind).toBe("auth");
     expect(statusError(403).kind).toBe("client");

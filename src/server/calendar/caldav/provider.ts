@@ -177,6 +177,15 @@ export function createCaldavProvider({ dav }: { dav: DavClient }): CalendarProvi
     return fetchOne(calUrl, new URL(filename, calUrl).href);
   }
 
+  // No stored etag means no If-Match, which would overwrite blindly; take the server's etag only if the content is
+  // still what we stored, otherwise refuse as changed (IN-A03).
+  async function currentEtag(calUrl: string, url: string, stored: string): Promise<string> {
+    const o = await guard(() => dav.object(calUrl, url));
+    if (!o) throw fail("not_found", 404);
+    if (!o.etag || o.data !== stored) throw fail("conflict", 412);
+    return o.etag;
+  }
+
   async function write(cal: CalendarRef, ev: StoredEvent, kind: "update" | "delete", scope: WriteScope, instanceStart: string | null, input?: EventWrite): Promise<WriteResult> {
     const calUrl = assertIcloudUrl(dir(cal.remoteId)).href;
     if (!ev.url) throw fail("client", 0);
@@ -189,17 +198,18 @@ export function createCaldavProvider({ dav }: { dav: DavClient }): CalendarProvi
     } catch {
       throw fail("client", 0);
     }
+    const etag = ev.etag ?? (await currentEtag(calUrl, url, icsOf(ev)));
     const out: WriteResult = { upserts: [], deletes: [] };
     // Create the continuation before truncating the master: a failure in between leaves a duplicated tail, never a lost one (CR-A02).
     const made = r.created ? await put(cal, newUid, r.created) : null;
     if (made) out.upserts.push(made);
     try {
       if (r.updated === null) {
-        const s = await guard(() => dav.remove({ url, etag: ev.etag }));
+        const s = await guard(() => dav.remove({ url, etag }));
         if (s !== 404) ok(s);
         out.deletes.push(ev.remoteId);
       } else {
-        ok(await guard(() => dav.update({ url, etag: ev.etag, data: r.updated! })));
+        ok(await guard(() => dav.update({ url, etag, data: r.updated! })));
         out.upserts.push(await fetchOne(calUrl, url));
       }
     } catch (e) {
