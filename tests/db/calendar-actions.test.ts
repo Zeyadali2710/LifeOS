@@ -232,6 +232,20 @@ describe("calendar server actions", () => {
     expect(await deleteEventAction({ ...target, eventId: "bad" })).toMatchObject({ ok: false });
   });
 
+  it("reload of a recurring occurrence returns that occurrence's times, not the master's (CR-B02)", async () => {
+    const masterStart = "2026-10-06T22:00:00.000Z";
+    const [row] = await t
+      .handle()
+      .insert(calendarEvents)
+      .values({ calendarId: gid, ...ev("series2", { etag: '"s2"', title: "Weekly", startAt: new Date(masterStart), endAt: new Date("2026-10-06T23:00:00.000Z"), recurrence: ["RRULE:FREQ=WEEKLY"] }) })
+      .returning();
+    const third = "2026-10-20T22:00:00.000Z";
+    expect(await reloadEventAction(row!.id, third)).toMatchObject({ ok: true, title: "Weekly", start: third, end: "2026-10-20T23:00:00.000Z", etag: '"s2"', rrule: "FREQ=WEEKLY" });
+    expect(await reloadEventAction(row!.id)).toMatchObject({ ok: true, start: masterStart });
+    expect(await reloadEventAction(row!.id, "2026-10-21T05:00:00.000Z")).toEqual({ ok: false, error: "not_found" });
+    expect(await reloadEventAction(row!.id, "garbage")).toEqual({ ok: false, error: "not_found" });
+  });
+
   it("addPlanItemAction creates a titled event on the default calendar and leaves the task open", async () => {
     const h = t.handle();
     await h.update(calendars).set({ isDefault: true }).where(eq(calendars.id, gid));

@@ -11,7 +11,7 @@ import { providerLabel } from "../../calendar/errors";
 import { createEvent, deleteEvent, updateEvent, type WriteCtx, type WriteOutcome } from "../../calendar/events";
 import { providerFor } from "../../calendar/providers";
 import { addDaysYmd } from "../../calendar/free-slots";
-import { conflictsIn, freeSlotsOn, listEvents, loadInstances, loadTasks, pickDefaultCalendar, storedEvent, viewRange } from "../../calendar/queries";
+import { conflictsIn, freeSlotsOn, listEvents, loadTasks, occurrenceOf, pickDefaultCalendar, storedEvent, viewRange } from "../../calendar/queries";
 import { ToolError, type Tool, type ToolContext } from "../types";
 
 const NOT_CONNECTED = "No calendar is connected yet, so I can't see your schedule. Connect Google Calendar or iCloud in Settings → Connections.";
@@ -235,7 +235,7 @@ async function load(i: { eventId: string; scope?: Loaded["scope"]; instanceStart
     if (Number.isNaN(t)) throw new ToolError("invalid_input", "Give the instanceStart of the occurrence from list_events.");
     // Canonical form, so "…T08:00:00Z" and "…T08:00:00.000Z" both match the stored occurrence (IN-A05).
     instanceStart = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : new Date(t).toISOString();
-    const occ = (await loadInstances(ctx.handle, new Date(t - 86400000), new Date(t + 2 * 86400000))).find((x) => x.eventId === i.eventId && x.instanceStart === instanceStart);
+    const occ = await occurrenceOf(ctx.handle, i.eventId, instanceStart);
     if (!occ) throw new ToolError("not_found", "That occurrence no longer exists.");
     now = { ...now, start: occ.allDay ? (occ.startDate ?? "") : occ.start, end: occ.allDay ? (occ.endDate ?? "") : occ.end, allDay: occ.allDay, title: occ.title, location: occ.location ?? "", showAs: occ.free ? "free" : "busy" };
   }

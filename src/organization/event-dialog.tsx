@@ -228,7 +228,8 @@ export function EventDialog({
 
   const reload = async () => {
     if (!instance) return;
-    const r = await reloadEventAction(instance.eventId);
+    // A recurring occurrence reloads itself, not the series master (whose times would move it on save).
+    const r = await reloadEventAction(instance.eventId, instance.recurring ? instance.instanceStart : null);
     if (!r.ok) return void setFail({ ok: false, error: "not_found", provider: null });
     const next = { ...initial({ ...instance, ...r, startDate: r.allDay ? r.start : null, endDate: r.allDay ? r.end : null, free: r.showAs === "free" } as OrgInstance, undefined, ""), calendarId: instance.calendarId };
     setBase(next);

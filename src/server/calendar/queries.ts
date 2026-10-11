@@ -121,6 +121,14 @@ export async function storedEvent(h: DB, eventId: string) {
   return r ? { event: asStored(r.e), calendar: r.c } : null;
 }
 
+/** One occurrence of a recurring event by its instanceStart (canonical ISO instant or YYYY-MM-DD), or null. */
+export async function occurrenceOf(h: DB, eventId: string, instanceStart: string): Promise<InstanceDTO | null> {
+  const t = Date.parse(instanceStart);
+  if (Number.isNaN(t)) return null;
+  const list = await loadInstances(h, new Date(t - 86400000), new Date(t + 2 * 86400000));
+  return list.find((x) => x.eventId === eventId && x.instanceStart === instanceStart) ?? null;
+}
+
 export async function listEvents(h: DB, fromYmd: string, toYmd: string, query?: string, limit = 50): Promise<InstanceDTO[]> {
   const last = addDaysYmd(fromYmd, MAX_RANGE_DAYS);
   const end = toYmd < last ? toYmd : last;

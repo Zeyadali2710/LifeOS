@@ -7,7 +7,7 @@ import { calendarById } from "./calendar/calendars";
 import { createEvent, deleteEvent, updateEvent, type WriteCtx, type WriteOutcome } from "./calendar/events";
 import { ProviderError, type ProviderName } from "./calendar/errors";
 import { providerFor } from "./calendar/providers";
-import { pickDefaultCalendar, storedEvent } from "./calendar/queries";
+import { occurrenceOf, pickDefaultCalendar, storedEvent } from "./calendar/queries";
 import { db } from "./db/client";
 import { tasks } from "./db/schema";
 import { log } from "./log";
@@ -86,13 +86,31 @@ export type ReloadResult =
   | { ok: true; title: string; start: string; end: string; allDay: boolean; location: string; description: string; showAs: "busy" | "free"; etag: string | null; rrule: string | null }
   | { ok: false; error: "not_found" };
 
-export async function reloadEventAction(rawId: unknown): Promise<ReloadResult> {
+/** Fresh copy of an event. For a recurring occurrence pass its instanceStart: the form must get that occurrence's times, never the series master's. */
+export async function reloadEventAction(rawId: unknown, rawInstanceStart?: unknown): Promise<ReloadResult> {
   await requireOwner();
   const id = z.uuid().safeParse(rawId);
   if (!id.success) return { ok: false, error: "not_found" };
   const s = await storedEvent(db(), id.data);
   if (!s) return { ok: false, error: "not_found" };
   const e = s.event;
+  const rrule = e.recurrence?.find((l) => /^RRULE:/i.test(l))?.slice(6) ?? null;
+  if (typeof rawInstanceStart === "string" && rawInstanceStart) {
+    const o = await occurrenceOf(db(), id.data, rawInstanceStart.slice(0, 40));
+    if (!o) return { ok: false, error: "not_found" };
+    return {
+      ok: true,
+      title: o.title,
+      start: o.allDay ? (o.startDate ?? "") : o.start,
+      end: o.allDay ? (o.endDate ?? "") : o.end,
+      allDay: o.allDay,
+      location: o.location ?? "",
+      description: o.description ?? "",
+      showAs: o.free ? "free" : "busy",
+      etag: e.etag,
+      rrule,
+    };
+  }
   return {
     ok: true,
     title: e.title,
@@ -103,7 +121,7 @@ export async function reloadEventAction(rawId: unknown): Promise<ReloadResult> {
     description: e.description ?? "",
     showAs: e.transparency === "transparent" ? "free" : "busy",
     etag: e.etag,
-    rrule: e.recurrence?.find((l) => /^RRULE:/i.test(l))?.slice(6) ?? null,
+    rrule,
   };
 }
 
