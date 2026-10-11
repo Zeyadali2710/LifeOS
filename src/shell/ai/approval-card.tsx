@@ -90,7 +90,7 @@ export function ApprovalCard({ approval, onDecided }: { approval: ApprovalDTO; o
   const p = iss?.current ?? { repo: "", title: String(ev.title ?? ""), body: "", labels: [] as string[] };
   const decide = async (kind: "approve" | "reject") => {
     setBusy(kind);
-    const r = kind === "approve" ? await approveAction(a.id) : await rejectAction(a.id);
+    const r = await (kind === "approve" ? approveAction(a.id) : rejectAction(a.id)).catch(() => ({ ok: false, approval: undefined }));
     setBusy(null);
     if (!r.ok) return toast("Couldn't record that decision. Try again.", "error");
     if (r.approval) setLocal(r.approval);
