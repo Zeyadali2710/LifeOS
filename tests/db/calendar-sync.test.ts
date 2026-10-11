@@ -112,7 +112,8 @@ describe("calendar sync", () => {
 
   it("new conflict in 48h notifies once, pair deduped, old keys pruned", async () => {
     const h = t.handle();
-    await h.insert(settings).values({ key: "calendar.notified_conflicts", value: { stale: new Date(NOW.getTime() - 4 * DAY).toISOString() } });
+    const seed = { stale: new Date(NOW.getTime() - 4 * DAY).toISOString() };
+    await h.insert(settings).values({ key: "calendar.notified_conflicts", value: seed }).onConflictDoUpdate({ target: settings.key, set: { value: seed } });
     const first = { calendars: remote, results: { main: { upserts: [event("x1", "Alpha", 20), event("x2", "Beta", 20.5)], deletes: [], cursor: "c5", reset: false } } };
     const p = fakeCalendarProvider("google", first);
     ev = [];
@@ -120,8 +121,8 @@ describe("calendar sync", () => {
     await s.run();
     const notes = ev.filter((e) => e.n?.title === "Schedule conflict");
     expect(notes).toHaveLength(1);
-    expect(notes[0]!.n).toMatchObject({ category: "IMPORTANT", body: "Alpha overlaps Beta on Fri 9 Oct 07:00.", actionUrl: expect.stringMatching(/^\/organization\?view=day&date=\d{4}-\d{2}-\d{2}$/) });
-    expect(ev.some((e) => e.a.title === "Conflict found" && e.a.tone === "red")).toBe(true);
+    expect(notes[0]!.n).toMatchObject({ category: "IMPORTANT", body: "Alpha overlaps Beta on Fri 9 Oct 07:30.", actionUrl: expect.stringMatching(/^\/organization\?view=day&date=\d{4}-\d{2}-\d{2}$/) });
+    expect(ev.find((e) => e.a.title === "Conflict found")!.a).toMatchObject({ tone: "red", detail: "Alpha overlaps Beta · Fri 9 Oct 07:30" });
     const [row] = await h.select().from(settings).where(eq(settings.key, "calendar.notified_conflicts"));
     expect(Object.keys(row!.value as object)).toHaveLength(1); // stale pruned
 

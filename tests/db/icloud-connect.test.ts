@@ -36,6 +36,7 @@ describe("connectIcloud", () => {
 
   it("rejected and unreachable store nothing", async () => {
     const h = t.handle();
+    await h.delete(connections); // one DB per file: drop the row the first test stored
     const bad = async () => {
       throw new ProviderError("icloud", "auth", 401, "Access was rejected.");
     };

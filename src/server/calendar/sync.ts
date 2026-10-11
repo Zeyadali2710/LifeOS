@@ -160,7 +160,7 @@ async function notifyConflicts(h: DB, emit: typeof emitActivity, now: Date) {
     seen[key] = now.toISOString();
     const at = new Date(c.start);
     await emit(
-      { type: "calendar.conflict", source: "calendar", title: "Conflict found", detail: `${c.aTitle} / ${c.bTitle}`, tone: "red" },
+      { type: "calendar.conflict", source: "calendar", title: "Conflict found", detail: `${c.aTitle} overlaps ${c.bTitle} · ${when(at)}`, tone: "red" },
       { category: "IMPORTANT", title: "Schedule conflict", body: `${c.aTitle} overlaps ${c.bTitle} on ${when(at)}.`, actionUrl: `/organization?view=day&date=${ymd(at)}` },
       h,
     );

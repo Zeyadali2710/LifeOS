@@ -28,11 +28,17 @@ export const LOCKED: Record<ApprovalKind, string[]> = {
   event_delete: Object.keys(eventDeletePayload.shape),
 };
 
+// Key-order-independent: the stored original comes back from jsonb, which reorders object keys.
+const stable = (v: unknown) =>
+  JSON.stringify(v, (_k, x: unknown) =>
+    x && typeof x === "object" && !Array.isArray(x) ? Object.fromEntries(Object.entries(x).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))) : x,
+  );
+
 export function checkLocked(kind: ApprovalKind, orig: unknown, next: unknown): Record<string, string> | null {
   const o = (orig ?? {}) as Record<string, unknown>;
   const n = (next ?? {}) as Record<string, unknown>;
   for (const k of LOCKED[kind]) {
-    if (JSON.stringify(o[k]) !== JSON.stringify(n[k])) {
+    if (stable(o[k]) !== stable(n[k])) {
       return { [k]: k === "repo" ? "Repository can't be changed." : k === "calendarId" ? "Calendar can't be changed." : "This can't be changed." };
     }
   }

@@ -30,6 +30,11 @@ describe("approval kinds", () => {
     expect(checkLocked("issue", issue, { ...issue, repo: "x/y" })).toEqual({ repo: "Repository can't be changed." });
     expect(checkLocked("issue", issue, { ...issue, title: "New" })).toBeNull();
     expect(checkLocked("event_update", upd, { ...upd, title: "New" })).toBeNull();
+    // jsonb reorders object keys; a reordered `before` snapshot is still the same value.
+    const before = { title: "Gym", start: "a", end: "b", allDay: false, location: "", description: "", showAs: "busy" };
+    const reordered = Object.fromEntries(Object.entries(before).reverse());
+    expect(checkLocked("event_update", { ...upd, before }, { ...upd, before: reordered })).toBeNull();
+    expect(checkLocked("event_update", { ...upd, before }, { ...upd, before: { ...reordered, title: "X" } })).toEqual({ before: "This can't be changed." });
   });
 
   it("nothing text", () => {

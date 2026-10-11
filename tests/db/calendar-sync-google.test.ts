@@ -22,6 +22,8 @@ describe("calendar sync over the Google provider", () => {
     await saveCalendarSecret(h, "google_calendar", { refreshToken: "r", accessToken: "tok", expiresAt: "2099-01-01T00:00:00Z" }, { account: "me@gmail.com" }, { key });
     const f = fakeGoogle({
       "GET /calendar/v3/users/me/calendarList": json(list),
+      // Owned calendars start ticked too (UI-SPEC D-01); Family is empty here.
+      "GET /calendar/v3/calendars/family123%40group.calendar.google.com/events": json({ nextSyncToken: "F1", items: [] }),
       [`GET ${EV}`]: [
         json(events.pages[0]),
         json(events.pages[1]),
