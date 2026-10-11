@@ -63,7 +63,7 @@ export function ConnectionsSection({
       setPriv(!next);
       return toast("Couldn't save that. Try again.", "error");
     }
-    toast(next ? "Private repos allowed on free models" : "Private repos kept off free models");
+    toast(next ? "Private data allowed on free models" : "Private data kept off free models");
     router.refresh();
   }
   const read = connections.find((c) => c.id === "github_read")!;
@@ -178,10 +178,10 @@ export function ConnectionsSection({
               />
               <div className="max-w-[520px]">
                 <label htmlFor="free-private" className="text-[14.5px] font-medium">
-                  Allow private-repo content to be sent to free models (may be logged by provider)
+                  Allow private data (private repos, calendar and tasks) to be sent to free models (may be logged by provider)
                 </label>
                 <p className="text-[12.5px] text-text-3">
-                  Off: any run that touches a private repository switches to Claude Sonnet before private data is sent. Free providers may log or train on prompts.
+                  Off: any run that touches a private repository, your calendar or your tasks switches to Claude Sonnet before private data is sent. Free providers may log or train on prompts.
                 </p>
               </div>
             </div>
