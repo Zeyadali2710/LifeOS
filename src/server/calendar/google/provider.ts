@@ -106,7 +106,9 @@ function before(ev: StoredEvent, recurring: boolean, scope: WriteScope, instance
   const t0 = (ev.startAt ?? new Date(`${ev.startDate}T00:00:00Z`)).getTime() - 86_400_000;
   const at = ev.allDay ? Date.parse(`${instanceStart.slice(0, 10)}T00:00:00Z`) : Date.parse(instanceStart);
   const ms = (s: string) => (ev.allDay ? Date.parse(`${s.slice(0, 10)}T00:00:00Z`) : Date.parse(s));
-  return expand([ev], new Date(t0), new Date(at + 86_400_000)).filter((i) => i.instanceStart !== null && ms(i.instanceStart) < at).length;
+  // RRULE only: EXDATE'd occurrences still use up COUNT (RFC 5545), matching icsApply's raw iterator (IN-A01).
+  const ruleOnly = { ...ev, recurrence: (ev.recurrence ?? []).filter((l) => /^RRULE:/i.test(l)) };
+  return expand([ruleOnly], new Date(t0), new Date(at + 86_400_000)).filter((i) => i.instanceStart !== null && ms(i.instanceStart) < at).length;
 }
 
 const cal = (id: string) => `/calendars/${encodeURIComponent(id)}/events`;

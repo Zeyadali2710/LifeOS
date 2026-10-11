@@ -153,11 +153,11 @@ describe("google provider", () => {
     const counted = { ...weekly!, recurrence: ["RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=6"] };
     const ok = { id: "x", start: { dateTime: "2026-10-20T11:00:00+11:00" }, end: { dateTime: "2026-10-20T12:00:00+11:00" } };
     const { p, f } = make({ [`PATCH ${EV}/weekly1`]: json({ ...ok, id: "weekly1" }), [`POST ${EV}`]: json({ ...ok, id: "new1" }) });
-    // weekly1 starts Mon 5 Oct; editing from 19 Oct leaves 2 occurrences before it.
-    await p.update(ref, counted, input, "following", "2026-10-18T22:30:00.000Z");
+    // weekly1 starts Mon 5 Oct; editing from 19 Oct leaves 2 occurrences before it, an EXDATE'd one still counts (IN-A01).
+    await p.update(ref, { ...counted, recurrence: [...counted.recurrence, "EXDATE;TZID=Australia/Sydney:20261012T093000"] }, input, "following", "2026-10-18T22:30:00.000Z");
     const w = writes(f) as typeof f.calls;
     expect((w[0]!.body as { recurrence: string[] }).recurrence).toEqual(["RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=4"]);
-    expect(w[1]!.body).toMatchObject({ recurrence: [expect.stringContaining("UNTIL=")] });
+    expect(w[1]!.body).toMatchObject({ recurrence: expect.arrayContaining([expect.stringContaining("UNTIL=")]) });
 
     // a new simple rule on "all" keeps the stored EXDATE lines (WR-A05)
     const k = make({ [`PATCH ${EV}/weekly1`]: json({ ...ok, id: "weekly1" }) });
