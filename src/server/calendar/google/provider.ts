@@ -127,7 +127,9 @@ export function createGoogleProvider({ google }: { google: ReturnType<typeof cre
       if (e.status === "cancelled" && !e.recurringEventId) deletes.push(e.id);
       else {
         const n = normalizeGoogleEvent(e);
-        if (!outside(n, window)) upserts.push(n);
+        // Moved out of the window: drop the local row too, or an incremental sync leaves it at its old time (WR-A01).
+        if (outside(n, window)) deletes.push(e.id);
+        else upserts.push(n);
       }
     }
     return { upserts, deletes, cursor: nextSyncToken, reset: !cursor } satisfies SyncResult;

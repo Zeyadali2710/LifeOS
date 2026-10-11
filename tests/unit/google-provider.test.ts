@@ -51,7 +51,7 @@ describe("google provider", () => {
     const r = await p.sync(ref, window);
     expect(r.reset).toBe(true);
     expect(r.cursor).toBe("SYNC1");
-    expect(r.deletes).toEqual(["gone1"]);
+    expect(r.deletes).toEqual(["gone1", "ancient1"]);
     expect(r.upserts.map((u) => u.remoteId)).toEqual(["single1", "weekly1", "weekly1_20261019T223000Z", "weekly1_20261026T223000Z", "allday1", "declined1", "free1"]);
     expect(f.calls[0]!.url).toContain("singleEvents=false&showDeleted=true&maxResults=250");
     expect(f.calls[0]!.url).not.toMatch(/timeMin|syncToken/);
@@ -64,6 +64,11 @@ describe("google provider", () => {
     expect(r).toMatchObject({ reset: false, cursor: "SYNC2" });
     expect(inc.f.calls[0]!.url).toContain("syncToken=SYNC1");
     expect(inc.f.calls[0]!.url).not.toContain("timeMin");
+
+    // an event moved outside the window is removed locally (WR-A01)
+    const far = { id: "moved1", status: "confirmed", start: { dateTime: "2028-01-01T10:00:00Z" }, end: { dateTime: "2028-01-01T11:00:00Z" } };
+    const moved = make({ [`GET ${EV}`]: json({ items: [far], nextSyncToken: "SYNC3" }) });
+    expect(await moved.p.sync({ ...ref, syncCursor: "SYNC2" }, window)).toMatchObject({ upserts: [], deletes: ["moved1"] });
 
     const gone = make({ [`GET ${EV}`]: [json({}, 410), json(events.pages[1])] });
     const g = await gone.p.sync({ ...ref, syncCursor: "OLD" }, window);
