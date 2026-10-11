@@ -82,7 +82,7 @@ const outside = (n: NormalizedEvent, w: SyncWindow) => {
 const timeBody = (iso: string, allDay: boolean, tz: string, patch: boolean) =>
   allDay ? { date: iso.slice(0, 10), ...(patch ? { dateTime: null } : {}) } : { dateTime: iso, timeZone: tz, ...(patch ? { date: null } : {}) };
 
-function bodyFor(input: EventWrite, withRecurrence: boolean, patch = false) {
+function bodyFor(input: EventWrite, withRecurrence: boolean, patch = false, existing: string[] = []) {
   const b: Record<string, unknown> = {
     summary: input.title,
     description: input.description,
@@ -94,7 +94,8 @@ function bodyFor(input: EventWrite, withRecurrence: boolean, patch = false) {
   if (input.marker) b.extendedProperties = { private: { lifeosApproval: input.marker } };
   if (withRecurrence && input.repeat !== "keep") {
     const rule = ruleFor(input.repeat, input.start, input.allDay, input.timeZone);
-    b.recurrence = rule ? [`RRULE:${rule}`] : [];
+    // Keep the stored EXDATE/RDATE lines when only the rule changes, or exclusions come back (WR-A05).
+    b.recurrence = rule ? [`RRULE:${rule}`, ...existing.filter((l) => !/^RRULE:/i.test(l))] : [];
   }
   return b;
 }
@@ -203,7 +204,7 @@ export function createGoogleProvider({ google }: { google: ReturnType<typeof cre
       master: { remoteId: ev.remoteId, recurrence: ev.recurrence ?? [], allDay: ev.allDay, first, occurrencesBefore: before(ev, recurring, scope, instanceStart) },
       instanceStart: recurring ? instanceStart : null,
       // recurrence is only rewritten when the whole series is edited
-      body: input ? bodyFor(input, scope === "all" || !recurring, true) : undefined,
+      body: input ? bodyFor(input, scope === "all" || !recurring, true, ev.recurrence ?? []) : undefined,
       newId: input?.marker ? `lifeos${input.marker.replaceAll("-", "")}f` : undefined,
       carry: kind === "update" && recurring && scope === "following" && !first && instanceStart && input && input.allDay === ev.allDay ? await carry(ref, ev, instanceStart, input) : undefined,
     });

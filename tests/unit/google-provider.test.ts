@@ -159,6 +159,11 @@ describe("google provider", () => {
     expect((w[0]!.body as { recurrence: string[] }).recurrence).toEqual(["RRULE:FREQ=WEEKLY;BYDAY=MO;COUNT=4"]);
     expect(w[1]!.body).toMatchObject({ recurrence: [expect.stringContaining("UNTIL=")] });
 
+    // a new simple rule on "all" keeps the stored EXDATE lines (WR-A05)
+    const k = make({ [`PATCH ${EV}/weekly1`]: json({ ...ok, id: "weekly1" }) });
+    await k.p.update(ref, { ...weekly!, recurrence: ["RRULE:FREQ=WEEKLY;BYDAY=MO", "EXDATE;TZID=Australia/Sydney:20261012T093000"] }, { ...input, repeat: "weekly" }, "all", null);
+    expect((k.f.calls[0]!.body as { recurrence: string[] }).recurrence).toEqual([expect.stringMatching(/^RRULE:FREQ=WEEKLY/), "EXDATE;TZID=Australia/Sydney:20261012T093000"]);
+
     const a = make({ [`PATCH ${EV}/single1`]: json({ ...ok, id: "single1" }) });
     await a.p.update(ref, single!, { ...input, allDay: true, start: "2026-10-20", end: "2026-10-21" }, "all", null);
     expect(a.f.calls[0]!.body).toMatchObject({ start: { date: "2026-10-20", dateTime: null }, end: { date: "2026-10-21", dateTime: null } });
