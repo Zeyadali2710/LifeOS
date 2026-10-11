@@ -78,10 +78,10 @@ export async function loadInstances(h: DB, from: Date, to: Date): Promise<Instan
       and(
         eq(calendars.enabled, true),
         isNotNull(calendars.category),
+        // Series rows always (expanded in memory); single events, CalDAV included, by their stored range (IN-C01).
         or(
           isNotNull(calendarEvents.recurrence),
           isNotNull(calendarEvents.recurringRemoteId),
-          sql`jsonb_exists(${calendarEvents.raw}, 'ics')`,
           and(lt(calendarEvents.startAt, to), gt(calendarEvents.endAt, from)),
           and(eq(calendarEvents.allDay, true), lt(calendarEvents.startDate, toYmd), gt(calendarEvents.endDate, fromYmd)),
         ),

@@ -1,5 +1,7 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { calendarEvents, calendars, connections, settings, tasks } from "@/server/db/schema";
+import { normalizeIcs } from "@/server/calendar/caldav/provider";
 import { busyOf } from "@/server/calendar/conflicts";
 import { freeSlots, wakingWindow } from "@/server/calendar/free-slots";
 import {
@@ -146,5 +148,21 @@ describe("calendar queries", () => {
     expect(d.header.lead).toBe("Connect a calendar to see your week. Tasks work without one.");
     expect(d.header.headline).toBe("Your calendar, in one place.");
     expect(d.plan.tasksOnly).toBe(true);
+  });
+});
+
+describe("loadInstances with CalDAV rows (IN-C01)", () => {
+  it("bounds single CalDAV events by their stored range and still expands series", async () => {
+    const fx = (n: string) => normalizeIcs(readFileSync(`tests/fixtures/calendar/${n}.ics`, "utf8"), `/cal/${n}.ics`, null);
+    await h().insert(connections).values({ id: "icloud", ciphertext: "x", last4: "abcd" }).onConflictDoNothing();
+    const [cal] = await h().insert(calendars).values({ connectionId: "icloud", remoteId: "/cal/", name: "iCloud", enabled: true, category: "personal" }).returning();
+    await h().insert(calendarEvents).values(["icloud-floating", "icloud-allday", "icloud-recurring"].map((n) => ({ calendarId: cal!.id, ...fx(n) })));
+    const titles = async (ymd: string) => (await loadInstances(h(), viewRange("day", ymd).from, viewRange("day", ymd).to)).map((i) => i.title);
+    expect(await titles("2026-10-01")).toEqual(expect.arrayContaining(["Floating", "Standup"]));
+    expect(await titles("2026-10-12")).toContain("Conference");
+    const later = await titles("2026-10-22");
+    expect(later).toContain("Standup");
+    expect(later).not.toContain("Floating");
+    expect(later).not.toContain("Conference");
   });
 });
