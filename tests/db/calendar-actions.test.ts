@@ -144,6 +144,24 @@ describe("event write service", () => {
     expect(await updateEvent(h, { ...args, eventId: "00000000-0000-4000-8000-000000000000", etag: null }, ctx())).toEqual({ ok: false, error: "not_found" });
   });
 
+  it("scope all from a clicked occurrence keeps the series start and applies only the change (CR-A01)", async () => {
+    const h = t.handle();
+    const masterStart = "2026-10-06T22:00:00.000Z";
+    const [row] = await h
+      .insert(calendarEvents)
+      .values({ calendarId: gid, ...ev("series", { etag: '"s1"', startAt: new Date(masterStart), endAt: new Date("2026-10-06T23:00:00.000Z"), recurrence: ["RRULE:FREQ=WEEKLY"] }) })
+      .returning();
+    const third = "2026-10-20T22:00:00.000Z";
+    const args = { eventId: row!.id, etag: '"s1"', scope: "all" as const, instanceStart: third };
+    // title-only edit on the 3rd occurrence
+    await updateEvent(h, { ...args, input: { ...input, start: third, end: "2026-10-20T23:00:00.000Z", repeat: "custom" } }, ctx());
+    expect(fake.calls.update[0]![2]).toMatchObject({ start: masterStart, end: "2026-10-06T23:00:00.000Z" });
+    // moving the occurrence an hour later moves the series an hour later, not to the 3rd week
+    await h.update(calendarEvents).set({ etag: '"s1"', recurrence: ["RRULE:FREQ=WEEKLY"], startAt: new Date(masterStart) }).where(eq(calendarEvents.id, row!.id));
+    await updateEvent(h, { ...args, input: { ...input, start: "2026-10-20T23:00:00.000Z", end: "2026-10-21T00:30:00.000Z", repeat: "custom" } }, ctx());
+    expect(fake.calls.update[1]![2]).toMatchObject({ start: "2026-10-06T23:00:00.000Z", end: "2026-10-07T00:30:00.000Z" });
+  });
+
   it("delete applies the scope and audits", async () => {
     const h = t.handle();
     const eventId = await seed();

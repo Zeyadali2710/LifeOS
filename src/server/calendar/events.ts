@@ -10,9 +10,10 @@ import { log } from "../log";
 import { calendarById, calendarRef, setLastUsedCalendar } from "./calendars";
 import { markCalendarError } from "./connections";
 import { ProviderError } from "./errors";
+import { zonedParts } from "./expand";
 import type { providerFor } from "./providers";
 import { loadInstances, storedEvent } from "./queries";
-import type { CalendarProvider, CalendarRef, EventWrite, NormalizedEvent, WriteResult, WriteScope } from "./types";
+import type { CalendarProvider, CalendarRef, EventWrite, NormalizedEvent, StoredEvent, WriteResult, WriteScope } from "./types";
 
 export type WriteCtx = { actor: "owner" | "agent"; approvalId?: string; providerFor: typeof providerFor; now: () => Date };
 export type EventFieldsLike = z.infer<typeof eventFields> & { repeat?: EventInput["repeat"] };
@@ -71,6 +72,38 @@ function toWrite(input: EventFieldsLike, ctx: WriteCtx, kind: "create" | "update
   };
 }
 
+const DAY_MS = 86_400_000;
+const dayMs = (ymd: string) => Date.parse(`${ymd.slice(0, 10)}T00:00:00Z`);
+const ymdOf = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+const localYmd = (tz: string, d: Date) => {
+  const p = zonedParts(tz, d);
+  return `${p.y}-${String(p.m).padStart(2, "0")}-${String(p.d).padStart(2, "0")}`;
+};
+
+/**
+ * Scope "all" opened from a clicked occurrence: the form carries that occurrence's times, so apply the change as a
+ * delta onto the series start instead of moving the series to the occurrence (CR-A01).
+ */
+function rebaseSeries(w: EventWrite, ev: StoredEvent, scope: WriteScope, inst: string | null): EventWrite {
+  if (scope !== "all" || !inst || !ev.recurrence?.length) return w;
+  if (w.allDay && ev.allDay && ev.startDate) {
+    const s = dayMs(ev.startDate) + dayMs(w.start) - dayMs(inst);
+    return { ...w, start: ymdOf(s), end: ymdOf(s + dayMs(w.end) - dayMs(w.start)) };
+  }
+  if (!w.allDay && !ev.allDay && ev.startAt) {
+    const s = ev.startAt.getTime() + Date.parse(w.start) - Date.parse(inst);
+    return { ...w, start: new Date(s).toISOString(), end: new Date(s + Date.parse(w.end) - Date.parse(w.start)).toISOString() };
+  }
+  // all-day <-> timed switch: keep the new shape and time of day, move it back by whole days to the series' first date.
+  // ponytail: timed shift is in 24 h steps, so it can land an hour off across a DST change; the owner sees the result.
+  const tz = w.timeZone;
+  const masterDay = ev.allDay ? ev.startDate : ev.startAt ? localYmd(tz, ev.startAt) : null;
+  if (!masterDay) return w;
+  const shift = dayMs(masterDay) - dayMs(ev.allDay ? inst : localYmd(tz, new Date(inst)));
+  if (w.allDay) return { ...w, start: ymdOf(dayMs(w.start) + shift), end: ymdOf(dayMs(w.end) + shift) };
+  return { ...w, start: new Date(Date.parse(w.start) + shift).toISOString(), end: new Date(Date.parse(w.end) + shift).toISOString() };
+}
+
 /** Busy instance overlapping the written event (D-14 detection only, never blocks). */
 async function overlapOf(h: DB, eventId: string, w: EventWrite): Promise<WriteOk["overlaps"]> {
   if (w.showAs === "free") return null;
@@ -119,7 +152,7 @@ export async function updateEvent(h: DB, args: Target & { input: EventFieldsLike
   if (args.etag !== s.event.etag) return { ok: false, error: "changed" };
   const ref = calendarRef(s.calendar);
   const provider = await ctx.providerFor(ref.connectionId, h);
-  const w = toWrite(args.input, ctx, "update");
+  const w = rebaseSeries(toWrite(args.input, ctx, "update"), s.event, args.scope, args.instanceStart);
   const r = await guard(h, ref, () => provider.update(ref, s.event, w, args.scope, args.instanceStart));
   await apply(h, s.calendar.id, r, ctx.now());
   await aud(h, ctx, "calendar.event.update", args.eventId, { calendarId: s.calendar.id, eventId: args.eventId, scope: args.scope });
