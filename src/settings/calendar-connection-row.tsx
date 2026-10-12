@@ -54,8 +54,8 @@ export function CalendarConnectionRow({ conn, notice, open = false }: { conn: Ca
         : `${conn.account ?? ""} · ${syncingCount} of ${conn.calendars.length} calendars syncing${last ? ` · last synced ${formatHM(last)}` : ""}`;
 
   const label = conn.status === "error" ? "Reconnect" : connected ? "Reconnect" : `Connect ${m.name}`;
-  const btn = `inline-flex h-8 min-w-[110px] items-center justify-center rounded-9 px-3.5 text-[13px] font-medium transition ${
-    conn.status === "error" ? "bg-[#e9eaf0] font-semibold tracking-[0.05em] text-[#0b0c10] uppercase hover:bg-white" : connected ? "border border-[rgba(255,255,255,.10)] bg-fill-1 text-text hover:bg-[rgba(255,255,255,.06)]" : "bg-indigo text-on-accent hover:bg-indigo-soft"
+  const btn = `inline-flex h-8 min-w-[110px] items-center justify-center rounded-full px-3.5 text-[13px] font-medium transition [@media(pointer:coarse)]:min-h-11 ${
+    conn.status === "error" ? "bg-text text-on-accent font-semibold hover:bg-white" : connected ? "border border-white/10 bg-white/[.03] text-text hover:border-white/20 hover:bg-white/[.06]" : "bg-accent-solid text-white hover:bg-[#0066cc]"
   }`;
   const action =
     google ? (
@@ -108,9 +108,9 @@ export function CalendarConnectionRow({ conn, notice, open = false }: { conn: Ca
           />
         )}
         {connected && (
-          <div className="flex flex-col gap-3 rounded-12 border border-[rgba(255,255,255,.07)] bg-surface px-4 py-3">
+          <div className="flex flex-col gap-3 glass-card rounded-22 px-4 py-3">
             <CalendarList calendars={conn.calendars} defaultOpen={open} />
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[rgba(255,255,255,.07)] pt-3">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/[.10] pt-3">
               {conn.lastSyncError ? (
                 <span className="font-mono text-[11px] text-red">
                   Last sync failed {last ? formatHM(last) : ""}: {conn.lastSyncError}

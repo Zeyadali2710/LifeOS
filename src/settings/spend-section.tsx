@@ -47,7 +47,7 @@ export function SpendSection({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center justify-between gap-4 rounded-12 border border-[rgba(255,255,255,.07)] bg-surface px-4 py-3.5">
+      <div className="flex flex-wrap items-center justify-between gap-4 glass-card rounded-26 px-4 py-3.5">
         <div className="max-w-[420px]">
           <label htmlFor="spend-cap" className="text-[14.5px] font-medium">
             Monthly spend cap
@@ -72,7 +72,7 @@ export function SpendSection({
         </div>
       </div>
 
-      <div className="flex flex-col gap-2 rounded-12 border border-[rgba(255,255,255,.07)] bg-surface px-4 py-3.5">
+      <div className="flex flex-col gap-2 glass-card rounded-26 px-4 py-3.5">
         <span className={label}>This month · {monthLabel}</span>
         <span className="text-[22px] leading-[1.2] font-medium tracking-[-0.02em]">{formatUsd(mtdUsd)}</span>
         <Progress value={mtdUsd} max={capUsd} label={`${pct}% of US$${capUsd.toFixed(2)} · resets ${resetLabel}`} />
@@ -90,7 +90,7 @@ export function SpendSection({
               </thead>
               <tbody className="font-mono text-[12px]">
                 {rows.map((r) => (
-                  <tr key={r.model} className="border-t border-[rgba(255,255,255,.07)]">
+                  <tr key={r.model} className="border-t border-white/[.10]">
                     <td className="py-1.5 font-sans">{r.label}</td>
                     <td className="text-right">{formatTokens(r.input)}</td>
                     <td className="text-right">{formatTokens(r.output)}</td>
@@ -104,7 +104,7 @@ export function SpendSection({
         )}
       </div>
 
-      <div className="rounded-12 border border-[rgba(255,255,255,.07)] bg-surface px-4 py-3.5">
+      <div className="glass-card rounded-26 px-4 py-3.5">
         <div className="text-[14.5px] font-medium">Models</div>
         <p className="text-[12.5px] text-text-3">Orchestrator Opus 5.5 · Domain agents Sonnet 5.5 · Triage Haiku 4.5</p>
       </div>

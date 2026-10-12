@@ -18,8 +18,8 @@ export function SettingsNav({ current }: { current: string }) {
           key={s.key}
           href={`/settings?section=${s.key}`}
           aria-current={s.key === current ? "page" : undefined}
-          className={`flex h-11 shrink-0 items-center gap-2 rounded-8 px-3 text-[13.5px] tab:h-[34px] ${
-            s.key === current ? "bg-selected text-text" : "text-text-2 hover:bg-fill-2 hover:text-text"
+          className={`flex h-11 shrink-0 items-center gap-2 rounded-full px-3 text-[13.5px] tab:h-[34px] tab:px-2.5 ${
+            s.key === current ? "bg-white/[.16] text-white" : "text-text-2 hover:bg-white/[.06] hover:text-text"
           }`}
         >
           <Icon name={s.icon} size={18} />

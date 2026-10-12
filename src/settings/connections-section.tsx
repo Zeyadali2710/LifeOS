@@ -111,7 +111,7 @@ export function ConnectionsSection({
           onChanged={refresh}
         >
           {read.status !== "none" && (
-            <div className="rounded-12 border border-[rgba(255,255,255,.07)] bg-surface px-4 py-3">
+            <div className="glass-card rounded-22 px-4 py-3">
               <Disclosure summary={<span className="text-[13px] text-text-2">{read.repos.length} repositories</span>}>
                 <ul className="mt-2 max-h-[240px] overflow-y-auto">
                   {read.repos.map((r) => (
@@ -167,7 +167,7 @@ export function ConnectionsSection({
           onChanged={refresh}
         >
           {or.status !== "none" && (
-            <div className="flex items-start gap-3 rounded-12 border border-[rgba(255,255,255,.07)] bg-surface px-4 py-3.5">
+            <div className="flex items-start gap-3 glass-card rounded-22 px-4 py-3.5">
               <input
                 id="free-private"
                 type="checkbox"
