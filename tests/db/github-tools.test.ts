@@ -208,6 +208,11 @@ describe("repo contents", () => {
     const long = o(await call("github.get_file", { repo: "me/studio", path: "big.md" }, fileF("big.md", () => file("x".repeat(20000))))) as { content: string; truncated: boolean };
     expect(long.content).toHaveLength(16384);
     expect(long.truncated).toBe(true);
+    // WR-05: the cap is bytes, and a character straddling it is dropped whole (no lone surrogate).
+    const emoji = o(await call("github.get_file", { repo: "me/studio", path: "e.md" }, fileF("e.md", () => file(`${"x".repeat(16382)}\u{1F600}y`)))) as { content: string; truncated: boolean };
+    expect(emoji).toMatchObject({ content: "x".repeat(16382), truncated: true });
+    const wide = o(await call("github.get_file", { repo: "me/studio", path: "w.md" }, fileF("w.md", () => file("é".repeat(10000))))) as { content: string };
+    expect(Buffer.byteLength(wide.content)).toBe(16384);
   });
 
   it("get_file: honest refusals and errors", async () => {
