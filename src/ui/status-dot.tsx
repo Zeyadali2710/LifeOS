@@ -1,5 +1,5 @@
 const FILL = {
-  running: "bg-indigo",
+  running: "bg-accent",
   online: "bg-green",
   attention: "bg-red",
   paused: "bg-amber",

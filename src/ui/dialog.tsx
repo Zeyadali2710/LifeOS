@@ -38,15 +38,15 @@ export function Dialog({
     520: ["w-[min(520px,94vw)]", "w-full tab:w-[min(520px,94vw)]"],
   }[width][sheet ? 1 : 0];
   return (
-    <div className={`fixed inset-0 z-50 grid bg-[rgba(5,6,9,.6)] ${sheet ? "items-end tab:place-items-center" : "place-items-center"}`} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className={`fixed inset-0 z-50 grid bg-black/40 ${sheet ? "items-end tab:place-items-center" : "place-items-center"}`} onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div
         ref={ref}
         role="dialog"
         aria-modal="true"
         aria-labelledby={tid}
-        className={`${sheet ? `${w} max-h-[85dvh] overflow-y-auto rounded-t-16 rounded-b-none tab:rounded-16 pb-[max(1.5rem,env(safe-area-inset-bottom))]` : `${w} rounded-16 pb-6`} animate-[lo-rise_.25s_ease-out] border border-[rgba(255,255,255,.1)] bg-[#14161c] px-6 pt-6 shadow-[var(--shadow-overlay)]`}
+        className={`${sheet ? `${w} max-h-[85dvh] overflow-y-auto rounded-t-30 rounded-b-none tab:rounded-30 pb-[max(24px,env(safe-area-inset-bottom))]` : `${w} rounded-30 pb-6`} glass-menu animate-[lo-rise_.25s_ease-out] px-6 pt-6`}
       >
-        <h2 id={tid} className="text-[17px] font-medium tracking-[-0.005em]">
+        <h2 id={tid} className="font-display text-[26px] leading-[1.1] font-normal">
           {title}
         </h2>
         <div className="mt-2 text-[13.5px] leading-normal text-text-2">{children}</div>
