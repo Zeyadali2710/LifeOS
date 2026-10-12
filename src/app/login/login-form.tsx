@@ -6,7 +6,7 @@ import { authClient } from "@/lib/auth-client";
 import { Button } from "@/ui/button";
 
 const field =
-  "mt-1.5 block h-11 w-full rounded-9 border border-[rgba(255,255,255,.10)] bg-surface px-3 text-sm text-text placeholder:text-text-3 focus:border-indigo focus:outline-none";
+  "mt-1.5 block h-11 w-full rounded-full border border-white/[.10] bg-white/[.03] px-4 text-[14px] text-text outline-none transition placeholder:text-text-3 focus:border-[rgba(100,210,255,.55)] focus:shadow-[var(--ring-input)]";
 
 export function LoginForm({ next }: { next: string }) {
   const router = useRouter();
