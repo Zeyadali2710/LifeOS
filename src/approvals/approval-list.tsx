@@ -64,14 +64,14 @@ export function ApprovalList({
       role="tab"
       aria-selected={tab === t}
       onClick={() => onTab(t)}
-      className={`h-8 flex-1 rounded-7 px-3 text-[13px] ${tab === t ? "bg-[#1f222b] text-text" : "text-text-3 hover:text-text-2"}`}
+      className={`h-7 flex-1 rounded-full px-3 text-[13px] ${tab === t ? "bg-white/[.16] text-white" : "text-text-3 hover:text-text-2"}`}
     >
       {label}
     </button>
   );
   return (
     <div className="flex flex-col gap-3">
-      <div role="tablist" className="flex gap-1 rounded-9 bg-inset p-1">
+      <div role="tablist" className="flex gap-1 rounded-full border border-white/[.06] bg-white/[.04] p-[3px]">
         {tabBtn("pending", `Pending · ${pending.length}`)}
         {tabBtn("resolved", "Resolved")}
       </div>
@@ -95,12 +95,13 @@ export function ApprovalList({
                 aria-selected={sel}
                 tabIndex={sel || (!selectedId && n === 0) ? 0 : -1}
                 onClick={() => onSelect(a.id)}
-                className={`flex cursor-pointer flex-col gap-2 rounded-12 border p-3.5 outline-none focus-visible:shadow-[var(--ring-input)] ${
-                  sel ? "border-[rgba(139,140,255,.4)] bg-[rgba(139,140,255,.06)]" : "border-[rgba(255,255,255,.08)] hover:border-[rgba(255,255,255,.18)]"
+                style={sel ? { borderColor: `color-mix(in srgb, ${agent?.color ?? "#fff"} 40%, transparent)` } : undefined}
+                className={`flex cursor-pointer flex-col gap-2 rounded-14 border p-3.5 outline-none focus-visible:shadow-[var(--ring-input)] ${
+                  sel ? "bg-white/[.06]" : "border-white/[.08] hover:border-white/[.18]"
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <span className="font-mono text-[10.5px] font-medium tracking-[0.07em] uppercase" style={{ color: agent?.color }}>
+                  <span className="text-[10.5px] font-medium tracking-[0.11em] uppercase" style={{ color: agent?.color }}>
                     {agent?.name ?? a.agentId}
                   </span>
                   <span className="flex-1" />
@@ -111,7 +112,7 @@ export function ApprovalList({
                 <p className="text-[14px] leading-[1.4] break-words">
                   {a.kind === "issue" ? `Create an issue in ${String(p.repo)}: ` : ""}&quot;{String(p.title ?? "")}&quot;
                 </p>
-                <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] text-text-3">
+                <div className="flex flex-wrap items-center gap-2 text-[11px] text-text-3">
                   <span>Requested {formatHM(new Date(a.createdAt))}</span>
                   <span className={tone}>{label}</span>
                   {a.edited != null && (

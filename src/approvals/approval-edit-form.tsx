@@ -35,7 +35,7 @@ export function ApprovalEditForm({ repo, draft, errors, onChange }: { repo: stri
       </Field>
       <div>
         <div className="mb-1 text-[12.5px] text-text-2">Repository</div>
-        <div className="font-mono text-[13px] text-text-2">{repo}</div>
+        <div className="font-code text-[13px] text-text-2">{repo}</div>
       </div>
     </div>
   );

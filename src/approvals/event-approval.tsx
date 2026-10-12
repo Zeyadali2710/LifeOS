@@ -119,16 +119,16 @@ export function eventResolved(a: ApprovalDTO, at: string): { text: string; href:
 // ---- views ----
 const Fact = ({ k, children }: { k: string; children: React.ReactNode }) => (
   <div>
-    <div className="mb-1 font-mono text-[10.5px] tracking-[0.1em] text-text-3">{k}</div>
+    <div className="mb-1 text-[10px] tracking-[0.14em] text-text-3">{k}</div>
     <div className="text-[13.5px] leading-normal break-words">{children}</div>
   </div>
 );
 
 function EventPreview({ p }: { p: EventPayload }) {
   return (
-    <div className="rounded-10 border border-[rgba(255,255,255,.06)] bg-inset p-4">
+    <div className="rounded-14 border border-white/[.08] bg-white/[.03] p-4">
       <div className="flex items-start gap-2.5">
-        <span aria-hidden className="mt-1.5 size-2.5 shrink-0 rounded-3 bg-indigo" />
+        <span aria-hidden className="mt-1.5 size-2.5 shrink-0 rounded-3 bg-accent-solid" />
         <div className="min-w-0 flex-1">
           <div className="text-[15px] font-medium break-words">{p.title}</div>
           <div className="mt-1 text-[13px] text-text-2">{whenText(p.start, p.end, p.allDay)}</div>
@@ -158,12 +158,12 @@ function Diff({ p }: { p: EventPayload }) {
     if (b.description !== (p.description ?? "")) rows.push(["DESCRIPTION", b.description || "None", p.description || "None"]);
     if (b.showAs !== (p.showAs ?? "busy")) rows.push(["SHOW AS", b.showAs, p.showAs ?? "busy"]);
   }
-  if (!rows.length) return <div className="rounded-10 border border-[rgba(255,255,255,.06)] bg-inset p-4 text-[13.5px] text-text-2">No fields change.</div>;
+  if (!rows.length) return <div className="rounded-14 border border-white/[.08] bg-white/[.03] p-4 text-[13.5px] text-text-2">No fields change.</div>;
   return (
-    <div className="flex flex-col gap-3.5 rounded-10 border border-[rgba(255,255,255,.06)] bg-inset p-4">
+    <div className="flex flex-col gap-3.5 rounded-14 border border-white/[.08] bg-white/[.03] p-4">
       {rows.map(([k, from, to]) => (
         <div key={k}>
-          <div className="mb-1 font-mono text-[10.5px] tracking-[0.1em] text-text-3">{k}</div>
+          <div className="mb-1 text-[10px] tracking-[0.14em] text-text-3">{k}</div>
           <div className="text-[13px] break-words whitespace-pre-wrap text-text-3 line-through">{from}</div>
           <div className="text-[14px] break-words whitespace-pre-wrap">{to}</div>
         </div>
@@ -243,7 +243,7 @@ export function EventApprovalBody({ approval: a, editing, draft, errors, onDraft
         {p.scope && a.kind !== "event_create" && <Fact k="APPLIES TO">{SCOPE[p.scope]}</Fact>}
       </section>
       <section className="border-b border-[rgba(255,255,255,.06)] px-[22px] py-5">
-        <div className="mb-3 font-mono text-[10.5px] tracking-[0.1em] text-text-3">WHAT DATA WILL BE SENT</div>
+        <div className="mb-3 text-[10px] tracking-[0.14em] text-text-3">WHAT DATA WILL BE SENT</div>
         <ul className="flex flex-col gap-1.5 text-[13px]">
           {sent.map((t) => (
             <li key={t} className="flex items-center gap-2 break-words">
@@ -252,17 +252,17 @@ export function EventApprovalBody({ approval: a, editing, draft, errors, onDraft
             </li>
           ))}
           <li className="flex items-center gap-2">
-            <Icon name="shield" size={16} className="shrink-0 text-blue" />
+            <Icon name="shield" size={16} className="shrink-0 text-cyan" />
             Not shared with other attendees
           </li>
           <li className="flex items-center gap-2">
-            <Icon name="shield" size={16} className="shrink-0 text-blue" />
+            <Icon name="shield" size={16} className="shrink-0 text-cyan" />
             No email or contact data
           </li>
         </ul>
       </section>
       <section className={`border-b px-[22px] py-5 ${del ? "border-[rgba(240,122,110,.35)]" : "border-[rgba(255,255,255,.06)]"}`}>
-        <div className="mb-3 flex items-center gap-2 font-mono text-[10.5px] tracking-[0.1em] text-text-3">
+        <div className="mb-3 flex items-center gap-2 text-[10px] tracking-[0.14em] text-text-3">
           {a.kind === "event_update" ? "CHANGES" : "PREVIEW"}
           {edited && (
             <Badge kind="tag" tone="amber">
@@ -271,7 +271,7 @@ export function EventApprovalBody({ approval: a, editing, draft, errors, onDraft
           )}
         </div>
         {del ? (
-          <div className="flex items-start gap-3 rounded-10 border border-[rgba(240,122,110,.25)] bg-[rgba(240,122,110,.06)] p-4 text-[13.5px] leading-normal break-words">
+          <div className="flex items-start gap-3 rounded-14 border border-[rgba(240,122,110,.25)] bg-[rgba(240,122,110,.06)] p-4 text-[13.5px] leading-normal break-words">
             <Icon name="warning" size={18} className="mt-0.5 shrink-0 text-red" />
             <span>
               This permanently removes &quot;{p.title}&quot; ({when}) from {p.calendarLabel}.{" It can't be undone from LifeOS."}

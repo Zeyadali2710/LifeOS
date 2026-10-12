@@ -62,10 +62,10 @@ export function ApprovalsView({
   const nav = "grid size-11 place-items-center text-text-2 disabled:opacity-30";
 
   return (
-    <>
+    <div className="mx-auto max-w-[1480px]">
       <header className="mb-8">
-        <div className="mb-3 font-mono text-[11px] font-medium tracking-[0.12em] text-amber">APPROVAL CENTRE</div>
-        <h1 className="text-[clamp(28px,3vw,40px)] leading-[1.1] font-medium tracking-[-0.025em]">{headline}</h1>
+        <div className="mb-3 text-[11px] font-medium tracking-[.12em] text-amber">APPROVAL CENTRE</div>
+        <h1 className="font-display text-[clamp(28px,3vw,40px)] leading-[1.1] font-medium tracking-[-0.025em]">{headline}</h1>
         <p className="mt-3 max-w-[640px] text-[15px] leading-normal text-text-2">
           Agents can read and prepare. Anything that creates, sends, changes or deletes waits here until you decide.
         </p>
@@ -90,7 +90,7 @@ export function ApprovalsView({
             <button type="button" aria-label="Back to approvals" onClick={() => setMobileDetail(false)} className={nav}>
               <Icon name="arrow_back" size={22} />
             </button>
-            <span className="flex-1 font-mono text-[11px] tracking-[0.1em] text-amber">APPROVAL{idx >= 0 ? ` · ${idx + 1} OF ${pending.length}` : ""}</span>
+            <span className="flex-1 text-[11px] tracking-[.12em] text-amber">APPROVAL{idx >= 0 ? ` · ${idx + 1} OF ${pending.length}` : ""}</span>
             <button type="button" aria-label="Previous approval" disabled={idx <= 0} onClick={() => step(-1)} className={`${nav} rotate-180`}>
               <Icon name="chevron_right" size={22} />
             </button>
@@ -108,6 +108,6 @@ export function ApprovalsView({
       <div role="status" aria-live="polite" className="sr-only">
         {say}
       </div>
-    </>
+    </div>
   );
 }
