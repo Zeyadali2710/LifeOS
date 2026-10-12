@@ -163,7 +163,7 @@ describe("repo contents", () => {
   const err = (r: unknown) => (r as { status: string; error: string });
   const setBranch = (b: string) => t.handle().update(githubRepos).set({ defaultBranch: b }).where(eq(githubRepos.fullName, "me/studio"));
   const treeF = (b = "main", body: unknown = tree) => fakeGithub({ [`GET /repos/me/studio/git/trees/${b}`]: () => json(body) });
-  const fileF = (path: string, res: () => Response, b = "main") => fakeGithub({ [`GET /repos/me/studio/contents/${path}`]: res });
+  const fileF = (path: string, res: () => Response) => fakeGithub({ [`GET /repos/me/studio/contents/${path}`]: res });
 
   it("setup", async () => {
     await t.handle().insert(githubRepos).values({ id: 100, fullName: "me/studio", private: false, defaultBranch: "main", htmlUrl: "u/s" });
