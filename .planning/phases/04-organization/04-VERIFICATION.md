@@ -1,7 +1,7 @@
 ---
 phase: 04-organization
 verified: 2026-10-12T00:00:00Z
-status: human_needed
+status: passed
 score: 3/3 must-haves verified
 human_verification:
   - test: "iCloud shared/read-only calendar shows as read-only (CR-A03 privilege-set parsing)"

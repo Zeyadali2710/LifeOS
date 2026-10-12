@@ -33,9 +33,9 @@
 - [x] **AGT-07**: Agent runs are routed per run to the cheapest capable model: simple delegated tasks on a free OpenRouter model at US$0, reasoning tasks and any free-model failure on claude-sonnet-5-5, orchestrator always claude-opus-5-5; routing is visible (trace, Command Centre), overridable per agent, priced per turn, private-repo data gated; with no OpenRouter key behaviour is unchanged.
 
 ### Organization
-- [ ] **ORG-01**: Google Calendar + iCloud CalDAV via CalendarProvider; day/week/month views
-- [ ] **ORG-02**: Create/edit/delete events, recurring events (owner UI writes direct + audit-logged; agent writes to external calendars APPROVE tier, agent deletes HIGH_RISK — Phase 4 D-06/D-07)
-- [ ] **ORG-03**: Tasks + reminders; conflict detection; scheduling suggestions
+- [x] **ORG-01**: Google Calendar + iCloud CalDAV via CalendarProvider; day/week/month views
+- [x] **ORG-02**: Create/edit/delete events, recurring events (owner UI writes direct + audit-logged; agent writes to external calendars APPROVE tier, agent deletes HIGH_RISK — Phase 4 D-06/D-07)
+- [x] **ORG-03**: Tasks + reminders; conflict detection; scheduling suggestions
 
 ### Career & Projects
 - [ ] **CAR-01**: Repository dashboard (status, languages, commits, PRs, issues, activity)

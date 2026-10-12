@@ -10,6 +10,7 @@ Open LifeOS and immediately know: what is happening, what matters, what needs at
 ### Validated
 - SHL-01..05 — OS shell: navigation across all domains, live activity over SSE, notifications (read/snooze/dismiss), command palette, honest health. Validated in Phase 2: Shell (desktop visual + Windows shortcut UAT pending).
 - AGT-01..06 — Agent core: tiered tool gateway, approvals that suspend/resume runs, idempotent side effects, streaming orchestrator chat with delegation, Agent Command Centre, read-only GitHub sync. Validated in Phase 3: Agent infrastructure + GitHub (live on the homelab behind tailscale serve; review follow-ups CR-01/CR-02/WR-02 open).
+- ORG-01..03 — Organization: Google Calendar + iCloud CalDAV behind a CalendarProvider seam (day/week/month), owner event writes direct + audit-logged, agent create/edit APPROVE and delete HIGH_RISK, recurring scopes, tasks + reminders, conflicts and Today's plan with free-slot suggestions. Validated in Phase 4: Organization (live on the homelab with real Google + iCloud; code review 53/54 fixed, re-verified by the owner).
 
 ### Active
 See `REQUIREMENTS.md`.
@@ -50,4 +51,4 @@ See `REQUIREMENTS.md`.
 ## Project Reference
 Docs: `docs/` · ADRs: `docs/decisions/` · Roadmap: `.planning/ROADMAP.md`
 
-_Last updated: 2026-10-09 — Phase 3 (Agent infrastructure + GitHub) complete._
+_Last updated: 2026-10-12 — Phase 4 (Organization) complete._
