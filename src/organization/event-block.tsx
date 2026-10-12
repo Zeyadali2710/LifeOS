@@ -5,7 +5,7 @@ import { Icon } from "@/ui/icon";
 import { hmOf, shortDate } from "./layout";
 import type { OrgInstance } from "./organization-view";
 
-const FALLBACK = "#8b8cff"; // uncategorised events use the Work hue
+const FALLBACK = CATEGORY.work.color; // uncategorised events use the Work hue
 
 export function EventBlock({
   inst,
@@ -47,7 +47,7 @@ export function EventBlock({
         type="button"
         aria-label={label}
         onClick={() => onOpen(inst)}
-        className="pointer-events-auto absolute flex animate-[lo-in_.2s_ease-out] flex-col gap-0.5 overflow-hidden rounded-7 px-[7px] py-[5px] text-left text-text hover:brightness-[1.15] focus-visible:outline-2 focus-visible:outline-indigo max-tab:before:absolute max-tab:before:-inset-1.5 max-tab:before:content-['']"
+        className="pointer-events-auto absolute flex animate-[lo-in_.2s_ease-out] flex-col gap-0.5 overflow-hidden rounded-7 px-[7px] py-[5px] text-left text-text hover:brightness-[1.15] focus-visible:outline-2 focus-visible:outline-accent max-tab:before:absolute max-tab:before:-inset-1.5 max-tab:before:content-['']"
         style={{
           top,
           height,
@@ -61,7 +61,7 @@ export function EventBlock({
           borderLeft: conflict ? "2px solid var(--red)" : undefined,
         }}
       >
-        <span className="flex items-center gap-[5px] text-[12.5px] leading-[1.25] font-medium">
+        <span className="flex items-center gap-[5px] text-[12px] leading-[1.25] font-medium">
           {conflict ? (
             <Icon name="event_busy" size={13} className="shrink-0 text-red" />
           ) : (
@@ -71,7 +71,7 @@ export function EventBlock({
           {inst.recurring && <Icon name="repeat" size={12} className="shrink-0 text-text-3" />}
         </span>
         {tall && (
-          <span className="truncate font-mono text-[10px] text-text-2">
+          <span className="truncate text-[10px] text-text-2">
             {timeLine}
             {inst.free ? " · Free" : ""}
             {conflict ? " · Conflict" : ""}

@@ -116,10 +116,10 @@ export function TimeGrid({
   };
 
   return (
-    <div className={`relative rounded-14 border border-[rgba(255,255,255,.07)] bg-[#111318] ${pending ? "opacity-60" : ""}`} aria-busy={pending || undefined}>
-      <div ref={scroller} className="max-h-[calc(100dvh-240px)] min-h-[420px] overflow-auto rounded-14">
+    <div className={`glass-card relative rounded-26 ${pending ? "opacity-60" : ""}`} aria-busy={pending || undefined}>
+      <div ref={scroller} className="max-h-[calc(100dvh-240px)] min-h-[420px] overflow-auto rounded-26">
         <div style={{ minWidth: minW }}>
-          <div className="sticky top-0 z-[5] grid border-b border-[rgba(255,255,255,.07)] bg-[#111318]" style={{ gridTemplateColumns: template }}>
+          <div className="glass-sticky sticky top-0 z-[5] grid" style={{ gridTemplateColumns: template }}>
             <span />
             {days.map((d) => {
               const isToday = d === today;
@@ -132,8 +132,8 @@ export function TimeGrid({
                   onClick={() => onOpenDay(d)}
                   className="flex items-baseline gap-2 border-l border-[rgba(255,255,255,.05)] px-2.5 py-2.5 text-left hover:bg-fill-1"
                 >
-                  <span className={`font-mono text-[10.5px] font-medium tracking-[0.08em] uppercase ${isToday ? "text-indigo-text" : "text-text-3"}`}>{label}</span>
-                  <span className={`grid size-7 place-items-center rounded-full text-[17px] font-medium ${isToday ? "bg-indigo text-on-accent" : "text-text"}`}>{parts(d)[2]}</span>
+                  <span className={`text-[10.5px] font-medium tracking-[.12em] uppercase ${isToday ? "text-white" : "text-text-3"}`}>{label}</span>
+                  <span className={`grid size-7 place-items-center rounded-full font-display text-[22px] ${isToday ? "bg-accent-solid text-white" : "text-text"}`}>{parts(d)[2]}</span>
                 </button>
               );
             })}
@@ -152,7 +152,7 @@ export function TimeGrid({
                           type="button"
                           onClick={() => onOpen(i)}
                           aria-label={`${i.title}, all day, ${i.category ? CATEGORY[i.category].label : "Uncategorised"}, ${i.calendarName}`}
-                          className="flex h-[22px] w-full items-center gap-1 truncate rounded-6 px-1.5 text-left text-[12px] hover:brightness-[1.15]"
+                          className="flex h-[22px] w-full items-center gap-1 truncate rounded-7 px-1.5 text-left text-[12px] hover:brightness-[1.15]"
                           style={{ background: fill(i.category ?? "work"), border: `1px solid ${border(i.category ?? "work")}` }}
                         >
                           <span className="truncate">{i.title}</span>
@@ -175,7 +175,7 @@ export function TimeGrid({
           <div className="relative grid" style={{ gridTemplateColumns: template }}>
             <div aria-hidden="true" className="flex flex-col">
               {Array.from({ length: 24 - startHour }, (_, i) => (
-                <div key={i} style={{ height: HOUR_PX }} className="-translate-y-1.5 px-2 text-right font-mono text-[10.5px] text-text-3">
+                <div key={i} style={{ height: HOUR_PX }} className="-translate-y-1.5 px-2 text-right text-[10.5px] text-text-3">
                   {String(startHour + i).padStart(2, "0")}:00
                 </div>
               ))}
@@ -205,10 +205,10 @@ export function TimeGrid({
                     const y = e.clientY - e.currentTarget.getBoundingClientRect().top;
                     newAt(d, Math.floor(((y / HOUR_PX + startHour) * 60) / 30) * 30);
                   }}
-                  className="relative border-l border-[rgba(255,255,255,.05)] focus-visible:outline-1 focus-visible:-outline-offset-1 focus-visible:outline-indigo"
+                  className="relative border-l border-[rgba(255,255,255,.05)] focus-visible:outline-1 focus-visible:-outline-offset-1 focus-visible:outline-accent"
                   style={{
                     height: bodyH,
-                    background: weekend ? "rgba(255,255,255,.015)" : undefined,
+                    background: isToday ? "rgba(255,255,255,.02)" : weekend ? "rgba(255,255,255,.015)" : undefined,
                     backgroundImage: `repeating-linear-gradient(180deg, rgba(255,255,255,.045) 0 1px, transparent 1px ${HOUR_PX}px)`,
                   }}
                 >
@@ -231,11 +231,11 @@ export function TimeGrid({
                       ))}
                   </ul>
                   {cursor?.col === col && (
-                    <div aria-hidden="true" className="pointer-events-none absolute right-1 left-1 h-[22px] rounded-6 border border-dashed border-indigo bg-[rgba(139,140,255,.1)]" style={{ top: (cursor.min / 60 - startHour) * HOUR_PX }} />
+                    <div aria-hidden="true" className="pointer-events-none absolute right-1 left-1 h-[22px] rounded-6 border border-dashed border-accent bg-accent/10" style={{ top: (cursor.min / 60 - startHour) * HOUR_PX }} />
                   )}
                   {isToday && nowH >= startHour && (
-                    <div className="pointer-events-none absolute right-0 left-0 z-[3] border-t-[1.5px] border-indigo" style={{ top: (nowH - startHour) * HOUR_PX }}>
-                      <span aria-hidden="true" className="absolute -top-[5px] -left-[5px] size-[9px] animate-[lo-pulse_1.8s_ease-out_infinite] rounded-full bg-indigo motion-reduce:animate-none" />
+                    <div className="pointer-events-none absolute right-0 left-0 z-[3] h-[1.5px] bg-accent" style={{ top: (nowH - startHour) * HOUR_PX }}>
+                      <span aria-hidden="true" className="absolute -top-[5px] -left-[5px] size-[9px] animate-[lo-pulse_1.8s_ease-out_infinite] rounded-full bg-accent motion-reduce:animate-none" />
                       <span className="sr-only">Current time {nowHM}</span>
                     </div>
                   )}
@@ -248,7 +248,7 @@ export function TimeGrid({
 
       {total === 0 && (
         <div className="pointer-events-none absolute inset-0 grid place-items-center p-4">
-          <div className="pointer-events-auto w-[min(420px,100%)] rounded-14 bg-[#111318]">
+          <div className="pointer-events-auto w-[min(420px,100%)] rounded-14 bg-[#161619]">
             <EmptyState
               icon="event_note"
               title="Nothing scheduled."

@@ -67,7 +67,7 @@ export function EventDetail({
     >
       <div className="flex flex-col gap-2.5">
         <div className="flex items-center gap-2 font-mono text-[11px] text-text-3">
-          <span className="size-2 rounded-2" style={{ background: cat ? CATEGORY[cat].color : "#8b8cff" }} />
+          <span className="size-2 rounded-2" style={{ background: cat ? CATEGORY[cat].color : CATEGORY.work.color }} />
           {cat ? CATEGORY[cat].label : "Uncategorised"} · {inst.calendarName}
         </div>
         <time dateTime={inst.start} className="text-text">
@@ -83,7 +83,7 @@ export function EventDetail({
           <div className="flex items-center gap-1.5">
             <Icon name="location_on" size={15} />
             {isSafeUrl(inst.location) ? (
-              <a href={inst.location} target="_blank" rel="noopener noreferrer" className="truncate text-indigo-text underline">
+              <a href={inst.location} target="_blank" rel="noopener noreferrer" className="truncate text-text underline">
                 {inst.location}
               </a>
             ) : (
@@ -95,7 +95,7 @@ export function EventDetail({
           <div>
             <p className={`break-words whitespace-pre-wrap ${full ? "" : "line-clamp-6"}`}>{inst.description}</p>
             {long && (
-              <button type="button" aria-expanded={full} onClick={() => setFull(!full)} className="mt-1 text-[12.5px] text-indigo-text">
+              <button type="button" aria-expanded={full} onClick={() => setFull(!full)} className="mt-1 text-[12.5px] text-text-2 hover:text-text">
                 {full ? "Show less" : "Show full description"}
               </button>
             )}
