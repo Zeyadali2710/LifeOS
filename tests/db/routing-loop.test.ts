@@ -132,6 +132,23 @@ describe("private-data gate (D-09)", () => {
     expect((await run(id)).routeEvents.at(-1)).toMatchObject({ kind: "private", to: SONNET });
   });
 
+  it("get_file on a private repo switches a free run to Sonnet before the content is sent (D-05)", async () => {
+    await withKey();
+    await connect();
+    await addSecret();
+    const text = "TOPSECRETFILETEXT";
+    const f = fakeGithub({
+      "GET /repos/me/secret/contents/README.md": () => json({ type: "file", size: text.length, encoding: "base64", content: Buffer.from(text).toString("base64") }),
+    });
+    const id = await freeChild();
+    const llm = scriptedLlm([{ toolUses: [{ name: "github.get_file", input: { repo: "me/secret", path: "README.md" } }] }, { text: "done" }]);
+    expect(await advance(id, { handle: h(), llm, fetch: f })).toBe("completed");
+    expect(models(llm)).toEqual([freeModel(), SONNET]);
+    expect(JSON.stringify(llm.calls.filter((c) => c.model === freeModel()))).not.toContain(text);
+    expect(JSON.stringify(llm.calls.at(-1))).toContain(text);
+    expect((await run(id)).routeEvents.at(-1)).toMatchObject({ kind: "private", to: SONNET });
+  });
+
   it("opt-in on keeps the run free; public-only repos stay free", async () => {
     await withKey();
     await connect();

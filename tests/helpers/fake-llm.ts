@@ -1,7 +1,7 @@
 import type { ContentBlock } from "@anthropic-ai/sdk/resources/messages";
 import { apiName, type LlmClient, type LlmUsage } from "@/server/agents/types";
 
-type Turn = {
+export type Turn = {
   text?: string;
   toolUses?: { name: string; input: unknown }[];
   usage?: Partial<LlmUsage>;
@@ -11,15 +11,18 @@ type Turn = {
 
 let n = 0;
 
-export function scriptedLlm(turns: Turn[]): LlmClient & { calls: Parameters<LlmClient["stream"]>[0][] } {
+type Step = Turn | ((params: Parameters<LlmClient["stream"]>[0]) => Turn);
+
+export function scriptedLlm(turns: Step[]): LlmClient & { calls: Parameters<LlmClient["stream"]>[0][] } {
   const queue = [...turns];
   const calls: Parameters<LlmClient["stream"]>[0][] = [];
   return {
     calls,
     async stream(params, onText) {
       calls.push({ ...params, messages: structuredClone(params.messages) }); // snapshot: the loop mutates its array
-      const t = queue.shift();
-      if (!t) throw new Error("script exhausted");
+      const step = queue.shift();
+      if (!step) throw new Error("script exhausted");
+      const t = typeof step === "function" ? step(params) : step;
       if (t.throw) throw t.throw;
       for (const w of (t.text ?? "").split(/(?<=\s)/).filter(Boolean)) onText(w);
       const content = [
