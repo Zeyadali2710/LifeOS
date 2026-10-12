@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="max-width:1480px;margin:0 auto;padding:36px 32px 170px;display:flex;flex-direction:column;gap:32px">
+  <section style="display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+      <div style="font:500 11px 'Familjen Grotesk',sans-serif;letter-spacing:0.14em;color:#8e8e93">WEDNESDAY, OCTOBER 7 · SYDNEY · 17°C CLEAR</div>
+      <h1 style="margin:0;font:400 clamp(48px,5.2vw,76px)/0.92 'Instrument Serif',serif;letter-spacing:-0.015em">Good evening, <span style="font-style:italic;color:#ff9f0a">Zeyad.</span></h1>
+      <p style="margin:0;font-size:17px;line-height:1.5;color:#aeaeb2;max-width:640px;text-wrap:pretty">You're on track. <span style="color:#f5f5f7">Three things need your attention today.</span> Your Outreach Agent found four events worth considering.</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <sc-for list="{{ stats }}" as="s" hint-placeholder-count="3">
+        <button onClick="{{ s.go }}" style="display:flex;flex-direction:column;gap:6px;align-items:flex-start;padding:12px 14px;min-width:132px;border-radius:22px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);backdrop-filter:blur(30px) saturate(160%);-webkit-backdrop-filter:blur(30px) saturate(160%);cursor:pointer;color:#f5f5f7;text-align:left;box-shadow:inset 0 1px 0 rgba(255,255,255,0.12),0 24px 48px -28px rgba(0,0,0,0.8)" style-hover="border-color:rgba(255,255,255,0.16)">
+          <span style="display:flex;align-items:center;gap:7px;font:500 10px 'Familjen Grotesk',sans-serif;letter-spacing:0.12em;color:#8e8e93"><span style="width:6px;height:6px;border-radius:50%;background:{{ s.color }}"></span>{{ s.k }}</span>
+          <span style="font-family:'Instrument Serif',serif;font-size:20px;font-weight:400">{{ s.v }}</span>
+        </button>
+      </sc-for>
+    </div>
+  </section>
+
+  <section aria-labelledby="pri" style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:center;gap:12px"><span id="pri" style="font:500 11px 'Familjen Grotesk',sans-serif;letter-spacing:0.14em;color:#8e8e93">PRIORITIES</span><span style="font:500 10.5px 'Familjen Grotesk',sans-serif;color:#636366">RANKED BY ORCHESTRATOR · 19:40</span><span style="flex:1;height:1px;background:rgba(255,255,255,0.06)"></span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:12px">
+      <sc-for list="{{ priorities }}" as="p" hint-placeholder-count="3">
+        <article style="display:flex;flex-direction:column;gap:14px;padding:18px;border-radius:14px;border:1px solid {{ p.border }};background:{{ p.bg }};position:relative;overflow:hidden">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font:600 10.5px 'Familjen Grotesk',sans-serif;padding:3px 7px;border-radius:5px;color:{{ p.pc }};background:{{ p.pbg }}">{{ p.pri }}</span>
+            <span style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:#aeaeb2"><span style="font-family:'Material Symbols Outlined';font-size:15px">{{ p.icon }}</span>{{ p.src }}</span>
+            <span style="flex:1"></span>
+            <span style="font:400 10.5px 'Familjen Grotesk',sans-serif;color:#8e8e93">{{ p.due }}</span>
+          </div>
+          <div style="font-family:'Instrument Serif',serif;font-size:21px;line-height:1.12;font-weight:400;letter-spacing:-0.005em;text-wrap:pretty">{{ p.title }}</div>
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <span style="font:500 10px 'Familjen Grotesk',sans-serif;letter-spacing:0.12em;color:#8e8e93">WHY IT MATTERS</span>
+            <span style="font-size:13px;line-height:1.5;color:#aeaeb2;text-wrap:pretty">{{ p.why }}</span>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:auto">
+            <button onClick="{{ p.go }}" style="height:32px;padding:0 12px;border-radius:999px;border:none;background:#0a84ff;color:#fff;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px" style-hover="background:#409cff">{{ p.action }}<span style="font-family:'Material Symbols Outlined';font-size:16px">arrow_forward</span></button>
+            <button onClick="{{ p.later }}" style="height:32px;padding:0 12px;border-radius:999px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#aeaeb2;font-size:13px;cursor:pointer" style-hover="color:#f5f5f7;border-color:rgba(255,255,255,0.2)">Later</button>
+          </div>
+        </article>
+      </sc-for>
+    </div>
+  </section>
+
+  <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start">
+    <section aria-labelledby="today" style="flex:1.5 1 520px;min-width:0;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:12px"><span id="today" style="font:500 11px 'Familjen Grotesk',sans-serif;letter-spacing:0.14em;color:#8e8e93">TODAY</span><span style="font:500 10.5px 'Familjen Grotesk',sans-serif;color:#636366">7 ITEMS · 4 DONE</span><span style="flex:1;height:1px;background:rgba(255,255,255,0.06)"></span><button onClick="{{ goOrg }}" style="border:none;background:none;color:#aeaeb2;font-size:12.5px;cursor:pointer;padding:0" style-hover="color:#f5f5f7">Open calendar →</button></div>
+      <div style="border-radius:26px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);backdrop-filter:blur(30px) saturate(160%);-webkit-backdrop-filter:blur(30px) saturate(160%);padding:8px 0;box-shadow:inset 0 1px 0 rgba(255,255,255,0.12),0 24px 48px -28px rgba(0,0,0,0.8)">
+        <sc-for list="{{ today }}" as="t" hint-placeholder-count="7">
+          <div>
+            <sc-if value="{{ t.now }}" hint-placeholder-val="{{ false }}">
+              <div style="display:grid;grid-template-columns:72px 24px 1fr;align-items:center;height:28px">
+                <span style="font:600 11px 'Familjen Grotesk',sans-serif;color:#64d2ff;text-align:right;padding-right:4px">{{ t.time }}</span>
+                <span style="display:flex;justify-content:center"><span style="width:9px;height:9px;border-radius:50%;background:#0a84ff;animation:loPulse 1.8s ease-out infinite"></span></span>
+                <span style="display:flex;align-items:center;gap:10px;padding-right:18px"><span style="font:500 10px 'Familjen Grotesk',sans-serif;letter-spacing:0.12em;color:#64d2ff">NOW</span><span style="flex:1;height:1px;background:linear-gradient(90deg,rgba(10,132,255,0.6),rgba(10,132,255,0))"></span></span>
+              </div>
+            </sc-if>
+            <sc-if value="{{ t.item }}" hint-placeholder-val="{{ true }}">
+              <div style="display:grid;grid-template-columns:72px 24px 1fr;align-items:stretch;opacity:{{ t.op }}">
+                <span style="font:500 11.5px 'Familjen Grotesk',sans-serif;color:#aeaeb2;text-align:right;padding:14px 4px 0 0">{{ t.time }}</span>
+                <span style="position:relative;display:flex;justify-content:center"><span style="position:absolute;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.07)"></span><span style="position:relative;margin-top:17px;width:7px;height:7px;border-radius:2px;background:{{ t.color }}"></span></span>
+                <div style="display:flex;align-items:center;gap:12px;padding:10px 18px 10px 4px;min-width:0">
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+                    <span style="font-size:14px;color:#f5f5f7;text-decoration:{{ t.strike }};text-decoration-color:rgba(255,255,255,0.3)">{{ t.title }}</span>
+                    <span style="font-size:12px;color:#8e8e93">{{ t.meta }}</span>
+                  </div>
+                  <span style="font:500 10px 'Familjen Grotesk',sans-serif;letter-spacing:0.1em;color:{{ t.color }};border:1px solid {{ t.color }};border-radius:5px;padding:2px 6px;opacity:0.85;white-space:nowrap">{{ t.type }}</span>
+                </div>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section aria-labelledby="live" style="flex:1 1 340px;min-width:0;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:10px"><span id="live" style="font:500 11px 'Familjen Grotesk',sans-serif;letter-spacing:0.14em;color:#8e8e93">LIVE ACTIVITY</span><span style="width:6px;height:6px;border-radius:50%;background:#30d158;animation:loPulseG 2s ease-out infinite"></span><span style="flex:1;height:1px;background:rgba(255,255,255,0.06)"></span><button onClick="{{ togglePause }}" aria-pressed="{{ paused }}" style="border:none;background:none;color:#aeaeb2;font:500 10.5px 'Familjen Grotesk',sans-serif;cursor:pointer;padding:0" style-hover="color:#f5f5f7">{{ pauseLabel }}</button></div>
+      <div role="log" aria-live="polite" style="border-radius:26px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);backdrop-filter:blur(30px) saturate(160%);-webkit-backdrop-filter:blur(30px) saturate(160%);padding:6px;display:flex;flex-direction:column;max-height:520px;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,0.12),0 24px 48px -28px rgba(0,0,0,0.8)">
+        <sc-for list="{{ activity }}" as="a" hint-placeholder-count="7">
+          <div style="display:grid;grid-template-columns:44px 26px minmax(0,1fr);gap:10px;align-items:start;padding:10px;border-radius:9px;animation:{{ a.anim }};background:{{ a.bg }}">
+            <span style="font:500 11px 'Familjen Grotesk',sans-serif;color:#8e8e93;padding-top:5px">{{ a.time }}</span>
+            <span style="width:26px;height:26px;border-radius:7px;display:grid;place-items:center;background:rgba(255,255,255,0.04);color:{{ a.color }}"><span style="font-family:'Material Symbols Outlined';font-size:15px">{{ a.icon }}</span></span>
+            <div style="display:flex;flex-direction:column;gap:2px;min-width:0">
+              <span style="font:500 10.5px 'Familjen Grotesk',sans-serif;letter-spacing:0.1em;color:{{ a.color }}">{{ a.src }}</span>
+              <span style="font-size:13px;color:#f5f5f7;line-height:1.4">{{ a.t }}</span>
+              <span style="font:400 11px 'Familjen Grotesk',sans-serif;color:#8e8e93;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ a.d }}</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start">
+    <section aria-labelledby="proj" style="flex:1.5 1 520px;min-width:0;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:12px"><span id="proj" style="font:500 11px 'Familjen Grotesk',sans-serif;letter-spacing:0.14em;color:#8e8e93">ACTIVE PROJECTS</span><span style="flex:1;height:1px;background:rgba(255,255,255,0.06)"></span><button onClick="{{ goProjects }}" style="border:none;background:none;color:#aeaeb2;font-size:12.5px;cursor:pointer;padding:0" style-hover="color:#f5f5f7">All projects →</button></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:12px">
+        <sc-for list="{{ projects }}" as="p" hint-placeholder-count="4">
+          <button onClick="{{ p.open }}" style="display:flex;flex-direction:column;gap:14px;padding:16px;border-radius:26px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);backdrop-filter:blur(30px) saturate(160%);-webkit-backdrop-filter:blur(30px) saturate(160%);text-align:left;color:#f5f5f7;cursor:pointer;transition:border-color .15s,transform .15s;box-shadow:inset 0 1px 0 rgba(255,255,255,0.12),0 24px 48px -28px rgba(0,0,0,0.8)" style-hover="border-color:rgba(255,255,255,0.16);transform:translateY(-1px)">
+            <div style="display:flex;align-items:center;gap:10px;width:100%">
+              <span style="font-family:'Instrument Serif',serif;font-size:20px;font-weight:400">{{ p.name }}</span>
+              <span style="font:400 11px 'Familjen Grotesk',sans-serif;color:#8e8e93">{{ p.repo }}</span>
+              <span style="flex:1"></span>
+              <span style="display:flex;align-items:center;gap:6px;font:500 10.5px 'Familjen Grotesk',sans-serif;color:{{ p.hc }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ p.hc }}"></span>{{ p.health }}</span>
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:2px;height:28px;width:100%">
+              <sc-for list="{{ p.bars }}" as="b" hint-placeholder-count="24"><span style="flex:1;height:{{ b.h }};border-radius:1px;background:{{ b.c }}"></span></sc-for>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;width:100%">
+              <div style="display:flex;justify-content:space-between;font:500 10.5px 'Familjen Grotesk',sans-serif;color:#8e8e93"><span>{{ p.milestone }}</span><span style="color:#f5f5f7">{{ p.progress }}%</span></div>
+              <div style="height:4px;border-radius:4px;background:rgba(255,255,255,0.06);overflow:hidden"><div style="height:100%;width:{{ p.pw }};background:{{ p.hc }};border-radius:4px"></div></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;font-size:12.5px;width:100%">
+              <span style="color:#8e8e93;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.last }}</span>
+              <span style="color:#f5f5f7"><span style="color:#8e8e93">Next · </span>{{ p.next }}</span>
+            </div>
+          </button>
+        </sc-for>
+      </div>
+    </section>
+
+    <section aria-labelledby="agents" style="flex:1 1 340px;min-width:0;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:12px"><span id="agents" style="font:500 11px 'Familjen Grotesk',sans-serif;letter-spacing:0.14em;color:#8e8e93">AGENT ACTIVITY</span><span style="flex:1;height:1px;background:rgba(255,255,255,0.06)"></span><button onClick="{{ goAgents }}" style="border:none;background:none;color:#aeaeb2;font-size:12.5px;cursor:pointer;padding:0" style-hover="color:#f5f5f7">Agent command →</button></div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <sc-for list="{{ agents }}" as="a" hint-placeholder-count="4">
+          <button onClick="{{ a.open }}" style="display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:22px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);backdrop-filter:blur(30px) saturate(160%);-webkit-backdrop-filter:blur(30px) saturate(160%);text-align:left;color:#f5f5f7;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,0.12),0 24px 48px -28px rgba(0,0,0,0.8)" style-hover="border-color:rgba(255,255,255,0.16)">
+            <div style="display:flex;align-items:center;gap:10px;width:100%">
+              <span style="width:8px;height:8px;border-radius:2px;transform:rotate(45deg);background:{{ a.color }};animation:{{ a.anim }}"></span>
+              <span style="font:500 11px 'Familjen Grotesk',sans-serif;letter-spacing:0.12em">{{ a.name }}</span>
+              <span style="flex:1"></span>
+              <span style="font:500 10px 'Familjen Grotesk',sans-serif;letter-spacing:0.12em;padding:3px 7px;border-radius:999px;color:{{ a.sc }};background:{{ a.sbg }}">{{ a.status }}</span>
+            </div>
+            <div style="font-size:13.5px;color:#f5f5f7;line-height:1.4">{{ a.task }}</div>
+            <sc-if value="{{ a.running }}" hint-placeholder-val="{{ false }}"><div style="height:2px;width:100%;border-radius:2px;background:linear-gradient(90deg,transparent,{{ a.color }},transparent) no-repeat,rgba(255,255,255,0.05);background-size:35% 100%,100% 100%;animation:loScan 1.8s linear infinite"></div></sc-if>
+            <div style="font:400 11px 'Familjen Grotesk',sans-serif;color:#8e8e93">{{ a.meta }}</div>
+          </button>
+        </sc-for>
+      </div>
+    </section>
+  </div>
+
+  <section aria-labelledby="up" style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:center;gap:12px"><span id="up" style="font:500 11px 'Familjen Grotesk',sans-serif;letter-spacing:0.14em;color:#8e8e93">UPCOMING</span><span style="font:500 10.5px 'Familjen Grotesk',sans-serif;color:#636366">NEXT 6 DAYS</span><span style="flex:1;height:1px;background:rgba(255,255,255,0.06)"></span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:1px;border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);background:rgba(255,255,255,0.07)">
+      <sc-for list="{{ upcoming }}" as="d" hint-placeholder-count="6">
+        <div style="background:rgba(255,255,255,0.06);backdrop-filter:blur(30px) saturate(160%);-webkit-backdrop-filter:blur(30px) saturate(160%);padding:14px;display:flex;flex-direction:column;gap:10px;min-height:150px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.12),0 24px 48px -28px rgba(0,0,0,0.8)">
+          <div style="display:flex;align-items:baseline;gap:8px"><span style="font:500 10.5px 'Familjen Grotesk',sans-serif;letter-spacing:0.12em;color:#8e8e93">{{ d.dow }}</span><span style="font-family:'Instrument Serif',serif;font-size:26px;font-weight:400;color:#f5f5f7">{{ d.date }}</span></div>
+          <sc-for list="{{ d.items }}" as="i" hint-placeholder-count="2">
+            <div style="display:flex;gap:8px;align-items:flex-start">
+              <span style="width:3px;align-self:stretch;border-radius:2px;background:{{ i.c }};flex:none"></span>
+              <div style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:12.5px;color:#f5f5f7;line-height:1.35">{{ i.t }}</span><span style="font:400 10.5px 'Familjen Grotesk',sans-serif;color:#8e8e93">{{ i.m }}</span></div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const C = {work:'#0a84ff',personal:'#30d158',social:'#ff6482',career:'#ff9f0a',event:'#64d2ff',deadline:'#ff6961'};
+const SRC = {GitHub:['code','#d1d1d6'],Email:['mail','#64d2ff'],Calendar:['event','#30d158'],Social:['public','#ff6482'],Agent:['memory','#64d2ff'],Project:['deployed_code','#ff9f0a']};
+const ACT0 = [
+  ['19:42','GitHub','zeyad/lifeos · 3 files changed','feat/sync-engine · 4e1c9a2'],
+  ['19:40','Agent','Career Agent: weekly commit summary ready','23 commits · 2 PRs merged'],
+  ['19:36','Agent','Outreach Agent found 4 relevant Sydney events','cybersecurity · fintech · Thu–Sat'],
+  ['19:28','Email','New response from event organizer','Hannah Lee · Fishburners'],
+  ['19:15','Calendar','Weekly review moved to 21:00','by Organization Agent'],
+  ['19:02','Social','"Building LifeOS in public #6" passed 2.1k impressions','LinkedIn · 4.1% engagement'],
+  ['18:47','Project','ledgerline: CI failed on PR #142','settlement::rounding_half_even']
+];
+const POOL = [
+  ['GitHub','Commit pushed to feat/sync-engine','zeyad/lifeos · a91f03c · +38 −12'],
+  ['Agent','Social Agent drafted 2 caption variants','Instagram · waiting for review'],
+  ['Email','Priya Nair: "Intro to our platform team"','Airwallex · networking'],
+  ['Agent','Organization Agent found a free block','Thu 14:00–16:00 · 2h'],
+  ['GitHub','Review requested on sentinel #31','from @kfoster · add GCP provider'],
+  ['Calendar','Fintech After Hours added as tentative','Thu 18:30 · Stone & Chalk'],
+  ['Agent','Career Agent updated portfolio stats','zeyad/portfolio · 4 projects']
+];
+const rnd = (seed)=>{ let x=seed; return ()=>{ x=(x*9301+49297)%233280; return x/233280; }; };
+const bars = (seed,color)=>{ const r=rnd(seed); return Array.from({length:24},(_,i)=>{ const v=r(); return {h:Math.round(12+v*88)+'%',c:i>19?color:'rgba(255,255,255,0.12)'}; }); };
+
+class Component extends DCLogic {
+  state = { act: ACT0.map((a,i)=>({id:i,time:a[0],src:a[1],t:a[2],d:a[3]})), n:0, paused:false, later:[] };
+  componentDidMount(){
+    this.iv = setInterval(()=>{
+      if (this.state.paused) return;
+      const p = POOL[this.state.n % POOL.length];
+      const last = this.state.act[0].time.split(':').map(Number); let m = last[1]+1+(this.state.n%2), h=last[0]; if (m>59){m-=60;h=(h+1)%24;}
+      const time = String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+      this.setState(s=>({n:s.n+1, act:[{id:Date.now(),time,src:p[0],t:p[1],d:p[2]},...s.act].slice(0,8)}));
+    }, 9000);
+  }
+  componentWillUnmount(){ clearInterval(this.iv); }
+  renderVals(){
+    const nav = this.props.nav || {}; const go=(id,r)=>()=>nav.go&&nav.go(id,r);
+    const s = this.state;
+    const PRI = [
+      {k:'p1',pri:'P1',pc:'#121214',pbg:'#ff6961',icon:'mail',src:'Email · Hannah Lee, Fishburners',due:'DUE TOMORROW 12:00',title:'Confirm your demo night slot for Oct 15',why:"Slot confirmations close tomorrow at noon and you said you'd reply by Wednesday. A draft reply is ready.",action:'Review draft',go:go('outreach','mail')},
+      {k:'p2',pri:'P1',pc:'#121214',pbg:'#ff6961',icon:'verified_user',src:'Approval · Social Agent',due:'POSTS 08:30',title:'Approve your LifeOS build-in-public update',why:'Scheduled for 08:30, your highest-engagement LinkedIn window. Project posts get 2.3× your average reach.',action:'Review post',go:go('approvals','a1')},
+      {k:'p3',pri:'P2',pc:'#121214',pbg:'#ff9f0a',icon:'commit',src:'GitHub · zeyad/ledgerline',due:'BLOCKS FRI',title:'PR #142 is failing the settlement rounding test',why:'It blocks the v0.4 release you planned for Friday. The failure is isolated to one test on two runners.',action:'Open in workspace',go:go('career','ledgerline')}
+    ].filter(p=>!s.later.includes(p.k)).map((p,i)=>({...p,later:()=>{ this.setState(st=>({later:[...st.later,p.k]})); nav.toast&&nav.toast('Moved to tomorrow'); },
+      border:i===0?'rgba(10,132,255,0.28)':'rgba(255,255,255,0.07)', bg:i===0?'linear-gradient(160deg,rgba(10,132,255,0.10),rgba(28,28,32,1) 55%)':'rgba(255,255,255,0.06)'}));
+    const T = [
+      ['08:30','Deep work: LifeOS sync engine','Calendar · 2h','WORK',C.work,1],
+      ['11:00','COMP3900 lecture','UNSW · Ainsworth 101','PERSONAL',C.personal,1],
+      ['14:00','Coffee with Priya Nair','Airwallex · The Grounds, Barangaroo','CAREER',C.career,1],
+      ['17:00','ledgerline v0.4 release candidate','Moved to Fri by you','DEADLINE',C.deadline,1],
+      ['19:44',null],
+      ['20:00','Reply to Fishburners','Task · draft ready','TASK',C.work,0],
+      ['21:00','Weekly review','Organization Agent prepared notes','PERSONAL',C.personal,0],
+      ['23:59','UNSW Fintech Hackathon application closes','Form 80% complete','DEADLINE',C.deadline,0]
+    ].map(r=>r[1]===null?{now:true,item:false,time:r[0]}:{now:false,item:true,time:r[0],title:r[1],meta:r[2],type:r[3],color:r[4],op:r[5]?0.55:1,strike:r[5]?'line-through':'none'});
+    const act = s.act.map((a,i)=>({...a,icon:SRC[a.src][0],color:SRC[a.src][1],src:a.src.toUpperCase(),anim:i===0&&s.n>0?(s.n%2?'loInA':'loInB')+' .45s ease':'none',bg:i===0&&s.n>0?'rgba(10,132,255,0.05)':'transparent'}));
+    const P = [
+      ['lifeos','LifeOS','zeyad/lifeos','Healthy','#30d158',62,'Milestone 0.9 · Agents','3 files changed · 2 min ago','Finish event-log migration',11],
+      ['ledgerline','Ledgerline','zeyad/ledgerline','CI failing','#ff9f0a',78,'v0.4 release','PR #142 failed · 58 min ago','Fix settlement rounding test',23],
+      ['sentinel','Sentinel','zeyad/sentinel','Healthy','#30d158',41,'GCP provider','Review requested · 3 h ago','Review #31 from @kfoster',37],
+      ['portfolio','Portfolio','zeyad/portfolio','Healthy','#30d158',90,'Case studies','Deployed · yesterday','Add Sentinel case study',51]
+    ].map(p=>({id:p[0],name:p[1],repo:p[2],health:p[3],hc:p[4],progress:p[5],pw:p[5]+'%',milestone:p[6],last:p[7],next:p[8],bars:bars(p[9],p[4]),open:go('career',p[0])}));
+    const A = [
+      ['career','CAREER AGENT','WORKING','Analyzing GitHub activity for your weekly report','#ff9f0a',true,'step 3 of 5 · 2 queued'],
+      ['outreach','OUTREACH AGENT','SEARCHING','Searching Sydney events for Thu–Sat','#64d2ff',true,'14 sources · 4 matches so far'],
+      ['social','SOCIAL AGENT','WAITING','Preparing LinkedIn analytics · post awaiting approval','#ff6482',false,'1 approval pending'],
+      ['knowledge','KNOWLEDGE AGENT','ATTENTION','Paused: Google Drive needs to reconnect','#ff6961',false,'since 19:30']
+    ].map(a=>({id:a[0],name:a[1],status:a[2],task:a[3],color:a[4],running:a[5],meta:a[6],anim:a[5]?'loPulse 1.6s ease-out infinite':'none',
+      sc:a[2]==='ATTENTION'?'#ff6961':a[5]?'#9fd8ff':'#aeaeb2', sbg:a[2]==='ATTENTION'?'rgba(255,69,58,0.12)':a[5]?'rgba(10,132,255,0.14)':'rgba(255,255,255,0.05)', open:go('agents',a[0])}));
+    const U = [
+      ['THU','08',[['Sydney Cyber Meetup','18:00 · saved',C.event],['Coffee: Marcus Chen','12:30 · Canva',C.career]]],
+      ['FRI','09',[['Ship ledgerline v0.4','deadline',C.deadline]]],
+      ['SAT','10',[['UNSW Fintech Hackathon','09:00 – 21:00',C.event],['Dinner with Sam','19:30',C.social]]],
+      ['SUN','11',[['Weekly planning','Organization Agent',C.personal]]],
+      ['MON','12',[['COMP3900 sprint demo','10:00',C.personal],['LinkedIn post #8','scheduled 08:30',C.social]]],
+      ['TUE','13',[['Startup Grind Sydney','18:00 · interested',C.event]]]
+    ].map(d=>({dow:d[0],date:d[1],items:d[2].map(i=>({t:i[0],m:i[1],c:i[2]}))}));
+    return {
+      stats:[{k:'AGENTS',v:'3 running',color:'#0a84ff',go:go('agents')},{k:'APPROVALS',v:'4 waiting',color:'#ff9f0a',go:go('approvals')},{k:'NEXT',v:'Reply · 20:00',color:'#30d158',go:go('organization')}],
+      priorities:PRI, today:T, activity:act, projects:P, agents:A, upcoming:U,
+      paused:s.paused, pauseLabel:s.paused?'RESUME':'PAUSE', togglePause:()=>this.setState(st=>({paused:!st.paused})),
+      goOrg:go('organization'), goProjects:go('projects'), goAgents:go('agents')
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<div style="max-width:1480px;margin:0 auto;padding:36px 32px 170px;display:flex;flex-direction:column;gap:28px">
+<sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
+  <section style="display:flex;flex-direction:column;gap:10px">
+    <div style="font:500 11px 'Familjen Grotesk',sans-serif;letter-spacing:0.12em;color:#ff9f0a">CAREER</div>
+    <h1 style="margin:0;font:400 clamp(42px,4.4vw,60px)/0.95 'Instrument Serif',serif;letter-spacing:-0.015em">Your technical work, projects and professional momentum.</h1>
+  </section>
+  <section style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:1px;border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);background:rgba(255,255,255,0.07)">
+    <sc-for list="{{ metrics }}" as="m" hint-placeholder-count="5">
+      <div style="background:rgba(255,255,255,0.06);backdrop-filter:blur(30px) saturate(160%);-webkit-backdrop-filter:blur(30px) saturate(160%);padding:16px 18px;display:flex;flex-direction:column;gap:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.12),0 24px 48px -28px rgba(0,0,0,0.8)">
+        <span style="font:500 10px 'Familjen Grotesk',sans-serif;letter-spacing:0.14em;color:#8e8e93">{{ m.k }}</span>
+        <span style="font-family:'Instrument Serif',serif;font-size:36px;font-weight:400;letter-spacing:-0.005em">{{ m.v }}</span>
+        <span style="font:400 11px 'Familjen Grotesk',sans-serif;color:{{ m.dc }}">{{ m.d }}</span>
+      </div>
+    </sc-for>
+  </section>
+  <section style="border-radius:26px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);backdrop-filter:blur(30px) saturate(160%);-webkit-backdrop-filter:blur(30px) saturate(160%);padding:18px;display:flex;flex-direction:column;gap:14px;overflow:auto;box-shadow:inset 0 1px 0 rgba(255,255,255,0.12),0 24px 48px -28px rgba(0,0,0,0.8)">
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span style="font:500 11px 'Familjen Grotesk',sans-serif;letter-spacing:0.14em;color:#8e8e93">CONTRIBUTIONS · 26 WEEKS</span><span style="font:400 11px 'Familjen Grotesk',sans-serif;color:#aeaeb2">1,184 commits · longest streak 23 days · current 9</span><span style="flex:1"></span>
+      <span style="display:flex;gap:3px;align-items:center;font:400 10.5px 'Familjen Grotesk',sans-serif;color:#8e8e93">less<sc-for list="{{ legend }}" as="l" hint-placeholder-count="5"><span style="width:10px;height:10px;border-radius:2px;background:{{ l.c }}"></span></sc-for>more</span></div>
+    <div style="display:flex;gap:3px;min-width:640px">
+      <sc-for list="{{ heat }}" as="w" hint-placeholder-count="26">
+        <div style="flex:1;display:flex;flex-direction:column;gap:3px"><sc-for list="{{ w.d }}" as="c" hint-placeholder-count="7"><span title="{{ c.t }}" style="aspect-ratio:1;border-radius:2px;background:{{ c.c }}"></span></sc-for></div>
+      </sc-for>
+    </div>
+  </section>
+  <section style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:center;gap:12px"><span style="font:500 11px 'Familjen Grotesk',sans-serif;letter-spacing:0.14em;color:#8e8e93">PROJECTS</span><span style="font:500 10.5px 'Familjen Grotesk',sans-serif;color:#636366">LIVE FROM GITHUB</span><span style="flex:1;height:1px;background:rgba(255,255,255,0.06)"></span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:12px">
+      <sc-for list="{{ projects }}" as="p" hint-placeholder-count="4">
+        <button onClick="{{ p.open }}" style="display:flex;flex-direction:column;gap:14px;padding:18px;border-radius:26px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);backdrop-filter:blur(30px) saturate(160%);-webkit-backdrop-filter:blur(30px) saturate(160%);text-align:left;color:#f5f5f7;cursor:pointer;transition:border-color .15s,transform .15s;position:relative;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,0.12),0 24px 48px -28px rgba(0,0,0,0.8)" style-hover="border-color:rgba(255,255,255,0.18);transform:translateY(-1px)">
+          <div style="display:flex;align-items:center;gap:10px;width:100%">
+            <span style="font-family:'Instrument Serif',serif;font-size:22px;font-weight:400">{{ p.name }}</span>
+            <span style="flex:1"></span>
+            <span style="display:flex;align-items:center;gap:6px;font:600 10px 'Familjen Grotesk',sans-serif;letter-spacing:0.12em;padding:3px 8px;border-radius:999px;color:{{ p.sc }};background:{{ p.sbg }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ p.sc }};animation:{{ p.anim }}"></span>{{ p.status }}</span>
+          </div>
+          <div style="font-size:13.5px;color:#aeaeb2;line-height:1.5;min-height:40px">{{ p.desc }}</div>
+          <div style="display:flex;gap:14px;flex-wrap:wrap;font:400 11.5px 'Familjen Grotesk',sans-serif;color:#aeaeb2">
+            <span style="display:flex;align-items:center;gap:6px"><span style="font-family:'Material Symbols Outlined';font-size:14px">code</span>{{ p.repo }}</span>
+            <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:{{ p.lc }}"></span>{{ p.lang }}</span>
+            <span>{{ p.prs }} PRs</span>
+          </div>
+          <div style="display:flex;align-items:flex-end;gap:2px;height:30px;width:100%"><sc-for list="{{ p.bars }}" as="b" hint-placeholder-count="30"><span style="flex:1;height:{{ b.h }};background:{{ b.c }};border-radius:1px"></span></sc-for></div>
+          <div style="display:flex;flex-direction:column;gap:6px;width:100%">
+            <div style="display:flex;justify-content:space-between;font:500 10.5px 'Familjen Grotesk',sans-serif;color:#8e8e93"><span>{{ p.milestone }}</span><span style="color:#f5f5f7">{{ p.progress }}%</span></div>
+            <div style="height:4px;border-radius:4px;background:rgba(255,255,255,0.06)"><div style="height:100%;width:{{ p.pw }};background:{{ p.sc }};border-radius:4px"></div></div>
+          </div>
+          <div style="font-size:12.5px;color:#8e8e93;padding-top:10px;border-top:1px solid rgba(255,255,255,0.05);width:100%">{{ p.last }}</div>
+        </button>
+      </sc-for>
+    </div>
+  </section>
+</sc-if>
+
+<sc-if value="{{ isWs }}" hint-placeholder-val="{{ false }}">
+  <button onClick="{{ back }}" style="align-self:flex-start;display:flex;align-items:center;gap:6px;border:none;background:none;color:#aeaeb2;font-size:13px;cursor:pointer;padding:0" style-hover="color:#f5f5f7"><span style="font-family:'Material Symbols Outlined';font-size:17px">arrow_back</span>Career</button>
+  <section style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end;justify-content:space-between">
+    <div style="display:flex;flex-direction:column;gap:10px;flex:1 1 480px">
+      <div style="display:flex;align-items:center;gap:10px"><span style="font:600 11px 'Familjen Grotesk',sans-serif;letter-spacing:0.14em;color:#8e8e93">{{ p.upper }}</span><span style="display:flex;align-items:center;gap:6px;font:600 10px 'Familjen Grotesk',sans-serif;letter-spacing:0.12em;padding:3px 8px;border-radius:999px;color:{{ p.sc }};background:{{ p.sbg }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ p.sc }}"></span>STATUS: {{ p.status }}</span></div>
+      <h1 style="margin:0;font:400 clamp(42px,4.4vw,60px)/0.95 'Instrument Serif',serif;letter-spacing:-0.015em">{{ p.name }}</h1>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;font:400 12px 'Familjen Grotesk',sans-serif;color:#aeaeb2"><span>{{ p.repo }}</span><span>⎇ {{ p.branch }}</span><span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:{{ p.lc }}"></span>{{ p.lang }}</span></div>
+    </div>
+    <div style="display:flex;gap:8px;flex:none">
+      <button onClick="{{ openGitHub }}" style="height:40px;padding:0 14px;border-radius:999px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.03);color:#f5f5f7;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px" style-hover="border-color:rgba(255,255,255,0.2)"><span style="font-family:'Material Symbols Outlined';font-size:17px">open_in_new</span>GitHub</button>
+      <button onClick="{{ openClaude }}" style="height:40px;padding:0 16px;border-radius:999px;border:1px solid rgba(10,132,255,0.6);background:linear-gradient(180deg,#409cff,#3b95ff);color:#121214;font-size:13.5px;font-weight:600;letter-spacing:0.04em;cursor:pointer;display:flex;align-items:center;gap:10px;box-shadow:0 0 0 4px rgba(10,132,255,0.12),0 8px 24px rgba(10,132,255,0.3)" style-hover="filter:brightness(1.08)"><span style="font-family:'Material Symbols Outlined';font-size:18px">terminal</span>OPEN CLAUDE CODE<span style="font:500 10.5px 'Familjen Grotesk',sans-serif;opacity:0.7">⌘⇧O</span></button>
+    </div>
+  </section>
+  <div role="tablist" aria-label="Project sections" style="display:flex;gap:2px;border-bottom:1px solid rgba(255,255,255,0.07);overflow-x:auto;overflow-y:hidden">
+    <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="8">
+      <button role="tab" aria-selected="{{ t.on }}" onClick="{{ t.pick }}" style="height:40px;padding:0 14px;border:none;border-bottom:2px solid {{ t.line }};background:transparent;color:{{ t.color }};font-size:13.5px;cursor:pointer;white-space:nowrap;margin-bottom:-1px" style-hover="color:#f5f5f7">{{ t.label }}</button>
+    </sc-for>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start">
+    <aside aria-label="Project health" style="flex:0 1 260px;min-width:220px;display:flex;flex-direction:column;gap:12px">
+      <div style="border-radius:26px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);backdrop-filter:blur(30px) saturate(160%);-webkit-backdrop-filter:blur(30px) saturate(160%);padding:16px;display:flex;flex-direction:column;gap:4px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.12),0 24px 48px -28px rgba(0,0,0,0.8)">
+        <span style="font:500 11px 'Familjen Grotesk',sans-serif;letter-spacing:0.14em;color:#8e8e93;margin-bottom:8px">PROJECT HEALTH</span>
+        <sc-for list="{{ health }}" as="h" hint-placeholder-count="5">
+          <div style="display:grid;grid-template-columns:10px 1fr;gap:10px;padding:9px 0;border-top:1px solid rgba(255,255,255,0.04)">
+            <span style="width:8px;height:8px;border-radius:50%;background:{{ h.c }};margin-top:5px"></span>
+            <div style="display:flex;flex-direction:column;gap:2px"><div style="display:flex;justify-content:space-between;gap:8px"><span style="font-size:13px">{{ h.k }}</span><span style="font:500 11px 'Familjen Grotesk',sans-serif;color:{{ h.c }}">{{ h.v }}</span></div><span style="font:400 11px 'Familjen Grotesk',sans-serif;color:#8e8e93">{{ h.d }}</span></div>
+          </div>
+        </sc-for>
+      </div>
+      <div style="border-radius:26px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);backdrop-filter:blur(30px) saturate(160%);-webkit-backdrop-filter:blur(30px) saturate(160%);padding:16px;display:flex;flex-direction:column;gap:10px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.12),0 24px 48px -28px rgba(0,0,0,0.8)">
+        <span style="font:500 11px 'Familjen Grotesk',sans-serif;letter-spacing:0.14em;color:#8e8e93">PROGRESS</span>
+        <span style="font-family:'Instrument Serif',serif;font-size:34px;font-weight:400">{{ p.progress }}%</span>
+        <div style="height:4px;border-radius:4px;background:rgba(255,255,255,0.06)"><div style="height:100%;width:{{ p.pw }};background:{{ p.sc }};border-radius:4px"></div></div>
+        <span style="font-size:12.5px;color:#aeaeb2">{{ p.milestone }} · due {{ p.due }}</span>
+      </div>
+    </aside>
+
+    <div style="flex:1 1 560px;min-width:0;display:flex;flex-direction:column;gap:20px">
+      <sc-if value="{{ tabOverview }}" hint-placeholder-val="{{ true }}">
+        <section aria-label="Claude Code workspace" style="border-radius:14px;border:1px solid rgba(10,132,255,0.28);background:rgba(0,0,0,0.22);overflow:hidden;box-shadow:0 0 40px rgba(10,132,255,0.06)">
+          <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.06);background:rgba(10,132,255,0.05);flex-wrap:wrap">
+            <span style="font:500 11px 'Familjen Grotesk',sans-serif;letter-spacing:0.14em;color:#64d2ff">CLAUDE CODE WORKSPACE</span>
+            <span style="display:flex;align-items:center;gap:6px;font:400 11px 'Familjen Grotesk',sans-serif;color:#30d158"><span style="width:6px;height:6px;border-radius:50%;background:#30d158;animation:loPulseG 2s ease-out infinite"></span>connected · {{ p.path }}</span>
+            <span style="flex:1"></span>
+            <button onClick="{{ copyCtx }}" style="height:26px;padding:0 10px;border-radius:999px;border:1px solid rgba(255,255,255,0.1);background:transparent;color:#aeaeb2;font-size:12px;cursor:pointer" style-hover="color:#f5f5f7">Copy context</button>
+            <button onClick="{{ openClaude }}" style="height:26px;padding:0 10px;border-radius:999px;border:none;background:#0a84ff;color:#fff;font-size:12px;font-weight:500;cursor:pointer">Resume session</button>
+          </div>
+          <div style="padding:14px 16px;font:400 12.5px/1.75 'Familjen Grotesk',sans-serif;color:#aeaeb2;overflow-x:auto">
+            <div style="color:#8e8e93">last session · 18:52 – 19:41 · 49m · 3 commits</div>
+            <sc-for list="{{ session }}" as="l" hint-placeholder-count="6"><div style="white-space:pre;color:{{ l.c }}">{{ l.t }}</div></sc-for>
+          </div>
+        </section>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:20px">
+          <section style="display:flex;flex-direction:column;gap:10px">
+            <span style="font:500 11px 'Familjen Grotesk',sans-serif;letter-spacing:0.14em;color:#8e8e93">TASKS</span>
+            <div style="border-radius:26px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);backdrop-filter:blur(30px) saturate(160%);-webkit-backdrop-filter:blur(30px) saturate(160%);padding:6px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.12),0 24px 48px -28px rgba(0,0,0,0.8)">
+              <sc-for list="{{ tasks }}" as="t" hint-placeholder-count="5">
+                <button onClick="{{ t.toggle }}" role="checkbox" aria-checked="{{ t.done }}" style="display:flex;align-items:center;gap:10px;width:100%;padding:10px;border:none;border-radius:8px;background:transparent;color:#f5f5f7;text-align:left;cursor:pointer;font-size:13.5px" style-hover="background:rgba(255,255,255,0.03)">
+                  <span style="width:16px;height:16px;border-radius:5px;border:1.5px solid {{ t.bc }};background:{{ t.bg }};display:grid;place-items:center;flex:none;color:#121214"><span style="font-family:'Material Symbols Outlined';font-size:13px;font-weight:600;opacity:{{ t.check }}">check</span></span>
+                  <span style="flex:1;opacity:{{ t.op }};text-decoration:{{ t.strike }}">{{ t.t }}</span>
+                  <span style="font:400 11px 'Familjen Grotesk',sans-serif;color:#8e8e93">{{ t.m }}</span>
+                </button>
+              </sc-for>
+            </div>
+          </section>
+          <section style="display:flex;flex-direction:column;gap:10px">
+            <span style="font:500 11px 'Familjen Grotesk',sans-serif;letter-spacing:0.14em;color:#8e8e93">BLOCKERS</span>
+            <sc-for list="{{ blockers }}" as="b" hint-placeholder-count="2">
+              <div style="border-radius:12px;border:1px solid rgba(255,159,10,0.25);background:rgba(255,159,10,0.04);padding:14px;display:flex;flex-direction:column;gap:6px">
+                <div style="display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:500"><span style="font-family:'Material Symbols Outlined';font-size:17px;color:#ff9f0a">block</span>{{ b.t }}</div>
+                <div style="font-size:12.5px;color:#aeaeb2;line-height:1.5">{{ b.d }}</div>
+              </div>
+            </sc-for>
+            <span style="font:500 11px 'Familjen Grotesk',sans-serif;letter-spacing:0.14em;color:#8e8e93;margin-top:10px">AGENT ACTIVITY</span>
+            <div style="border-radius:26px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);backdrop-filter:blur(30px) saturate(160%);-webkit-backdrop-filter:blur(30px) saturate(160%);padding:4px 14px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.12),0 24px 48px -28px rgba(0,0,0,0.8)">
+              <sc-for list="{{ agentAct }}" as="a" hint-placeholder-count="3">
+                <div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04);align-items:baseline"><span style="font:500 10.5px 'Familjen Grotesk',sans-serif;color:{{ a.c }};width:110px;flex:none">{{ a.who }}</span><span style="flex:1;font-size:13px">{{ a.t }}</span><span style="font:400 11px 'Familjen Grotesk',sans-serif;color:#8e8e93">{{ a.time }}</span></div>
+              </sc-for>
+            </div>
+          </section>
+        </div>
+        <section style="display:flex;flex-direction:column;gap:10px">
+          <span style="font:500 11px 'Familjen Grotesk',sans-serif;letter-spacing:0.14em;color:#8e8e93">RECENT ACTIVITY</span>
+          <div style="border-radius:26px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);backdrop-filter:blur(30px) saturate(160%);-webkit-backdrop-filter:blur(30px) saturate(160%);padding:4px 16px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.12),0 24px 48px -28px rgba(0,0,0,0.8)">
+            <sc-for list="{{ activity }}" as="a" hint-placeholder-count="5">
+              <div style="display:grid;grid-template-columns:48px 20px minmax(0,1fr) auto;gap:10px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,0.04);align-items:center">
+                <span style="font:400 11.5px 'Familjen Grotesk',sans-serif;color:#8e8e93">{{ a.time }}</span>
+                <span style="font-family:'Material Symbols Outlined';font-size:16px;color:{{ a.c }}">{{ a.icon }}</span>
+                <span style="font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ a.t }}</span>
+                <span style="font:400 11px 'Familjen Grotesk',sans-serif;color:#8e8e93">{{ a.m }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+      </sc-if>
+      <sc-if value="{{ tabOther }}" hint-placeholder-val="{{ false }}">
+        <section style="display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;align-items:center;gap:12px"><span style="font:500 11px 'Familjen Grotesk',sans-serif;letter-spacing:0.14em;color:#8e8e93">{{ tab.title }}</span><span style="flex:1;height:1px;background:rgba(255,255,255,0.06)"></span><span style="font:400 11px 'Familjen Grotesk',sans-serif;color:#8e8e93">{{ tab.note }}</span></div>
+          <div role="table" style="border-radius:26px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);backdrop-filter:blur(30px) saturate(160%);-webkit-backdrop-filter:blur(30px) saturate(160%);overflow:auto;box-shadow:inset 0 1px 0 rgba(255,255,255,0.12),0 24px 48px -28px rgba(0,0,0,0.8)">
+            <sc-for list="{{ tab.rows }}" as="r" hint-placeholder-count="6">
+              <div role="row" style="display:grid;grid-template-columns:minmax(90px,140px) minmax(0,1fr) minmax(90px,auto) 80px;gap:14px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);align-items:center;font-size:13.5px;min-width:560px" style-hover="background:rgba(255,255,255,0.02)">
+                <span style="font:400 11.5px 'Familjen Grotesk',sans-serif;color:#aeaeb2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.a }}</span>
+                <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.b }}</span>
+                <span style="display:flex;align-items:center;gap:6px;font:500 11px 'Familjen Grotesk',sans-serif;color:{{ r.c }}"><span style="width:6px;height:6px;border-radius:50%;background:{{ r.c }}"></span>{{ r.s }}</span>
+                <span style="font:400 11.5px 'Familjen Grotesk',sans-serif;color:#8e8e93;text-align:right">{{ r.d }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+      </sc-if>
+    </div>
+  </div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const G='#30d158',A='#ff9f0a',R='#ff6961',I='#64d2ff',N='#aeaeb2';
+const P = {
+  lifeos:{name:'LifeOS',repo:'zeyad/lifeos',desc:'Personal operating system: agents, integrations and a command centre for everything.',status:'ACTIVE',lang:'TypeScript',lc:'#64d2ff',progress:62,milestone:'0.9 · Agents',due:'Oct 24',branch:'feat/sync-engine',prs:2,last:'3 files changed on feat/sync-engine · 2 min ago',path:'~/dev/lifeos',seed:11,build:['Passing','2 min ago',G],tests:['412 / 418','6 failing in replay.test.ts',A]},
+  ledgerline:{name:'Ledgerline',repo:'zeyad/ledgerline',desc:'Double-entry ledger API for small fintech teams, with settlement and audit trails.',status:'AT RISK',lang:'Rust',lc:'#ff9f0a',progress:78,milestone:'v0.4 release',due:'Fri',branch:'fix/rounding',prs:3,last:'PR #142 failed CI · 58 min ago',path:'~/dev/ledgerline',seed:23,build:['Failing','PR #142 · 2 of 3 runners',R],tests:['286 / 287','rounding_half_even',R]},
+  sentinel:{name:'Sentinel',repo:'zeyad/sentinel',desc:'CLI that audits cloud IAM policies for privilege-escalation paths.',status:'ACTIVE',lang:'Go',lc:'#40c8e0',progress:41,milestone:'GCP provider',due:'Nov 3',branch:'main',prs:1,last:'Review requested on #31 · 3 h ago',path:'~/dev/sentinel',seed:37,build:['Passing','3 h ago',G],tests:['164 / 164','all green',G]},
+  portfolio:{name:'Portfolio',repo:'zeyad/portfolio',desc:'Personal site with live project stats pulled from LifeOS.',status:'MAINTAINED',lang:'Astro',lc:'#bf5af2',progress:90,milestone:'Case studies',due:'Oct 18',branch:'main',prs:0,last:'Deployed to production · yesterday',path:'~/dev/portfolio',seed:51,build:['Passing','yesterday',G],tests:['38 / 38','all green',G]}
+};
+const ST = {'ACTIVE':[G,'rgba(48,209,88,0.12)'],'AT RISK':[A,'rgba(255,159,10,0.12)'],'MAINTAINED':[N,'rgba(255,255,255,0.06)']};
+const rnd = (seed)=>{ let x=seed; return ()=>{ x=(x*9301+49297)%233280; return x/233280; }; };
+const TABS = ['Overview','Activity','Tasks','Repository','Agents','Architecture','Deployments','Documentation'];
+class Component extends DCLogic {
+  state = { sel:null, tab:'Overview', done:{} };
+  componentDidMount(){ this.applyRoute(); }
+  componentDidUpdate(p){ if (p.route!==this.props.route) this.applyRoute(); }
+  applyRoute(){ const r=this.props.route; this.setState({sel:r&&P[r.id]?r.id:null,tab:'Overview'}); }
+  renderVals(){
+    const s=this.state, nav=this.props.nav||{}, toast=m=>nav.toast&&nav.toast(m);
+    const card = id => { const p=P[id]; const r=rnd(p.seed); const st=ST[p.status];
+      return {...p,id,upper:p.name.toUpperCase(),sc:st[0],sbg:st[1],anim:p.status==='ACTIVE'?'loPulseG 2.4s ease-out infinite':'none',pw:p.progress+'%',
+        bars:Array.from({length:30},(_,i)=>({h:Math.round(8+r()*92)+'%',c:i>25?st[0]:'rgba(255,255,255,0.1)'})),open:()=>this.setState({sel:id,tab:'Overview'})}; };
+    const hr = rnd(5); const lv=['rgba(255,255,255,0.04)','rgba(10,132,255,0.2)','rgba(10,132,255,0.4)','rgba(10,132,255,0.65)','#64d2ff'];
+    const heat = Array.from({length:26},(_,w)=>({d:Array.from({length:7},(_,d)=>{ const v=hr(); const k=v<0.18?0:v<0.45?1:v<0.72?2:v<0.9?3:4; const kk=(w>22&&k<2)?2:k; return {c:lv[kk],t:(kk*3)+' commits'}; })}));
+    const out = { isList:!s.sel, isWs:!!s.sel, back:()=>this.setState({sel:null}),
+      metrics:[{k:'REPOSITORIES',v:'23',d:'4 tracked actively',dc:'#8e8e93'},{k:'ACTIVE PROJECTS',v:'4',d:'1 at risk',dc:A},{k:'OPEN PRS',v:'6',d:'2 need your review',dc:'#aeaeb2'},{k:'COMMITS · 7D',v:'84',d:'+18% vs last week',dc:G},{k:'CAREER GOALS',v:'3',d:'2 on track',dc:'#aeaeb2'}],
+      legend:lv.map(c=>({c})), heat, projects:Object.keys(P).map(card) };
+    if (s.sel){ const p=card(s.sel);
+      const tk = [['Finish event-log migration','today'],['Fix 6 failing replay tests','today'],['Write approval-flow spec','Thu'],['Ship 0.9 release notes','Oct 24'],['Record demo for Fishburners','Oct 14']];
+      const tabRows = {
+        Activity:{title:'ALL ACTIVITY',note:'last 48 h',rows:[['4e1c9a2','Refactor sync engine to append-only log','commit',I,'19:42'],['a91f03c','Add replay cursor to agent runner','commit',I,'19:20'],['#58','Approval flow: show data payloads','PR open',G,'18:05'],['CI #812','Build on feat/sync-engine','passed',G,'19:43'],['#57','Calendar token refresh','merged',N,'Tue'],['issue #61','Outreach agent duplicates events','opened',A,'Tue']]},
+        Tasks:{title:'TASKS',note:'5 open · 12 done this milestone',rows:tk.map((t,i)=>['T-'+(140+i),t[0],i<2?'in progress':'todo',i<2?I:N,t[1]])},
+        Repository:{title:'BRANCHES & PULL REQUESTS',note:p.repo,rows:[['main','Default branch','protected',G,'2 d'],[p.branch,'3 ahead, 0 behind main','active',I,'2 min'],['#58','Approval flow: show data payloads','review',A,'18:05'],['#55','Notification grouping','draft',N,'Mon']]},
+        Agents:{title:'AGENTS ON THIS PROJECT',note:'2 assigned',rows:[['career','Weekly summary, changelog drafts','working',I,'19:42'],['knowledge','Linked 4 research notes','idle',N,'14:12'],['orchestrator','Routes project questions here','online',G,'19:44']]},
+        Architecture:{title:'MODULES',note:'from /docs/architecture.md',rows:[['src/sync','Event log + replay','stable',G,'8.2k loc'],['src/agents','Runner, tools, permissions','changing',A,'6.1k loc'],['src/approvals','Approval queue + policies','new',I,'1.4k loc'],['src/integrations','GitHub, Google, LinkedIn','stable',G,'5.7k loc'],['apps/web','Command centre UI','changing',A,'11k loc']]},
+        Deployments:{title:'DEPLOYMENTS',note:'Vercel · Fly.io',rows:[['preview','feat/sync-engine · 4e1c9a2','ready',G,'19:44'],['production','v0.8.3','live',G,'Mon'],['preview','#58 approval-flow','ready',G,'18:07'],['production','v0.8.2','rolled back',A,'Sep 29']]},
+        Documentation:{title:'DOCUMENTATION',note:'/docs · 14 files',rows:[['architecture.md','System overview and module map','updated',G,'2 d'],['agents.md','Agent contract and permissions','stale',A,'3 w'],['approvals.md','Approval policy design','draft',I,'today'],['CONTRIBUTING.md','Setup, scripts, conventions','ok',N,'2 mo']]}
+      };
+      const tr = tabRows[s.tab];
+      Object.assign(out,{ p,
+        tabs:TABS.map(t=>({label:t,on:t===s.tab,line:t===s.tab?'#0a84ff':'transparent',color:t===s.tab?'#f5f5f7':'#8e8e93',pick:()=>this.setState({tab:t})})),
+        tabOverview:s.tab==='Overview', tabOther:s.tab!=='Overview', tab:tr?{title:tr.title,note:tr.note,rows:tr.rows.map(r=>({a:r[0],b:r[1],s:r[2],c:r[3],d:r[4]}))}:{rows:[]},
+        health:[{k:'Build',v:p.build[0],d:p.build[1],c:p.build[2]},{k:'Tests',v:p.tests[0],d:p.tests[1],c:p.tests[2]},{k:'Git',v:p.branch==='main'?'clean':'3 ahead',d:'⎇ '+p.branch,c:G},{k:'Deployment',v:'Ready',d:'preview · Vercel',c:G},{k:'Issues',v:'9 open',d:'2 bugs · 1 critical',c:A}],
+        session:[{t:'› refactor sync engine to append to an event log',c:'#f5f5f7'},{t:'  ✓ edited  src/sync/engine.ts        +142  −38',c:'#aeaeb2'},{t:'  ✓ created src/sync/log.ts           +88   −0',c:'#aeaeb2'},{t:'  ✓ ran     pnpm test                412 passed · 6 failed',c:'#aeaeb2'},{t:'  ! 6 failing in src/agents/replay.test.ts',c:A},{t:'› next: fix replay cursor off-by-one',c:'#64d2ff'}],
+        tasks:tk.map((t,i)=>{ const d=!!s.done[i]; return {t:t[0],m:t[1],done:d,bc:d?'#0a84ff':'rgba(255,255,255,0.25)',bg:d?'#0a84ff':'transparent',check:d?1:0,op:d?0.5:1,strike:d?'line-through':'none',toggle:()=>this.setState(st=>({done:{...st.done,[i]:!st.done[i]}}))}; }),
+        blockers:[{t:'Replay tests failing',d:'Off-by-one in the replay cursor. Claude Code flagged it at the end of the last session.'},{t:'Waiting on LinkedIn API review',d:'Needed for scheduled posting from the Social Agent. Submitted Sep 30.'}],
+        agentAct:[{who:'CAREER AGENT',c:A,t:'Generated changelog draft for 0.9',time:'19:40'},{who:'KNOWLEDGE',c:'#bf5af2',t:'Linked 4 notes on event sourcing',time:'14:12'},{who:'ORCHESTRATOR',c:I,t:'Added "fix replay tests" to priorities',time:'19:41'}],
+        activity:[{time:'19:42',icon:'commit',c:I,t:'Refactor sync engine to append-only log',m:'4e1c9a2'},{time:'19:43',icon:'check_circle',c:G,t:'CI passed on feat/sync-engine',m:'CI #812'},{time:'19:20',icon:'commit',c:I,t:'Add replay cursor to agent runner',m:'a91f03c'},{time:'18:05',icon:'merge',c:G,t:'Opened PR #58 Approval flow: show data payloads',m:'+611 −74'},{time:'Tue',icon:'bug_report',c:A,t:'Issue #61 Outreach agent duplicates events',m:'opened'}],
+        openClaude:()=>toast('Opening Claude Code in '+p.path+'…'), openGitHub:()=>toast('Opening github.com/'+p.repo), copyCtx:()=>toast('Project context copied for Claude Code')
+      });
+    }
+    return out;
+  }
+}
+</script>
+</body>
+</html>
