@@ -49,7 +49,7 @@ export function AppShell({
           </div>
           <AIPanel />
           <BottomBar />
-          <MoreSheet />
+          <MoreSheet version={version} />
           <Palette />
         </div>
       </LiveProvider>
