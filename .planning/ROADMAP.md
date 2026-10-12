@@ -149,7 +149,7 @@ Plans:
 **Goal:** The whole app wears the owner's liquid-glass design (floating pill header, mobile pill tab bar, Ask bar, floating glass panels, Instrument Serif + Familjen Grotesk) with the same features, content and behaviour, WCAG AA contrast and solid fallbacks, and smooth scrolling on the VM.
 **Requirements**: TBD (CONTEXT decisions D-01..D-08)
 **Depends on:** Phase 4
-**Plans:** 5/15 plans executed
+**Plans:** 13/15 plans executed
 
 Plans:
 - [x] 04.1-01-PLAN.md — Glass tokens, tier utilities, a11y fallbacks, fonts, gate script
@@ -157,16 +157,16 @@ Plans:
 - [x] 04.1-03-PLAN.md — Header pills, non-modal More menu, System block, nav split
 - [x] 04.1-04-PLAN.md — Floating AI panel and assistant sub-views
 - [x] 04.1-05-PLAN.md — Notifications, palette, toast as floating cards; compact palette command removed
-- [ ] 04.1-06-PLAN.md — Mobile tab bar, More sheet, desktop Ask bar
+- [x] 04.1-06-PLAN.md — Mobile tab bar, More sheet, desktop Ask bar
 - [ ] 04.1-07-PLAN.md — Mount Glass shell, remove compact mode, delete old shell components
-- [ ] 04.1-08-PLAN.md — Home and honest empty domain pages
-- [ ] 04.1-09-PLAN.md — Organization header, legend, time/month grids, categories
-- [ ] 04.1-10-PLAN.md — Organization plan/tasks cards and dialogs
-- [ ] 04.1-11-PLAN.md — Agents command centre, cards, runs, detail, trace, identity colours
-- [ ] 04.1-12-PLAN.md — Approval centre
-- [ ] 04.1-13-PLAN.md — Settings
+- [x] 04.1-08-PLAN.md — Home and honest empty domain pages
+- [x] 04.1-09-PLAN.md — Organization header, legend, time/month grids, categories
+- [x] 04.1-10-PLAN.md — Organization plan/tasks cards and dialogs
+- [x] 04.1-11-PLAN.md — Agents command centre, cards, runs, detail, trace, identity colours
+- [x] 04.1-12-PLAN.md — Approval centre
+- [x] 04.1-13-PLAN.md — Settings
 - [ ] 04.1-14-PLAN.md — e2e/a11y updates, whole-src gates, owner VM verification
-- [ ] 04.1-15-PLAN.md — Login re-skin (tokens only)
+- [x] 04.1-15-PLAN.md — Login re-skin (tokens only)
 
 ### Phase 5–11
 Goals per phase list above; detailed when each phase is planned (`/gsd-plan-phase N`).
