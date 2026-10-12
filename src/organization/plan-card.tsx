@@ -186,7 +186,7 @@ export function TodaysPlanCard({
           type="button"
           aria-label="Refresh plan"
           onClick={() => router.refresh()}
-          className="grid size-7 place-items-center rounded-6 text-text-3 hover:bg-fill-2 hover:text-text max-tab:size-11"
+          className="grid size-7 place-items-center rounded-full text-text-3 hover:bg-fill-2 hover:text-text max-tab:size-11"
         >
           <Icon name="refresh" size={16} />
         </button>
@@ -219,7 +219,7 @@ export function TodaysPlanCard({
                 <button
                   type="button"
                   onClick={() => router.push(`/organization?event=${encodeURIComponent(c.a)}`)}
-                  className="flex w-full flex-wrap items-baseline justify-between gap-2 rounded-6 px-1 py-1.5 text-left text-[13px] hover:bg-fill-2 max-tab:min-h-11"
+                  className="flex w-full flex-wrap items-baseline justify-between gap-2 rounded-10 px-2 py-1.5 text-left text-[13px] hover:bg-fill-2 max-tab:min-h-11"
                 >
                   <span className="min-w-0 break-words">
                     {c.aTitle} overlaps {c.bTitle}

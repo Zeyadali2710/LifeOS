@@ -146,7 +146,7 @@ export function TasksCard({ tasks, allOpen, completed, today }: { tasks: TaskDTO
           aria-label="Task list options"
           aria-expanded={menu}
           onClick={() => setMenu(!menu)}
-          className="grid size-7 place-items-center rounded-6 text-text-3 hover:bg-fill-2 hover:text-text max-tab:size-11"
+          className="grid size-7 place-items-center rounded-full text-text-3 hover:bg-fill-2 hover:text-text max-tab:size-11"
         >
           <Icon name="more_horiz" size={18} />
         </button>
