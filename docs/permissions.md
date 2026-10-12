@@ -26,3 +26,11 @@ Critical tests (Phase 3): tier resolution, HIGH_RISK floor, approval suspend/res
 | `calendar.delete_event` | HIGH_RISK (floor; no override lowers it) |
 
 Per ORG-02: owner UI writes run directly and are audit-logged (`calendar.event.create` / `.update` / `.delete`). Only agent writes go through approvals. Approvals are per kind with locked fields (calendar, event id, etag, scope, instance start are rebuilt from the DB, model values overwritten) and an etag check at execution; a stale etag is refused. Tasks are READ-only for agents.
+
+## Repo content and project tools (Phase 5.1)
+| Tool | Tier |
+|---|---|
+| `github.list_tree`, `github.get_file` | READ |
+| `projects.create`, `projects.update` | APPROVE |
+
+**Content floor (D-06, `withContentFloor` in `src/server/agents/policy.ts`):** once any run in the run tree has read repo content, every side-effect tool resolves to at least APPROVE. HIGH_RISK is unchanged. The write handlers refuse to run without an approval. No agent deletes projects, milestones or tasks this phase. Residual risk: repo-derived text carried into a later thread turn is not floored (the run tree no longer shows the read); writes still need an approval.

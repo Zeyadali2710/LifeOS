@@ -39,6 +39,9 @@ Deletes cascade connections -> calendars -> calendar_events. Calendar secrets li
 
 Also: `github_repos.languages` (jsonb byte counts, null = never fetched); `tasks.project_id` FK is ON DELETE SET NULL; `tasks.milestone_id` references `milestones`.
 
+## Phase 5.1 (migration `0007_project_context`)
+`projects.context` (text, default empty): plain-text context notes shown in the workspace card and included in Copy context (`## Context`). Audit markers `project.agent_create` / `project.agent_update` carry the approval id (D-11).
+
 ## Planned (added by the phase that needs them)
 - Integrations: `integrations`, `sync_cursors`
 - Agents: `agents`, `agent_tools`, `permissions`, `agent_tasks`, `agent_runs`, `tool_calls`, `approvals`, `conversations`, `messages`
