@@ -56,6 +56,28 @@ describe("migrations", () => {
     }
   });
 
+  it("adds outreach and mail tables (0008)", async () => {
+    await runMigrations(testUrl);
+    await runMigrations(testUrl);
+    const client = new Client({ connectionString: testUrl });
+    await client.connect();
+    try {
+      const t = await client.query<{ table_name: string }>(
+        "select table_name from information_schema.tables where table_name in ('event_sources','outreach_events','mail_messages')",
+      );
+      expect(t.rows).toHaveLength(3);
+      const c = await client.query(
+        "select 1 from information_schema.columns where (table_name, column_name) in (('tasks','outreach_event_id'),('tasks','mail_message_id'),('connections','scopes'))",
+      );
+      expect(c.rows).toHaveLength(3);
+      await expect(
+        client.query("insert into outreach_events (title, title_key, start_at, is_mock, stage) values ('t','t', now(), true, 'BOGUS')"),
+      ).rejects.toThrow(/outreach_events_stage_chk/);
+    } finally {
+      await client.end();
+    }
+  });
+
   it("backfills saw_private", async () => {
     await runMigrations(testUrl);
     const client = new Client({ connectionString: testUrl });

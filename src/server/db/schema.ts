@@ -4,6 +4,7 @@ import {
   bigint,
   boolean,
   check,
+  doublePrecision,
   index,
   integer,
   jsonb,
@@ -17,6 +18,9 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import type { RouteEvent } from "../../lib/agent-types";
+import { EVENT_SOURCE_KINDS, IMPORTANCE, MAIL_CATEGORIES, STAGES } from "../../lib/outreach-types";
+
+const inList = (xs: readonly string[]) => sql.raw(xs.map((x) => `'${x}'`).join(","));
 
 // Column names are snake_case via `casing: "snake_case"` (see client.ts, drizzle.config.ts).
 const timestamps = {
@@ -324,6 +328,7 @@ export const connections = pgTable("connections", {
   status: text().notNull().default("connected"), // "connected" | "error"
   lastError: text(),
   repos: jsonb().$type<string[]>().notNull().default([]),
+  scopes: jsonb().$type<string[]>().notNull().default([]), // granted Google scopes (D-21)
   lastSyncAt: tstz(),
   lastSyncError: text(),
   ...timestamps,
@@ -587,6 +592,8 @@ export const tasks = pgTable(
     completedAt: tstz(),
     projectId: uuid().references((): AnyPgColumn => projects.id, { onDelete: "set null" }), // D-06
     milestoneId: uuid().references((): AnyPgColumn => milestones.id, { onDelete: "set null" }), // D-07
+    outreachEventId: uuid().references((): AnyPgColumn => outreachEvents.id, { onDelete: "set null" }), // D-18
+    mailMessageId: uuid().references((): AnyPgColumn => mailMessages.id, { onDelete: "set null" }), // D-27
     ...timestamps,
   },
   (t) => [
@@ -594,5 +601,109 @@ export const tasks = pgTable(
     index().on(t.remindAt),
     index().on(t.projectId),
     index().on(t.milestoneId),
+    index().on(t.outreachEventId),
+    index().on(t.mailMessageId),
+  ],
+);
+
+// ── Phase 6: outreach + mail ────────────────────────────────────────────────
+export const eventSources = pgTable(
+  "event_sources",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    kind: text().notNull(),
+    label: text().notNull(),
+    urlCiphertext: text(), // AES-GCM feed URL, ics only (D-04)
+    host: text(), // display only
+    config: jsonb().$type<{ organizerIds?: string[]; discover?: boolean }>().notNull().default({}),
+    enabled: boolean().notNull().default(true),
+    lastSyncAt: tstz(),
+    lastSyncError: text(),
+    ...timestamps,
+  },
+  (t) => [
+    check("event_sources_kind_chk", sql`${t.kind} in (${inList(EVENT_SOURCE_KINDS)})`),
+    uniqueIndex("event_sources_builtin_uniq").on(t.kind).where(sql`${t.kind} <> 'ics'`),
+  ],
+);
+
+export const outreachEvents = pgTable(
+  "outreach_events",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    title: text().notNull(),
+    titleKey: text().notNull(),
+    startAt: tstz().notNull(),
+    endAt: tstz(),
+    allDay: boolean().notNull().default(false),
+    timeZone: text(),
+    location: text(),
+    lat: doublePrecision(),
+    lng: doublePrecision(),
+    online: boolean().notNull().default(false),
+    organizer: text(),
+    priceText: text(),
+    url: text(),
+    canonicalUrl: text(),
+    description: text().notNull().default(""),
+    categories: text().array().notNull().default(sql`'{}'::text[]`),
+    isMock: boolean().notNull(),
+    sources: jsonb().$type<{ sourceId: string; kind: string; remoteId: string }[]>().notNull().default([]),
+    raw: jsonb(),
+    score: integer().notNull().default(0),
+    signals: jsonb().notNull().default([]),
+    why: text().notNull().default(""),
+    stage: text(),
+    stageChangedAt: tstz(),
+    calendarEventId: uuid().references(() => calendarEvents.id, { onDelete: "set null" }),
+    dismissedAt: tstz(),
+    lastSeenAt: tstz(),
+    ...timestamps,
+  },
+  (t) => [
+    index().on(t.titleKey, t.startAt),
+    index().on(t.canonicalUrl),
+    index().on(t.startAt),
+    index().on(t.stage),
+    index("outreach_events_sources_gin").using("gin", sql`${t.sources} jsonb_path_ops`),
+    check("outreach_events_stage_chk", sql`${t.stage} is null or ${t.stage} in (${inList(STAGES)})`),
+  ],
+);
+
+// No body column: message bodies are never persisted (D-23).
+export const mailMessages = pgTable(
+  "mail_messages",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    gmailId: text().notNull().unique(),
+    threadId: text().notNull(),
+    fromName: text().notNull().default(""),
+    fromAddress: text().notNull().default(""),
+    to: jsonb().$type<{ name: string; address: string }[]>().notNull().default([]),
+    cc: jsonb().$type<{ name: string; address: string }[]>().notNull().default([]),
+    subject: text().notNull().default(""),
+    receivedAt: tstz().notNull(),
+    labelIds: text().array().notNull().default(sql`'{}'::text[]`),
+    snippet: text().notNull().default(""),
+    bulk: boolean().notNull().default(false),
+    category: text(),
+    importance: text(),
+    summary: text(),
+    action: text(),
+    actionItems: jsonb().$type<{ text: string; due?: string | null }[]>().notNull().default([]),
+    flagged: boolean().notNull().default(false),
+    triagedAt: tstz(),
+    triageModel: text(),
+    archivedAt: tstz(),
+    flaggedAt: tstz(),
+    notifiedAt: tstz(),
+    ...timestamps,
+  },
+  (t) => [
+    index().on(t.receivedAt),
+    index().on(t.threadId),
+    index().on(t.category),
+    check("mail_messages_category_chk", sql`${t.category} is null or ${t.category} in (${inList(MAIL_CATEGORIES)})`),
+    check("mail_messages_importance_chk", sql`${t.importance} is null or ${t.importance} in (${inList(IMPORTANCE)})`),
   ],
 );
