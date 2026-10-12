@@ -203,13 +203,13 @@ Plans:
   3. The owner's Studio prompt ("Create a project based on my Studio repository … fully set up") produces a single approval card that, once approved, creates the complete project; e2e + VM DB tests cover tools, tiers and the approval path.
 **Plans**: 8 plans
 - [x] 05.1-01: projects.context column + migration 0007, shared draft payload schemas
-- [ ] 05.1-02: github.list_tree / github.get_file READ tools + Studio fixtures
-- [ ] 05.1-03: D-06 content floor in the gateway, per-agent run limits, io:input tool schemas
-- [ ] 05.1-04: project_create / project_update approval kinds, locks, summaries, stale check
-- [ ] 05.1-05: projects.create / projects.update APPROVE tools (one transaction, adopt), registry + prompts, Studio flow tests
-- [ ] 05.1-06: Project approval card (edit-before-approve), list row, AI panel card, seeded e2e
-- [ ] 05.1-07: Context in ProjectDialog, workspace CONTEXT card, Copy context brief
-- [ ] 05.1-08: Docs, validation, local gates, owner VM migrate 0007 + live Studio UAT
+- [x] 05.1-02: github.list_tree / github.get_file READ tools + Studio fixtures
+- [x] 05.1-03: D-06 content floor in the gateway, per-agent run limits, io:input tool schemas
+- [x] 05.1-04: project_create / project_update approval kinds, locks, summaries, stale check
+- [x] 05.1-05: projects.create / projects.update APPROVE tools (one transaction, adopt), registry + prompts, Studio flow tests
+- [x] 05.1-06: Project approval card (edit-before-approve), list row, AI panel card, seeded e2e
+- [x] 05.1-07: Context in ProjectDialog, workspace CONTEXT card, Copy context brief
+- [x] 05.1-08: Docs, validation, local gates, owner VM migrate 0007 + live Studio UAT (owner steps pending — OWNER-ACTIONS.md)
 
 ### Phase 6–11
 Goals per phase list above; detailed when each phase is planned (`/gsd-plan-phase N`).
