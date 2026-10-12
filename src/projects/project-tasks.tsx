@@ -72,8 +72,8 @@ export function ProjectTasks({
     const by = blockedBy[t.id] ?? [];
     return (
       <li key={t.id} className="flex items-center gap-2.5 rounded-14 px-2 py-2 hover:bg-[rgba(255,255,255,.03)]">
-        <Checkbox hitArea checked={d} aria-label={t.title} onChange={(e) => void toggle(t, e.target.checked)} />
-        <button type="button" onClick={() => setDlg({ task: t })} className={`min-w-0 flex-1 text-left text-[13.5px] break-words ${d ? "text-text-3 line-through" : "text-text"}`}>
+        <Checkbox hitArea checked={d} disabled={readOnly} aria-label={t.title} onChange={(e) => void toggle(t, e.target.checked)} />
+        <button type="button" disabled={readOnly} onClick={() => setDlg({ task: t })} className={`min-w-0 flex-1 text-left text-[13.5px] break-words ${d ? "text-text-3 line-through" : "text-text"}`}>
           {t.title}
         </button>
         {!d && by.length > 0 && (
