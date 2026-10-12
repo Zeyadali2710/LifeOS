@@ -26,6 +26,13 @@ describe("registry", () => {
     expect(o?.tools).toHaveLength(7);
     expect(getAgent("orchestrator")?.systemPrompt).toContain("Delegate calendar, schedule and task questions to the organization agent.");
   });
+  it("projects agent exposes the repo content and project write tools", () => {
+    expect(getAgent("projects")?.tools).toEqual(expect.arrayContaining(["github.list_tree", "github.get_file", "projects.create", "projects.update"]));
+    for (const n of ["projects.create", "projects.update"]) expect(TOOLS[n]).toMatchObject({ tier: "APPROVE", sideEffect: true, private: true });
+    const schema = JSON.stringify(toAnthropicTool(TOOLS["projects.create"]!).input_schema);
+    expect(schema).not.toContain("workspacePath");
+  });
+
   it("exposes projects.list and projects.get as READ tools on the Projects agent", () => {
     expect(getAgent("projects")?.tools).toEqual(expect.arrayContaining(["projects.list", "projects.get"]));
     for (const n of ["projects.list", "projects.get"]) expect(TOOLS[n]).toMatchObject({ tier: "READ", sideEffect: false });

@@ -27,8 +27,8 @@ beforeAll(async () => {
 });
 
 describe("projects tools", () => {
-  it("both are READ, side-effect free", () => {
-    for (const x of Object.values(projectTools)) expect(x).toMatchObject({ tier: "READ", sideEffect: false });
+  it("projects.list and projects.get are READ, side-effect free", () => {
+    for (const x of [projectTools["projects.list"], projectTools["projects.get"]]) expect(x).toMatchObject({ tier: "READ", sideEffect: false });
   });
 
   it("projects.list excludes archived by default, all includes them, limit caps", async () => {
@@ -53,6 +53,7 @@ describe("projects tools", () => {
     const task = (byName.tasks as { title: string }[])[0]!;
     expect(task.title.length).toBe(2000);
     expect((byName.milestones as unknown[]).length).toBe(1);
+    expect((byName.project as { context: string }).context).toBe("");
   });
 
   it("unknown project -> not_found; wildcard names do not match", async () => {
