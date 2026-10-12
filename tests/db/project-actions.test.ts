@@ -155,3 +155,15 @@ describe("blocker loader", () => {
     expect((await blockedProjectIds(h(), [p.id], NOW)).has(p.id)).toBe(false);
   });
 });
+
+describe("project context", () => {
+  it("round-trips, is kept on update, and rejects over 4000 chars", async () => {
+    const c = await createProject(h(), { name: "ctx", context: "notes" }, NOW);
+    if (!c.ok) throw new Error("create failed");
+    expect(c.project.context).toBe("notes");
+    const u = await updateProject(h(), c.project.id, { name: "ctx2", context: "notes" }, NOW);
+    expect(u.ok && u.project.context).toBe("notes");
+    const bad = await createProject(h(), { name: "x", context: "y".repeat(4001) }, NOW);
+    expect(!bad.ok && "errors" in bad && bad.errors.context).toBe("Context must be 4000 characters or fewer.");
+  });
+});
