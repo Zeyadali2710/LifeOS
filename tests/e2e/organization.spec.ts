@@ -47,8 +47,9 @@ test.beforeEach(async ({ page }) => {
 
 test("no calendar connected: empty state and tasks-only lead", async ({ page }) => {
   await page.goto("/organization");
-  await expect(page.getByText("No calendar connected.")).toBeVisible();
-  await expect(page.getByText("Connect a calendar to see your week. Tasks work without one.")).toBeVisible();
+  // During a navigation/refresh Next can briefly keep a hidden copy of the previous route tree, so match the visible one.
+  await expect(page.getByText("No calendar connected.").filter({ visible: true })).toBeVisible();
+  await expect(page.getByText("Connect a calendar to see your week. Tasks work without one.").filter({ visible: true })).toBeVisible();
 });
 
 test("quick add shows the task under TASKS · TODAY and the checkbox toggles it", async ({ page }) => {
@@ -67,6 +68,12 @@ test("quick add shows the task under TASKS · TODAY and the checkbox toggles it"
     await expect(box).toBeVisible({ timeout: 2000 });
   }).toPass();
   await box.check();
+  await expect(box).toBeChecked();
+  // A completed task collapses out of the list after 4s (UI-SPEC); reopen it from "Show completed" so slow runners don't race the timer.
+  await expect(box).toHaveCount(0, { timeout: 10_000 });
+  const tasks = page.getByRole("region", { name: "Tasks" });
+  await tasks.getByRole("button", { name: "Task list options" }).click();
+  await tasks.getByRole("button", { name: "Show completed" }).click();
   await expect(box).toBeChecked();
   await box.uncheck();
   await expect(box).not.toBeChecked();
