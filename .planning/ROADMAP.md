@@ -13,7 +13,8 @@ From an empty repo to a personal OS: secure foundation and deploy path first, th
  (completed 2026-10-08)
 - [x] **Phase 4: Organization** - Calendars (Google, iCloud), tasks, conflicts, scheduling suggestions (completed 2026-10-11)
 - [x] **Phase 4.1: Glass redesign** (INSERTED) - Liquid-glass restyle of the whole app, same features (completed 2026-10-12)
-- [ ] **Phase 5: Career + Projects** - Repo dashboards, cross-domain projects, project workspaces
+- [x] **Phase 5: Career + Projects** - Repo dashboards, cross-domain projects, project workspaces (completed 2026-10-12)
+- [ ] **Phase 5.1: Project agent writes + repo contents** (INSERTED) - Agent creates/updates projects via approval; reads repo files
 - [ ] **Phase 6: Outreach** - Sydney event discovery, pipeline, email intelligence, drafting
 - [ ] **Phase 7: Socials** - Social providers, drafts, content calendar, analytics
 - [ ] **Phase 8: Knowledge + Goals** - Notes/docs/retrieval, goal hierarchy
@@ -189,7 +190,17 @@ Plans:
 - [x] 05-09: /projects index (filters, sort, cards, create)
 - [x] 05-10: /projects/[id] workspace (Claude Code card, tasks, timeline, blockers, links)
 - [x] 05-11: Home Active projects + palette Projects scope
-- [ ] 05-12: E2E, docs, local gates; owner deploy + VM tests + UAT
+- [x] 05-12: E2E, docs, local gates; owner deploy + VM tests + UAT
+
+### Phase 5.1: Project agent writes + repo contents (INSERTED)
+**Goal**: The owner can ask LifeOS "create a project from my <repo>" and get it fully set up in one turn: the Projects agent reads the repository's files (README, docs/, roadmap, file tree) and drafts the project (name, description, context, tasks, milestones, repo link), and the owner approves it once.
+**Depends on**: Phase 5
+**Requirements**: CAR-02, CAR-03 (agent-side), AGT-01 tier rules
+**Success Criteria**:
+  1. Read-only `github.list_tree` / `github.get_file` tools (size-capped, default branch, private repos via the existing read token) let agents read README, docs and roadmap files; repo content is treated as untrusted/tainted (cannot by itself trigger write actions).
+  2. Projects agent gets write tools: create/update project (incl. description and context notes), add/update tasks and milestones, link repos/URLs, add dependencies — every write goes through PREPARE→APPROVE with edit-before-approve; one approval can create a project with its tasks, milestones and links.
+  3. The owner's Studio prompt ("Create a project based on my Studio repository … fully set up") produces a single approval card that, once approved, creates the complete project; e2e + VM DB tests cover tools, tiers and the approval path.
+**Plans**: TBD
 
 ### Phase 6–11
 Goals per phase list above; detailed when each phase is planned (`/gsd-plan-phase N`).
