@@ -13,7 +13,8 @@ From an empty repo to a personal OS: secure foundation and deploy path first, th
  (completed 2026-10-08)
 - [x] **Phase 4: Organization** - Calendars (Google, iCloud), tasks, conflicts, scheduling suggestions (completed 2026-10-11)
 - [x] **Phase 4.1: Glass redesign** (INSERTED) - Liquid-glass restyle of the whole app, same features (completed 2026-10-13)
-- [x] **Phase 5: Career + Projects** - Repo dashboards, cross-domain projects, project workspaces (completed 2026-10-13)
+- [x] **Phase 5: Career + Projects** - Repo dashboards, cross-domain projects, project workspaces
+ (completed 2026-10-13)
 - [ ] **Phase 5.1: Project agent writes + repo contents** (INSERTED) - Agent creates/updates projects via approval; reads repo files
 - [ ] **Phase 6: Outreach** - Sydney event discovery, pipeline, email intelligence, drafting
 - [ ] **Phase 7: Socials** - Social providers, drafts, content calendar, analytics
@@ -200,7 +201,15 @@ Plans:
   1. Read-only `github.list_tree` / `github.get_file` tools (size-capped, default branch, private repos via the existing read token) let agents read README, docs and roadmap files; repo content is treated as untrusted/tainted (cannot by itself trigger write actions).
   2. Projects agent gets write tools: create/update project (incl. description and context notes), add/update tasks and milestones, link repos/URLs, add dependencies — every write goes through PREPARE→APPROVE with edit-before-approve; one approval can create a project with its tasks, milestones and links.
   3. The owner's Studio prompt ("Create a project based on my Studio repository … fully set up") produces a single approval card that, once approved, creates the complete project; e2e + VM DB tests cover tools, tiers and the approval path.
-**Plans**: TBD
+**Plans**: 8 plans
+- [ ] 05.1-01: projects.context column + migration 0007, shared draft payload schemas
+- [ ] 05.1-02: github.list_tree / github.get_file READ tools + Studio fixtures
+- [ ] 05.1-03: D-06 content floor in the gateway, per-agent run limits, io:input tool schemas
+- [ ] 05.1-04: project_create / project_update approval kinds, locks, summaries, stale check
+- [ ] 05.1-05: projects.create / projects.update APPROVE tools (one transaction, adopt), registry + prompts, Studio flow tests
+- [ ] 05.1-06: Project approval card (edit-before-approve), list row, AI panel card, seeded e2e
+- [ ] 05.1-07: Context in ProjectDialog, workspace CONTEXT card, Copy context brief
+- [ ] 05.1-08: Docs, validation, local gates, owner VM migrate 0007 + live Studio UAT
 
 ### Phase 6–11
 Goals per phase list above; detailed when each phase is planned (`/gsd-plan-phase N`).
