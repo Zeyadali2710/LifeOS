@@ -97,9 +97,9 @@ export function ConnectionsSection({
   const last = read.lastSyncAt ? new Date(read.lastSyncAt) : null;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3.5">
       <p className="text-[14px] text-text-2">Accounts LifeOS reads from and, with your approval, acts on. Tokens are encrypted and never shown again.</p>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         <ConnectionRow
           id="github_read"
           tile="GH"
@@ -111,7 +111,7 @@ export function ConnectionsSection({
           onChanged={refresh}
         >
           {read.status !== "none" && (
-            <div className="glass-card rounded-22 px-4 py-3">
+            <div className="glass-card rounded-24 p-4">
               <Disclosure summary={<span className="text-[13px] text-text-2">{read.repos.length} repositories</span>}>
                 <ul className="mt-2 max-h-[240px] overflow-y-auto">
                   {read.repos.map((r) => (
@@ -167,7 +167,7 @@ export function ConnectionsSection({
           onChanged={refresh}
         >
           {or.status !== "none" && (
-            <div className="flex items-start gap-3 glass-card rounded-22 px-4 py-3.5">
+            <div className="flex items-start gap-3 glass-card rounded-24 p-4">
               <input
                 id="free-private"
                 type="checkbox"

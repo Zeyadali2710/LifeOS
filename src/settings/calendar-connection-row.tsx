@@ -108,7 +108,7 @@ export function CalendarConnectionRow({ conn, notice, open = false }: { conn: Ca
           />
         )}
         {connected && (
-          <div className="flex flex-col gap-3 glass-card rounded-22 px-4 py-3">
+          <div className="flex flex-col gap-3 glass-card rounded-24 p-4">
             <CalendarList calendars={conn.calendars} defaultOpen={open} />
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/[.10] pt-3">
               {conn.lastSyncError ? (

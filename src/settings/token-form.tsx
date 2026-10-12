@@ -65,7 +65,7 @@ export function TokenForm({
   }
 
   return (
-    <form onSubmit={submit} className="flex animate-[lo-rise_.25s_ease-out] flex-col gap-3.5 rounded-18 border border-white/[.10] bg-white/[.03] px-[18px] py-4">
+    <form onSubmit={submit} className="flex animate-[lo-rise_.25s_ease-out] flex-col gap-3.5 rounded-14 border border-white/[.10] bg-white/[.03] p-4">
       <Field label={or ? "OpenRouter API key" : "Fine-grained personal access token"} helper={HELP[id]} error={fieldError}>
         <Input
           type="password"
