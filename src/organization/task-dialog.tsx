@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { TaskDTO } from "@/lib/calendar-types";
 import { taskInput } from "@/lib/task-payload";
+import type { TaskDialogOptions } from "@/lib/project-types";
+import { addTaskDependencyAction, removeTaskDependencyAction, taskDialogOptionsAction } from "@/server/project-actions";
+import { Icon } from "@/ui/icon";
 import { createTaskAction, deleteTaskAction, toggleTaskAction, updateTaskAction } from "@/server/task-actions";
 import { sydneyInstant, sydneyParts } from "@/server/time";
 import { useShell } from "@/shell/shell-provider";
@@ -36,15 +39,44 @@ function remindISO(kind: Remind, custom: string, date: string, time: string): st
   return new Date(due - { at: 0, "15m": 15, "1h": 60 }[kind] * 60000).toISOString();
 }
 
-export function TaskDialog({ open, task, initialTitle = "", onClose }: { open: boolean; task?: TaskDTO; initialTitle?: string; onClose: () => void }) {
+export function TaskDialog({
+  open,
+  task,
+  initialTitle = "",
+  defaultProjectId,
+  onClose,
+}: {
+  open: boolean;
+  task?: TaskDTO;
+  initialTitle?: string;
+  defaultProjectId?: string;
+  onClose: () => void;
+}) {
   // Remount per open/task so the form always starts from the right values.
   if (!open) return null;
-  return <Form key={task?.id ?? "new"} task={task} initialTitle={initialTitle} onClose={onClose} />;
+  return <Form key={task?.id ?? "new"} task={task} initialTitle={initialTitle} defaultProjectId={defaultProjectId} onClose={onClose} />;
 }
 
-function Form({ task, initialTitle, onClose }: { task?: TaskDTO; initialTitle: string; onClose: () => void }) {
+function Form({ task, initialTitle, defaultProjectId, onClose }: { task?: TaskDTO; initialTitle: string; defaultProjectId?: string; onClose: () => void }) {
   const router = useRouter();
   const { toast } = useShell();
+  const [opts, setOpts] = useState<TaskDialogOptions | null>(null);
+  const [optsFailed, setOptsFailed] = useState(false);
+  useEffect(() => {
+    let live = true;
+    taskDialogOptionsAction(task?.id ?? null)
+      .then((r) => live && (r.ok ? setOpts(r.options) : setOptsFailed(true)))
+      .catch(() => live && setOptsFailed(true));
+    return () => {
+      live = false;
+    };
+  }, [task?.id]);
+  const [projectId, setProjectId] = useState(task?.projectId ?? defaultProjectId ?? "");
+  const [milestoneId, setMilestoneId] = useState(task?.milestoneId ?? "");
+  // Blockers are tracked as deltas against the server's list so the dirty check is stable while options load.
+  const [added, setAdded] = useState<string[]>([]);
+  const [removed, setRemoved] = useState<string[]>([]);
+  const [savedId, setSavedId] = useState<string | null>(null); // set once the task row exists but a blocker change failed
   const [title, setTitle] = useState(task?.title ?? initialTitle);
   const [date, setDate] = useState(task?.dueDate ?? "");
   const [time, setTime] = useState(task?.dueTime ?? "");
@@ -57,7 +89,7 @@ function Form({ task, initialTitle, onClose }: { task?: TaskDTO; initialTitle: s
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const hasDue = !!date && !!time;
-  const snap = JSON.stringify([title, date, time, priority, notes, remind, custom, done]);
+  const snap = JSON.stringify([title, date, time, priority, notes, remind, custom, done, projectId, milestoneId, added, removed]);
   const [initial] = useState(snap);
   const [discard, setDiscard] = useState(false);
   const close = () => (snap !== initial ? setDiscard(true) : onClose());
@@ -65,7 +97,16 @@ function Form({ task, initialTitle, onClose }: { task?: TaskDTO; initialTitle: s
   const submit = async () => {
     if (busy) return; // Enter during the round-trip must not create a second task
     const remindAt = remindISO(remind, custom, date, time);
-    const parsed = taskInput.safeParse({ title, notes, dueDate: date || null, dueTime: time || null, priority: priority ? Number(priority) : null, remindAt });
+    const parsed = taskInput.safeParse({
+      title,
+      notes,
+      dueDate: date || null,
+      dueTime: time || null,
+      priority: priority ? Number(priority) : null,
+      remindAt,
+      projectId: projectId || null,
+      milestoneId: projectId && milestoneId ? milestoneId : null,
+    });
     const errs: Record<string, string> = {};
     if (!parsed.success) for (const i of parsed.error.issues) errs[String(i.path[0] ?? "form")] ??= i.message;
     if (remind !== "none" && !remindAt) errs.remindAt ??= "Enter a valid reminder time.";
@@ -74,11 +115,29 @@ function Form({ task, initialTitle, onClose }: { task?: TaskDTO; initialTitle: s
     setErrors(errs);
     if (Object.keys(errs).length || !parsed.success) return;
     setBusy(true);
-    const r = await (task ? updateTaskAction(task.id, parsed.data) : createTaskAction(parsed.data)).catch(() => ({ ok: false, error: "failed" }) as const);
+    const id = task?.id ?? savedId;
+    const r = await (id ? updateTaskAction(id, parsed.data) : createTaskAction(parsed.data)).catch(() => ({ ok: false, error: "failed" }) as const);
     if (!r.ok) {
       setBusy(false);
       if ("errors" in r) return setErrors(r.errors);
       return toast("Couldn't save that. Try again.", "error");
+    }
+    const tid = r.task.id;
+    for (const [ids, act] of [
+      [removed, removeTaskDependencyAction],
+      [added, addTaskDependencyAction],
+    ] as const) {
+      for (const b of ids) {
+        const d = await act(tid, b).catch(() => ({ ok: false, error: "failed" }) as const);
+        if (!d.ok) {
+          // The task itself is saved; keep the dialog open so the blocker can be changed.
+          setBusy(false);
+          setSavedId(tid);
+          router.refresh();
+          return toast("errors" in d ? "That would create a circular dependency. Pick a different task." : "Saved, but couldn't update blockers. Try again.", "error");
+        }
+        (ids === added ? setAdded : setRemoved)((l) => l.filter((x) => x !== b));
+      }
     }
     if (task && done !== !!task.completedAt) {
       const t = await toggleTaskAction(task.id, done).catch(() => ({ ok: false }) as const);
@@ -129,6 +188,12 @@ function Form({ task, initialTitle, onClose }: { task?: TaskDTO; initialTitle: s
   }
 
   const relDisabled = !hasDue;
+  const selfId = task?.id ?? savedId;
+  const titleOf = (id: string) => opts?.tasks.find((t) => t.id === id)?.title ?? opts?.blockedBy.find((t) => t.id === id)?.title ?? "task";
+  const blockers = [...(opts?.blockedBy ?? []).filter((b) => !removed.includes(b.id)), ...added.map((id) => ({ id, title: titleOf(id) }))];
+  const addable = (opts?.tasks ?? []).filter((t) => t.id !== selfId && !blockers.some((b) => b.id === t.id));
+  const milestones = opts?.projects.find((p) => p.id === projectId)?.milestones ?? [];
+  const removeBlocker = (id: string) => (added.includes(id) ? setAdded((l) => l.filter((x) => x !== id)) : setRemoved((l) => [...l, id]));
   return (
     <Dialog
       open
@@ -179,6 +244,66 @@ function Form({ task, initialTitle, onClose }: { task?: TaskDTO; initialTitle: s
             <Input type="time" value={time} disabled={!date} onChange={(e) => setTime(e.target.value)} />
           </Field>
         </div>
+        {!optsFailed && (
+          <>
+            <Field label="Project" error={errors.projectId}>
+              <Select
+                value={projectId}
+                disabled={!opts}
+                onChange={(e) => {
+                  setProjectId(e.target.value);
+                  setMilestoneId("");
+                }}
+              >
+                <option value="">No project</option>
+                {opts?.projects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <Field label="Milestone" error={errors.milestoneId}>
+              <Select value={milestoneId} disabled={!opts || !projectId} onChange={(e) => setMilestoneId(e.target.value)}>
+                <option value="">No milestone</option>
+                {milestones.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.title}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[12.5px] text-text-2">Blocked by</span>
+              {blockers.map((b) => (
+                <div key={b.id} className="flex items-center gap-2 rounded-full border border-white/[.06] bg-white/[.04] py-1 pr-1 pl-3 text-[13px]">
+                  <span className="mr-auto truncate">{b.title}</span>
+                  <button
+                    type="button"
+                    aria-label={`Remove ${b.title}`}
+                    onClick={() => removeBlocker(b.id)}
+                    className="grid size-7 place-items-center rounded-full text-text-3 hover:text-text max-tab:size-11"
+                  >
+                    <Icon name="close" size={16} />
+                  </button>
+                </div>
+              ))}
+              <Select
+                aria-label="Add blocker"
+                value=""
+                disabled={!opts || addable.length === 0}
+                onChange={(e) => e.target.value && setAdded((l) => [...l, e.target.value])}
+              >
+                <option value="">Add a blocking task…</option>
+                {addable.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.title}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          </>
+        )}
         <Field label="Priority">
           <Select value={priority} onChange={(e) => setPriority(e.target.value)}>
             <option value="">None</option>
