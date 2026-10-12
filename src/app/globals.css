@@ -99,7 +99,7 @@
 }
 
 /* a11y fallbacks (D-06): solid fills, no blur, flat canvas */
-@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+@supports not (backdrop-filter: blur(1px)) {
   :root {
     --glass-chrome-blur: none; --glass-panel-blur: none; --glass-ask-blur: none; --glass-palette-blur: none;
     --glass-menu-blur: none; --glass-card-blur: none; --glass-sticky-blur: none;
@@ -180,33 +180,35 @@
   --breakpoint-wide: 1400px;
 }
 
+/* Unprefixed backdrop-filter only: lightningcss keeps just the last of a
+   prefixed/unprefixed var() pair, and a lone -webkit- one is ignored by Chrome. */
 @utility glass-chrome {
   background: var(--glass-chrome-bg); border: var(--glass-chrome-border); box-shadow: var(--glass-chrome-shadow);
-  backdrop-filter: var(--glass-chrome-blur); -webkit-backdrop-filter: var(--glass-chrome-blur);
+  backdrop-filter: var(--glass-chrome-blur);
 }
 @utility glass-panel {
   background: var(--glass-panel-bg); border: var(--glass-panel-border); box-shadow: var(--glass-panel-shadow);
-  backdrop-filter: var(--glass-panel-blur); -webkit-backdrop-filter: var(--glass-panel-blur);
+  backdrop-filter: var(--glass-panel-blur);
 }
 @utility glass-ask {
   background: var(--glass-ask-bg); border: var(--glass-ask-border); box-shadow: var(--glass-ask-shadow);
-  backdrop-filter: var(--glass-ask-blur); -webkit-backdrop-filter: var(--glass-ask-blur);
+  backdrop-filter: var(--glass-ask-blur);
 }
 @utility glass-palette {
   background: var(--glass-palette-bg); border: var(--glass-palette-border); box-shadow: var(--glass-palette-shadow);
-  backdrop-filter: var(--glass-palette-blur); -webkit-backdrop-filter: var(--glass-palette-blur);
+  backdrop-filter: var(--glass-palette-blur);
 }
 @utility glass-menu {
   background: var(--glass-menu-bg); border: var(--glass-menu-border); box-shadow: var(--glass-menu-shadow);
-  backdrop-filter: var(--glass-menu-blur); -webkit-backdrop-filter: var(--glass-menu-blur);
+  backdrop-filter: var(--glass-menu-blur);
 }
 @utility glass-card {
   background: var(--glass-card-bg); border: var(--glass-card-border); box-shadow: var(--glass-card-shadow);
-  backdrop-filter: var(--glass-card-blur); -webkit-backdrop-filter: var(--glass-card-blur);
+  backdrop-filter: var(--glass-card-blur);
 }
 @utility glass-sticky {
   background: var(--glass-sticky-bg); border: var(--glass-sticky-border); box-shadow: var(--glass-sticky-shadow);
-  backdrop-filter: var(--glass-sticky-blur); -webkit-backdrop-filter: var(--glass-sticky-blur);
+  backdrop-filter: var(--glass-sticky-blur);
 }
 @utility canvas-glow {
   background: var(--canvas-glow), var(--canvas);

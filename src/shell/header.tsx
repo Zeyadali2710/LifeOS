@@ -82,8 +82,8 @@ export function Header({ owner, version }: { owner: { name: string; email: strin
                 </Link>
               );
             })}
+            <MoreMenu version={version} />
           </nav>
-          <MoreMenu version={version} />
         </div>
       </div>
 
@@ -110,7 +110,7 @@ export function Header({ owner, version }: { owner: { name: string; email: strin
           onClick={() => openAI()}
           aria-expanded={aiOpen}
           aria-label="Ask LifeOS"
-          className={`${ctl} hidden w-auto items-center gap-2 bg-[rgba(10,132,255,.2)] px-3.5 text-[13px] font-semibold text-cyan-soft hover:bg-[rgba(10,132,255,.3)] desk:flex`}
+          className={`${ctl} hidden w-auto items-center gap-2 bg-[rgba(10,132,255,.2)] desk:w-auto px-3.5 text-[13px] font-semibold text-cyan-soft hover:bg-[rgba(10,132,255,.3)] desk:flex`}
         >
           <Icon name="auto_awesome" size={18} className="text-cyan" />
           Ask
