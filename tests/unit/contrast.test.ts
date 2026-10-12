@@ -6,7 +6,7 @@ const root = css.slice(css.indexOf(":root"), css.indexOf("@media"));
 const token = (name: string) => {
   const m = root.match(new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`));
   if (!m) throw new Error(`token --${name} not found in :root`);
-  return m[1];
+  return m[1]!;
 };
 
 type RGB = [number, number, number];
@@ -15,11 +15,11 @@ const lum = ([r, g, b]: RGB) => {
   const [R, G, B] = [r, g, b].map((v) => {
     const c = v / 255;
     return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  });
+  }) as RGB;
   return 0.2126 * R + 0.7152 * G + 0.0722 * B;
 };
 const ratio = (a: RGB, b: RGB) => {
-  const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
+  const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x) as [number, number];
   return (hi + 0.05) / (lo + 0.05);
 };
 
