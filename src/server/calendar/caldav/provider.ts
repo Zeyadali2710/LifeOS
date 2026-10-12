@@ -7,7 +7,7 @@ import { log } from "../../log";
 import { refreshCalendarList } from "../calendars";
 import { readCalendarSecret, saveCalendarSecret } from "../connections";
 import { ProviderError, type ProviderErrorKind } from "../errors";
-import { icsSeries, loadZones } from "../expand";
+import { icsSeries, loadZones, type Zones } from "../expand";
 import { icsApply, icsCreate } from "../recurrence-edit";
 import type { CalendarProvider, CalendarRef, EventWrite, NormalizedEvent, RemoteCalendar, StoredEvent, SyncWindow, WriteResult, WriteScope } from "../types";
 
@@ -133,9 +133,13 @@ export function normalizeIcs(ics: string, url: string, etag: string | null): Nor
   const root = new ICAL.Component(ICAL.parse(ics));
   const master = root.getAllSubcomponents("vevent").find((v) => !v.hasProperty("recurrence-id"));
   if (!master) throw new Error("no master");
+  return { ...normalizeVevent(master, loadZones(root), url, etag), raw: { ics } };
+}
+
+export function normalizeVevent(master: ICAL.Component, zones: Zones, url: string, etag: string | null): NormalizedEvent {
   const uid = master.getFirstPropertyValue("uid") as string | null;
   if (!uid) throw new Error("no uid");
-  const s = icsSeries(master, loadZones(root));
+  const s = icsSeries(master, zones);
   const startAt = s.allDay ? null : s.conv(s.start);
   const startDate = s.allDay ? s.start.toString().slice(0, 10) : null;
   const endDate = startDate ? new Date(Date.parse(`${startDate}T00:00:00Z`) + s.durDays * 86400000).toISOString().slice(0, 10) : null;
@@ -144,7 +148,7 @@ export function normalizeIcs(ics: string, url: string, etag: string | null): Nor
     startAt, endAt: startAt ? new Date(startAt.getTime() + s.durMs) : null,
     allDay: s.allDay, startDate, endDate, tz: s.tz,
     recurrence: s.rrule || s.lines.length ? [...(s.rrule ? [`RRULE:${s.rrule}`] : []), ...s.lines] : null,
-    recurringRemoteId: null, originalStart: null, status: s.status, transparency: s.transparency, declined: false, raw: { ics },
+    recurringRemoteId: null, originalStart: null, status: s.status, transparency: s.transparency, declined: false, raw: null,
   };
 }
 
