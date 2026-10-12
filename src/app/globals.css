@@ -1,76 +1,143 @@
 @import "tailwindcss";
 
 :root {
-  /* surfaces */
-  --canvas: #0b0c10;
-  --surface: #111318;          /* cards, panels (elev 0) */
-  --inset: #0d0e13;            /* code, previews, inputs */
-  --raised: #1a1d24;           /* tooltips, toasts, menus */
-  --selected: #1f222b;         /* active segment */
-  --overlay: #12141a;          /* elev 2: drawer, palette base */
-  --drawer: #101217;           /* notifications drawer (SH l.268) */
-  --panel-top: #14151e;        /* AI panel gradient top (SH l.150, @.98 alpha) */
+  /* canvas */
+  --canvas: #121214;
+  --canvas-glow:
+    radial-gradient(1100px 720px at 8% -14%, rgba(10,132,255,.30), rgba(10,132,255,0) 65%),
+    radial-gradient(1000px 700px at 104% -4%, rgba(94,92,230,.28), rgba(94,92,230,0) 65%);
 
   /* text */
-  --text: #e9eaf0;             /* primary */
-  --text-2: #a3a6b4;           /* secondary, 7.6:1 */
-  --text-3: #80849a;           /* labels/meta, 4.9:1 */
-  --text-4: #4a4e5c;           /* decorative only: never for informative text */
+  --text: #f5f5f7;
+  --text-soft: #d1d1d6;        /* lowest tier allowed inside chrome pills */
+  --text-2: #aeaeb2;
+  --text-3: #8e8e93;
+  --text-4: #636366;           /* decorative only */
+  --on-accent: #121214;
 
   /* hairlines and fills (white alpha) */
-  --border: rgba(255, 255, 255, 0.07);
-  --border-soft: rgba(255, 255, 255, 0.05);   /* inner dividers */
-  --border-hover: rgba(255, 255, 255, 0.16);  /* design uses .12–.2 */
-  --border-strong: rgba(255, 255, 255, 0.12); /* secondary button, input rest .08 */
-  --fill-1: rgba(255, 255, 255, 0.03);        /* input/secondary rest */
-  --fill-2: rgba(255, 255, 255, 0.05);        /* ghost hover */
-  --fill-3: rgba(255, 255, 255, 0.08);        /* disabled send, active tab */
+  --border: rgba(255, 255, 255, 0.12);
+  --border-soft: rgba(255, 255, 255, 0.06);
+  --border-hover: rgba(255, 255, 255, 0.16);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --fill-1: rgba(255, 255, 255, 0.03);
+  --fill-2: rgba(255, 255, 255, 0.06);
+  --fill-3: rgba(255, 255, 255, 0.10);
 
-  /* accents (same L/C, hue varies). Tints = accent at 8-14% alpha, borders 22-45%: use bg-indigo/10, border-indigo/35 */
-  --indigo: #8b8cff;           /* LifeOS, primary, AI, focus */
-  --indigo-text: #a5a6ff;      /* accent text */
-  --indigo-soft: #c7c8ff;      /* text on indigo tint (Ask LifeOS button, link hover) */
-  --green: #4fd1a1;            /* healthy, done, online */
-  --amber: #e8b86a;            /* at risk, approval, important */
-  --red: #f07a6e;              /* error, urgent, destructive */
-  --blue: #6cb6ff;             /* info/FYI, email, events */
-  --pink: #e889c4;             /* Socials (reserved, unused in Phase 2 UI) */
-  --violet: #b48cff;           /* Knowledge (reserved, unused in Phase 2 UI) */
-  --on-accent: #0b0c10;        /* text on any accent fill */
-  --indigo-deep: #5b5cd6;      /* logo gradient end */
-
-  /* elevation */
-  --shadow-float: 0 18px 50px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.04); /* command bar, elev 1 */
-  --shadow-overlay: 0 30px 80px rgba(0,0,0,.6);                       /* elev 2 */
-  --shadow-palette: 0 30px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(0,0,0,.5), 0 0 60px rgba(110,112,255,.08);
-  --shadow-drawer: -30px 0 60px rgba(0,0,0,.5);
-  --shadow-tooltip: 0 8px 24px rgba(0,0,0,.5);
-  --shadow-toast: 0 12px 30px rgba(0,0,0,.5);
-  --shadow-glow-ai: 0 0 0 4px rgba(139,140,255,.12), 0 8px 24px rgba(110,112,255,.3); /* primary AI action only */
-  --ring-input: 0 0 0 3px rgba(139,140,255,.15);                       /* input focus ring */
+  /* accents */
+  --accent: #0a84ff;           /* fill/graphic only, never text */
+  --accent-solid: #0071e3;     /* filled controls, white text */
+  --cyan: #64d2ff;             /* accent text, links, focus ring */
+  --cyan-soft: #9fd8ff;
+  --green: #30d158;
+  --amber: #ff9f0a;
+  --red: #ff6961;
+  --pink: #ff6482;
+  --purple: #bf5af2;
+  --purple-text: #d08cff;
+  --indigo: #5e5ce6;           /* gradient only */
 
   /* layout */
-  --sidebar-w: 232px;
-  --rail-w: 64px;              /* manual compact (desktop) */
-  --rail-w-tablet: 68px;       /* 720-1100 auto rail */
-  --topbar-h: 56px;
+  --header-top: 14px;
+  --pill-h: 50px;
+  --content-top: 70px;
+  --tabbar-h: 68px;
   --ai-w: 440px;
-  --drawer-w: 420px;
+  --notif-w: 420px;
   --content-max: 1480px;
-  --bottombar-h: 66px;         /* + env(safe-area-inset-bottom); design's 96px includes the phone home-indicator mock */
+
+  --ring-input: 0 0 0 3px rgba(100,210,255,.25);
+  --shadow-ask: 0 10px 24px -8px rgba(10,132,255,.7);
+
+  /* glass tiers */
+  --glass-chrome-bg: rgba(255,255,255,.08);
+  --glass-chrome-border: 1px solid rgba(255,255,255,.13);
+  --glass-chrome-blur: blur(30px) saturate(170%);
+  --glass-chrome-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 18px 40px -18px rgba(0,0,0,.8);
+
+  --glass-panel-bg: rgba(30,30,34,.72);
+  --glass-panel-border: 1px solid rgba(255,255,255,.14);
+  --glass-panel-blur: blur(40px) saturate(180%);
+  --glass-panel-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 40px 80px -30px rgba(0,0,0,.9);
+
+  --glass-ask-bg: rgba(30,30,34,.60);
+  --glass-ask-border: var(--glass-panel-border);
+  --glass-ask-blur: var(--glass-panel-blur);
+  --glass-ask-shadow: var(--glass-panel-shadow);
+
+  --glass-palette-bg: rgba(30,30,34,.80);
+  --glass-palette-border: var(--glass-panel-border);
+  --glass-palette-blur: var(--glass-panel-blur);
+  --glass-palette-shadow: var(--glass-panel-shadow);
+
+  --glass-menu-bg: rgba(38,38,42,.94);
+  --glass-menu-border: 1px solid rgba(255,255,255,.14);
+  --glass-menu-blur: none;
+  --glass-menu-shadow: inset 0 1px 0 rgba(255,255,255,.14), 0 30px 60px -20px rgba(0,0,0,.85);
+
+  --glass-card-bg: rgba(255,255,255,.06);
+  --glass-card-border: 1px solid rgba(255,255,255,.12);
+  --glass-card-blur: none;
+  --glass-card-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 24px 48px -28px rgba(0,0,0,.8);
+
+  --glass-sticky-bg: rgba(255,255,255,.06);
+  --glass-sticky-border: 1px solid rgba(255,255,255,.12);
+  --glass-sticky-blur: blur(30px) saturate(160%);
+  --glass-sticky-shadow: none;
 
   color-scheme: dark;
 }
 
+@media (max-width: 759.98px) {
+  :root {
+    --pill-h: 54px;
+    --content-top: 80px;
+    --canvas-glow:
+      radial-gradient(520px 420px at 0% -6%, rgba(10,132,255,.34), rgba(10,132,255,0) 65%),
+      radial-gradient(460px 420px at 104% 4%, rgba(94,92,230,.32), rgba(94,92,230,0) 65%);
+  }
+}
+
+/* a11y fallbacks (D-06): solid fills, no blur, flat canvas */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root {
+    --glass-chrome-blur: none; --glass-panel-blur: none; --glass-ask-blur: none; --glass-palette-blur: none;
+    --glass-menu-blur: none; --glass-card-blur: none; --glass-sticky-blur: none;
+    --glass-chrome-bg: #26262a;
+    --glass-panel-bg: #232326; --glass-ask-bg: #232326; --glass-palette-bg: #232326; --glass-menu-bg: #232326;
+    --glass-card-bg: #202022; --glass-sticky-bg: #202022;
+    --canvas-glow: none;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --glass-chrome-blur: none; --glass-panel-blur: none; --glass-ask-blur: none; --glass-palette-blur: none;
+    --glass-menu-blur: none; --glass-card-blur: none; --glass-sticky-blur: none;
+    --glass-chrome-bg: #26262a;
+    --glass-panel-bg: #232326; --glass-ask-bg: #232326; --glass-palette-bg: #232326; --glass-menu-bg: #232326;
+    --glass-card-bg: #202022; --glass-sticky-bg: #202022;
+    --canvas-glow: none;
+  }
+}
+@media (prefers-contrast: more) {
+  :root {
+    --glass-chrome-blur: none; --glass-panel-blur: none; --glass-ask-blur: none; --glass-palette-blur: none;
+    --glass-menu-blur: none; --glass-card-blur: none; --glass-sticky-blur: none;
+    --glass-chrome-bg: #26262a;
+    --glass-panel-bg: #232326; --glass-ask-bg: #232326; --glass-palette-bg: #232326; --glass-menu-bg: #232326;
+    --glass-card-bg: #202022; --glass-sticky-bg: #202022;
+    --canvas-glow: none;
+    --glass-chrome-border: 1px solid rgba(255,255,255,.22); --glass-panel-border: 1px solid rgba(255,255,255,.22);
+    --glass-ask-border: 1px solid rgba(255,255,255,.22); --glass-palette-border: 1px solid rgba(255,255,255,.22);
+    --glass-menu-border: 1px solid rgba(255,255,255,.22); --glass-card-border: 1px solid rgba(255,255,255,.22);
+    --glass-sticky-border: 1px solid rgba(255,255,255,.22);
+  }
+}
+
 @theme inline {
   --color-canvas: var(--canvas);
-  --color-surface: var(--surface);
-  --color-inset: var(--inset);
-  --color-raised: var(--raised);
-  --color-selected: var(--selected);
-  --color-overlay: var(--overlay);
-  --color-drawer: var(--drawer);
   --color-text: var(--text);
+  --color-soft: var(--text-soft);
   --color-text-2: var(--text-2);
   --color-text-3: var(--text-3);
   --color-text-4: var(--text-4);
@@ -81,42 +148,74 @@
   --color-fill-1: var(--fill-1);
   --color-fill-2: var(--fill-2);
   --color-fill-3: var(--fill-3);
-  --color-indigo: var(--indigo);
-  --color-indigo-text: var(--indigo-text);
-  --color-indigo-soft: var(--indigo-soft);
+  --color-accent: var(--accent);
+  --color-accent-solid: var(--accent-solid);
+  --color-cyan: var(--cyan);
+  --color-cyan-soft: var(--cyan-soft);
   --color-green: var(--green);
   --color-amber: var(--amber);
   --color-red: var(--red);
-  --color-blue: var(--blue);
   --color-pink: var(--pink);
-  --color-violet: var(--violet);
+  --color-purple: var(--purple);
+  --color-purple-text: var(--purple-text);
   --color-on-accent: var(--on-accent);
 
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-sans: var(--font-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-serif), Georgia, serif;
+  --font-code: ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* radius: numeric names = design px so utilities are rounded-5, rounded-9, ... */
   --radius-4: 4px; --radius-5: 5px; --radius-6: 6px; --radius-7: 7px; --radius-8: 8px;
   --radius-9: 9px; --radius-10: 10px; --radius-12: 12px; --radius-14: 14px; --radius-16: 16px;
+  --radius-18: 18px; --radius-20: 20px; --radius-22: 22px; --radius-24: 24px; --radius-26: 26px;
+  --radius-28: 28px; --radius-30: 30px;
 
-  --shadow-float: var(--shadow-float);
-  --shadow-overlay: var(--shadow-overlay);
-  --shadow-tooltip: var(--shadow-tooltip);
-  --shadow-toast: var(--shadow-toast);
-  --shadow-glow-ai: var(--shadow-glow-ai);
+  --shadow-ask: var(--shadow-ask);
 
-  /* viewport breakpoints (min-width). Below 720 = mobile (no variant). */
-  --breakpoint-tab: 720px;
+  /* viewport breakpoints (min-width). Below 760 = mobile (no variant). */
+  --breakpoint-tab: 760px;
+  --breakpoint-mid: 1000px;
   --breakpoint-desk: 1100px;
+  --breakpoint-wide: 1400px;
+}
+
+@utility glass-chrome {
+  background: var(--glass-chrome-bg); border: var(--glass-chrome-border); box-shadow: var(--glass-chrome-shadow);
+  backdrop-filter: var(--glass-chrome-blur); -webkit-backdrop-filter: var(--glass-chrome-blur);
+}
+@utility glass-panel {
+  background: var(--glass-panel-bg); border: var(--glass-panel-border); box-shadow: var(--glass-panel-shadow);
+  backdrop-filter: var(--glass-panel-blur); -webkit-backdrop-filter: var(--glass-panel-blur);
+}
+@utility glass-ask {
+  background: var(--glass-ask-bg); border: var(--glass-ask-border); box-shadow: var(--glass-ask-shadow);
+  backdrop-filter: var(--glass-ask-blur); -webkit-backdrop-filter: var(--glass-ask-blur);
+}
+@utility glass-palette {
+  background: var(--glass-palette-bg); border: var(--glass-palette-border); box-shadow: var(--glass-palette-shadow);
+  backdrop-filter: var(--glass-palette-blur); -webkit-backdrop-filter: var(--glass-palette-blur);
+}
+@utility glass-menu {
+  background: var(--glass-menu-bg); border: var(--glass-menu-border); box-shadow: var(--glass-menu-shadow);
+  backdrop-filter: var(--glass-menu-blur); -webkit-backdrop-filter: var(--glass-menu-blur);
+}
+@utility glass-card {
+  background: var(--glass-card-bg); border: var(--glass-card-border); box-shadow: var(--glass-card-shadow);
+  backdrop-filter: var(--glass-card-blur); -webkit-backdrop-filter: var(--glass-card-blur);
+}
+@utility glass-sticky {
+  background: var(--glass-sticky-bg); border: var(--glass-sticky-border); box-shadow: var(--glass-sticky-shadow);
+  backdrop-filter: var(--glass-sticky-blur); -webkit-backdrop-filter: var(--glass-sticky-blur);
+}
+@utility canvas-glow {
+  background: var(--canvas-glow), var(--canvas);
 }
 
 html, body { height: 100%; }
 body {
   margin: 0;
-  background:
-    radial-gradient(1200px 600px at 12% -10%, rgba(110,112,255,.10), transparent 60%),
-    radial-gradient(900px 500px at 100% 0%, rgba(150,110,255,.06), transparent 60%),
-    var(--canvas);
+  background: var(--canvas);
   color: var(--text);
   font-family: var(--font-sans);
   font-size: 14px;
@@ -124,17 +223,17 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 * { box-sizing: border-box; }
-a { color: var(--indigo-text); text-decoration: none; }
-a:hover { color: var(--indigo-soft); text-decoration: underline; }
+a { color: var(--cyan); text-decoration: none; }
+a:hover { color: var(--cyan-soft); text-decoration: underline; }
 button { font-family: inherit; }
-:focus-visible { outline: 2px solid var(--indigo); outline-offset: 2px; }  /* never removed; no forced radius (design's 6px override distorts pills) */
-::selection { background: rgba(139,140,255,.35); }
+:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }  /* never removed; no forced radius (would distort pills) */
+::selection { background: rgba(10,132,255,.4); }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-thumb { background: rgba(255,255,255,.08); border-radius: 10px; border: 3px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 10px; border: 3px solid transparent; background-clip: padding-box; }
 
-/* motion keyframes (SH l.23–32, DS l.18–22) */
-@keyframes lo-pulse   { 0% { box-shadow: 0 0 0 0 rgba(139,140,255,.55) } 100% { box-shadow: 0 0 0 7px rgba(139,140,255,0) } }
-@keyframes lo-pulse-g { 0% { box-shadow: 0 0 0 0 rgba(79,209,161,.5) }  100% { box-shadow: 0 0 0 6px rgba(79,209,161,0) } }
+/* motion keyframes */
+@keyframes lo-pulse   { 0% { box-shadow: 0 0 0 0 rgba(10,132,255,.6) } 100% { box-shadow: 0 0 0 7px rgba(10,132,255,0) } }
+@keyframes lo-pulse-g { 0% { box-shadow: 0 0 0 0 rgba(48,209,88,.55) }  100% { box-shadow: 0 0 0 6px rgba(48,209,88,0) } }
 @keyframes lo-in      { from { opacity: 0; transform: translateY(-6px) } to { opacity: 1; transform: none } }
 @keyframes lo-fade    { from { opacity: 0 } to { opacity: 1 } }
 @keyframes lo-rise    { from { opacity: 0; transform: translateY(8px) scale(.99) } to { opacity: 1; transform: none } }
