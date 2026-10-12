@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import type { Page } from "@playwright/test";
 import { Client } from "pg";
 
@@ -122,4 +123,60 @@ export async function removeWriteConnection() {
 // Deleting the run cascades to its tool_calls and approvals; keeps seeded pending approvals from leaking into global counts.
 export async function deleteApprovalRun(approvalId: string) {
   await withDb((c) => c.query("delete from agent_runs where id = (select run_id from approvals where id = $1)", [approvalId]));
+}
+
+// Seeds a projects.create / projects.update approval (APPROVE tier). The e2e stack has no worker: nothing executes it.
+export async function insertProjectApproval(o: { payload: unknown; tool?: "projects.create" | "projects.update"; status?: string; result?: unknown }): Promise<string> {
+  return withDb(async (c) => {
+    const tool = o.tool ?? "projects.create";
+    const run = await c.query(
+      `insert into agent_runs (agent_id, prompt, model, status, started_at) values ('projects', 'Draft a project', 'claude-sonnet-5-5', 'waiting_approval', now()) returning id`,
+    );
+    const tc = await c.query(
+      `insert into tool_calls (run_id, tool_use_id, seq, tool, tier, status, input, started_at)
+       values ($1, 'toolu_proj', 1, $2, 'APPROVE', 'waiting_approval', $3::jsonb, now()) returning id`,
+      [run.rows[0].id, tool, JSON.stringify(o.payload)],
+    );
+    const status = o.status ?? "pending";
+    const a = await c.query(
+      `insert into approvals (run_id, tool_call_id, agent_id, tool, status, original_payload, payload_hash, reason, result, decided_at, expires_at)
+       values ($1, $2, 'projects', $3, $4, $5::jsonb, $6, 'You asked for it.', $7::jsonb, $8, now() + interval '7 days') returning id`,
+      [run.rows[0].id, tc.rows[0].id, tool, status, JSON.stringify(o.payload), `e2e-proj-${randomBytes(8).toString("hex")}`, o.result === undefined ? null : JSON.stringify(o.result), status === "pending" ? null : new Date()],
+    );
+    const id = a.rows[0].id as string;
+    await c.query("select pg_notify('lifeos_events', $1)", [JSON.stringify({ k: "approval", id })]);
+    return id;
+  });
+}
+
+/** Reads back the stored approval row (edited payload + status) for assertions. */
+export async function readApproval(id: string): Promise<{ status: string; edited: Record<string, unknown> | null }> {
+  return withDb(async (c) => {
+    const r = await c.query("select status, edited_payload from approvals where id = $1", [id]);
+    return { status: r.rows[0].status as string, edited: r.rows[0].edited_payload as Record<string, unknown> | null };
+  });
+}
+
+/** Raw-SQL project with context, a milestone, tasks and a repo link (stands in for what an executed approval created). */
+export async function insertSeededProject(o: { name: string; context: string; milestone: string; tasks: string[]; repo: { id: number; fullName: string } }): Promise<string> {
+  return withDb(async (c) => {
+    const [owner, name] = o.repo.fullName.split("/");
+    await c.query(
+      `insert into github_repos (id, full_name, owner, name, private, html_url) values ($1, $2, $3, $4, false, $5) on conflict do nothing`,
+      [o.repo.id, o.repo.fullName, owner, name, `https://github.com/${o.repo.fullName}`],
+    );
+    const p = await c.query("insert into projects (name, context) values ($1, $2) returning id", [o.name, o.context]);
+    const pid = p.rows[0].id as string;
+    const m = await c.query("insert into milestones (project_id, title) values ($1, $2) returning id", [pid, o.milestone]);
+    for (const t of o.tasks) await c.query("insert into tasks (title, project_id, milestone_id) values ($1, $2, $3)", [t, pid, m.rows[0].id]);
+    await c.query("insert into project_links (project_id, kind, repo_id) values ($1, 'repo', $2)", [pid, o.repo.id]);
+    return pid;
+  });
+}
+
+export async function deleteProject(id: string) {
+  await withDb(async (c) => {
+    await c.query("delete from tasks where project_id = $1", [id]);
+    await c.query("delete from projects where id = $1", [id]);
+  });
 }
