@@ -93,3 +93,42 @@ describe("event payload bounds (WR-C05)", () => {
     expect(ok("calendar.delete_event", { ...cal, ...inst, title: "L", start: "s".repeat(41), end: "e", allDay: false })).toBe(false);
   });
 });
+
+describe("project approval kinds", () => {
+  const link = { kind: "url" as const, label: "Docs", url: "https://a.example/x" };
+  const link2 = { kind: "repo" as const, repo: "me/a" };
+  const pc = {
+    name: "Studio",
+    description: "",
+    context: "",
+    category: "personal",
+    priority: 2,
+    targetDate: null,
+    milestones: [{ ref: "m1", title: "M" }],
+    tasks: [{ ref: "t1", title: "T" }],
+    links: [link, link2],
+    sources: ["a"],
+  };
+  it("maps and locks", () => {
+    expect(approvalKind("projects.create")).toBe("project_create");
+    expect(approvalKind("projects.update")).toBe("project_update");
+    expect(payloadSchemaFor("projects.create").safeParse(pc).success).toBe(true);
+    expect(checkLocked("project_create", pc, { ...pc, sources: [] })).toEqual({ sources: "This can't be changed." });
+    expect(checkLocked("project_update", { ...pc, projectId: "a" }, { ...pc, projectId: "b" })).toEqual({ projectId: "This can't be changed." });
+    expect(nothingText("project_create")).toBe("Nothing was created.");
+    expect(nothingText("project_update")).toBe("Nothing was changed.");
+  });
+  it("links can only be removed", () => {
+    expect(checkLocked("project_create", pc, { ...pc, links: [link] })).toBeNull();
+    expect(checkLocked("project_create", pc, { ...pc, links: [...pc.links, { ...link, label: "New" }] })).toEqual({ links: "Links can only be removed." });
+    expect(checkLocked("project_create", pc, { ...pc, links: [{ kind: "repo", repo: "me/b" }] })).toEqual({ links: "Links can only be removed." });
+  });
+  it("summarises", () => {
+    const exp = new Date("2026-10-14T01:00:00Z");
+    const s = approvalSummary("projects.create", pc, exp);
+    expect(s.title).toBe('Approval waiting: create project "Studio"');
+    expect(s.body).toMatch(/^1 tasks, 1 milestones, 2 links\. Expires /);
+    expect(approvalSummary("projects.create", { ...pc, milestones: [], tasks: [], links: [] }, exp).body).toMatch(/^Expires /);
+    expect(approvalSummary("projects.create", { nope: 1 }, exp)).toEqual({ title: "", body: undefined });
+  });
+});

@@ -75,6 +75,8 @@ const EV: Record<ApprovalKind, { verb: string; ok: string }> = {
   event_create: { verb: "add an event to", ok: "ADD TO CALENDAR" },
   event_update: { verb: "change an event on", ok: "UPDATE EVENT" },
   event_delete: { verb: "delete an event from", ok: "DELETE EVENT" },
+  project_create: { verb: "create a project", ok: "CREATE PROJECT" },
+  project_update: { verb: "change a project", ok: "UPDATE PROJECT" },
 };
 
 export function ApprovalCard({ approval, onDecided }: { approval: ApprovalDTO; onDecided: () => void }) {
