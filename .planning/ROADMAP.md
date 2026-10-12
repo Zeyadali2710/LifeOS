@@ -149,10 +149,10 @@ Plans:
 **Goal:** The whole app wears the owner's liquid-glass design (floating pill header, mobile pill tab bar, Ask bar, floating glass panels, Instrument Serif + Familjen Grotesk) with the same features, content and behaviour, WCAG AA contrast and solid fallbacks, and smooth scrolling on the VM.
 **Requirements**: TBD (CONTEXT decisions D-01..D-08)
 **Depends on:** Phase 4
-**Plans:** 15 plans
+**Plans:** 1/15 plans executed
 
 Plans:
-- [ ] 04.1-01-PLAN.md — Glass tokens, tier utilities, a11y fallbacks, fonts, gate script
+- [x] 04.1-01-PLAN.md — Glass tokens, tier utilities, a11y fallbacks, fonts, gate script
 - [ ] 04.1-02-PLAN.md — UI primitives restyle (src/ui)
 - [ ] 04.1-03-PLAN.md — Header pills, non-modal More menu, System block, nav split
 - [ ] 04.1-04-PLAN.md — Floating AI panel and assistant sub-views
