@@ -202,7 +202,7 @@ Plans:
   2. Projects agent gets write tools: create/update project (incl. description and context notes), add/update tasks and milestones, link repos/URLs, add dependencies — every write goes through PREPARE→APPROVE with edit-before-approve; one approval can create a project with its tasks, milestones and links.
   3. The owner's Studio prompt ("Create a project based on my Studio repository … fully set up") produces a single approval card that, once approved, creates the complete project; e2e + VM DB tests cover tools, tiers and the approval path.
 **Plans**: 8 plans
-- [ ] 05.1-01: projects.context column + migration 0007, shared draft payload schemas
+- [x] 05.1-01: projects.context column + migration 0007, shared draft payload schemas
 - [ ] 05.1-02: github.list_tree / github.get_file READ tools + Studio fixtures
 - [ ] 05.1-03: D-06 content floor in the gateway, per-agent run limits, io:input tool schemas
 - [ ] 05.1-04: project_create / project_update approval kinds, locks, summaries, stale check
