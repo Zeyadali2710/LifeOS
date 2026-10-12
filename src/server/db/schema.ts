@@ -3,6 +3,7 @@ import {
   type AnyPgColumn,
   bigint,
   boolean,
+  check,
   index,
   integer,
   jsonb,
@@ -339,6 +340,7 @@ export const githubRepos = pgTable("github_repos", {
   htmlUrl: text(),
   description: text(),
   language: text(),
+  languages: jsonb().$type<Record<string, number> | null>(), // null = never fetched (D-04)
   archived: boolean().default(false),
   pushedAt: tstz(),
   syncedAt: tstz(),
@@ -480,6 +482,93 @@ export const calendarEvents = pgTable(
   ],
 );
 
+// ── Phase 5: career + projects ──────────────────────────────────────────────
+export const projects = pgTable(
+  "projects",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    name: text().notNull(),
+    description: text().notNull().default(""),
+    category: text().notNull().default("personal"),
+    status: text().notNull().default("active"),
+    priority: integer().notNull().default(2),
+    targetDate: text(), // Sydney "YYYY-MM-DD"
+    workspacePath: text(),
+    workspaceMachine: text(),
+    blockerNote: text().notNull().default(""),
+    ...timestamps,
+  },
+  (t) => [
+    index().on(t.status, t.priority),
+    check("projects_category_chk", sql`${t.category} in ('personal','career','startup','technical','social','learning')`),
+    check("projects_status_chk", sql`${t.status} in ('active','paused','done','archived')`),
+    check("projects_priority_chk", sql`${t.priority} between 1 and 3`),
+  ],
+);
+
+export const milestones = pgTable(
+  "milestones",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    projectId: uuid().notNull().references(() => projects.id, { onDelete: "cascade" }),
+    title: text().notNull(),
+    dueDate: text(),
+    completedAt: tstz(),
+    sortOrder: integer().notNull().default(0),
+    ...timestamps,
+  },
+  (t) => [index().on(t.projectId, t.sortOrder)],
+);
+
+export const taskDependencies = pgTable(
+  "task_dependencies",
+  {
+    taskId: uuid().notNull().references((): AnyPgColumn => tasks.id, { onDelete: "cascade" }),
+    blockedByTaskId: uuid().notNull().references((): AnyPgColumn => tasks.id, { onDelete: "cascade" }),
+    createdAt: tstz().notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.taskId, t.blockedByTaskId] }),
+    index().on(t.blockedByTaskId),
+    check("task_dependencies_not_self", sql`${t.taskId} <> ${t.blockedByTaskId}`),
+  ],
+);
+
+export const projectDependencies = pgTable(
+  "project_dependencies",
+  {
+    projectId: uuid().notNull().references(() => projects.id, { onDelete: "cascade" }),
+    blockedByProjectId: uuid().notNull().references(() => projects.id, { onDelete: "cascade" }),
+    createdAt: tstz().notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.projectId, t.blockedByProjectId] }),
+    index().on(t.blockedByProjectId),
+    check("project_dependencies_not_self", sql`${t.projectId} <> ${t.blockedByProjectId}`),
+  ],
+);
+
+export const projectLinks = pgTable(
+  "project_links",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    projectId: uuid().notNull().references(() => projects.id, { onDelete: "cascade" }),
+    kind: text().notNull(), // "repo" | "url"
+    repoId: repoRef(),
+    url: text(),
+    label: text(),
+    ...timestamps,
+  },
+  (t) => [
+    check(
+      "project_links_kind_chk",
+      sql`(${t.kind} = 'repo' and ${t.repoId} is not null and ${t.url} is null) or (${t.kind} = 'url' and ${t.url} is not null and ${t.repoId} is null)`,
+    ),
+    uniqueIndex("project_links_repo_idx").on(t.projectId, t.repoId).where(sql`${t.repoId} is not null`),
+    index().on(t.projectId),
+  ],
+);
+
 // Editing remindAt resets remindedAt to null (enforced in src/server/tasks.ts).
 export const tasks = pgTable(
   "tasks",
@@ -494,8 +583,14 @@ export const tasks = pgTable(
     remindAt: tstz(),
     remindedAt: tstz(),
     completedAt: tstz(),
-    projectId: uuid(), // nullable, no FK until Phase 5 (D-10)
+    projectId: uuid().references((): AnyPgColumn => projects.id, { onDelete: "set null" }), // D-06
+    milestoneId: uuid().references((): AnyPgColumn => milestones.id, { onDelete: "set null" }), // D-07
     ...timestamps,
   },
-  (t) => [index().on(t.completedAt, t.dueAt), index().on(t.remindAt)],
+  (t) => [
+    index().on(t.completedAt, t.dueAt),
+    index().on(t.remindAt),
+    index().on(t.projectId),
+    index().on(t.milestoneId),
+  ],
 );
