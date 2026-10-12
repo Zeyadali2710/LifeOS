@@ -62,7 +62,7 @@ export function AccountMenu({ owner, version }: { owner: { name: string; email: 
     return shortcut.replace("Alt+", "⌥").replace("Ctrl+", "⌘");
   };
 
-  const item = "flex h-11 w-full items-center gap-3 rounded-14 px-3 text-left text-[14px] text-text hover:bg-white/[.10] hover:text-text focus-visible:bg-white/[.10] focus-visible:outline-none";
+  const item = "flex h-11 w-full items-center gap-3 rounded-[18px] px-3 text-left text-[14px] text-text hover:bg-white/[.10] hover:text-text focus-visible:bg-white/[.10] focus-visible:outline-none";
 
   return (
     <div className="relative">
@@ -96,7 +96,7 @@ export function AccountMenu({ owner, version }: { owner: { name: string; email: 
           onKeyDown={onKeyDown}
           className="glass-menu absolute top-[calc(100%+14px)] right-[-5px] z-40 min-w-[240px] animate-[lo-rise_.16s_ease-out] rounded-24 p-1.5"
         >
-          <div className="px-3 pt-2 pb-2.5">
+          <div className="px-3 py-2.5">
             <div className="truncate text-[14px] font-medium text-text">{name}</div>
             {owner.name.trim() && <div className="truncate text-[12px] text-text-3">{owner.email}</div>}
           </div>

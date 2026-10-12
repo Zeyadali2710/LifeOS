@@ -98,7 +98,7 @@ export function AnswerText({ text, streaming = false }: { text: string; streamin
             {b.items.map((it, j) => <li key={j}><Inlines nodes={it} /></li>)}
           </ul>
         ) : (
-          <pre key={i} className="max-h-60 overflow-auto rounded-10 border border-white/[.08] bg-white/[.03] px-3 py-2.5 font-code text-[11.5px] whitespace-pre-wrap text-text-2">{b.text}</pre>
+          <pre key={i} className="max-h-60 overflow-auto rounded-14 border border-white/[.08] bg-white/[.03] px-3 py-2.5 font-code text-[11.5px] whitespace-pre-wrap text-text-2">{b.text}</pre>
         ),
       )}
       {streaming && <span aria-hidden="true" className="inline-block h-[1em] w-[2px] animate-[lo-caret_1s_steps(1)_infinite] bg-cyan motion-reduce:animate-none" />}

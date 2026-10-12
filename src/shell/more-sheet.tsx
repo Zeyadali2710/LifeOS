@@ -28,7 +28,7 @@ export function MoreSheet({ version }: { version: string }) {
         role="dialog"
         aria-modal="true"
         aria-label="More"
-        className="glass-menu fixed right-3 bottom-[calc(96px+env(safe-area-inset-bottom))] left-3 z-[70] max-h-[75dvh] animate-[lo-rise_.16s_ease-out] overflow-y-auto rounded-28 p-2"
+        className="glass-menu fixed right-3 bottom-[calc(96px+env(safe-area-inset-bottom))] left-3 z-[70] max-h-[75dvh] animate-[lo-rise_.16s_ease-out] overflow-y-auto rounded-30 p-2"
       >
         <div className="grid grid-cols-2 gap-1">
           {links.map((l) => {
@@ -39,7 +39,7 @@ export function MoreSheet({ version }: { version: string }) {
                 href={l.href}
                 onClick={close}
                 aria-current={current ? "page" : undefined}
-                className={`flex h-[52px] items-center gap-2.5 rounded-18 px-3 text-[14px] text-white ${current ? "bg-white/[.12]" : "hover:bg-white/[.08]"}`}
+                className={`flex h-[52px] items-center gap-2.5 rounded-16 px-3 text-[14px] text-white ${current ? "bg-white/[.12]" : "hover:bg-white/[.08]"}`}
               >
                 <Icon name={l.icon} size={21} fill={current} />
                 {l.label}

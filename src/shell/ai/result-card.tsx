@@ -66,7 +66,7 @@ export function ResultCard({ turn, streaming, onRetried }: { turn: TurnDTO; stre
     <div className="flex flex-col gap-2.5" aria-busy={live}>
       {withItems?.items && <Items items={withItems.items} more={withItems.itemsMore} onNavigate={onNavigate} />}
       {(answer || live) && (
-        <div className="flex flex-col gap-2 rounded-22 border border-white/[.12] bg-white/[.06] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,.10)] animate-[lo-rise_.25s_ease-out]">
+        <div className="flex flex-col gap-2 rounded-14 border border-white/[.12] bg-white/[.06] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,.10)] animate-[lo-rise_.25s_ease-out]">
           <div className="text-[10px] font-medium tracking-[.12em] text-cyan">RESULT</div>
           <AnswerText text={answer} streaming={live} />
           {noCalendar && (

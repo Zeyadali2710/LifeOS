@@ -44,8 +44,9 @@ export function Dialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby={tid}
-        className={`${sheet ? `${w} max-h-[85dvh] overflow-y-auto rounded-t-30 rounded-b-none tab:rounded-30 pb-[max(24px,env(safe-area-inset-bottom))]` : `${w} rounded-30 pb-6`} glass-menu animate-[lo-rise_.25s_ease-out] px-6 pt-6`}
+        className={`${w} ${sheet ? "rounded-t-30 rounded-b-none tab:rounded-30" : "rounded-30"} glass-menu animate-[lo-rise_.25s_ease-out] overflow-hidden`}
       >
+        <div className={`p-6 ${sheet ? "max-h-[85dvh] overflow-y-auto pb-[max(24px,env(safe-area-inset-bottom))]" : "max-h-[90dvh] overflow-y-auto"}`}>
         <h2 id={tid} className="font-display text-[26px] leading-[1.1] font-normal">
           {title}
         </h2>
@@ -53,6 +54,7 @@ export function Dialog({
         <div className="mt-5 flex items-center gap-2">
           {footerStart}
           <div className="ml-auto flex gap-2">{actions}</div>
+        </div>
         </div>
       </div>
     </div>

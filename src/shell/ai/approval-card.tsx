@@ -98,7 +98,7 @@ export function ApprovalCard({ approval, onDecided }: { approval: ApprovalDTO; o
     onDecided();
   };
   return (
-    <div id={`approval-${a.runId}`} className="flex flex-col gap-2.5 rounded-18 border border-[rgba(255,159,10,.30)] bg-[rgba(255,159,10,.10)] p-3.5">
+    <div id={`approval-${a.runId}`} className="flex flex-col gap-2.5 rounded-14 border border-[rgba(255,159,10,.30)] bg-[rgba(255,159,10,.10)] p-3.5">
       <div className="flex items-center gap-1.5 text-[10.5px] font-medium tracking-[.12em] text-amber">
         <Icon name="verified_user" size={16} />
         APPROVAL REQUIRED

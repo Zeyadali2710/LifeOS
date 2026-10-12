@@ -116,7 +116,7 @@ function PaletteDialog() {
         aria-label="Command palette"
         className="absolute glass-palette top-[12vh] left-1/2 z-[71] w-[min(680px,94vw)] -translate-x-1/2 animate-[lo-rise_.16s_ease-out] overflow-hidden rounded-30"
       >
-        <div className="flex h-14 items-center gap-3 border-b border-white/[.06] px-4">
+        <div className="flex h-14 items-center gap-3 border-b border-white/[.06] px-5">
           <Icon name="search" size={20} className="text-text-3" />
           <input
             ref={inputRef}
@@ -143,10 +143,10 @@ function PaletteDialog() {
           />
           <Kbd>ESC</Kbd>
         </div>
-        <div id={listId} role="listbox" aria-label="Results" className="max-h-[min(420px,52vh)] overflow-y-auto px-2 pt-1.5 pb-2.5">
+        <div id={listId} role="listbox" aria-label="Results" className="max-h-[min(420px,52vh)] overflow-y-auto p-2">
           {groups.map((g) => (
             <div key={g.label} role="group" aria-labelledby={`${listId}-g-${g.label}`.replace(/\s/g, "-")}>
-              <div id={`${listId}-g-${g.label}`.replace(/\s/g, "-")} className="px-2.5 pt-2.5 pb-1.5 font-mono text-[10.5px] tracking-[.12em] text-text-3 uppercase">
+              <div id={`${listId}-g-${g.label}`.replace(/\s/g, "-")} className="px-3 pt-2.5 pb-1.5 font-mono text-[10.5px] tracking-[.12em] text-text-3 uppercase">
                 {g.label}
               </div>
               {g.items.map((item) => {
@@ -159,7 +159,7 @@ function PaletteDialog() {
                     aria-selected={selected}
                     onMouseMove={() => setSel(flat.indexOf(item))}
                     onClick={() => run(item)}
-                    className={`flex h-[42px] cursor-pointer items-center gap-3 rounded-14 px-3 text-[13.5px] ${selected ? "bg-white/[.10] text-text" : "text-text-2"}`}
+                    className={`flex h-[42px] cursor-pointer items-center gap-3 rounded-16 px-3 text-[13.5px] ${selected ? "bg-white/[.10] text-text" : "text-text-2"}`}
                   >
                     <span
                       className={`grid size-[26px] shrink-0 place-items-center rounded-7 border border-white/[.06] bg-white/[.04] ${selected ? "text-text" : "text-text-3"}`}
@@ -178,7 +178,7 @@ function PaletteDialog() {
           ))}
           {noMatch && <p className="px-4 py-7 text-center text-[13px] text-text-2">No commands or pages match. Press ↵ to ask LifeOS instead.</p>}
         </div>
-        <div className="flex items-center gap-4 border-t border-white/[.06] px-4 py-2.5 font-mono text-[11px] text-text-3">
+        <div className="flex items-center gap-4 border-t border-white/[.06] px-5 py-2.5 font-mono text-[11px] text-text-3">
           <span>↑↓ navigate</span>
           <span>↵ open</span>
           {hasData && <span>tab {scope === "all" ? "events" : scope === "events" ? "tasks" : "all"}</span>}
