@@ -105,7 +105,7 @@ export function TodaysPlanCard({
     const dim = state === "SKIPPED";
     return (
       <li key={it.id} className="py-2.5">
-        <div className={`rounded-10 px-2 py-1.5 ${dim ? "bg-[rgba(18,18,20,.35)]" : "bg-[rgba(18,18,20,.55)]"}`}>
+        <div className={`rounded-14 px-3 py-2 ${dim ? "bg-black/[.2]" : "bg-black/[.3]"}`}>
           <div className="flex items-center gap-2 font-mono text-[11.5px]">
             {time && <span className="text-text-2">{time}</span>}
             <span className="flex-1" />
@@ -172,8 +172,9 @@ export function TodaysPlanCard({
   const empty = plan.items.length === 0 && conflicts.length === 0;
 
   return (
-    <aside aria-label="Today's plan" className="rounded-14 border border-[rgba(10,132,255,.25)] bg-[linear-gradient(180deg,rgba(10,132,255,.08),rgba(28,28,32,1)_40%)] p-4">
-      <div className="flex items-center gap-2">
+    <aside aria-label="Today's plan" className="glass-card relative overflow-hidden rounded-24 p-5 before:pointer-events-none before:absolute before:inset-0 before:bg-[linear-gradient(180deg,rgba(10,132,255,.10),transparent_45%)]">
+      <div className="relative">
+      <div className="mb-3 flex items-center gap-2">
         <Icon name="auto_awesome" size={16} className="text-cyan" />
         <span aria-hidden className="size-[7px] rotate-45 bg-accent" />
         <h2 className="font-mono text-[11px] font-medium tracking-[.14em] text-cyan">TODAY&apos;S PLAN</h2>
@@ -191,7 +192,7 @@ export function TodaysPlanCard({
         </button>
       </div>
       {empty ? (
-        <div className="mt-3">
+        <div>
           <p className="text-[14px] font-medium">All clear for today.</p>
           <p className="mt-1 text-[12.5px] text-text-2">
             {freeHours === undefined ? "Nothing is due. Add a task to plan around it." : `Nothing is due and you have ${freeHours} free hours. Add a task to plan around it.`}
@@ -235,6 +236,7 @@ export function TodaysPlanCard({
       <p role="status" aria-live="polite" className="sr-only">
         {note}
       </p>
+      </div>
     </aside>
   );
 }

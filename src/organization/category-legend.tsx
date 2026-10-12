@@ -5,7 +5,7 @@ import { Button } from "@/ui/button";
 
 export function CategoryLegend({ hidden, onToggle, onShowAll }: { hidden: Set<CategoryKey>; onToggle(k: CategoryKey): void; onShowAll(): void }) {
   return (
-    <div className="mb-4 flex items-center gap-2 overflow-x-auto">
+    <div className="mb-5 flex items-center gap-2 overflow-x-auto">
       <ul className="flex shrink-0 gap-1.5" aria-label="Categories">
         {CATEGORY_KEYS.map((k) => {
           const off = hidden.has(k);

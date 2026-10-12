@@ -47,7 +47,7 @@ export function EventBlock({
         type="button"
         aria-label={label}
         onClick={() => onOpen(inst)}
-        className="pointer-events-auto absolute flex animate-[lo-in_.2s_ease-out] flex-col gap-0.5 overflow-hidden rounded-7 px-[7px] py-[5px] text-left text-text hover:brightness-[1.15] focus-visible:outline-2 focus-visible:outline-accent max-tab:before:absolute max-tab:before:-inset-1.5 max-tab:before:content-['']"
+        className="pointer-events-auto absolute flex animate-[lo-in_.2s_ease-out] flex-col gap-0.5 overflow-hidden rounded-8 px-[7px] py-[5px] text-left text-text hover:brightness-[1.15] focus-visible:outline-2 focus-visible:outline-accent max-tab:before:absolute max-tab:before:-inset-1.5 max-tab:before:content-['']"
         style={{
           top,
           height,

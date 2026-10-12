@@ -86,8 +86,8 @@ export function OrganizationHeader({
     <header className="mb-5 flex flex-wrap items-end justify-between gap-x-4 gap-y-5">
       <div className="min-w-0">
         <div className="text-[11px] font-medium tracking-[.12em] text-green">ORGANIZATION</div>
-        <h1 className="mt-2 font-display text-[clamp(34px,4.4vw,60px)] leading-[.95] font-normal">{headline}</h1>
-        <p className="mt-2 text-[14px] leading-normal text-text-2">
+        <h1 className="mt-2.5 font-display text-[clamp(34px,4.4vw,60px)] leading-[.95] font-normal">{headline}</h1>
+        <p className="mt-2.5 text-[14px] leading-normal text-text-2">
           <Lead text={lead} />
         </p>
       </div>
@@ -103,10 +103,10 @@ export function OrganizationHeader({
         <button type="button" className={iconBtn} aria-label={`Next ${unit}`} onClick={() => onNav(1)}>
           <Icon name="chevron_right" size={18} />
         </button>
-        <span aria-live="polite" className="min-w-[150px] text-center text-[12.5px] font-medium text-text-2">
+        <span aria-live="polite" className="min-w-[150px] text-center leading-8 text-[12.5px] font-medium text-text-2">
           {rangeText}
         </span>
-        <div role="radiogroup" aria-label="Calendar view" className="flex rounded-10 border border-white/[.06] bg-white/[.04] p-[3px]">
+        <div role="radiogroup" aria-label="Calendar view" className="flex rounded-full border border-white/[.06] bg-white/[.04] p-[3px]">
           {VIEWS.map((v, i) => (
             <button
               key={v.key}
@@ -119,7 +119,7 @@ export function OrganizationHeader({
               tabIndex={view === v.key ? 0 : -1}
               onClick={() => onView(v.key)}
               onKeyDown={(e) => onRadioKey(e, i)}
-              className={`h-7 rounded-full px-3 text-[12.5px] font-medium [@media(pointer:coarse)]:h-11 ${view === v.key ? "bg-white/[.16] text-white" : "text-text-2 hover:text-text"}`}
+              className={`h-[26px] rounded-full px-3.5 text-[12.5px] font-medium [@media(pointer:coarse)]:h-11 ${view === v.key ? "bg-white/[.16] text-white" : "text-text-2 hover:text-text"}`}
             >
               {v.label}
             </button>
