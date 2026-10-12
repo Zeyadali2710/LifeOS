@@ -180,9 +180,9 @@ Plans:
 **Plans**: 12 plans
 - [x] 05-01: Client-safe contracts (DTOs, zod payloads), pure rules module + unit tests, new icon glyphs
 - [x] 05-02: [BLOCKING] Schema + migration 0005 (projects, milestones, dependencies, links, task FKs, repo languages); owner VM migrate gate
-- [ ] 05-03: GitHub sync languages + commit depth; career query layer
-- [ ] 05-04: Project writes: CRUD, cycle-safe dependencies, task project/milestone, audit + activity, server actions
-- [ ] 05-05: Shared status/graphics components, RepoCard, ActivityFeed
+- [x] 05-03: GitHub sync languages + commit depth; career query layer
+- [x] 05-04: Project writes: CRUD, cycle-safe dependencies, task project/milestone, audit + activity, server actions
+- [x] 05-05: Shared status/graphics components, RepoCard, ActivityFeed
 - [ ] 05-06: Project read model + projects.list/projects.get READ agent tools
 - [ ] 05-07: /career dashboard and /career/[owner]/[repo] detail
 - [ ] 05-08: Project, milestone, link and dependency dialogs; task dialog pickers
