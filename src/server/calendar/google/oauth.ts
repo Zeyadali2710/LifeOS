@@ -7,7 +7,7 @@ import { log } from "../../log";
 import { enqueue as realEnqueue, QUEUES, type Enqueue } from "../../queue";
 import { refreshCalendarList } from "../calendars";
 import { saveCalendarSecret } from "../connections";
-import { createGoogle, exchangeCode, GOOGLE_SCOPES, googleAuthUrl } from "./client";
+import { CALENDAR_SCOPES, createGoogle, exchangeCode, GMAIL_COMPOSE, GMAIL_READ, googleAuthUrl } from "./client";
 import { createGoogleProvider } from "./provider";
 
 export const GOOGLE_COOKIE = "lifeos_google_oauth";
@@ -33,7 +33,7 @@ const same = (a: string, b: string) => {
   return x.length === y.length && timingSafeEqual(x, y);
 };
 
-export type OAuthResult = { ok: true; calendars: number } | { ok: false; error: "cancelled" | "state" | "scope" | "failed" };
+export type OAuthResult = { ok: true; calendars: number; gmail: boolean } | { ok: false; error: "cancelled" | "state" | "scope" | "failed" };
 
 export async function completeGoogleOAuth(
   h: DB = db(),
@@ -52,14 +52,14 @@ export async function completeGoogleOAuth(
   if (!p.code || !e.GOOGLE_CLIENT_ID || !e.GOOGLE_CLIENT_SECRET) return { ok: false, error: "failed" };
   try {
     const t = await exchangeCode({ code: p.code, verifier: saved.verifier, redirectUri: redirectUri(), clientId: e.GOOGLE_CLIENT_ID, clientSecret: e.GOOGLE_CLIENT_SECRET, fetch: p.fetch, now });
-    if (!GOOGLE_SCOPES.every((s) => t.scopes.includes(s))) return { ok: false, error: "scope" };
+    if (!CALENDAR_SCOPES.every((s) => t.scopes.includes(s))) return { ok: false, error: "scope" };
     const provider = createGoogleProvider({ google: createGoogle({ getToken: async () => t.accessToken, fetch: p.fetch }) });
     const remote = await provider.listCalendars();
     const account = remote.find((c) => c.kind === "primary")?.remoteId ?? "Google";
-    await saveCalendarSecret(h, "google_calendar", { refreshToken: t.refreshToken, accessToken: t.accessToken, expiresAt: t.expiresAt }, { account }, { key: p.key, now });
+    await saveCalendarSecret(h, "google_calendar", { refreshToken: t.refreshToken, accessToken: t.accessToken, expiresAt: t.expiresAt }, { account, scopes: t.scopes }, { key: p.key, now });
     await refreshCalendarList(h, "google_calendar", remote, account);
     await (p.enqueue ?? realEnqueue)(QUEUES.calendarSync, {}, { singletonKey: "calendar.sync" }).catch(() => undefined);
-    return { ok: true, calendars: remote.length };
+    return { ok: true, calendars: remote.length, gmail: [GMAIL_READ, GMAIL_COMPOSE].every((s) => t.scopes.includes(s)) };
   } catch (err) {
     log.error({ err: err instanceof Error ? err.message : "unknown" }, "google oauth failed"); // message is a fixed string, never a token
     return { ok: false, error: "failed" };

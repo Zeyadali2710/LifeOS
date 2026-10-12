@@ -1,7 +1,8 @@
 import { randomBytes } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
-import { GOOGLE_SCOPES } from "@/server/calendar/google/client";
+import { CALENDAR_SCOPES, GOOGLE_SCOPES } from "@/server/calendar/google/client";
 import { completeGoogleOAuth, startGoogleOAuth } from "@/server/calendar/google/oauth";
+import { getCalendarConnections } from "@/server/calendar/connections";
 import { auditLog, calendars, connections } from "@/server/db/schema";
 import list from "../fixtures/calendar/google-calendar-list.json";
 import { fakeGoogle, json } from "../helpers/fake-google";
@@ -44,7 +45,7 @@ describe("google oauth", () => {
     const a = begin();
     expect(await completeGoogleOAuth(h, { code: null, state: a.state, error: "access_denied", cookie: a.cookie, fetch: fake(), key })).toEqual({ ok: false, error: "cancelled" });
     const b = begin();
-    const r = await completeGoogleOAuth(h, { code: "c", state: b.state, error: null, cookie: b.cookie, fetch: fake(GOOGLE_SCOPES[0]), key });
+    const r = await completeGoogleOAuth(h, { code: "c", state: b.state, error: null, cookie: b.cookie, fetch: fake(CALENDAR_SCOPES[0]), key });
     expect(r).toEqual({ ok: false, error: "scope" });
     expect(await h.select().from(connections)).toHaveLength(0);
   });
@@ -55,7 +56,7 @@ describe("google oauth", () => {
     const enqueue = vi.fn(async () => {});
     const f = fake();
     const r = await completeGoogleOAuth(h, { code: "c", state, error: null, cookie, fetch: f, key, enqueue });
-    expect(r).toEqual({ ok: true, calendars: 6 });
+    expect(r).toEqual({ ok: true, calendars: 6, gmail: true });
     const [row] = await h.select().from(connections);
     expect(row).toMatchObject({ id: "google_calendar", login: "me@gmail.com", status: "connected" });
     expect(row!.ciphertext).not.toContain(RT);
@@ -67,5 +68,21 @@ describe("google oauth", () => {
     expect(audits).not.toContain("access-secret");
     expect(enqueue).toHaveBeenCalledWith("calendar.sync", {}, { singletonKey: "calendar.sync" });
     expect(f.calls[0]!.body).toMatchObject({ grant_type: "authorization_code", code: "c" });
+  });
+
+  it("a calendar-only grant connects without Gmail; a full grant stores both; reconnect overwrites", async () => {
+    const h = t.handle();
+    const run = async (scope: string) => {
+      const { cookie, state } = begin();
+      return completeGoogleOAuth(h, { code: "c", state, error: null, cookie, fetch: fake(scope), key, enqueue: async () => {} });
+    };
+    expect(await run(CALENDAR_SCOPES.join(" "))).toEqual({ ok: true, calendars: 6, gmail: false });
+    expect((await h.select().from(connections))[0]!.scopes).toEqual(CALENDAR_SCOPES);
+    expect((await getCalendarConnections(h, { googleConfigured: true })).find((c) => c.id === "google_calendar")!.gmail).toBe("missing");
+    expect(await run(GOOGLE_SCOPES.join(" "))).toEqual({ ok: true, calendars: 6, gmail: true });
+    expect((await h.select().from(connections))[0]!.scopes).toEqual(GOOGLE_SCOPES);
+    expect((await getCalendarConnections(h, { googleConfigured: true })).find((c) => c.id === "google_calendar")!.gmail).toBe("granted");
+    expect(await run(CALENDAR_SCOPES.join(" "))).toMatchObject({ gmail: false });
+    expect((await h.select().from(connections))[0]!.scopes).toEqual(CALENDAR_SCOPES);
   });
 });

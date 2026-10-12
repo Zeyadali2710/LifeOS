@@ -5,10 +5,16 @@ import { env } from "../../env";
 import { readCalendarSecret, updateCalendarSecret } from "../connections";
 import { ProviderError, type ProviderErrorKind } from "../errors";
 
-export const GOOGLE_SCOPES = ["https://www.googleapis.com/auth/calendar.calendarlist.readonly", "https://www.googleapis.com/auth/calendar.events"];
+export const CALENDAR_SCOPES = ["https://www.googleapis.com/auth/calendar.calendarlist.readonly", "https://www.googleapis.com/auth/calendar.events"];
+export const GMAIL_READ = "https://www.googleapis.com/auth/gmail.readonly";
+export const GMAIL_COMPOSE = "https://www.googleapis.com/auth/gmail.compose";
+/** Requested scopes (D-20). Only the calendar ones are required; Gmail can be unticked on the consent screen (D-21). */
+export const GOOGLE_SCOPES = [...CALENDAR_SCOPES, GMAIL_READ, GMAIL_COMPOSE];
+export const GMAIL_BASE = "https://gmail.googleapis.com/gmail/v1/users/me";
 const AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const API_BASE = "https://www.googleapis.com/calendar/v3";
+const BASES: string[] = [API_BASE, GMAIL_BASE];
 
 const MSG: Record<string, string> = {
   auth: "Access was rejected.",
@@ -18,6 +24,7 @@ const MSG: Record<string, string> = {
   gone: "Google sync state expired.",
   unavailable: "Google didn't respond.",
   client: "Google rejected the change.",
+  scope: "Gmail access wasn't granted.",
 };
 const fail = (kind: ProviderErrorKind, status: number, retry?: number) => new ProviderError("google", kind, status, MSG[kind] ?? MSG.client!, retry);
 
@@ -29,6 +36,7 @@ export function googleAuthUrl(p: { clientId: string; redirectUri: string; state:
     response_type: "code",
     scope: GOOGLE_SCOPES.join(" "),
     access_type: "offline",
+    include_granted_scopes: "true",
     prompt: "consent",
     state: p.state,
     code_challenge: p.challenge,
@@ -74,7 +82,8 @@ function checkPath(path: string) {
   if (!path.startsWith("/") || path.includes("//") || path.includes("://")) throw new Error("Invalid Google path");
 }
 
-export function createGoogle({ getToken, fetch = globalThis.fetch, timeoutMs = 15000 }: { getToken: () => Promise<string>; fetch?: typeof globalThis.fetch; timeoutMs?: number }) {
+export function createGoogle({ getToken, fetch = globalThis.fetch, timeoutMs = 15000, base = API_BASE }: { getToken: () => Promise<string>; fetch?: typeof globalThis.fetch; timeoutMs?: number; base?: typeof API_BASE | typeof GMAIL_BASE }) {
+  if (!BASES.includes(base)) throw new Error("Invalid Google base");
   async function call<T>(method: string, path: string, schema: z.ZodType<T>, opts: { body?: unknown; ifMatch?: string | null } = {}): Promise<T | null> {
     checkPath(path);
     const headers: Record<string, string> = { Authorization: `Bearer ${await getToken()}` };
@@ -82,7 +91,7 @@ export function createGoogle({ getToken, fetch = globalThis.fetch, timeoutMs = 1
     if (opts.ifMatch) headers["If-Match"] = opts.ifMatch;
     let res: Response;
     try {
-      res = await fetch(API_BASE + path, { method, headers, body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined, signal: AbortSignal.timeout(timeoutMs) });
+      res = await fetch(base + path, { method, headers, body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined, signal: AbortSignal.timeout(timeoutMs) });
     } catch {
       throw fail("unavailable", 0);
     }
@@ -96,7 +105,8 @@ export function createGoogle({ getToken, fetch = globalThis.fetch, timeoutMs = 1
       }
       // A removed scope needs a reconnect. Plain "forbidden" (e.g. writing a read-only calendar) stays a client error,
       // so one refused write never pauses sync (IN-A07).
-      if (s === 403 && reason === "insufficientPermissions") throw fail("auth", s);
+      // On the Gmail base it only means the Gmail box was unticked, so Calendar must not be paused (Pattern 8).
+      if (s === 403 && reason === "insufficientPermissions") throw fail(base === GMAIL_BASE ? "scope" : "auth", s);
       if (s === 404) throw fail("not_found", s);
       if (s === 409 || s === 412) throw fail("conflict", s);
       if (s === 410) throw fail("gone", s);

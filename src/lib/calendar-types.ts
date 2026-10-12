@@ -23,6 +23,7 @@ export interface CalendarConnectionDTO {
   lastSyncAt: string | null;
   lastSyncError: string | null;
   calendars: CalendarDTO[];
+  gmail: "granted" | "missing";
 }
 
 export interface InstanceDTO {

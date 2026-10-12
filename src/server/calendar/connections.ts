@@ -4,6 +4,7 @@ import { decrypt, encrypt } from "../crypto";
 import { db, type DB } from "../db/client";
 import { auditLog, calendars, connections } from "../db/schema";
 import { log } from "../log";
+import { GMAIL_COMPOSE, GMAIL_READ } from "./google/client";
 
 const IDS: CalendarConnectionId[] = ["google_calendar", "icloud_calendar"];
 
@@ -16,16 +17,18 @@ export async function aud(h: DB, action: string, id: string, metadata: Record<st
   }
 }
 
+export const hasGmail = (scopes: string[], which: "read" | "compose") => scopes.includes(which === "read" ? GMAIL_READ : GMAIL_COMPOSE);
+
 /** Create or rotate: overwrites the single row in place, resets status and clears lastError (D-05). */
 export async function saveCalendarSecret(
   h: DB = db(),
   id: CalendarConnectionId,
   secret: Record<string, unknown>,
-  meta: { account: string },
+  meta: { account: string; scopes?: string[] },
   opts: { key?: Buffer; now?: Date } = {},
 ): Promise<void> {
   // last4 "" on purpose: no fragment of an app password or token is kept.
-  const row = { ciphertext: encrypt(JSON.stringify(secret), opts.key), last4: "", login: meta.account, expiresAt: null, status: "connected", lastError: null, repos: [] as string[] };
+  const row = { ciphertext: encrypt(JSON.stringify(secret), opts.key), last4: "", login: meta.account, expiresAt: null, status: "connected", lastError: null, repos: [] as string[], scopes: meta.scopes ?? [] };
   await h.insert(connections).values({ id, ...row }).onConflictDoUpdate({ target: connections.id, set: { ...row, updatedAt: opts.now ?? new Date() } });
   await aud(h, "connection.save", id, { id, account: meta.account });
 }
@@ -79,13 +82,13 @@ export async function removeCalendarConnection(h: DB = db(), id: CalendarConnect
 export async function getCalendarConnections(h: DB = db(), opts: { googleConfigured: boolean }): Promise<CalendarConnectionDTO[]> {
   // Explicit column list: ciphertext is never selected on the DTO path.
   const rows = await h
-    .select({ id: connections.id, status: connections.status, login: connections.login, lastSyncAt: connections.lastSyncAt, lastSyncError: connections.lastSyncError })
+    .select({ id: connections.id, status: connections.status, login: connections.login, lastSyncAt: connections.lastSyncAt, lastSyncError: connections.lastSyncError, scopes: connections.scopes })
     .from(connections);
   const cals = await h.select().from(calendars);
   return IDS.map((id) => {
     const r = rows.find((x) => x.id === id);
     const configured = id === "google_calendar" ? opts.googleConfigured : true;
-    if (!r) return { id, status: "none", configured, account: null, lastSyncAt: null, lastSyncError: null, calendars: [] };
+    if (!r) return { id, status: "none", configured, account: null, lastSyncAt: null, lastSyncError: null, calendars: [], gmail: "missing" };
     return {
       id,
       status: r.status === "error" ? "error" : "connected",
@@ -93,6 +96,7 @@ export async function getCalendarConnections(h: DB = db(), opts: { googleConfigu
       account: r.login,
       lastSyncAt: r.lastSyncAt?.toISOString() ?? null,
       lastSyncError: r.lastSyncError,
+      gmail: id === "google_calendar" && hasGmail(r.scopes, "read") ? "granted" : "missing",
       calendars: cals.filter((c) => c.connectionId === id).map(toCalendarDTO),
     };
   });

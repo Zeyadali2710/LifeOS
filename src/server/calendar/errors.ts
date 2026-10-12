@@ -1,5 +1,5 @@
 export type ProviderName = "google" | "icloud";
-export type ProviderErrorKind = "auth" | "not_found" | "rate_limit" | "conflict" | "client" | "unavailable" | "gone";
+export type ProviderErrorKind = "auth" | "not_found" | "rate_limit" | "conflict" | "client" | "unavailable" | "gone" | "scope";
 
 /** message is a fixed, non-secret string chosen by the caller (never a raw provider body). */
 export class ProviderError extends Error {

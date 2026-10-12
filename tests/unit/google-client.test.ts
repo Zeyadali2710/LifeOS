@@ -14,7 +14,10 @@ describe("google client", () => {
     expect(u.origin + u.pathname).toBe("https://accounts.google.com/o/oauth2/v2/auth");
     const q = u.searchParams;
     expect([q.get("response_type"), q.get("access_type"), q.get("prompt"), q.get("code_challenge_method")]).toEqual(["code", "offline", "consent", "S256"]);
-    expect(q.get("scope")).toBe("https://www.googleapis.com/auth/calendar.calendarlist.readonly https://www.googleapis.com/auth/calendar.events");
+    expect(q.get("scope")!.split(" ").sort()).toEqual(
+      ["https://www.googleapis.com/auth/calendar.calendarlist.readonly", "https://www.googleapis.com/auth/calendar.events", "https://www.googleapis.com/auth/gmail.compose", "https://www.googleapis.com/auth/gmail.readonly"].sort(),
+    );
+    expect(q.get("include_granted_scopes")).toBe("true");
   });
 
   it("exchanges a code, and rejects a missing refresh token", async () => {

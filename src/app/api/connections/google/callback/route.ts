@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     error: q.get("error"),
     cookie: request.cookies.get(GOOGLE_COOKIE)?.value ?? null,
   });
-  const res = NextResponse.redirect(`${base}/settings?section=connections&${r.ok ? `google=connected&n=${r.calendars}` : `google=${r.error}`}`);
+  const res = NextResponse.redirect(`${base}/settings?section=connections&${r.ok ? `google=connected&n=${r.calendars}&gmail=${r.gmail ? 1 : 0}` : `google=${r.error}`}`);
   res.cookies.delete({ name: GOOGLE_COOKIE, path: "/api/connections/google" }); // single use
   return res;
 }
