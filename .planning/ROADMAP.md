@@ -149,7 +149,7 @@ Plans:
 **Goal:** The whole app wears the owner's liquid-glass design (floating pill header, mobile pill tab bar, Ask bar, floating glass panels, Instrument Serif + Familjen Grotesk) with the same features, content and behaviour, WCAG AA contrast and solid fallbacks, and smooth scrolling on the VM.
 **Requirements**: TBD (CONTEXT decisions D-01..D-08)
 **Depends on:** Phase 4
-**Plans:** 14/15 plans executed
+**Plans:** 15/15 plans complete
 
 Plans:
 - [x] 04.1-01-PLAN.md — Glass tokens, tier utilities, a11y fallbacks, fonts, gate script
@@ -165,7 +165,7 @@ Plans:
 - [x] 04.1-11-PLAN.md — Agents command centre, cards, runs, detail, trace, identity colours
 - [x] 04.1-12-PLAN.md — Approval centre
 - [x] 04.1-13-PLAN.md — Settings
-- [ ] 04.1-14-PLAN.md — e2e/a11y updates, whole-src gates, owner VM verification
+- [x] 04.1-14-PLAN.md — e2e/a11y updates, whole-src gates, owner VM verification
 - [x] 04.1-15-PLAN.md — Login re-skin (tokens only)
 
 ### Phase 5–11
