@@ -218,7 +218,7 @@ describe("launchCommand", () => {
 
 describe("buildBrief", () => {
   const input = {
-    project: { name: "LifeOS", description: "Personal OS", status: "active" as const, priority: 1 as const, targetDate: "2026-06-01", blockerNote: "" },
+    project: { name: "LifeOS", description: "Personal OS", context: "", status: "active" as const, priority: 1 as const, targetDate: "2026-06-01", blockerNote: "" },
     health: "on_track" as const,
     progress: { pct: 33, done: 1, total: 3, basis: "tasks" as const },
     openTasks: [{ title: "Ship it", dueDate: "2026-05-12" }, { title: "Docs", dueDate: null }],
@@ -262,6 +262,14 @@ describe("buildBrief", () => {
     const b = buildBrief({ ...input, openTasks: [], milestones: [], repos: [] });
     for (const h of ["## Status", "## Open tasks", "## Blockers", "## Milestones", "## Repositories"]) expect(b).toContain(h);
     expect(b.match(/None\./g)!.length).toBeGreaterThanOrEqual(4);
+  });
+  it("adds a Context section only when non-empty", () => {
+    const b = buildBrief({ ...input, project: { ...input.project, context: "Built with Next.js" } });
+    expect(b).toContain("## Context\nBuilt with Next.js");
+    expect(b.indexOf("## Context")).toBeGreaterThan(b.indexOf("Personal OS"));
+    expect(b.indexOf("## Context")).toBeLessThan(b.indexOf("## Status"));
+    expect(buildBrief(input)).not.toContain("## Context");
+    expect(buildBrief({ ...input, project: { ...input.project, context: "y".repeat(4000) } }).length).toBeLessThanOrEqual(8000);
   });
   it("caps lists at 20 and total at 8000 chars", () => {
     const many = Array.from({ length: 50 }, (_, n) => ({ title: `T${n}`, dueDate: null }));

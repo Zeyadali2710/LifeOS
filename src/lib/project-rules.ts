@@ -175,7 +175,7 @@ const LIST_CAP = 20;
 const BRIEF_CAP = 8000;
 
 export function buildBrief(i: {
-  project: Pick<ProjectDTO, "name" | "description" | "status" | "priority" | "targetDate" | "blockerNote">;
+  project: Pick<ProjectDTO, "name" | "description" | "context" | "status" | "priority" | "targetDate" | "blockerNote">;
   health: Health | null;
   progress: Progress;
   openTasks: { title: string; dueDate: string | null }[];
@@ -196,6 +196,7 @@ export function buildBrief(i: {
   const out = [
     `# ${p.name}`,
     p.description,
+    p.context ? `## Context\n${p.context}` : "",
     "## Status",
     status,
     "## Open tasks",
