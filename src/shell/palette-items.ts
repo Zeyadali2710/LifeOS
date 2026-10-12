@@ -8,10 +8,10 @@ export type PaletteRun =
   | { type: "signout" };
 
 export type PaletteItem = { id: string; label: string; icon: IconName; hint?: string; run: PaletteRun };
-export type PaletteGroup = { label: "Ask LifeOS" | "Commands" | "Jump to" | "Events" | "Tasks"; items: PaletteItem[] };
+export type PaletteGroup = { label: "Ask LifeOS" | "Commands" | "Jump to" | "Events" | "Tasks" | "Projects"; items: PaletteItem[] };
 export type PaletteHit = { id: string; title: string; subtitle: string; href: string };
-export type PaletteData = { events: PaletteHit[]; tasks: PaletteHit[] };
-export type PaletteScope = "all" | "events" | "tasks";
+export type PaletteData = { events: PaletteHit[]; tasks: PaletteHit[]; projects: PaletteHit[] };
+export type PaletteScope = "all" | "events" | "tasks" | "projects";
 
 const spaced = (s?: string) => s?.replace("+", " ");
 
@@ -22,6 +22,7 @@ export function buildPalette(query: string, opts: { approvalsWaiting?: number; d
     { id: "cmd-agents", label: "View agent activity", icon: "memory", run: { type: "nav", href: "/agents" } },
     { id: "cmd-new-event", label: "New event", icon: "add", run: { type: "nav", href: "/organization?new=event" } },
     { id: "cmd-new-task", label: "New task", icon: "task_alt", run: { type: "nav", href: "/organization?new=task" } },
+    { id: "cmd-new-project", label: "New project", icon: "add", run: { type: "nav", href: "/projects?new=project" } },
     { id: "cmd-ai", label: "Ask LifeOS", icon: "auto_awesome", hint: "Ctrl J", run: { type: "ai" } },
     { id: "cmd-signout", label: "Sign out", icon: "logout", run: { type: "signout" } },
   ];
@@ -45,15 +46,16 @@ export function buildPalette(query: string, opts: { approvalsWaiting?: number; d
   }
   const needle = q.toLowerCase();
   const pick = (items: PaletteItem[]) => items.filter((i) => i.label.toLowerCase().includes(needle)).slice(0, 4);
-  const hits = (label: "Events" | "Tasks", icon: IconName, list: PaletteHit[] = []): PaletteGroup => ({
+  const hits = (label: "Events" | "Tasks" | "Projects", icon: IconName, list: PaletteHit[] = []): PaletteGroup => ({
     label,
     items: list.slice(0, 4).map((h) => ({ id: `${label}-${h.id}`, label: h.title, icon, hint: h.subtitle, run: { type: "nav", href: h.href } })),
   });
   const scope = opts.scope ?? "all";
   const filtered: PaletteGroup[] = [
     ...(scope === "all" ? [{ label: "Commands" as const, items: pick(commands) }, { label: "Jump to" as const, items: pick(jump) }] : []),
-    ...(scope !== "tasks" ? [hits("Events", "event", opts.data?.events)] : []),
-    ...(scope !== "events" ? [hits("Tasks", "task_alt", opts.data?.tasks)] : []),
+    ...(scope === "all" || scope === "events" ? [hits("Events", "event", opts.data?.events)] : []),
+    ...(scope === "all" || scope === "tasks" ? [hits("Tasks", "task_alt", opts.data?.tasks)] : []),
+    ...(scope === "all" || scope === "projects" ? [hits("Projects", "deployed_code", opts.data?.projects)] : []),
   ].filter((g) => g.items.length > 0);
   return {
     groups: [
