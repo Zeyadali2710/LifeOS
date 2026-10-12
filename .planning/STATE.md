@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Phase 5 UI-SPEC approved
-last_updated: "2026-10-12T13:12:27.458Z"
-last_activity: 2026-10-12 -- Phase 5 execution started
+status: ready_to_plan
+stopped_at: Phase 5 complete (12/12) — ready to discuss Phase 05.1
+last_updated: "2026-10-13T00:00:00.000Z"
+last_activity: 2026-10-13 -- Phase 5 complete (review fixes, verify, secure)
 progress:
   total_phases: 7
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 90
-  completed_plans: 79
+  completed_plans: 91
   percent: 71
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-07)
 
 **Core value:** Know what matters, what needs attention, and what to do next — in one place.
-**Current focus:** Phase 5 — career-projects
+**Current focus:** Phase 05.1 — project agent writes repo contents inserted
 
 ## Current Position
 
-Phase: 5 (career-projects) — EXECUTING
-Plan: 1 of 12
-Status: Executing Phase 5
-Last activity: 2026-10-12 -- Phase 5 execution started
+Phase: 05.1
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-13 -- Phase 5 complete
 
 Progress: [████████░░] 83%
 

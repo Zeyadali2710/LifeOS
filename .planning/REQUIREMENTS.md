@@ -38,9 +38,9 @@
 - [x] **ORG-03**: Tasks + reminders; conflict detection; scheduling suggestions
 
 ### Career & Projects
-- [ ] **CAR-01**: Repository dashboard (status, languages, commits, PRs, issues, activity)
-- [ ] **CAR-02**: Cross-domain projects with tasks, milestones, dependencies, blockers, timeline
-- [ ] **CAR-03**: Project workspace view incl. Claude Code workspace links
+- [x] **CAR-01**: Repository dashboard (status, languages, commits, PRs, issues, activity)
+- [x] **CAR-02**: Cross-domain projects with tasks, milestones, dependencies, blockers, timeline
+- [x] **CAR-03**: Project workspace view incl. Claude Code workspace links
 
 ### Outreach
 - [ ] **OUT-01**: Sydney event discovery from real sources with relevance scoring

@@ -12,8 +12,8 @@ From an empty repo to a personal OS: secure foundation and deploy path first, th
 - [x] **Phase 3.1: Model routing** (INSERTED) - Free OpenRouter models for routine agent work, Sonnet escalation, orchestrator stays on Opus
  (completed 2026-10-08)
 - [x] **Phase 4: Organization** - Calendars (Google, iCloud), tasks, conflicts, scheduling suggestions (completed 2026-10-11)
-- [x] **Phase 4.1: Glass redesign** (INSERTED) - Liquid-glass restyle of the whole app, same features (completed 2026-10-12)
-- [x] **Phase 5: Career + Projects** - Repo dashboards, cross-domain projects, project workspaces (completed 2026-10-12)
+- [x] **Phase 4.1: Glass redesign** (INSERTED) - Liquid-glass restyle of the whole app, same features (completed 2026-10-13)
+- [x] **Phase 5: Career + Projects** - Repo dashboards, cross-domain projects, project workspaces (completed 2026-10-13)
 - [ ] **Phase 5.1: Project agent writes + repo contents** (INSERTED) - Agent creates/updates projects via approval; reads repo files
 - [ ] **Phase 6: Outreach** - Sydney event discovery, pipeline, email intelligence, drafting
 - [ ] **Phase 7: Socials** - Social providers, drafts, content calendar, analytics
@@ -223,4 +223,5 @@ Goals per phase list above; detailed when each phase is planned (`/gsd-plan-phas
 | 3. Agents + GitHub | 19/19 | Complete   | 2026-10-09 |
 | 4. Organization | 22/22 | Complete | 2026-10-11 |
 | 4.1 Glass redesign | 15/15 | Complete | 2026-10-12 |
-| 5–11 | - | Not started | - |
+| 5. Career + Projects | 12/12 | Complete | 2026-10-13 |
+| 5.1–11 | - | Not started | - |
