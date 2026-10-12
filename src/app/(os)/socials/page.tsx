@@ -5,6 +5,7 @@ export const metadata = { title: "Socials · LifeOS" };
 export default function SocialsPage() {
   return (
     <DomainPage
+      eyebrowClass="text-pink"
       title="Socials"
       lead="Accounts, drafts and your content calendar."
       icon="public"
