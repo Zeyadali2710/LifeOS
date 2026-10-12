@@ -234,7 +234,7 @@ export function EventApprovalBody({ approval: a, editing, draft, errors, onDraft
   ];
   return (
     <>
-      <section className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-x-6 gap-y-[18px] border-b border-[rgba(255,255,255,.06)] px-[22px] py-5">
+      <section className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-x-6 gap-y-[18px] border-b border-[rgba(255,255,255,.06)] px-5 py-5">
         <Fact k="WHAT WILL HAPPEN">
           {verb(a.kind)} {p.calendarLabel}.{a.kind === "event_create" ? ` Marked ${p.showAs === "free" ? "free" : "busy"}.` : ""}
         </Fact>
@@ -242,7 +242,7 @@ export function EventApprovalBody({ approval: a, editing, draft, errors, onDraft
         <Fact k="WHEN">Immediately after approval</Fact>
         {p.scope && a.kind !== "event_create" && <Fact k="APPLIES TO">{SCOPE[p.scope]}</Fact>}
       </section>
-      <section className="border-b border-[rgba(255,255,255,.06)] px-[22px] py-5">
+      <section className="border-b border-[rgba(255,255,255,.06)] px-5 py-5">
         <div className="mb-3 text-[10px] tracking-[0.14em] text-text-3">WHAT DATA WILL BE SENT</div>
         <ul className="flex flex-col gap-1.5 text-[13px]">
           {sent.map((t) => (
@@ -261,7 +261,7 @@ export function EventApprovalBody({ approval: a, editing, draft, errors, onDraft
           </li>
         </ul>
       </section>
-      <section className={`border-b px-[22px] py-5 ${del ? "border-[rgba(240,122,110,.35)]" : "border-[rgba(255,255,255,.06)]"}`}>
+      <section className={`border-b px-5 py-5 ${del ? "border-[rgba(240,122,110,.35)]" : "border-[rgba(255,255,255,.06)]"}`}>
         <div className="mb-3 flex items-center gap-2 text-[10px] tracking-[0.14em] text-text-3">
           {a.kind === "event_update" ? "CHANGES" : "PREVIEW"}
           {edited && (

@@ -24,10 +24,10 @@ export function AgentCard({ a }: { a: A }) {
   return (
     <Link
       href={`/agents/${a.id}`}
-      className={`flex flex-col gap-3 glass-card rounded-22 p-4 transition duration-150 ${a.status === "ATTENTION" ? "!border-[rgba(255,105,97,.35)]" : ""} ${stats ? "hover:-translate-y-px" : ""}`}
+      className={`flex flex-col gap-3 glass-card rounded-24 p-4 transition duration-150 ${a.status === "ATTENTION" ? "!border-[rgba(255,105,97,.35)]" : ""} ${stats ? "hover:-translate-y-px" : ""}`}
     >
       <span className="flex items-center gap-2.5">
-        <span className={`grid size-[30px] place-items-center rounded-10 bg-white/[.06] ${stats ? "" : "opacity-75"}`} style={{ color: a.color }}>
+        <span className={`grid size-[30px] place-items-center rounded-full bg-white/[.06] ${stats ? "" : "opacity-75"}`} style={{ color: a.color }}>
           <Icon name={a.icon as IconName} size={18} />
         </span>
         <span className="min-w-0 flex-1">
