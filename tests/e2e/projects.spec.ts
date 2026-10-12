@@ -16,7 +16,7 @@ test("a workspace path with $ shows the field error and creates nothing", async 
   await dlg.getByLabel("Workspace path").fill("C:\code\$HOME");
   await dlg.getByRole("button", { name: "Create project" }).click();
   await expect(dlg.getByText("Paths can't contain quotes, backticks, $ or line breaks.")).toBeVisible();
-  await expect(page).toHaveURL(/\/projects\?new=project/);
+  await expect(dlg).toBeVisible(); // dialog stays open; the ?new param is dropped on open by design
 });
 
 test("project lifecycle: create, workspace, task, milestone, archive, list, home", async ({ page }, info) => {
@@ -74,6 +74,7 @@ test("project lifecycle: create, workspace, task, milestone, archive, list, home
 });
 
 test("non-uuid project id 404s", async ({ page }) => {
-  const res = await page.goto("/projects/not-a-uuid");
-  expect(res?.status()).toBe(404);
+  await page.goto("/projects/not-a-uuid");
+  // loading.tsx streams the response, so Next keeps HTTP 200 and renders the not-found page (with noindex).
+  await expect(page.getByText(/could not be found/i)).toBeVisible();
 });

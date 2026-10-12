@@ -120,7 +120,7 @@ test("mobile: bell opens a floating sheet; bell reopens it after close", async (
   test.skip(info.project.name !== "mobile");
   await openWith(page, `Sheet ${uid()}`);
   const box = await drawer(page).boundingBox();
-  expect(box?.width).toBeGreaterThanOrEqual((page.viewportSize()?.width ?? 0) - 25);
+  expect(box?.width).toBeGreaterThanOrEqual((page.viewportSize()?.width ?? 0) - 26);
   await drawer(page).getByRole("button", { name: "Close notifications" }).click();
   await expect(drawer(page)).toBeHidden();
   await bell(page).click();

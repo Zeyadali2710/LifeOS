@@ -54,10 +54,11 @@ test("connected: repo card opens the repo detail", async ({ page }) => {
   await page.goto("/career");
   await page.getByRole("link", { name: `e2eowner/${repoName}` }).filter({ visible: true }).first().click();
   await expect(page).toHaveURL(`/career/e2eowner/${repoName}`);
-  await expect(page.getByText("OPEN PULL REQUESTS").filter({ visible: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /open pull requests/i }).filter({ visible: true })).toBeVisible();
 });
 
 test("invalid owner segment 404s", async ({ page }) => {
-  const res = await page.goto("/career/bad%20owner/x");
-  expect(res?.status()).toBe(404);
+  await page.goto("/career/bad%20owner/x");
+  // loading.tsx streams the response, so Next keeps HTTP 200 and renders the not-found page (with noindex).
+  await expect(page.getByText(/could not be found/i)).toBeVisible();
 });
