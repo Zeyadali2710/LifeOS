@@ -24,14 +24,25 @@ Postgres 17 + pgvector. Schema in `src/server/db/schema.ts` (Drizzle), migration
 |---|---|
 | `calendars` | One row per synced calendar, FK to the connection (`integrations`) |
 | `calendar_events` | One row per Google event/override or per CalDAV resource (raw ICS kept for CalDAV). Recurring instances are expanded at read time, not stored |
-| `tasks` | Owner tasks; nullable `project_id` reserved for Phase 5 |
+| `tasks` | Owner tasks; `project_id` FK (ON DELETE SET NULL) and `milestone_id` link them to Phase 5 projects and milestones |
 
 Deletes cascade connections -> calendars -> calendar_events. Calendar secrets live encrypted in `integrations` (no `last4` kept).
+
+## Phase 5 tables (migration `0005`)
+| Table | Purpose |
+|---|---|
+| `projects` | Owner projects (category, status, priority, target date, workspace path/machine, blocker note, archived) |
+| `project_links` | Links a project to a synced GitHub repo or an external URL; unique per project and repo |
+| `milestones` | Per-project milestones with optional due date and completion |
+| `task_dependencies` | Task blocked-by-task edges; cycles rejected |
+| `project_dependencies` | Project depends-on-project edges; cycles rejected |
+
+Also: `github_repos.languages` (jsonb byte counts, null = never fetched); `tasks.project_id` FK is ON DELETE SET NULL; `tasks.milestone_id` references `milestones`.
 
 ## Planned (added by the phase that needs them)
 - Integrations: `integrations`, `sync_cursors`
 - Agents: `agents`, `agent_tools`, `permissions`, `agent_tasks`, `agent_runs`, `tool_calls`, `approvals`, `conversations`, `messages`
-- Work: `projects`, `project_links`, `milestones`, `task_dependencies`, `repositories`, `repo_activity`
+- Work: `repositories`, `repo_activity`
 - Goals: `visions`, `goals`, `objectives`, `goal_projects`
 - Comms: `contacts`, `email_threads`, `emails`, `email_labels`
 - Outreach: `outreach_events` (SAVED→INTERESTED→ATTENDING→ATTENDED→FOLLOW_UP), `outreach_event_contacts`
