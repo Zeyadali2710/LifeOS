@@ -12,7 +12,7 @@ import { callTool } from "./gateway";
 import { getLlm } from "./llm";
 import { costUsd } from "./pricing";
 import { FreeModelError } from "./openrouter";
-import { getAgent, MODELS, RUN_LIMITS } from "./registry";
+import { getAgent, limitsFor, MODELS } from "./registry";
 import {
   checkFreeTurn,
   ESCALATE_TOOL,
@@ -154,6 +154,7 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
 
   const run0 = claimed;
   const agent = getAgent(run0.agentId);
+  const L = limitsFor(agent);
   const setStatus = async (set: Partial<typeof agentRuns.$inferInsert>): Promise<RunStatus> => {
     // Only a still-running run may be finished: a swept/cancelled run must not be resurrected.
     const [row] = await h.update(agentRuns).set(set).where(and(eq(agentRuns.id, runId), eq(agentRuns.status, "running"))).returning();
@@ -269,8 +270,8 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
     for (;;) {
       const [cur] = await h.select({ c: agentRuns.cancelRequestedAt }).from(agentRuns).where(eq(agentRuns.id, runId));
       if (cur?.c) return await finish({ status: "cancelled", error: "Cancelled by you" });
-      if (tokens > RUN_LIMITS.tokens) return await fail("limit:tokens", "This run used too many tokens and was stopped.");
-      if (active >= RUN_LIMITS.activeMs) return await fail("limit:time", "This run took too long and was stopped.");
+      if (tokens > L.tokens) return await fail("limit:tokens", "This run used too many tokens and was stopped.");
+      if (active >= L.activeMs) return await fail("limit:time", "This run took too long and was stopped.");
 
       // D-09: before any free request is built, the whole conversation must be free of private/unknown repos,
       // and neither this run nor its tree/thread (or the run it retries) may have seen private data. Re-checked
@@ -322,7 +323,7 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
             system: `${isFree(model) ? `${agent.systemPrompt} ${FREE_SUFFIX}` : agent.systemPrompt} Current time: ${clock(now())}.`,
             messages,
             tools: isFree(model) && !pinnedFree ? [...anthropicTools, ESCALATE_TOOL] : anthropicTools,
-            maxTokens: RUN_LIMITS.turnMaxTokens,
+            maxTokens: L.turnMaxTokens,
           },
           (text) => {
             streamedChars += text.length;
@@ -384,9 +385,11 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
 
       await persist();
       let waiting = false;
+      let childMs = 0;
       for (const use of uses) {
-        if (toolCount >= RUN_LIMITS.toolCalls) return await fail("limit:tool_calls", "This run made too many tool calls and was stopped.");
+        if (toolCount >= L.toolCalls) return await fail("limit:tool_calls", "This run made too many tool calls and was stopped.");
         toolCount++;
+        const c0 = now().getTime();
         const res = await callTool(
           { handle: h, runId, agentId: run0.agentId, tools: allowed, now, fetch: opts.fetch, onEvent: opts.onEvent && emit, llm: opts.llm, onClaimed: emitStep },
           use.name,
@@ -402,9 +405,10 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
           waiting = true;
           await emitApproval(res.approvalId);
         }
+        if (use.name === "delegate") childMs += now().getTime() - c0; // the child run has its own budget
         if (callId) await emitStep(callId);
       }
-      active += now().getTime() - t0;
+      active += now().getTime() - t0 - childMs;
       if (waiting) return await suspend();
       messages.push(await buildToolResults(h, runId, uses.map((b) => b.id)));
       await taint(messages.at(-1));

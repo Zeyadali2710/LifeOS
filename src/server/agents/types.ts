@@ -62,7 +62,7 @@ export type Tool<I = unknown, O = unknown> = {
 export const apiName = (name: string) => name.replaceAll(".", "_");
 
 export function toAnthropicTool(tool: Pick<Tool, "name" | "description" | "input">): AnthropicTool {
-  const schema = { ...(z.toJSONSchema(tool.input) as Record<string, unknown>) };
+  const schema = { ...(z.toJSONSchema(tool.input, { io: "input" }) as Record<string, unknown>) };
   delete schema.$schema;
   return { name: apiName(tool.name), description: tool.description, input_schema: schema as Anthropic.Tool.InputSchema };
 }

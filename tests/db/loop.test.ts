@@ -201,19 +201,24 @@ describe("advance", () => {
   it("enforces tool-call, token and time limits and cancel", async () => {
     const use = { toolUses: [{ name: "github.list_repos", input: {} }] };
     let id = await mk();
-    const many = scriptedLlm(Array.from({ length: 13 }, () => use));
+    const many = scriptedLlm(Array.from({ length: 17 }, () => use));
     expect(await advance(id, { handle: h(), llm: many })).toBe("failed");
+    expect(await run(id)).toMatchObject({ errorKind: "limit:tool_calls", toolCallCount: 16 });
+
+    id = await mk("organization");
+    const org = scriptedLlm(Array.from({ length: 13 }, () => ({ toolUses: [{ name: "tasks.list", input: {} }] })));
+    expect(await advance(id, { handle: h(), llm: org })).toBe("failed");
     expect(await run(id)).toMatchObject({ errorKind: "limit:tool_calls", toolCallCount: 12 });
 
     id = await mk();
-    await advance(id, { handle: h(), llm: scriptedLlm([{ ...use, usage: { input: 61_000 } }, { text: "x" }]) });
+    await advance(id, { handle: h(), llm: scriptedLlm([{ ...use, usage: { input: 151_000 } }, { text: "x" }]) });
     expect((await run(id)).errorKind).toBe("limit:tokens");
 
     id = await mk();
     let clock = 0;
     const slow = scriptedLlm([use, { text: "x" }]);
     const orig = slow.stream.bind(slow);
-    slow.stream = async (...a) => ((clock += 130_000), orig(...a));
+    slow.stream = async (...a) => ((clock += 250_000), orig(...a));
     await advance(id, { handle: h(), llm: slow, now: () => new Date(clock) });
     expect((await run(id)).errorKind).toBe("limit:time");
 
@@ -298,6 +303,20 @@ describe("delegate, resumeParent, retry", () => {
     const steps = ev.flatMap((e) => (e.k === "step" ? [e.step] : []));
     expect(steps.find((s) => s.kind === "delegate")).toMatchObject({ actor: "orchestrator", action: "Delegating to Projects" });
     expect(steps.some((s) => s.actor === "projects" && s.tool === "github.list_pull_requests")).toBe(true);
+  });
+
+  it("delegate child time does not count against the orchestrator's active time", async () => {
+    const id = await mk("orchestrator");
+    let clock = 0;
+    const llm = scriptedLlm([
+      { toolUses: [{ name: "delegate", input: { agentId: "projects", task: "x" } }] },
+      { text: "child answer" },
+      { text: "done" },
+    ]);
+    const orig = llm.stream.bind(llm);
+    let n = 0;
+    llm.stream = async (...a) => (++n === 2 && (clock += 200_000), orig(...a));
+    expect(await advance(id, { handle: h(), llm, now: () => new Date(clock) })).toBe("completed");
   });
 
   it("delegating to a paused agent fails the step; bad agent ids are invalid input", async () => {

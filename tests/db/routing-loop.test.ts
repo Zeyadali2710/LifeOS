@@ -307,13 +307,15 @@ describe("guard: every GitHub READ tool output carries the repo full name", () =
     const fetch = fakeGithub({
       "GET /repos/me/secret/pulls/1": () => json({ title: "t", state: "open", user: null, html_url: "u" }),
       "GET /repos/me/secret/pulls/1/reviews": () => json([]),
+      "GET /repos/me/secret/git/trees/main": () => json({ tree: [{ path: "README.md", type: "blob", size: 1 }], truncated: false }),
+      "GET /repos/me/secret/contents/README.md": () => json({ type: "file", size: 2, encoding: "base64", content: "aGk=" }),
     });
     const reads = Object.values(githubTools).filter((x) => x.tier === "READ");
     expect(reads.map((x) => x.name).sort()).toEqual(
-      ["github.ci_status", "github.get_pull_request", "github.list_issues", "github.list_pull_requests", "github.list_repos", "github.recent_commits"],
+      ["github.ci_status", "github.get_file", "github.get_pull_request", "github.list_issues", "github.list_pull_requests", "github.list_repos", "github.list_tree", "github.recent_commits"],
     );
     for (const tool of reads) {
-      const input = tool.input.parse({ repo: "me/secret", number: 1 });
+      const input = tool.input.parse({ repo: "me/secret", number: 1, path: "README.md" });
       const out = await tool.handler(input, { handle: h(), fetch, runId: "r", agentId: "projects", now: () => new Date() } as never);
       expect(mentionsSensitive(out, ["me/secret"]), tool.name).toBe(true);
     }

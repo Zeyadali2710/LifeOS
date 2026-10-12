@@ -5,7 +5,7 @@ import { agentRuns, toolCalls } from "../db/schema";
 import { getConnections } from "../github/connections";
 import { routeSteps, toRunDTO, toStepDTO } from "./dto";
 import { redact } from "./redact";
-import { AGENTS, getAgent, MODELS, RUN_LIMITS } from "./registry";
+import { AGENTS, getAgent, limitsFor, MODELS } from "./registry";
 import { sydneyMonthBounds } from "./pricing";
 import { effectivePref, hasFreeKey } from "./routing";
 import { agentConfig, isPaused } from "./runs";
@@ -180,7 +180,7 @@ export async function agentDetail(h: DB, agentId: string, now: Date = new Date()
       model: agent.id === "orchestrator" ? MODELS.opus : agent.routable ? effectivePref({ pref: cfg.pref, routable: true, hasKey, defaultModel: agent.defaultModel }) : cfg.model,
       defaultModel: agent.defaultModel,
       paused: cfg.paused,
-      limits: RUN_LIMITS,
+      limits: limitsFor(agent),
       routable: !!agent.routable,
       freeAvailable: hasKey,
     },

@@ -6,7 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { formatDuration, formatTokens, formatUsd } from "@/lib/format";
 import { cancelRunAction, retryRunAction } from "@/server/agent-actions";
 import type { runDetail } from "@/server/agents/queries";
-import { modelLabel, RUN_LIMITS } from "@/server/agents/registry";
+import { getAgent, limitsFor, modelLabel } from "@/server/agents/registry";
 import { formatHM } from "@/server/time";
 import { useLiveEvents } from "@/shell/live-provider";
 import { useShell } from "@/shell/shell-provider";
@@ -77,6 +77,7 @@ export function RunDetail({ run, agent, steps, toolCalls }: RunDetailProps) {
     else router.refresh();
   };
   const active = run.durationMs === null ? 0 : Math.round(run.durationMs / 1000);
+  const lim = limitsFor(getAgent(run.agentId));
 
   return (
     <div className="mx-auto flex max-w-[1480px] flex-col gap-8">
@@ -128,7 +129,7 @@ export function RunDetail({ run, agent, steps, toolCalls }: RunDetailProps) {
         <Fact k="TOOL CALLS" v={String(run.toolCalls)} />
         <Fact
           k="LIMITS USED"
-          v={`${run.toolCalls}/${RUN_LIMITS.toolCalls} · ${formatTokens(run.tokensIn + run.tokensOut)}/${RUN_LIMITS.tokens / 1000}k · ${active}s/${RUN_LIMITS.activeMs / 1000}s`}
+          v={`${run.toolCalls}/${lim.toolCalls} · ${formatTokens(run.tokensIn + run.tokensOut)}/${lim.tokens / 1000}k · ${active}s/${lim.activeMs / 1000}s`}
         />
       </dl>
 

@@ -26,3 +26,12 @@ describe("withContentFloor", () => {
     expect(withContentFloor("EXECUTE", true, false)).toBe("EXECUTE");
   });
 });
+
+describe("limitsFor", () => {
+  it("gives projects a larger budget and everyone else RUN_LIMITS", async () => {
+    const { limitsFor, getAgent, RUN_LIMITS } = await import("@/server/agents/registry");
+    expect(limitsFor(getAgent("projects"))).toEqual({ toolCalls: 16, tokens: 150_000, activeMs: 240_000, turnMaxTokens: 8192 });
+    expect(limitsFor(getAgent("organization"))).toEqual(RUN_LIMITS);
+    expect(limitsFor(undefined)).toEqual(RUN_LIMITS);
+  });
+});

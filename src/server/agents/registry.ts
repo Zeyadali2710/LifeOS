@@ -15,9 +15,11 @@ export const modelShort = (id: string) =>
   : id === MODELS.haiku ? "HAIKU"
   : (id.split("/").pop() ?? id);
 
-export const RUN_LIMITS = { toolCalls: 12, tokens: 60_000, activeMs: 120_000, turnMaxTokens: 4096 } as const;
+export type RunLimits = { toolCalls: number; tokens: number; activeMs: number; turnMaxTokens: number };
+export const RUN_LIMITS: RunLimits = { toolCalls: 12, tokens: 60_000, activeMs: 120_000, turnMaxTokens: 4096 };
 
 export type AgentDef = {
+  limits?: Partial<RunLimits>;
   id: string;
   name: string;
   icon: string;
@@ -138,6 +140,7 @@ export const AGENTS: AgentDef[] = [
       "projects.get",
     ],
     systemPrompt: PROJECTS_PROMPT,
+    limits: { toolCalls: 16, tokens: 150_000, turnMaxTokens: 8192, activeMs: 240_000 },
     routable: true,
     requiresTools: true,
   },
@@ -146,5 +149,7 @@ export const AGENTS: AgentDef[] = [
   off("finance", "Finance", "account_balance", "#30d158", "Money and budgets.", null),
   off("agentops", "AgentOps", "monitor_heart", "#aeaeb2", "Agent health and cost.", null),
 ];
+
+export const limitsFor = (a?: Pick<AgentDef, "limits"> | null): RunLimits => ({ ...RUN_LIMITS, ...a?.limits });
 
 export const getAgent = (id: string) => AGENTS.find((a) => a.id === id);
