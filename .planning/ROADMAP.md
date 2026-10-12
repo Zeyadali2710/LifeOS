@@ -211,8 +211,19 @@ Plans:
 - [x] 05.1-07: Context in ProjectDialog, workspace CONTEXT card, Copy context brief
 - [x] 05.1-08: Docs, validation, local gates, owner VM migrate 0007 + live Studio UAT (owner steps pending — OWNER-ACTIONS.md)
 
-### Phase 6–11
-Goals per phase list above; detailed when each phase is planned (`/gsd-plan-phase N`).
+### Phase 6: Outreach
+**Goal**: Outreach stops being an honest-empty page: Sydney events are discovered from real sources and scored for relevance, saved events move through a pipeline into the calendar and follow-ups, and Gmail is triaged by an agent that classifies, summarises, flags, extracts actions and drafts replies, with sending always behind approval.
+**Depends on**: Phase 3 (agents, approvals), Phase 4 (calendar, tasks, Google OAuth), Phase 5 (projects/tasks reuse)
+**Requirements**: OUT-01, OUT-02, OUT-03
+**Success Criteria**:
+  1. An `EventSourceProvider` seam returns normalized Sydney events from every source whose API or public feed actually permits discovery (verified at research time — e.g. public iCal feeds of followed Luma/Meetup calendars, schema.org JSON-LD URL import, Eventbrite/Luma APIs where a key adds value); sources without usable access run as real mock classes badged MOCK. Eventbrite/Luma API keys are entered only in Settings → Connections (encrypted like the GitHub token), never in .env. Events are deduplicated and scored for relevance against the owner's interests/projects with an explainable score.
+  2. A saved event moves SAVED → INTERESTED → ATTENDING → ATTENDED → FOLLOW_UP; ATTENDING can put it on the calendar (existing CalendarProvider, owner write) and FOLLOW_UP creates follow-up tasks (Phase 4 tasks); every transition is an activity event.
+  3. Gmail connects through the existing Google OAuth client with an added Gmail scope and a "Reconnect Google" step in Settings; messages sync incrementally (read-only scope plus compose/send for drafts) and the Outreach/Email agent classifies, summarises, flags and extracts actions (to tasks) under READ tier; drafting a reply creates a draft, and sending is an APPROVE-tier action with edit-before-approve. Mail content is untrusted (Phase 5.1 content floor) and private (03.1 free-model gate).
+  4. The Outreach page (events list + pipeline board, email triage view) follows the Claude Design Outreach file in the Glass system; e2e + VM DB tests cover providers (fixtures), pipeline, Gmail sync and the send approval path.
+**Plans**: TBD
+
+### Phase 7–11
+Goals per phase list above; a detail section (goal, requirements, success criteria) is written before each phase's discuss.
 
 ## Credentials & external access needed
 | When | What |
