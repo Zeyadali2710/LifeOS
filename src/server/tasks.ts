@@ -3,7 +3,7 @@ import { toTaskDTO, type TaskDTO } from "@/lib/calendar-types";
 import { taskInput } from "@/lib/task-payload";
 import type { FieldErrors } from "./agents/approvals";
 import type { DB } from "./db/client";
-import { auditLog, tasks } from "./db/schema";
+import { auditLog, milestones, projects, tasks } from "./db/schema";
 import { emitActivity, notifyLive } from "./events";
 import { log } from "./log";
 import { sydneyInstant, sydneyParts } from "./time";
@@ -41,10 +41,28 @@ function parse(raw: unknown, now: Date, prevRemindAt?: Date | null) {
   return Object.keys(errors).length ? { errors } : { data: p.data, remindAt };
 }
 
+/** Project must exist; milestone must belong to that project (a milestone without a project is invalid). */
+async function refErrors(h: DB, projectId: string | null, milestoneId: string | null): Promise<FieldErrors> {
+  const errors: FieldErrors = {};
+  if (projectId) {
+    const [p] = await h.select({ id: projects.id }).from(projects).where(eq(projects.id, projectId));
+    if (!p) errors.projectId = "Pick a project.";
+  }
+  if (milestoneId) {
+    const [m] = projectId
+      ? await h.select({ id: milestones.id }).from(milestones).where(and(eq(milestones.id, milestoneId), eq(milestones.projectId, projectId)))
+      : [];
+    if (!m) errors.milestoneId = "Pick a milestone from this project.";
+  }
+  return errors;
+}
+
 export async function createTask(h: DB, raw: unknown, now: Date): Promise<TaskResult> {
   const p = parse(raw, now);
   if (!p.data) return { ok: false, errors: p.errors! };
   const { data } = p;
+  const refs = await refErrors(h, data.projectId, data.milestoneId);
+  if (Object.keys(refs).length) return { ok: false, errors: refs };
   const [row] = await h
     .insert(tasks)
     .values({
@@ -55,6 +73,8 @@ export async function createTask(h: DB, raw: unknown, now: Date): Promise<TaskRe
       dueAt: deriveDueAt(data.dueDate, data.dueTime),
       priority: data.priority,
       remindAt: p.remindAt,
+      projectId: data.projectId,
+      milestoneId: data.projectId ? data.milestoneId : null,
     })
     .returning();
   await aud(h, "task.create", row!.id);
@@ -68,6 +88,8 @@ export async function updateTask(h: DB, id: string, raw: unknown, now: Date): Pr
   const p = parse(raw, now, cur.remindAt);
   if (!p.data) return { ok: false, errors: p.errors! };
   const { data } = p;
+  const refs = await refErrors(h, data.projectId, data.milestoneId);
+  if (Object.keys(refs).length) return { ok: false, errors: refs };
   const rearm = p.remindAt?.getTime() !== cur.remindAt?.getTime();
   const [row] = await h
     .update(tasks)
@@ -79,6 +101,8 @@ export async function updateTask(h: DB, id: string, raw: unknown, now: Date): Pr
       dueAt: deriveDueAt(data.dueDate, data.dueTime),
       priority: data.priority,
       remindAt: p.remindAt,
+      projectId: data.projectId,
+      milestoneId: data.projectId ? data.milestoneId : null,
       ...(rearm ? { remindedAt: null } : {}),
       updatedAt: now,
     })

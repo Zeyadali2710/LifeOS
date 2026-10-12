@@ -1,7 +1,8 @@
 import { eq } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { taskInput } from "@/lib/task-payload";
-import { auditLog, tasks } from "@/server/db/schema";
+import { auditLog, milestones, projects, taskDependencies, tasks } from "@/server/db/schema";
+import { taskDialogOptions } from "@/server/projects";
 import { createTask, deleteTask, setTaskCompleted, updateTask } from "@/server/tasks";
 import { sydneyInstant } from "@/server/time";
 import { setupTestDb } from "./helpers";
@@ -69,5 +70,54 @@ describe("tasks service", () => {
     expect((await deleteTask(t.handle(), id)).ok).toBe(true);
     expect((await deleteTask(t.handle(), id)).ok).toBe(false);
     expect((await actions(id)).sort()).toEqual(["task.complete", "task.create", "task.delete", "task.reopen", "task.update", "task.update"]);
+  });
+});
+
+describe("tasks project/milestone", () => {
+  const mkProject = async (name: string) => (await t.handle().insert(projects).values({ name }).returning())[0]!.id;
+  const mkMilestone = async (projectId: string) => (await t.handle().insert(milestones).values({ projectId, title: "m" }).returning())[0]!.id;
+
+  it("stores a project and a milestone of that project", async () => {
+    const p = await mkProject("tp1");
+    const m = await mkMilestone(p);
+    const r = await createTask(t.handle(), { title: "x", projectId: p, milestoneId: m }, NOW);
+    if (!r.ok) throw new Error("create failed");
+    expect([r.task.projectId, r.task.milestoneId]).toEqual([p, m]);
+  });
+
+  it("rejects a milestone of another project, a milestone without a project, and an unknown project", async () => {
+    const [p1, p2] = [await mkProject("tp2"), await mkProject("tp3")];
+    const m2 = await mkMilestone(p2);
+    const msg = { milestoneId: "Pick a milestone from this project." };
+    expect(await createTask(t.handle(), { title: "x", projectId: p1, milestoneId: m2 }, NOW)).toEqual({ ok: false, errors: msg });
+    expect(await createTask(t.handle(), { title: "x", milestoneId: m2 }, NOW)).toEqual({ ok: false, errors: msg });
+    expect(await createTask(t.handle(), { title: "x", projectId: "00000000-0000-4000-8000-000000000000" }, NOW)).toEqual({
+      ok: false,
+      errors: { projectId: "Pick a project." },
+    });
+  });
+
+  it("clearing the project clears the milestone", async () => {
+    const p = await mkProject("tp4");
+    const m = await mkMilestone(p);
+    const a = await createTask(t.handle(), { title: "a", projectId: p, milestoneId: m }, NOW);
+    if (!a.ok) throw new Error("create failed");
+    const u = await updateTask(t.handle(), a.task.id, { title: "a", projectId: null }, NOW);
+    if (!u.ok) throw new Error("update failed");
+    expect([u.task.projectId, u.task.milestoneId]).toEqual([null, null]);
+  });
+
+  it("taskDialogOptions lists projects with milestones, other open tasks and current blockers", async () => {
+    const p = await mkProject("tp5");
+    const m = await mkMilestone(p);
+    const a = await createTask(t.handle(), { title: "a", projectId: p, milestoneId: m }, NOW);
+    const b = await createTask(t.handle(), { title: "b" }, NOW);
+    if (!a.ok || !b.ok) throw new Error("create failed");
+    await t.handle().insert(taskDependencies).values({ taskId: a.task.id, blockedByTaskId: b.task.id });
+    const opts = await taskDialogOptions(t.handle(), a.task.id);
+    expect(opts.projects.find((x) => x.id === p)?.milestones).toEqual([{ id: m, title: "m" }]);
+    expect(opts.tasks.map((x) => x.id)).not.toContain(a.task.id);
+    expect(opts.tasks.map((x) => x.id)).toContain(b.task.id);
+    expect(opts.blockedBy).toEqual([{ id: b.task.id, title: "b" }]);
   });
 });
