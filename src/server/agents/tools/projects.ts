@@ -2,7 +2,7 @@
 // machine label, launch command and brief never reach the model. Owner-private: taints the run (D-09).
 import { and, asc, eq, ilike, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
-import { draftCounts, projectCreatePayload, projectUpdatePayload, type DraftLink } from "@/lib/project-payload";
+import { draftCounts, projectCreatePayload, projectUpdatePayload, type DraftLink, type ProjectUpdatePayload } from "@/lib/project-payload";
 import type { DB } from "../../db/client";
 import { auditLog, githubRepos, milestones, projects, tasks, toolCalls } from "../../db/schema";
 import { listProjects, loadProject } from "../../project-queries";
@@ -142,6 +142,18 @@ async function checkRepos(h: DB, links: DraftLink[]) {
   }
 }
 
+/** WR-03: did any task or milestone captured in `before` change (or vanish) since drafting? Edits to them don't bump the project. */
+export async function itemsChanged(h: DB, before: Pick<ProjectUpdatePayload["before"], "milestones" | "tasks">): Promise<boolean> {
+  const mIds = before.milestones.map((m) => m.id);
+  const tIds = before.tasks.map((t) => t.id);
+  const cm = mIds.length ? await h.select({ id: milestones.id, title: milestones.title, dueDate: milestones.dueDate }).from(milestones).where(inArray(milestones.id, mIds)) : [];
+  const ct = tIds.length
+    ? await h.select({ id: tasks.id, title: tasks.title, dueDate: tasks.dueDate, priority: tasks.priority, milestoneId: tasks.milestoneId }).from(tasks).where(inArray(tasks.id, tIds))
+    : [];
+  const same = (a: Record<string, unknown>, b: Record<string, unknown> | undefined) => !!b && Object.keys(a).every((k) => a[k] === b[k]);
+  return !before.milestones.every((m) => same(m, cm.find((x) => x.id === m.id))) || !before.tasks.every((t) => same(t, ct.find((x) => x.id === t.id)));
+}
+
 /** Server functions return {ok:false}; throwing makes the surrounding transaction roll back (Pitfall 1). */
 function must<T extends { ok: boolean }>(r: T, label: string): Extract<T, { ok: true }> {
   if (r.ok) return r as Extract<T, { ok: true }>;
@@ -171,7 +183,7 @@ async function applyDraft(ctx: ToolContext, kind: "create" | "update", raw: Reco
       projectId = p.projectId;
       const [cur] = await tx.select().from(projects).where(eq(projects.id, projectId));
       if (!cur) throw new ToolError("not_found", "That project no longer exists.");
-      if (cur.updatedAt.toISOString() !== p.before.updatedAt) throw new ToolError("invalid_input", CHANGED);
+      if (cur.updatedAt.toISOString() !== p.before.updatedAt || (await itemsChanged(tx, p.before))) throw new ToolError("invalid_input", CHANGED);
       const changes = Object.fromEntries(Object.entries(p.changes).filter(([, v]) => v !== undefined));
       // updateProject replaces the whole record: start from the current row so workspace, notes and status survive.
       const next = must(

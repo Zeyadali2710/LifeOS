@@ -12,6 +12,7 @@ import { toApprovalDTO } from "./dto";
 import { redact, summarize } from "./redact";
 import { cancelRun } from "./runs";
 import { TOOLS } from "./tools";
+import { itemsChanged } from "./tools/projects";
 import { ToolError, type Tool } from "./types";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- heterogeneous tool map
@@ -314,6 +315,15 @@ export async function toDTOs(h: DB, rows: Row[]): Promise<ApprovalDTO[]> {
   const isProjUpd = (r: Row) => r.status === "pending" && approvalKind(r.tool) === "project_update";
   const pids = [...new Set(rows.filter(isProjUpd).map((r) => String((r.originalPayload as { projectId?: unknown }).projectId)))].filter((i) => /^[0-9a-f-]{36}$/i.test(i));
   const stamps = new Map(pids.length ? (await h.select({ id: projects.id, u: projects.updatedAt }).from(projects).where(inArray(projects.id, pids))).map((x) => [x.id, x.u.toISOString()]) : []);
+  // ...or have the tasks/milestones it touches changed (those edits don't bump the project)?
+  const itemStale = new Map<string, boolean>();
+  for (const r of rows.filter(isProjUpd)) {
+    try {
+      itemStale.set(r.id, await itemsChanged(h, (r.originalPayload as { before: Parameters<typeof itemsChanged>[1] }).before));
+    } catch (err) {
+      log.error({ err, id: r.id }, "approval stale check failed");
+    }
+  }
   return rows.flatMap((r) => {
     try {
       // Event kinds: calendar data is always private (repoPrivate null).
@@ -322,7 +332,7 @@ export async function toDTOs(h: DB, rows: Row[]): Promise<ApprovalDTO[]> {
       const changed = targets(r).length ? !etags.has(String(p.eventId)) || etags.get(String(p.eventId)) !== (p.etag ?? null) : null;
       if (isProjUpd(r)) {
         const pp = r.originalPayload as { projectId: string; before: { updatedAt: string } };
-        return [toApprovalDTO(r, priv, stamps.get(pp.projectId) !== pp.before.updatedAt)];
+        return [toApprovalDTO(r, priv, stamps.get(pp.projectId) !== pp.before.updatedAt || itemStale.get(r.id) === true)];
       }
       return [toApprovalDTO(r, priv, changed)];
     } catch (err) {

@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { projectCreatePayload } from "@/lib/project-payload";
-import { decide, executeApproved, retryApproval } from "@/server/agents/approvals";
+import { decide, executeApproved, listApprovals, retryApproval } from "@/server/agents/approvals";
 import { callTool } from "@/server/agents/gateway";
 import { advance, createRun, runQueued } from "@/server/agents/loop";
 import { TOOLS } from "@/server/agents/tools";
@@ -226,6 +226,16 @@ describe("projects.update", () => {
     const out = await approve(id);
     expect(out).toMatchObject({ status: "failed", error: "This project changed after the request was prepared, so it can't be applied." });
     expect((await h().select().from(projects).where(eq(projects.id, s.pid)))[0]!.name).toBe("Live");
+  });
+
+  it("WR-03: refuses (and flags) a draft whose task was edited after drafting", async () => {
+    const s = await seed();
+    const id = apId(await call("projects.update", { project: s.pid, tasks: [{ id: s.tid, title: "Agent title" }] }));
+    expect((await listApprovals(h(), "pending")).find((a) => a.id === id)!.targetChanged).toBe(false);
+    await h().update(tasks).set({ title: "Owner title" }).where(eq(tasks.id, s.tid));
+    expect((await listApprovals(h(), "pending")).find((a) => a.id === id)!.targetChanged).toBe(true);
+    expect(await approve(id)).toMatchObject({ status: "failed", error: "This project changed after the request was prepared, so it can't be applied." });
+    expect((await h().select().from(tasks).where(eq(tasks.id, s.tid)))[0]!.title).toBe("Owner title");
   });
 
   it("adds tasks, milestones, links and a dependency on an existing task; retry adopts", async () => {
