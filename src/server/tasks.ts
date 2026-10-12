@@ -87,7 +87,9 @@ export async function updateTask(h: DB, id: string, raw: unknown, now: Date): Pr
   if (!cur) return { ok: false, error: "not_found" };
   const p = parse(raw, now, cur.remindAt);
   if (!p.data) return { ok: false, errors: p.errors! };
-  const { data } = p;
+  // Callers that predate projects (agents, older dialogs) omit projectId: keep the task's project/milestone rather than clearing them.
+  const keepRefs = !(raw && typeof raw === "object" && "projectId" in raw);
+  const data = keepRefs ? { ...p.data, projectId: cur.projectId, milestoneId: cur.milestoneId } : p.data;
   const refs = await refErrors(h, data.projectId, data.milestoneId);
   if (Object.keys(refs).length) return { ok: false, errors: refs };
   const rearm = p.remindAt?.getTime() !== cur.remindAt?.getTime();
