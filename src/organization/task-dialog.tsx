@@ -62,21 +62,23 @@ function Form({ task, initialTitle, defaultProjectId, onClose }: { task?: TaskDT
   const { toast } = useShell();
   const [opts, setOpts] = useState<TaskDialogOptions | null>(null);
   const [optsFailed, setOptsFailed] = useState(false);
+  const [savedId, setSavedId] = useState<string | null>(null); // set once the task row exists but a blocker change failed
+  const [rev, setRev] = useState(0); // bumped after a partial save so the blocker list reloads from the server
+  const selfId = task?.id ?? savedId;
   useEffect(() => {
     let live = true;
-    taskDialogOptionsAction(task?.id ?? null)
+    taskDialogOptionsAction(selfId)
       .then((r) => live && (r.ok ? setOpts(r.options) : setOptsFailed(true)))
       .catch(() => live && setOptsFailed(true));
     return () => {
       live = false;
     };
-  }, [task?.id]);
+  }, [selfId, rev]);
   const [projectId, setProjectId] = useState(task?.projectId ?? defaultProjectId ?? "");
   const [milestoneId, setMilestoneId] = useState(task?.milestoneId ?? "");
   // Blockers are tracked as deltas against the server's list so the dirty check is stable while options load.
   const [added, setAdded] = useState<string[]>([]);
   const [removed, setRemoved] = useState<string[]>([]);
-  const [savedId, setSavedId] = useState<string | null>(null); // set once the task row exists but a blocker change failed
   const [title, setTitle] = useState(task?.title ?? initialTitle);
   const [date, setDate] = useState(task?.dueDate ?? "");
   const [time, setTime] = useState(task?.dueTime ?? "");
@@ -89,8 +91,11 @@ function Form({ task, initialTitle, defaultProjectId, onClose }: { task?: TaskDT
   const [busy, setBusy] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const hasDue = !!date && !!time;
-  const snap = JSON.stringify([title, date, time, priority, notes, remind, custom, done, projectId, milestoneId, added, removed]);
-  const [initial] = useState(snap);
+  const snapOf = (a: string[], r: string[], dn: boolean) => JSON.stringify([title, date, time, priority, notes, remind, custom, dn, projectId, milestoneId, a, r]);
+  const snap = snapOf(added, removed, done);
+  const [initial, setInitial] = useState(snap);
+  // The task as saved on the server: the prop, or a new task whose row exists after a partial save.
+  const existing = task ?? (savedId ? { id: savedId, title, completedAt: null } : null);
   const [discard, setDiscard] = useState(false);
   const close = () => (snap !== initial ? setDiscard(true) : onClose());
 
@@ -115,7 +120,7 @@ function Form({ task, initialTitle, defaultProjectId, onClose }: { task?: TaskDT
     setErrors(errs);
     if (Object.keys(errs).length || !parsed.success) return;
     setBusy(true);
-    const id = task?.id ?? savedId;
+    const id = selfId;
     const r = await (id ? updateTaskAction(id, parsed.data) : createTaskAction(parsed.data)).catch(() => ({ ok: false, error: "failed" }) as const);
     if (!r.ok) {
       setBusy(false);
@@ -123,6 +128,14 @@ function Form({ task, initialTitle, defaultProjectId, onClose }: { task?: TaskDT
       return toast("Couldn't save that. Try again.", "error");
     }
     const tid = r.task.id;
+    // After a partial save, the server holds everything but the unsaved blocker deltas / completion: make that the clean baseline.
+    const partial = () => {
+      setBusy(false);
+      setSavedId(tid);
+      setRev((n) => n + 1);
+      setInitial(snapOf([], [], !!existing?.completedAt));
+      router.refresh();
+    };
     for (const [ids, act] of [
       [removed, removeTaskDependencyAction],
       [added, addTaskDependencyAction],
@@ -131,19 +144,16 @@ function Form({ task, initialTitle, defaultProjectId, onClose }: { task?: TaskDT
         const d = await act(tid, b).catch(() => ({ ok: false, error: "failed" }) as const);
         if (!d.ok) {
           // The task itself is saved; keep the dialog open so the blocker can be changed.
-          setBusy(false);
-          setSavedId(tid);
-          router.refresh();
+          partial();
           return toast("errors" in d ? "That would create a circular dependency. Pick a different task." : "Saved, but couldn't update blockers. Try again.", "error");
         }
         (ids === added ? setAdded : setRemoved)((l) => l.filter((x) => x !== b));
       }
     }
-    if (task && done !== !!task.completedAt) {
-      const t = await toggleTaskAction(task.id, done).catch(() => ({ ok: false }) as const);
+    if (existing && done !== !!existing.completedAt) {
+      const t = await toggleTaskAction(existing.id, done).catch(() => ({ ok: false }) as const);
       if (!t.ok) {
-        setBusy(false);
-        router.refresh();
+        partial();
         return toast("Saved, but couldn't change completion. Try again.", "error");
       }
     }
@@ -154,9 +164,9 @@ function Form({ task, initialTitle, defaultProjectId, onClose }: { task?: TaskDT
   };
 
   const remove = async () => {
-    if (!task) return;
+    if (!existing) return;
     setBusy(true);
-    const r = await deleteTaskAction(task.id).catch(() => ({ ok: false, error: "failed" }) as const);
+    const r = await deleteTaskAction(existing.id).catch(() => ({ ok: false, error: "failed" }) as const);
     setBusy(false);
     if (!r.ok) return toast("Couldn't save that. Try again.", "error");
     toast("Task deleted");
@@ -164,12 +174,12 @@ function Form({ task, initialTitle, defaultProjectId, onClose }: { task?: TaskDT
     onClose();
   };
 
-  if (confirm && task) {
+  if (confirm && existing) {
     return (
       <Dialog
         open
         onClose={() => setConfirm(false)}
-        title={`Delete "${task.title}"?`}
+        title={`Delete "${existing.title}"?`}
         initialFocus={() => document.querySelector<HTMLElement>("[data-cancel]")}
         actions={
           <>
@@ -188,7 +198,6 @@ function Form({ task, initialTitle, defaultProjectId, onClose }: { task?: TaskDT
   }
 
   const relDisabled = !hasDue;
-  const selfId = task?.id ?? savedId;
   const titleOf = (id: string) => opts?.tasks.find((t) => t.id === id)?.title ?? opts?.blockedBy.find((t) => t.id === id)?.title ?? "task";
   const blockers = [...(opts?.blockedBy ?? []).filter((b) => !removed.includes(b.id)), ...added.map((id) => ({ id, title: titleOf(id) }))];
   const addable = (opts?.tasks ?? []).filter((t) => t.id !== selfId && !blockers.some((b) => b.id === t.id));
@@ -202,7 +211,7 @@ function Form({ task, initialTitle, defaultProjectId, onClose }: { task?: TaskDT
       width={480}
       sheet
       footerStart={
-        task && (
+        existing && (
           <button type="button" onClick={() => setConfirm(true)} className="rounded-6 px-1 py-2 text-[13px] text-red hover:underline max-tab:min-h-11">
             Delete task
           </button>
@@ -338,7 +347,7 @@ function Form({ task, initialTitle, defaultProjectId, onClose }: { task?: TaskDT
             <Input type="datetime-local" value={custom} onChange={(e) => setCustom(e.target.value)} />
           </Field>
         )}
-        {task && <Checkbox label="Completed" checked={done} onChange={(e) => setDone(e.target.checked)} />}
+        {existing && <Checkbox label="Completed" checked={done} onChange={(e) => setDone(e.target.checked)} />}
         <button type="submit" hidden disabled={busy} />
       </form>
       {discard && (
