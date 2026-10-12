@@ -83,3 +83,16 @@ Verified 2026-10-13 (web). The planner should re-verify the starred items before
   - https://www.unipile.com/google-oauth-refresh-token/
 - **Gmail incremental sync:** full sync (`messages.list` + `messages.get`, store the latest `historyId`), then `history.list?startHistoryId=`. History is kept for at least about a week, sometimes less. A 404 means a full sync is required. Push needs Pub/Sub, so LifeOS polls.
   - https://developers.google.com/workspace/gmail/api/guides/sync
+
+## Planning-time auto-decisions (from 06-RESEARCH.md, overnight 2026-10-13)
+
+| Topic | Auto-selected | Why |
+|---|---|---|
+| D-28 enforcement | Hard mail-private check in the run scope that ignores `ai.free_private_ok`; Outreach agent `routable: false` | the toggle is ON for the owner, so the existing D-09 gate alone would let mail reach free models |
+| Google scopes (D-21) | Split requested vs required (calendar) scopes, store granted list in `connections.scopes`, `include_granted_scopes=true` | unticking Gmail on the consent screen must not break Calendar |
+| Gmail backfill (D-22) | Resumable full sync, ≤200 message fetches per run | 500 × 20 units exceeds 6,000 units/min quota |
+| Dedup (D-11) | URL merge also requires the same start minute | recurring ICS events share a URL |
+| Send idempotency (D-32) | Saved Gmail draft id is the primary guard; `rfc822msgid:` search is fallback | Gmail may rewrite custom Message-ID |
+| SSRF | Small stdlib `node:https` fetcher rejecting private IPs at connect time (no new deps) | codebase only has URL-syntax checks; closes DNS rebinding |
+| e2e scope (D-37) | URL import, Add to calendar, real send → DB tests with fakes; Playwright drives seeded rows | e2e server has no worker/LLM/outbound network |
+| Eventbrite | Own-organization path + per-organizer probe with honest error; organizer ids in `event_sources.config` | public search removed; owner verifies with a real token |
