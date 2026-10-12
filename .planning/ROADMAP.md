@@ -186,9 +186,9 @@ Plans:
 - [x] 05-06: Project read model + projects.list/projects.get READ agent tools
 - [x] 05-07: /career dashboard and /career/[owner]/[repo] detail
 - [x] 05-08: Project, milestone, link and dependency dialogs; task dialog pickers
-- [ ] 05-09: /projects index (filters, sort, cards, create)
-- [ ] 05-10: /projects/[id] workspace (Claude Code card, tasks, timeline, blockers, links)
-- [ ] 05-11: Home Active projects + palette Projects scope
+- [x] 05-09: /projects index (filters, sort, cards, create)
+- [x] 05-10: /projects/[id] workspace (Claude Code card, tasks, timeline, blockers, links)
+- [x] 05-11: Home Active projects + palette Projects scope
 - [ ] 05-12: E2E, docs, local gates; owner deploy + VM tests + UAT
 
 ### Phase 6–11
