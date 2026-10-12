@@ -584,8 +584,12 @@ function EditFields({ p, draft, errors, onDraft }: { p: ProjectPayload; draft: P
                   </label>
                   <label className="flex flex-col gap-1.5">
                     <Cap show={first}>Milestone</Cap>
-                    <Select aria-label={`Task ${n} milestone`} aria-invalid={invalid(`${t.rid}.milestone`)} value={live.some((m) => (m.ref ?? m.id) === t.milestone) ? t.milestone : ""} onChange={(e) => patch("tasks", t.rid, { milestone: e.target.value })}>
+                    <Select aria-label={`Task ${n} milestone`} aria-invalid={invalid(`${t.rid}.milestone`)} value={t.milestone} onChange={(e) => patch("tasks", t.rid, { milestone: e.target.value })}>
                       <option value="">No milestone</option>
+                      {/* An existing milestone outside this draft: show what will actually be sent. */}
+                      {t.milestone && !live.some((m) => (m.ref ?? m.id) === t.milestone) && (
+                        <option value={t.milestone}>{(upd && p.before.milestones.find((m) => m.id === t.milestone)?.title) || "Current milestone"}</option>
+                      )}
                       {live.filter((m) => m.ref ?? m.id).map((m) => (
                         <option key={m.rid} value={m.ref ?? m.id}>
                           {m.title}
