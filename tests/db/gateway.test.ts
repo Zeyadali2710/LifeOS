@@ -1,7 +1,7 @@
 // Registry is mocked (vi.mock) so a test agent can own the fake tools.
 import { eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { agentRuns, approvals, notifications, permissions, toolCalls } from "@/server/db/schema";
+import { agentRuns, approvals, notifications, permissions, threads, toolCalls } from "@/server/db/schema";
 import { callTool } from "@/server/agents/gateway";
 import { fakeTools } from "../helpers/fake-tools";
 import { setupTestDb } from "./helpers";
@@ -91,8 +91,8 @@ describe("callTool", () => {
   });
 
   describe("content floor (D-06)", () => {
-    const content = (rid: string) =>
-      t.handle().insert(toolCalls).values({ runId: rid, toolUseId: `c_${Math.random()}`, kind: "tool", tool: "github.get_file", tier: "READ", status: "done", seq: 1 });
+    const content = (rid: string, tool = "github.get_file") =>
+      t.handle().insert(toolCalls).values({ runId: rid, toolUseId: `c_${Math.random()}`, kind: "tool", tool, tier: "READ", status: "done", seq: 1 });
     const override = () => t.handle().insert(permissions).values({ agentId: "projects", tool: "test.exec", tier: "EXECUTE" });
     const exec = () => call("test.exec", { text: "go" });
 
@@ -120,6 +120,22 @@ describe("callTool", () => {
       expect((await exec()).status).toBe("waiting_approval");
       runId = await mk(null);
       expect((await exec()).status).toBe("ok");
+    });
+    it("WR-01/WR-02: an earlier thread run's child, a retried run's tree and issue titles floor it too", async () => {
+      await override();
+      const mk = async (v: { parentRunId?: string; threadId?: string; retryOf?: string }) =>
+        (await t.handle().insert(agentRuns).values({ agentId: "projects", prompt: "p", model: "m", ...v }).returning())[0]!.id;
+      const [th] = await t.handle().insert(threads).values({ title: "t" }).returning();
+      const earlier = await mk({ threadId: th!.id });
+      await content(await mk({ parentRunId: earlier }));
+      runId = await mk({ threadId: th!.id });
+      expect((await exec()).status).toBe("waiting_approval");
+
+      const orch = await mk({});
+      const failed = await mk({ parentRunId: orch });
+      await content(failed);
+      runId = await mk({ retryOf: failed });
+      expect((await exec()).status).toBe("waiting_approval");
     });
     it("READ tools are unaffected", async () => {
       await content(runId);

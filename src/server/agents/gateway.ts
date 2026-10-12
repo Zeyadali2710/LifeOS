@@ -6,7 +6,7 @@ import { agentRuns, approvals, permissions, toolCalls } from "../db/schema";
 import { emitActivity, notifyLive } from "../events";
 import { log } from "../log";
 import { approvalSummary } from "@/lib/approval-kinds";
-import { CONTENT_TOOLS, resolvePolicy, withContentFloor } from "./policy";
+import { CONTENT_TOOLS, contentScope, resolvePolicy, withContentFloor } from "./policy";
 import { redact, summarize } from "./redact";
 import { getAgent } from "./registry";
 import { apiName, ToolError, type LlmClient, type Tool, type ToolContext } from "./types";
@@ -115,21 +115,11 @@ export async function callTool(
   const resolved = resolvePolicy(tool.tier, ov?.tier);
   let seen = false;
   if (tool.sideEffect && resolved !== "APPROVE" && resolved !== "HIGH_RISK") {
-    // The whole orchestrator tree (self, parent, siblings, children) counts, so a write can't escape via a fresh child run.
+    // Tree, thread and retried runs count, so a write can't escape via a fresh child run, a later turn or a retry.
     const [hit] = await h
       .select({ id: toolCalls.id })
       .from(toolCalls)
-      .where(
-        and(
-          inArray(toolCalls.tool, [...CONTENT_TOOLS]),
-          sql`${toolCalls.runId} in (
-            select r.id from agent_runs r, agent_runs me
-            where me.id = ${runId}
-              and (r.id = me.id or r.id = me.parent_run_id or r.parent_run_id = me.id
-                   or (me.parent_run_id is not null and r.parent_run_id = me.parent_run_id))
-          )`,
-        ),
-      )
+      .where(and(inArray(toolCalls.tool, [...CONTENT_TOOLS]), sql`${toolCalls.runId} in ${contentScope(runId)}`))
       .limit(1);
     seen = Boolean(hit);
   }
