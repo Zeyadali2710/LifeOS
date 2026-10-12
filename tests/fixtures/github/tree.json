@@ -1,0 +1,87 @@
+{
+  "sha": "abc",
+  "truncated": false,
+  "tree": [
+    {
+      "path": "README.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "s",
+      "size": 100
+    },
+    {
+      "path": "docs/ROADMAP.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "s",
+      "size": 100
+    },
+    {
+      "path": "docs/index.md",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "s",
+      "size": 100
+    },
+    {
+      "path": "src/app/page.tsx",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "s",
+      "size": 100
+    },
+    {
+      "path": "logo.png",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "s",
+      "size": 5000
+    },
+    {
+      "path": "docs",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "t"
+    },
+    {
+      "path": "src",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "t2"
+    },
+    {
+      "path": "node_modules",
+      "mode": "040000",
+      "type": "tree",
+      "sha": "n"
+    },
+    {
+      "path": "node_modules/react/index.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "s",
+      "size": 100
+    },
+    {
+      "path": "dist/bundle.js",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "s",
+      "size": 100
+    },
+    {
+      "path": ".next/cache.json",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "s",
+      "size": 100
+    },
+    {
+      "path": "vendor/lib.php",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "s",
+      "size": 100
+    }
+  ]
+}
