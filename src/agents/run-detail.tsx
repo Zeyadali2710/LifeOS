@@ -41,7 +41,7 @@ function Block({ label, value }: { label: string; value: unknown }) {
           <Icon name="content_copy" size={14} />
         </button>
       </div>
-      <pre className="max-h-[280px] overflow-auto rounded-8 bg-inset px-3 py-2.5 font-mono text-[11.5px] break-words whitespace-pre-wrap text-text-2">{text}</pre>
+      <pre className="max-h-[280px] overflow-auto rounded-10 border border-white/[.08] bg-white/[.03] px-3 py-2.5 font-code text-[11.5px] break-words whitespace-pre-wrap text-text-2">{text}</pre>
     </div>
   );
 }
@@ -79,7 +79,7 @@ export function RunDetail({ run, agent, steps, toolCalls }: RunDetailProps) {
   const active = run.durationMs === null ? 0 : Math.round(run.durationMs / 1000);
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="mx-auto flex max-w-[1480px] flex-col gap-6">
       <Link href={`/agents/${run.agentId}`} className="inline-flex items-center gap-1.5 text-[13px] text-text-2 hover:text-text">
         <Icon name="arrow_back" size={16} />
         {agent?.name ?? run.agentId}
@@ -94,12 +94,12 @@ export function RunDetail({ run, agent, steps, toolCalls }: RunDetailProps) {
           <h1 className="mt-2 max-w-[760px] text-[15px] leading-[1.4] font-medium break-words">{run.prompt}</h1>
           <div className="mt-2 flex flex-wrap gap-4 text-[12.5px]">
             {run.retryOf && (
-              <Link href={`/agents/runs/${run.retryOf}`} className="text-indigo-text hover:text-indigo-soft">
+              <Link href={`/agents/runs/${run.retryOf}`} className="text-cyan hover:text-cyan-soft">
                 Retry of {shortId(run.retryOf)}
               </Link>
             )}
             {run.parentRunId && (
-              <Link href={`/agents/runs/${run.parentRunId}`} className="text-indigo-text hover:text-indigo-soft">
+              <Link href={`/agents/runs/${run.parentRunId}`} className="text-cyan hover:text-cyan-soft">
                 Delegated from {shortId(run.parentRunId)}
               </Link>
             )}
@@ -119,7 +119,7 @@ export function RunDetail({ run, agent, steps, toolCalls }: RunDetailProps) {
         </div>
       </header>
 
-      <dl className="m-0 grid [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))] gap-4">
+      <dl className="glass-card m-0 grid [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))] gap-4 rounded-26 p-5">
         <Fact k="MODEL" v={`${modelLabel(run.model)}${run.tier ? ` · tag ${run.tier}` : ""}`} />
         <Fact k="STARTED" v={run.startedAt ? formatHM(new Date(run.startedAt)) : "—"} />
         <Fact k="DURATION" v={run.durationMs === null ? "—" : formatDuration(run.durationMs)} />
@@ -146,7 +146,7 @@ export function RunDetail({ run, agent, steps, toolCalls }: RunDetailProps) {
         ) : (
           <ul className="m-0 flex list-none flex-col p-0">
             {toolCalls.map((c) => (
-              <li key={c.seq} className="border-t border-[rgba(255,255,255,.06)] py-2.5">
+              <li key={c.seq} className="border-t border-white/[.06] py-2.5">
                 <Disclosure
                   summary={
                     <span className="grid min-w-0 flex-1 grid-cols-[28px_1fr_auto_auto_auto] items-center gap-3 text-[13px]">

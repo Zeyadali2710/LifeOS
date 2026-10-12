@@ -24,15 +24,15 @@ export function AgentCard({ a }: { a: A }) {
   return (
     <Link
       href={`/agents/${a.id}`}
-      className={`flex flex-col gap-3 rounded-14 border bg-surface p-4 transition duration-150 ${a.status === "ATTENTION" ? "border-[rgba(240,122,110,.3)]" : "border-[rgba(255,255,255,.07)]"} ${stats ? "hover:-translate-y-px hover:border-[rgba(255,255,255,.18)]" : ""}`}
+      className={`flex flex-col gap-3 glass-card rounded-22 p-4 transition duration-150 ${a.status === "ATTENTION" ? "!border-[rgba(255,105,97,.35)]" : ""} ${stats ? "hover:-translate-y-px" : ""}`}
     >
       <span className="flex items-center gap-2.5">
-        <span className={`grid size-[30px] place-items-center rounded-8 bg-fill-2 ${stats ? "" : "opacity-75"}`} style={{ color: a.color }}>
+        <span className={`grid size-[30px] place-items-center rounded-10 bg-white/[.06] ${stats ? "" : "opacity-75"}`} style={{ color: a.color }}>
           <Icon name={a.icon as IconName} size={18} />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-[13px] font-semibold">{a.name}</span>
-          <span className="flex items-center gap-1.5 font-mono text-[10.5px] font-semibold tracking-[0.1em] text-text-2">
+          <span className="block text-[11px] font-semibold tracking-[.12em] uppercase">{a.name}</span>
+          <span className="flex items-center gap-1.5 text-[10px] font-semibold tracking-[.12em] text-text-2">
             <StatusDot state={DOT[a.status]} pulse={working} />
             {a.status}
           </span>
@@ -43,7 +43,7 @@ export function AgentCard({ a }: { a: A }) {
         <>
           <span
             aria-hidden="true"
-            className={`block h-0.5 rounded-full bg-fill-3 ${working ? "animate-[lo-scan_1.8s_linear_infinite] bg-no-repeat" : ""}`}
+            className={`block h-0.5 rounded-full bg-white/[.06] ${working ? "animate-[lo-scan_1.8s_linear_infinite] bg-no-repeat" : ""}`}
             style={working ? { backgroundImage: `linear-gradient(90deg,transparent,${a.color},transparent)`, backgroundSize: "38% 100%" } : undefined}
           />
           <dl className="m-0 grid grid-cols-3 gap-2">
@@ -54,7 +54,7 @@ export function AgentCard({ a }: { a: A }) {
             ].map(([k, v]) => (
               <div key={k}>
                 <dt className="text-[11px] text-text-3">{k}</dt>
-                <dd className={`m-0 font-mono text-[12px] font-medium ${k === "HEALTH" && health !== null ? (health >= 97 ? "text-green" : "text-amber") : ""}`}>{v}</dd>
+                <dd className={`m-0 text-[12px] font-medium ${k === "HEALTH" && health !== null ? (health >= 97 ? "text-green" : "text-amber") : ""}`}>{v}</dd>
               </div>
             ))}
           </dl>

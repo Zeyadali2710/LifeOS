@@ -35,8 +35,8 @@ const PERM: Record<string, { label: string; tone: "neutral" | "blue" | "amber" |
 };
 
 const Card = ({ label, children }: { label: string; children: ReactNode }) => (
-  <section aria-label={label} className="flex flex-col gap-3 rounded-14 border border-[rgba(255,255,255,.07)] bg-surface p-4">
-    <h2 className="font-mono text-[11px] font-medium tracking-[0.1em] text-text-3">{label}</h2>
+  <section aria-label={label} className="glass-card flex flex-col gap-3 rounded-26 p-4">
+    <h2 className="text-[11px] font-medium tracking-[.12em] text-text-3">{label}</h2>
     {children}
   </section>
 );
@@ -136,19 +136,19 @@ export function AgentDetail(d: AgentDetailProps) {
   );
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="mx-auto flex max-w-[1480px] flex-col gap-6">
       <Link href="/agents" className="inline-flex items-center gap-1.5 text-[13px] text-text-2 hover:text-text">
         <Icon name="arrow_back" size={16} />
         Agent command
       </Link>
       <header className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-4">
-          <span className="grid size-14 shrink-0 place-items-center rounded-14 bg-fill-2" style={{ color: agent.color }}>
+          <span className="grid size-14 shrink-0 place-items-center rounded-14 bg-white/[.06]" style={{ color: agent.color }}>
             <Icon name={agent.icon as IconName} size={28} />
           </span>
           <div>
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-[20px] leading-[1.2] font-medium tracking-[-0.01em]">{agent.name}</h1>
+              <h1 className="text-[22px] leading-[1.2] font-semibold tracking-[.1em] uppercase">{agent.name}</h1>
               <Badge kind="status" tone={tone}>
                 <span className="inline-flex items-center gap-1.5">
                   <StatusDot state={DOT[status]} pulse={status === "WORKING"} />
@@ -217,15 +217,15 @@ export function AgentDetail(d: AgentDetailProps) {
 
           <aside className="flex min-w-0 flex-[1_1_320px] flex-col gap-4">
             {run?.status === "failed" && (
-              <section aria-label="Error" className="flex flex-col gap-2 rounded-14 border border-[rgba(240,122,110,.3)] bg-surface p-4">
-                <div className="font-mono text-[11px] tracking-[0.1em] text-red">LAST RUN FAILED</div>
+              <section aria-label="Error" className="flex flex-col gap-2 glass-card rounded-26 !border-[rgba(255,105,97,.35)] p-4">
+                <div className="text-[11px] tracking-[.12em] text-red">LAST RUN FAILED</div>
                 <p className="text-[13px] text-text-2">{run.error ?? "The run stopped before it finished."}</p>
                 <div className="flex gap-3 text-[12.5px]">
-                  <Link href={`/agents/runs/${run.id}`} className="text-indigo-text hover:text-indigo-soft">
+                  <Link href={`/agents/runs/${run.id}`} className="text-cyan hover:text-cyan-soft">
                     View run
                   </Link>
                   {needsReconnect && (
-                    <Link href="/settings?section=connections" className="text-indigo-text hover:text-indigo-soft">
+                    <Link href="/settings?section=connections" className="text-cyan hover:text-cyan-soft">
                       Reconnect
                     </Link>
                   )}
