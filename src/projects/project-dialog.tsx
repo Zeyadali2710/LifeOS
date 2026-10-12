@@ -11,16 +11,17 @@ import { Button } from "@/ui/button";
 import { Dialog } from "@/ui/dialog";
 import { Field, Input, Select, Textarea } from "@/ui/field";
 
-export function ProjectDialog({ open, project, focus, onClose }: { open: boolean; project?: ProjectDTO; focus?: "workspacePath"; onClose: () => void }) {
+export function ProjectDialog({ open, project, focus, onClose }: { open: boolean; project?: ProjectDTO; focus?: "workspacePath" | "context"; onClose: () => void }) {
   if (!open) return null;
   return <Form key={project?.id ?? "new"} project={project} focus={focus} onClose={onClose} />;
 }
 
-function Form({ project, focus, onClose }: { project?: ProjectDTO; focus?: "workspacePath"; onClose: () => void }) {
+function Form({ project, focus, onClose }: { project?: ProjectDTO; focus?: "workspacePath" | "context"; onClose: () => void }) {
   const router = useRouter();
   const { toast } = useShell();
   const [name, setName] = useState(project?.name ?? "");
   const [description, setDescription] = useState(project?.description ?? "");
+  const [context, setContext] = useState(project?.context ?? "");
   const [category, setCategory] = useState<ProjectCategory>(project?.category ?? "personal");
   const [status, setStatus] = useState<ProjectStatus>(project?.status ?? "active");
   const [priority, setPriority] = useState<1 | 2 | 3>(project?.priority ?? 2);
@@ -31,7 +32,7 @@ function Form({ project, focus, onClose }: { project?: ProjectDTO; focus?: "work
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [busy, setBusy] = useState(false);
   const [discard, setDiscard] = useState(false);
-  const snap = JSON.stringify([name, description, category, status, priority, targetDate, workspacePath, workspaceMachine, blockerNote]);
+  const snap = JSON.stringify([name, description, context, category, status, priority, targetDate, workspacePath, workspaceMachine, blockerNote]);
   const [initial] = useState(snap);
   const close = () => (snap !== initial ? setDiscard(true) : onClose());
 
@@ -42,6 +43,7 @@ function Form({ project, focus, onClose }: { project?: ProjectDTO; focus?: "work
     const parsed = projectInput.safeParse({
       name,
       description,
+      context,
       category,
       status,
       priority,
@@ -83,6 +85,7 @@ function Form({ project, focus, onClose }: { project?: ProjectDTO; focus?: "work
       title={project ? "Edit project" : "New project"}
       width={480}
       sheet
+      initialFocus={focus ? () => document.querySelector<HTMLElement>("form [data-initial]") : undefined}
       actions={
         <>
           <Button variant="ghost" onClick={close}>
@@ -102,10 +105,13 @@ function Form({ project, focus, onClose }: { project?: ProjectDTO; focus?: "work
         }}
       >
         <Field label="Name" error={errors.name}>
-          <Input value={name} maxLength={80} required autoFocus={focus !== "workspacePath"} onChange={(e) => setName(e.target.value)} />
+          <Input value={name} maxLength={80} required autoFocus={!focus} onChange={(e) => setName(e.target.value)} />
         </Field>
         <Field label="Description" error={errors.description}>
           <Textarea rows={3} maxLength={500} className="rounded-14" value={description} onChange={(e) => setDescription(e.target.value)} />
+        </Field>
+        <Field label="Context" error={errors.context} helper="What the project is, how it's built and where things live. Included in Copy context.">
+          <Textarea rows={6} maxLength={4000} className="rounded-14" autoFocus={focus === "context"} data-initial={focus === "context" || undefined} value={context} onChange={(e) => setContext(e.target.value)} />
         </Field>
         <Field label="Category">
           <Select value={category} onChange={(e) => setCategory(e.target.value as ProjectCategory)}>
@@ -141,7 +147,7 @@ function Form({ project, focus, onClose }: { project?: ProjectDTO; focus?: "work
           <Input type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} />
         </Field>
         <Field label="Workspace path" error={errors.workspacePath} helper="Folder on your machine, e.g. C:\code\lifeos or ~/code/lifeos">
-          <Input className="font-code" value={workspacePath} maxLength={400} autoFocus={focus === "workspacePath"} onChange={(e) => setWorkspacePath(e.target.value)} />
+          <Input className="font-code" value={workspacePath} maxLength={400} autoFocus={focus === "workspacePath"} data-initial={focus === "workspacePath" || undefined} onChange={(e) => setWorkspacePath(e.target.value)} />
         </Field>
         <Field label="Machine label" error={errors.workspaceMachine}>
           <Input value={workspaceMachine} maxLength={40} onChange={(e) => setWorkspaceMachine(e.target.value)} />

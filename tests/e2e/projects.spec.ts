@@ -37,6 +37,26 @@ test("project lifecycle: create, workspace, task, milestone, archive, list, home
   await expect(page.getByRole("button", { name: "Copy launch command" })).toBeVisible();
   await expect(page.getByText(`cd "${path}" && claude`, { exact: true })).toBeVisible();
 
+  // Context notes: empty state, edit, survive a name-only edit.
+  const note = `Context note ${id}`;
+  await expect(vis(page, "No context notes yet. Add what this project is and how it's built so Claude Code starts with the right picture.")).toBeVisible();
+  await page.getByRole("button", { name: "Edit context" }).filter({ visible: true }).click();
+  const edlg = page.getByRole("dialog", { name: "Edit project" });
+  await expect(edlg.getByLabel("Context", { exact: true })).toBeFocused();
+  await edlg.getByLabel("Context", { exact: true }).fill(note);
+  await edlg.getByRole("button", { name: "Save project" }).click();
+  await expect(edlg).toBeHidden();
+  await expect(vis(page, note)).toBeVisible();
+  await page.getByRole("button", { name: "Edit project" }).filter({ visible: true }).first().click();
+  await edlg.getByLabel("Name", { exact: true }).fill(`${name} b`);
+  await edlg.getByRole("button", { name: "Save project" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(`${name} b`);
+  await expect(vis(page, note)).toBeVisible();
+  await page.getByRole("button", { name: "Edit project" }).filter({ visible: true }).first().click();
+  await edlg.getByLabel("Name", { exact: true }).fill(name);
+  await edlg.getByRole("button", { name: "Save project" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(name);
+
   // Task with the project preselected.
   const task = `E2E task ${id}`;
   await page.getByRole("button", { name: "New task" }).click();
@@ -58,6 +78,7 @@ test("project lifecycle: create, workspace, task, milestone, archive, list, home
   await page.getByRole("button", { name: "Project actions" }).click();
   await page.getByRole("menuitem", { name: "Archive project" }).click();
   await expect(vis(page, "This project is archived.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Edit context" })).toHaveCount(0);
   await page.getByRole("button", { name: "Unarchive project" }).click();
   await expect(vis(page, "This project is archived.")).toHaveCount(0);
 

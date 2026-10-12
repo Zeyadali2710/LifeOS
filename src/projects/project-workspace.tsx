@@ -15,6 +15,7 @@ import { SectionHeader } from "@/ui/section-header";
 import { BlockersList } from "./blockers-list";
 import { DependencyPicker } from "./dependency-picker";
 import { LinkDialog } from "./link-dialog";
+import { ContextCard } from "./context-card";
 import { ProgressRing } from "./progress-ring";
 import { ProjectDialog } from "./project-dialog";
 import { MilestoneList, ProjectTasks } from "./project-tasks";
@@ -54,7 +55,7 @@ export function ProjectWorkspace({
   const { toast } = useShell();
   const p = d.project;
   const archived = p.status === "archived";
-  const [edit, setEdit] = useState<null | { focus?: "workspacePath" }>(null);
+  const [edit, setEdit] = useState<null | { focus?: "workspacePath" | "context" }>(null);
   const [link, setLink] = useState(false);
   const [dep, setDep] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -207,6 +208,9 @@ export function ProjectWorkspace({
               primaryRepoUrl={d.primaryRepoUrl}
               onSetWorkspace={() => setEdit({ focus: "workspacePath" })}
             />
+          </section>
+          <section aria-label="Context" className="order-1">
+            <ContextCard context={p.context} onEdit={archived ? undefined : () => setEdit({ focus: "context" })} />
           </section>
           <section aria-labelledby="tasks-h">
             <SectionHeader id="tasks-h" label="Tasks" />
