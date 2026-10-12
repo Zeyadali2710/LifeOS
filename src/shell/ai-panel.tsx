@@ -25,7 +25,7 @@ const subscribe = (cb: () => void) => {
   window.addEventListener("resize", cb);
   return () => window.removeEventListener("resize", cb);
 };
-const getMode = (): Mode => (window.innerWidth >= 1100 ? "docked" : window.innerWidth >= 720 ? "overlay" : "sheet");
+const getMode = (): Mode => (window.innerWidth >= 1100 ? "docked" : window.innerWidth >= 760 ? "overlay" : "sheet");
 
 export function AIPanel() {
   const { aiOpen, closeAI, consumeAIPrompt, toast } = useShell();
@@ -85,7 +85,7 @@ export function AIPanel() {
       void submit(draft);
     }
   };
-  const iconBtn = "grid size-11 place-items-center rounded-8 text-text-3 hover:bg-fill-2 hover:text-text tab:size-[30px]";
+  const iconBtn = "grid size-[30px] place-items-center rounded-8 text-text-2 hover:bg-white/[.06] hover:text-text [@media(pointer:coarse)]:size-11";
   const modal = mode !== "docked";
   const repoRows: { icon: IconName; text: string }[] = [
     { icon: "priority_high", text: "What's happening in my repos?" },
@@ -147,15 +147,13 @@ export function AIPanel() {
       ref={ref}
       aria-label="LifeOS assistant"
       {...(modal ? { role: "dialog", "aria-modal": true } : {})}
-      className={`flex h-full w-[min(440px,92vw)] animate-[lo-slide_200ms_ease-out] flex-col border-l border-[rgba(255,255,255,.07)] bg-[linear-gradient(180deg,rgba(20,21,30,.98),rgba(13,14,19,.98))] ${
-        mode === "docked" ? "shrink-0" : mode === "overlay" ? "absolute inset-y-0 right-0 shadow-overlay" : "absolute inset-0 w-full"
-      }`}
+      className="glass-panel absolute top-[80px] right-3 bottom-3 z-[60] flex w-[min(440px,calc(100%-24px))] animate-[lo-slide_.2s_ease] flex-col overflow-hidden rounded-30"
     >
-      <header className="flex h-14 shrink-0 items-center gap-2.5 border-b border-[rgba(255,255,255,.06)] px-5">
-        <span aria-hidden="true" className="size-[9px] rotate-45 rounded-[2px] bg-[#8b8cff]" />
+      <header className="flex h-14 shrink-0 items-center gap-2.5 border-b border-white/[.06] px-5 pr-4">
+        <span aria-hidden="true" className="size-[9px] rotate-45 rounded-[2px] bg-accent" />
         <div className="flex flex-col">
-          <span className="text-[14px] leading-tight font-medium">LifeOS</span>
-          <span className={`flex items-center gap-1.5 font-mono text-[10px] tracking-[0.08em] ${assistant === "cap" ? "text-text-2" : "text-text-3"}`}>
+          <span className="font-display text-[22px] leading-[1.15] italic">LifeOS</span>
+          <span className={`flex items-center gap-1.5 text-[10px] font-medium tracking-[.12em] ${assistant === "cap" ? "text-text-2" : "text-text-3"}`}>
             {assistant === "cap" && <span aria-hidden="true" className="size-1.5 rounded-full bg-red" />}
             ORCHESTRATOR · {SUB_LABEL[assistant]}
           </span>
@@ -185,11 +183,11 @@ export function AIPanel() {
           />
         ) : turns.length === 0 ? (
           <div className="flex flex-col gap-4 p-5">
-            <h2 className="text-[20px] leading-[1.3] font-medium tracking-[-0.01em]">What should we look at?</h2>
-            <p className="text-[13px] leading-normal text-text-2">
+            <h2 className="font-display text-[32px] leading-[1.05]">What should we <em>look at?</em></h2>
+            <p className="text-[13.5px] leading-normal text-text-2">
               Ask about your repositories, pull requests and CI{status?.calendarConnected ? ", or look at your calendar and tasks" : ""}. Anything that creates or changes something waits for your approval.
             </p>
-            <div className="font-mono text-[10px] tracking-[0.08em] text-text-3">EXAMPLES</div>
+            <div className="text-[10px] font-medium tracking-[.12em] text-text-3">EXAMPLES</div>
             <div className="flex flex-col gap-2">
               {examples.map((s) => (
                 <button
@@ -197,9 +195,9 @@ export function AIPanel() {
                   type="button"
                   disabled={blocked || streaming}
                   onClick={() => void submit(s.text)}
-                  className="flex min-h-11 items-center gap-2.5 rounded-9 border border-[rgba(255,255,255,.07)] bg-fill-1 px-3 py-2.5 text-left text-[13.5px] hover:border-[rgba(139,140,255,.35)] hover:bg-[rgba(139,140,255,.06)] disabled:opacity-50"
+                  className="flex min-h-11 items-center gap-2.5 rounded-16 border border-white/[.10] bg-white/[.02] px-3 py-2.5 text-left text-[13.5px] hover:border-[rgba(10,132,255,.35)] hover:bg-[rgba(10,132,255,.06)] disabled:opacity-50"
                 >
-                  <Icon name={s.icon} size={17} className="text-[#a5a6ff]" />
+                  <Icon name={s.icon} size={17} className="text-accent" />
                   {s.text}
                 </button>
               ))}
@@ -207,9 +205,9 @@ export function AIPanel() {
           </div>
         ) : (
           turns.map((t, i) => (
-            <div key={t.id} className="flex animate-[lo-fade_250ms_ease-out] flex-col gap-3 border-b border-[rgba(255,255,255,.05)] p-5">
-              <div className="font-mono text-[10px] tracking-[0.08em] text-text-3">YOU · {formatHM(new Date(t.at))}</div>
-              <p className="text-[16px] leading-[1.4] break-words whitespace-pre-wrap">{t.prompt}</p>
+            <div key={t.id} className="flex animate-[lo-fade_250ms_ease-out] flex-col gap-3 border-b border-white/[.05] p-5">
+              <div className="text-[10px] font-medium tracking-[.12em] text-text-3">YOU · {formatHM(new Date(t.at))}</div>
+              <p className="font-display text-[22px] leading-[1.15] break-words whitespace-pre-wrap">{t.prompt}</p>
               {t.steps.length > 0 && <ExecutionTrace steps={t.steps} size="panel" runHref={t.run ? `/agents/runs/${t.run.id}` : undefined} />}
               {t.approvals.map((a) => (
                 <ApprovalCard key={a.id} approval={a} onDecided={() => void (chat.threadId && chat.openThread(chat.threadId))} />
@@ -226,8 +224,8 @@ export function AIPanel() {
         <div ref={endRef} />
       </div>
 
-      <div className="shrink-0 border-t border-[rgba(255,255,255,.06)] px-3.5 pt-3 pb-3.5">
-        <div className="rounded-12 border border-[rgba(139,140,255,.25)] bg-fill-1 p-2.5 pt-2.5 pb-2 pl-3 focus-within:border-[rgba(139,140,255,.6)] focus-within:shadow-[0_0_0_3px_rgba(139,140,255,.15)]">
+      <div className="shrink-0 border-t border-white/[.06] px-3.5 pt-3 pb-3.5">
+        <div className="rounded-22 border border-white/[.14] bg-white/[.06] p-2.5 pt-2.5 pb-2 pl-3.5 focus-within:border-[rgba(100,210,255,.55)] focus-within:shadow-[var(--ring-input)]">
           <textarea
             ref={areaRef}
             rows={2}
@@ -240,14 +238,14 @@ export function AIPanel() {
             className="block w-full resize-none bg-transparent text-[14px] leading-[1.45] text-text outline-none placeholder:text-text-3"
           />
           <div className="mt-1.5 flex items-center gap-2">
-            <span className="flex-1 font-mono text-[10.5px] text-text-3">↵ send · ⇧↵ newline · actions need approval</span>
+            <span className="flex-1 text-[10.5px] text-text-3">↵ send · ⇧↵ newline · actions need approval</span>
             <button
               type="button"
               disabled
               aria-disabled="true"
               title="Voice input isn't available yet"
               aria-label="Voice input"
-              className="grid size-11 place-items-center rounded-8 text-text-4 tab:size-[30px]"
+              className="grid size-[30px] place-items-center rounded-8 text-text-4 [@media(pointer:coarse)]:size-11"
             >
               <Icon name="mic" size={18} />
             </button>
@@ -257,7 +255,7 @@ export function AIPanel() {
                 aria-label="Stop run"
                 disabled={!activeRunId}
                 onClick={() => activeRunId && void chat.stop(activeRunId)}
-                className="grid size-11 place-items-center rounded-8 bg-fill-3 text-text tab:size-[30px]"
+                className="grid size-[30px] place-items-center rounded-8 bg-white/[.10] text-text [@media(pointer:coarse)]:size-11"
               >
                 <Icon name="stop" size={18} />
               </button>
@@ -267,7 +265,7 @@ export function AIPanel() {
                 aria-label="Send"
                 disabled={!draft.trim() || blocked}
                 onClick={() => void submit(draft)}
-                className="grid size-11 place-items-center rounded-8 bg-[#8b8cff] text-[#0b0c10] shadow-glow-ai disabled:bg-fill-3 disabled:text-text-4 disabled:shadow-none tab:size-[30px]"
+                className="grid size-[30px] place-items-center rounded-8 bg-accent text-on-accent disabled:bg-white/[.10] disabled:text-text-4 [@media(pointer:coarse)]:size-11"
               >
                 <Icon name="arrow_upward" size={18} />
               </button>
@@ -288,7 +286,7 @@ function wrap(mode: Mode, panel: ReactNode, close: () => void) {
   if (mode === "docked") return panel;
   return (
     <div className="fixed inset-0 z-[60]">
-      {mode === "overlay" && <div aria-hidden="true" className="absolute inset-0 animate-[lo-fade_150ms_ease-out] bg-[rgba(5,6,9,.6)]" onClick={close} />}
+      <div aria-hidden="true" className="absolute inset-0 animate-[lo-fade_150ms_ease-out] bg-black/40" onClick={close} />
       {panel}
     </div>
   );
