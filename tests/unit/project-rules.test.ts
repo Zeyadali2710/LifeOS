@@ -89,9 +89,9 @@ describe("languageBar", () => {
 
 describe("sparkline", () => {
   it("buckets by Sydney day, oldest to newest", () => {
-    const s = sparkline(["2026-05-10T15:30:00Z", "2026-05-10T02:00:00Z", NOW], NOW);
+    const s = sparkline(["2026-05-09T15:30:00Z", "2026-05-10T02:00:00Z", NOW], NOW);
     expect(s).toHaveLength(14);
-    expect(s[13]).toBe(2); // 10 May Sydney
+    expect(s[13]).toBe(3); // 10 May Sydney
     expect(s.reduce((a, b) => a + b, 0)).toBe(3);
   });
   it("commit at 15:30Z lands on the next Sydney day", () => {
@@ -227,7 +227,36 @@ describe("buildBrief", () => {
     repos: [{ fullName: "o/r", ci: "passing" as const }],
   };
   it("matches snapshot", () => {
-    expect(buildBrief(input)).toMatchInlineSnapshot();
+    expect(buildBrief(input)).toMatchInlineSnapshot(`
+      "# LifeOS
+
+      Personal OS
+
+      ## Status
+
+      - Status: Active
+      - Health: On track
+      - Priority: P1
+      - Progress: 33% (1/3 tasks)
+      - Target: 2026-06-01
+
+      ## Open tasks
+
+      - Ship it (due 2026-05-12)
+      - Docs
+
+      ## Blockers
+
+      None.
+
+      ## Milestones
+
+      - [ ] Beta (due 2026-05-20)
+
+      ## Repositories
+
+      - o/r (CI passing)"
+    `);
   });
   it("empty sections say None.", () => {
     const b = buildBrief({ ...input, openTasks: [], milestones: [], repos: [] });
