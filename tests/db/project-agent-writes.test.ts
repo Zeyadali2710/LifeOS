@@ -242,6 +242,15 @@ describe("projects.update", () => {
     expect(tk).toMatchObject({ title: "Owner title", dueDate: "2030-02-01", priority: 1, milestoneId: s.mid });
   });
 
+  it("WR-04: re-linking an already linked repo is a no-op", async () => {
+    const s = await seed();
+    await h().insert(projectLinks).values({ projectId: s.pid, kind: "repo", repoId: 7 });
+    const id = apId(await call("projects.update", { project: s.pid, changes: { name: "Live 2" }, links: [{ kind: "repo", repo: "me/studio" }] }));
+    expect((await approve(id)).status).toBe("executed");
+    expect(await count(projectLinks)).toBe(1);
+    expect((await h().select().from(projects).where(eq(projects.id, s.pid)))[0]!.name).toBe("Live 2");
+  });
+
   it("WR-03: refuses (and flags) a draft whose task was edited after drafting", async () => {
     const s = await seed();
     const id = apId(await call("projects.update", { project: s.pid, tasks: [{ id: s.tid, title: "Agent title" }] }));

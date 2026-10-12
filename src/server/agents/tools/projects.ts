@@ -4,7 +4,7 @@ import { and, asc, eq, ilike, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { draftCounts, projectCreatePayload, projectUpdatePayload, type DraftLink, type ProjectUpdatePayload } from "@/lib/project-payload";
 import type { DB } from "../../db/client";
-import { auditLog, githubRepos, milestones, projects, tasks, toolCalls } from "../../db/schema";
+import { auditLog, githubRepos, milestones, projectLinks, projects, tasks, toolCalls } from "../../db/schema";
 import { listProjects, loadProject } from "../../project-queries";
 import { addLink, addTaskDependency, createMilestone, createProject, updateMilestone, updateProject } from "../../projects";
 import { createTask, updateTask } from "../../tasks";
@@ -286,7 +286,9 @@ async function applyDraft(ctx: ToolContext, kind: "create" | "update", raw: Reco
       }
       const [r] = await tx.select({ id: githubRepos.id }).from(githubRepos).where(eq(githubRepos.fullName, l.repo));
       if (!r) throw new ToolError("not_found", `Unknown repository ${l.repo}`);
-      must(await addLink(tx, projectId, { kind: "repo", repoId: r.id }, now), "Link");
+      // Re-linking a repo the project already has is a no-op (WR-04), not a failed approval.
+      const [has] = await tx.select({ id: projectLinks.id }).from(projectLinks).where(and(eq(projectLinks.projectId, projectId), eq(projectLinks.repoId, r.id)));
+      if (!has) must(await addLink(tx, projectId, { kind: "repo", repoId: r.id }, now), "Link");
     }
 
     for (const [i, t] of p.tasks.entries()) {
