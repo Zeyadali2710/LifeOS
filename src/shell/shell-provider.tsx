@@ -9,8 +9,6 @@ import { Toast } from "./toast";
 import type { ToastState } from "./toast";
 
 type Shell = {
-  compact: boolean;
-  toggleCompact(): void;
   paletteOpen: boolean;
   openPalette(): void;
   closePalette(): void;
@@ -40,9 +38,8 @@ export function useShell(): Shell {
 const noopSubscribe = () => () => {};
 const detectApple = () => /Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent);
 
-export function ShellProvider({ initialCompact, children }: { initialCompact: boolean; children: ReactNode }) {
+export function ShellProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
-  const [compact, setCompact] = useState(initialCompact);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiPrompt, setAiPrompt] = useState<string | null>(null);
@@ -54,13 +51,6 @@ export function ShellProvider({ initialCompact, children }: { initialCompact: bo
   const promptRef = useRef<string | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const toastId = useRef(0);
-
-  const toggleCompact = useCallback(() => {
-    if (window.innerWidth < 1100) return;
-    const next = !compact;
-    document.cookie = `lo_nav=${next ? "compact" : "full"}; path=/; max-age=31536000; samesite=lax`;
-    setCompact(next);
-  }, [compact]);
 
   const openPalette = useCallback(() => {
     setAiOpen(false);
@@ -123,9 +113,6 @@ export function ShellProvider({ initialCompact, children }: { initialCompact: bo
           if (aiOpen) setAiOpen(false);
           else openAI();
           break;
-        case "compact":
-          toggleCompact();
-          break;
         case "nav":
           setPaletteOpen(false);
           setNotifOpen(false);
@@ -142,14 +129,14 @@ export function ShellProvider({ initialCompact, children }: { initialCompact: bo
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [paletteOpen, aiOpen, notifOpen, moreOpen, openPalette, openAI, toggleCompact, router]);
+  }, [paletteOpen, aiOpen, notifOpen, moreOpen, openPalette, openAI, router]);
 
   const value = useMemo<Shell>(
     () => ({
-      compact, toggleCompact, paletteOpen, openPalette, closePalette, aiOpen, aiPrompt, openAI, closeAI, consumeAIPrompt,
+      paletteOpen, openPalette, closePalette, aiOpen, aiPrompt, openAI, closeAI, consumeAIPrompt,
       notifOpen, openNotifications, closeNotifications, moreOpen, setMoreOpen, toast, signOut, isApple,
     }),
-    [compact, toggleCompact, paletteOpen, openPalette, closePalette, aiOpen, aiPrompt, openAI, closeAI, consumeAIPrompt, notifOpen, openNotifications, closeNotifications, moreOpen, toast, signOut, isApple],
+    [paletteOpen, openPalette, closePalette, aiOpen, aiPrompt, openAI, closeAI, consumeAIPrompt, notifOpen, openNotifications, closeNotifications, moreOpen, toast, signOut, isApple],
   );
 
   return (

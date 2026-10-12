@@ -3,7 +3,6 @@ import { NAV_ITEMS } from "./nav";
 export type ShellAction =
   | { type: "palette" }
   | { type: "ai" }
-  | { type: "compact" }
   | { type: "escape" }
   | { type: "nav"; href: string };
 
@@ -24,7 +23,6 @@ export function matchShortcut(e: KeyInfo): ShellAction | null {
     const key = e.key.toLowerCase();
     if (key === "k") return e.repeat ? null : { type: "palette" };
     if (key === "j") return e.repeat ? null : { type: "ai" };
-    if (e.code === "Backslash") return e.repeat ? null : { type: "compact" };
     if (e.code === "Comma") return typing ? null : { type: "nav", href: "/settings" };
     return null;
   }
