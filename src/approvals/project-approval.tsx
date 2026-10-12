@@ -50,9 +50,11 @@ export type ProjectErrors = Record<string, string>;
 export function toProjectDraft(p: ProjectPayload): ProjectDraft {
   const f = isUpdate(p) ? { ...p.before.fields, ...p.changes } : p;
   const ms = p.milestones as { id?: string; ref?: string; title: string; dueDate?: string | null }[];
+  // An absent ref must not match milestones that also lack a ref/id (undefined === undefined).
   const keyOf = (k?: string | null) => {
+    if (!k) return "";
     const m = ms.find((x) => x.ref === k || x.id === k);
-    return m ? (m.ref ?? m.id ?? "") : (k ?? "");
+    return m ? (m.ref ?? m.id ?? "") : k;
   };
   return {
     name: f.name ?? "",
