@@ -147,7 +147,7 @@ export function AIPanel() {
       ref={ref}
       aria-label="LifeOS assistant"
       {...(modal ? { role: "dialog", "aria-modal": true } : {})}
-      className="glass-panel absolute top-[80px] right-3 bottom-3 z-[60] flex w-[min(440px,calc(100%-24px))] animate-[lo-slide_.2s_ease] flex-col overflow-hidden rounded-30"
+      className="glass-panel absolute top-[80px] right-3 bottom-3 z-[25] flex w-[min(440px,calc(100%-24px))] animate-[lo-slide_.2s_ease] flex-col overflow-hidden rounded-30"
     >
       <header className="flex h-14 shrink-0 items-center gap-2.5 border-b border-white/[.06] px-5">
         <span aria-hidden="true" className="size-[9px] rotate-45 rounded-[2px] bg-accent" />

@@ -134,7 +134,7 @@ export function OrganizationHeader({
           {sync === "ok" ? "Sync started" : sync === "fail" ? "Sync failed" : ""}
         </span>
         {canWrite ? (
-          <Button variant="primary" className="h-8 max-tab:fixed max-tab:right-4 max-tab:bottom-[calc(76px+env(safe-area-inset-bottom))] max-tab:z-30 max-tab:size-14 max-tab:rounded-full max-tab:p-0" aria-label="New event" onClick={onNewEvent}>
+          <Button variant="primary" className="h-8 max-tab:fixed max-tab:right-4 max-tab:bottom-[calc(96px+env(safe-area-inset-bottom))] max-tab:z-30 max-tab:size-14 max-tab:rounded-full max-tab:p-0" aria-label="New event" onClick={onNewEvent}>
             <Icon name="add" size={18} />
             <span className="max-tab:hidden">New event</span>
           </Button>

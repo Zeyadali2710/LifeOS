@@ -66,7 +66,6 @@ test("desktop: header nav reaches every domain page and shortcuts", async ({ pag
   await more.focus();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("menu")).toBeVisible();
-  await page.keyboard.press("ArrowDown");
   await expect(page.getByRole("menuitem").first()).toBeFocused();
   await expect(page.getByRole("menuitem", { name: "Sign out" })).toBeVisible();
   await page.keyboard.press("Escape");

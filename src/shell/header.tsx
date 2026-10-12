@@ -28,7 +28,7 @@ export function Header({ owner, version }: { owner: { name: string; email: strin
   const mod = isApple ? "⌘" : "Ctrl ";
 
   return (
-    <header className="pointer-events-none fixed inset-x-4 top-[14px] z-30 flex items-center gap-2.5">
+    <header className="pointer-events-none fixed inset-x-4 top-[14px] z-[45] flex items-center gap-2.5">
       <span className="sr-only" role="status">
         {healthRow.text}
       </span>
@@ -60,7 +60,7 @@ export function Header({ owner, version }: { owner: { name: string; email: strin
                 aria-current={cur ? "page" : undefined}
                 aria-label={label}
                 aria-describedby={tipId}
-                className={`group relative flex h-10 min-w-10 items-center justify-center gap-1.5 rounded-full px-2.5 transition-[background-color,color] duration-150 ${
+                className={`group relative flex h-10 min-w-10 items-center [@media(pointer:coarse)]:h-11 [@media(pointer:coarse)]:min-w-11 justify-center gap-1.5 rounded-full px-2.5 transition-[background-color,color] duration-150 ${
                   cur ? "bg-white/[.16] text-white shadow-[inset_0_1px_0_rgba(255,255,255,.2)] hover:text-white" : "text-soft hover:bg-white/[.08] hover:text-white"
                 }`}
               >
@@ -95,7 +95,7 @@ export function Header({ owner, version }: { owner: { name: string; email: strin
         >
           <Icon name="search" size={19} className="shrink-0" />
           <span className="min-w-0 flex-1 truncate">Search</span>
-          <span className="hidden shrink-0 text-[11.5px] text-text-3 tab:inline">{isApple ? "⌘K" : "Ctrl K"}</span>
+          <span className="hidden shrink-0 text-[11.5px] text-soft tab:inline">{isApple ? "⌘K" : "Ctrl K"}</span>
         </button>
         <button type="button" onClick={openNotifications} aria-label={bellLabel} aria-haspopup="dialog" className={`${ctl} text-soft hover:bg-white/[.10] hover:text-white`}>
           <Icon name="notifications" size={21} />
