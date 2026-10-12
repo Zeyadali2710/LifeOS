@@ -38,3 +38,14 @@ Things only the owner can do (VM, deploy, UAT, credentials). Autonomous runs app
 
   Unblocks: phase 5.1 human verification (CAR-02, CAR-03, AGT-01 live). Any failure becomes a gap for `/gsd:plan-phase 5.1 --gaps`. Reply with the 0007 migrate log line and pass/issue per UAT item (never paste tokens).
 - [ ] **During the 5.1 UAT, also check the two edit-form review fixes** (05.1-REVIEW-FIX CR-01/CR-02): in an approval card, a task drafted without a milestone stays "No milestone" after you edit anything else; editing a `project_update` card doesn't clear existing tasks' due date / priority / milestone. Note: once a conversation has read repo files, issues, PRs or commit messages, any side-effecting tool now asks for approval even if you set it to auto (intended security floor, 05.1 WR-01/WR-02).
+
+## Phase 6 — Outreach (do after the Phase 6 deploy; nothing here blocks the build — it runs on labelled MOCKs until then)
+
+- [ ] **Google Cloud → Google Auth Platform → Data Access → Add or remove scopes:** add `https://www.googleapis.com/auth/gmail.readonly` and `https://www.googleapis.com/auth/gmail.compose` → Save. Don't submit for verification (personal use is exempt).
+- [ ] **Google Auth Platform → Audience:** confirm Publishing status is **In production** (Testing = 7-day refresh tokens for Calendar and Gmail).
+- [ ] **After deploy: LifeOS Settings → Connections → Google → Reconnect Google.** On "Google hasn't verified this app" → Advanced → "Go to LifeOS (unsafe)" → tick every box incl. Gmail read + compose. If Google blocks restricted scopes, fallback: set Publishing status to Testing with yourself as test user (weekly re-consent).
+- [ ] **Luma Sydney feed:** https://luma.com/sydney → "Add iCal Subscription" → copy link → LifeOS Settings → Connections → Event feeds → Add ("Luma Sydney"). Optional: other Luma calendars you follow, a Meetup group's `/events/ical/` link if it loads logged-out.
+- [ ] **Eventbrite (optional):** eventbrite.com → Account Settings → Developer Links → API Keys → copy the **Private token** → LifeOS Settings → Connections → Eventbrite (never .env/chat). Add organizer IDs to follow (number in an organizer page URL).
+- [ ] **Luma API (optional, only with a Luma Plus calendar you own):** luma.com/calendar/manage/api-keys → generate → Settings → Connections → Luma.
+- [ ] **Settings → Outreach:** edit interests (seeded with the design's eight filters).
+- [ ] **Review auto-decisions** in `.planning/phases/06-outreach/06-DISCUSSION-LOG.md` (37 decisions — e.g. Haiku triage of mail at ≤ spend cap, mail bodies never stored, NETWORK tab dropped, Eventbrite/Luma APIs can't discover public Sydney events so discovery = Luma iCal + URL import).
