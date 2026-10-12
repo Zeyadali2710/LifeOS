@@ -116,7 +116,7 @@ export function TimeGrid({
   };
 
   return (
-    <div className={`glass-card relative rounded-24 ${pending ? "opacity-60" : ""}`} aria-busy={pending || undefined}>
+    <div className={`glass-card relative overflow-hidden rounded-24 ${pending ? "opacity-60" : ""}`} aria-busy={pending || undefined}>
       <div ref={scroller} className="max-h-[calc(100dvh-240px)] min-h-[420px] overflow-auto rounded-24">
         <div style={{ minWidth: minW }}>
           <div className="glass-sticky sticky top-0 z-[5] grid" style={{ gridTemplateColumns: template }}>
@@ -152,7 +152,7 @@ export function TimeGrid({
                           type="button"
                           onClick={() => onOpen(i)}
                           aria-label={`${i.title}, all day, ${i.category ? CATEGORY[i.category].label : "Uncategorised"}, ${i.calendarName}`}
-                          className="flex h-[22px] w-full items-center gap-1 truncate rounded-7 px-1.5 text-left text-[12px] hover:brightness-[1.15]"
+                          className="flex h-[22px] w-full items-center gap-1 truncate rounded-8 px-1.5 text-left text-[12px] hover:brightness-[1.15]"
                           style={{ background: fill(i.category ?? "work"), border: `1px solid ${border(i.category ?? "work")}` }}
                         >
                           <span className="truncate">{i.title}</span>
@@ -231,7 +231,7 @@ export function TimeGrid({
                       ))}
                   </ul>
                   {cursor?.col === col && (
-                    <div aria-hidden="true" className="pointer-events-none absolute right-1 left-1 h-[22px] rounded-6 border border-dashed border-accent bg-accent/10" style={{ top: (cursor.min / 60 - startHour) * HOUR_PX }} />
+                    <div aria-hidden="true" className="pointer-events-none absolute right-1 left-1 h-[22px] rounded-8 border border-dashed border-accent bg-accent/10" style={{ top: (cursor.min / 60 - startHour) * HOUR_PX }} />
                   )}
                   {isToday && nowH >= startHour && (
                     <div className="pointer-events-none absolute right-0 left-0 z-[3] h-[1.5px] bg-accent" style={{ top: (nowH - startHour) * HOUR_PX }}>
@@ -248,7 +248,7 @@ export function TimeGrid({
 
       {total === 0 && (
         <div className="pointer-events-none absolute inset-0 grid place-items-center p-4">
-          <div className="pointer-events-auto w-[min(420px,100%)] rounded-14 bg-[#161619]">
+          <div className="pointer-events-auto glass-card w-[min(420px,100%)] rounded-24">
             <EmptyState
               icon="event_note"
               title="Nothing scheduled."

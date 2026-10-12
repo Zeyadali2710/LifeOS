@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { CATEGORY } from "@/lib/calendar-categories";
+import { border, CATEGORY, fill } from "@/lib/calendar-categories";
 import { sydneyInstant } from "@/server/time";
 import { Icon } from "@/ui/icon";
 import { hmOf } from "./layout";
@@ -95,7 +95,7 @@ export function MonthGrid({
                   onFocus={() => setFocus(i)}
                   onKeyDown={(e) => onKey(e, i)}
                   onClick={() => onOpenDay(ymd)}
-                  className={`relative flex min-h-[104px] flex-col gap-1 p-2 text-left hover:bg-white/[.05] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-cyan max-tab:min-h-[52px] [@media(pointer:coarse)]:min-h-11 max-tab:items-center ${
+                  className={`relative flex min-h-[104px] flex-col gap-1.5 p-2.5 text-left hover:bg-white/[.05] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-cyan max-tab:min-h-[52px] [@media(pointer:coarse)]:min-h-11 max-tab:items-center ${
                     c > 0 ? "border-l border-white/[.05]" : ""
                   } ${isToday || ymd === selected ? "bg-white/[.05]" : ""} ${inMonth ? "" : "opacity-35"}`}
                 >
@@ -113,10 +113,9 @@ export function MonthGrid({
                   </span>
                   <span aria-hidden="true" className="flex w-full flex-col gap-0.5 max-tab:hidden">
                     {items.slice(0, 3).map((x) => (
-                      <span key={x.key} className="flex items-center gap-1.5">
-                        <span className="size-[5px] shrink-0 rounded-full" style={{ background: x.category ? CATEGORY[x.category].color : FALLBACK }} />
-                        {!x.allDay && <span className="shrink-0 text-[10px] text-text-3">{hmOf(x.start)}</span>}
-                        <span className="truncate text-[11px] text-[var(--text-soft)]">{x.title}</span>
+                      <span key={x.key} className="flex h-[20px] items-center gap-1 rounded-8 px-1.5" style={{ background: fill(x.category ?? "work"), border: `1px solid ${border(x.category ?? "work")}` }}>
+                        {!x.allDay && <span className="shrink-0 text-[10px] text-text-2">{hmOf(x.start)}</span>}
+                        <span className="truncate text-[11px] text-text">{x.title}</span>
                       </span>
                     ))}
                     {items.length > 3 && <span className="text-[10px] text-text-3">+{items.length - 3} more</span>}

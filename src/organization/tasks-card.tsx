@@ -98,7 +98,7 @@ export function TasksCard({ tasks, allOpen, completed, today }: { tasks: TaskDTO
     const remindFuture = t.remindAt && Date.parse(t.remindAt) > now;
     const rp = t.remindAt ? sydneyParts(new Date(t.remindAt)) : null;
     return (
-      <li key={t.id} className="flex animate-[lo-fade_200ms_ease-out] items-center gap-2.5 rounded-7 px-1.5 py-2 hover:bg-[rgba(255,255,255,.03)]">
+      <li key={t.id} className="flex animate-[lo-fade_200ms_ease-out] items-center gap-2.5 rounded-14 px-2 py-2 hover:bg-[rgba(255,255,255,.03)]">
         <Checkbox hitArea checked={d} aria-label={t.title} onChange={(e) => void toggle(t, e.target.checked)} />
         <button
           type="button"
@@ -134,8 +134,8 @@ export function TasksCard({ tasks, allOpen, completed, today }: { tasks: TaskDTO
   })();
 
   return (
-    <section id="tasks" aria-label="Tasks" className="glass-card rounded-26 p-4">
-      <div className="relative flex items-center gap-2">
+    <section id="tasks" aria-label="Tasks" className="glass-card rounded-24 p-5">
+      <div className="relative mb-3 flex items-center gap-2">
         <h2 className="font-mono text-[11px] font-medium tracking-[0.1em] text-text-2">{all ? "TASKS · ALL OPEN" : "TASKS · TODAY"}</h2>
         <span className="font-mono text-[11px] text-text-3">
           {doneCount} / {total}
@@ -151,11 +151,11 @@ export function TasksCard({ tasks, allOpen, completed, today }: { tasks: TaskDTO
           <Icon name="more_horiz" size={18} />
         </button>
         {menu && (
-          <div role="group" aria-label="Task list options" className="absolute top-8 right-0 z-10 flex w-52 flex-col rounded-14 border border-[rgba(255,255,255,.12)] bg-[#202022] p-1">
-            <button type="button" className="rounded-6 px-2.5 py-2 text-left text-[13px] hover:bg-fill-2" onClick={() => (setAll(!all), setMenu(false))}>
+          <div role="group" aria-label="Task list options" className="absolute top-8 right-0 z-10 flex glass-menu w-52 flex-col rounded-24 p-1.5">
+            <button type="button" className="rounded-[18px] px-3 py-2 text-left text-[13px] hover:bg-fill-2" onClick={() => (setAll(!all), setMenu(false))}>
               {all ? "Show today only" : "Show all open tasks"}
             </button>
-            <button type="button" className="rounded-6 px-2.5 py-2 text-left text-[13px] hover:bg-fill-2" onClick={() => (setShowDone(!showDone), setMenu(false))}>
+            <button type="button" className="rounded-[18px] px-3 py-2 text-left text-[13px] hover:bg-fill-2" onClick={() => (setShowDone(!showDone), setMenu(false))}>
               {showDone ? "Hide completed" : "Show completed"}
             </button>
           </div>
@@ -212,7 +212,7 @@ export function TasksCard({ tasks, allOpen, completed, today }: { tasks: TaskDTO
             setDlg({ initialTitle: title.trim() });
             setTitle("");
           }}
-          className="grid size-9 shrink-0 place-items-center rounded-9 text-text-3 hover:bg-fill-2 hover:text-text max-tab:size-11"
+          className="grid size-9 shrink-0 place-items-center rounded-full text-text-3 hover:bg-fill-2 hover:text-text max-tab:size-11"
         >
           <Icon name="edit_note" size={18} />
         </button>

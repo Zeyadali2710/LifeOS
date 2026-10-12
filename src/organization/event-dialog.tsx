@@ -349,7 +349,7 @@ export function EventDialog({
         {errors.form && <p className="text-[12.5px] text-red">{errors.form}</p>}
       </form>
       {changed && fail && (
-        <div role="alert" className="mt-3 flex flex-col gap-2 rounded-9 border border-[rgba(255,159,10,.3)] bg-[rgba(255,159,10,.08)] p-3 text-[13px] text-amber">
+        <div role="alert" className="mt-3 flex flex-col gap-2 rounded-14 border border-[rgba(255,159,10,.3)] bg-[rgba(255,159,10,.08)] p-3 text-[13px] text-amber">
           <p>This event changed in {providerName(fail)} since you opened it.</p>
           {reloadAsk ? (
             <div className="flex items-center gap-2">
@@ -376,7 +376,7 @@ export function EventDialog({
         </div>
       )}
       {discard && (
-        <div role="alert" className="mt-3 flex items-center gap-2 rounded-9 border border-[rgba(255,159,10,.3)] bg-[rgba(255,159,10,.08)] p-3 text-[13px] text-amber">
+        <div role="alert" className="mt-3 flex items-center gap-2 rounded-14 border border-[rgba(255,159,10,.3)] bg-[rgba(255,159,10,.08)] p-3 text-[13px] text-amber">
           <span className="mr-auto">Discard changes?</span>
           <Button size="xs" variant="ghost" onClick={() => setDiscard(null)}>
             Keep editing
