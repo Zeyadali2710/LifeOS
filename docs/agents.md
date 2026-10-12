@@ -68,5 +68,8 @@ DB is the source of truth. Context is assembled per call by deterministic retrie
 - **Pricing.** Each LLM turn is stored in `run_turns` and priced with the model that served it; `:free` models cost US$0. The spend cap (D-15) applies to all runs. Settings -> AI and spend groups by turn model.
 - **Visibility.** Route steps (Routed / Fell back / Escalated / Switched / Failed) appear in run detail, the latest run on the agent page and reloaded threads (after the tool steps). Runs show a FREE/SONNET/OPUS chip; the Command Centre shows free vs paid counts.
 
+## Projects agent: LifeOS projects (Phase 5)
+Tools: `projects.list`, `projects.get` (both READ, Projects agent, reachable from the orchestrator by delegation). Output is bounded (list <= 50, tasks <= 50, milestones <= 30, strings cut) and never includes the workspace path, machine label, launch command or context brief. Output marks the run private (free models never see it unless `ai.free_private_ok` is on). Agent writes to projects are deferred to a later phase.
+
 ## Organization agent (Phase 4)
 Live. Tools: `calendar.list_events`, `calendar.find_free_slots`, `calendar.detect_conflicts`, `tasks.list` (READ), `calendar.create_event`, `calendar.update_event` (APPROVE), `calendar.delete_event` (HIGH_RISK). Tasks are READ-only for the agent. No tool can create recurring events. Every system prompt carries a Sydney "Current time" line. Calendar tool output marks the run private, so free models never see it unless `ai.free_private_ok` is on. Tiers: `permissions.md`.

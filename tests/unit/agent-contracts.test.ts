@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { z } from "zod";
 import { AGENTS, getAgent, MODELS } from "@/server/agents/registry";
+import { TOOLS } from "@/server/agents/tools";
 import { redact, summarize } from "@/server/agents/redact";
 import { apiName, toAnthropicTool } from "@/server/agents/types";
 
@@ -24,6 +25,11 @@ describe("registry", () => {
     expect(o).toMatchObject({ live: true, routable: true, requiresTools: true, defaultModel: MODELS.sonnet });
     expect(o?.tools).toHaveLength(7);
     expect(getAgent("orchestrator")?.systemPrompt).toContain("Delegate calendar, schedule and task questions to the organization agent.");
+  });
+  it("exposes projects.list and projects.get as READ tools on the Projects agent", () => {
+    expect(getAgent("projects")?.tools).toEqual(expect.arrayContaining(["projects.list", "projects.get"]));
+    for (const n of ["projects.list", "projects.get"]) expect(TOOLS[n]).toMatchObject({ tier: "READ", sideEffect: false });
+    expect(getAgent("orchestrator")?.systemPrompt).toContain("LifeOS project");
   });
   it("maps every tool name to a valid Anthropic name", () => {
     for (const t of AGENTS.flatMap((a) => a.tools)) expect(apiName(t)).toMatch(/^[a-zA-Z0-9_-]{1,64}$/);
