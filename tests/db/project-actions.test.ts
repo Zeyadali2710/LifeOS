@@ -4,6 +4,7 @@ import { activityEvents, auditLog, githubRepos, milestones, projectLinks, projec
 import { blockedProjectIds } from "@/server/project-blockers";
 import {
   addLink,
+  addProjectDependency,
   createMilestone,
   createProject,
   deleteMilestone,
@@ -66,10 +67,18 @@ describe("projects", () => {
     const [task] = await h().insert(tasks).values({ title: "keep", projectId: p.id }).returning();
     await createMilestone(h(), p.id, { title: "m" }, NOW);
     const refused = await deleteProject(h(), p.id, false);
-    expect(refused).toEqual({ ok: false, error: "has_linked_data", counts: { tasks: 1, milestones: 1, links: 0 } });
+    expect(refused).toEqual({ ok: false, error: "has_linked_data", counts: { tasks: 1, milestones: 1, links: 0, dependencies: 0 } });
     expect((await h().select().from(projects).where(eq(projects.id, p.id))).length).toBe(1);
     expect(await deleteProject(h(), p.id, true)).toEqual({ ok: true });
     expect((await h().select().from(tasks).where(eq(tasks.id, task!.id)))[0]!.projectId).toBeNull();
+  });
+
+  it("a project whose only linked data is a dependency edge needs confirmation, then deletes (CR-01)", async () => {
+    const a = await mk("dep-a");
+    const b = await mk("dep-b");
+    expect(await addProjectDependency(h(), b.id, a.id, NOW)).toEqual({ ok: true });
+    expect(await deleteProject(h(), a.id, false)).toEqual({ ok: false, error: "has_linked_data", counts: { tasks: 0, milestones: 0, links: 0, dependencies: 1 } });
+    expect(await deleteProject(h(), a.id, true)).toEqual({ ok: true });
   });
 
   it("an empty project deletes without confirmation", async () => {

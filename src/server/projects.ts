@@ -93,7 +93,7 @@ export async function setProjectArchived(h: DB, id: string, archived: boolean, n
 export type DeleteProjectResult =
   | { ok: true }
   | { ok: false; error: "not_found" }
-  | { ok: false; error: "has_linked_data"; counts: { tasks: number; milestones: number; links: number } };
+  | { ok: false; error: "has_linked_data"; counts: { tasks: number; milestones: number; links: number; dependencies: number } };
 
 export async function deleteProject(h: DB, id: string, confirmUnlink: boolean): Promise<DeleteProjectResult> {
   const [cur] = await h.select({ id: projects.id }).from(projects).where(eq(projects.id, id));
@@ -103,11 +103,11 @@ export async function deleteProject(h: DB, id: string, confirmUnlink: boolean): 
     tasks: await n(h.select({ c: count() }).from(tasks).where(eq(tasks.projectId, id))),
     milestones: await n(h.select({ c: count() }).from(milestones).where(eq(milestones.projectId, id))),
     links: await n(h.select({ c: count() }).from(projectLinks).where(eq(projectLinks.projectId, id))),
+    dependencies: await n(
+      h.select({ c: count() }).from(projectDependencies).where(or(eq(projectDependencies.projectId, id), eq(projectDependencies.blockedByProjectId, id))),
+    ),
   };
-  const edges = await n(
-    h.select({ c: count() }).from(projectDependencies).where(or(eq(projectDependencies.projectId, id), eq(projectDependencies.blockedByProjectId, id))),
-  );
-  if ((counts.tasks || counts.milestones || counts.links || edges) && !confirmUnlink) return { ok: false, error: "has_linked_data", counts };
+  if ((counts.tasks || counts.milestones || counts.links || counts.dependencies) && !confirmUnlink) return { ok: false, error: "has_linked_data", counts };
   const dependents = await dependentsOf(h, id);
   await withBlockTransition(h, dependents, new Date(), () =>
     h.transaction(async (tx) => {

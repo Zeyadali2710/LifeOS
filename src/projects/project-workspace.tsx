@@ -104,7 +104,8 @@ export function ProjectWorkspace({
         : `Delete "${p.name}"? This can't be undone.`,
       label: "Delete project",
       run: async () => {
-        const r = await deleteProjectAction(p.id, hasData).catch(() => ({ ok: false }) as const);
+        // The user already confirmed in this dialog; the server guard is for other callers (incl. dependency edges this page can't see).
+        const r = await deleteProjectAction(p.id, true).catch(() => ({ ok: false }) as const);
         if (!r.ok) return void toast("Couldn't delete that. Try again.", "error");
         toast("Project deleted");
         router.push("/projects");
