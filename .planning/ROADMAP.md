@@ -178,7 +178,7 @@ Plans:
   2. A project can be created, edited and archived; it links repos, tasks (reusing Phase 4 tasks), milestones, dependencies and blockers, and shows progress on a timeline; Home's "Active projects" reflects real projects
   3. A project workspace view shows the project's repos, tasks, milestones and Claude Code workspace links, and agents can read project data through the tool gateway under existing permission tiers
 **Plans**: 12 plans
-- [ ] 05-01: Client-safe contracts (DTOs, zod payloads), pure rules module + unit tests, new icon glyphs
+- [x] 05-01: Client-safe contracts (DTOs, zod payloads), pure rules module + unit tests, new icon glyphs
 - [ ] 05-02: [BLOCKING] Schema + migration 0005 (projects, milestones, dependencies, links, task FKs, repo languages); owner VM migrate gate
 - [ ] 05-03: GitHub sync languages + commit depth; career query layer
 - [ ] 05-04: Project writes: CRUD, cycle-safe dependencies, task project/milestone, audit + activity, server actions
