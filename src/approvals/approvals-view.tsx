@@ -64,9 +64,9 @@ export function ApprovalsView({
   return (
     <div className="mx-auto max-w-[1480px]">
       <header className="mb-8">
-        <div className="mb-3 text-[11px] font-medium tracking-[.12em] text-amber">APPROVAL CENTRE</div>
+        <div className="mb-2.5 text-[11px] font-medium tracking-[.12em] text-amber">APPROVAL CENTRE</div>
         <h1 className="font-display text-[clamp(28px,3vw,40px)] leading-[1.1] font-medium tracking-[-0.025em]">{headline}</h1>
-        <p className="mt-3 max-w-[640px] text-[15px] leading-normal text-text-2">
+        <p className="mt-2.5 max-w-[640px] text-[15px] leading-normal text-text-2">
           Agents can read and prepare. Anything that creates, sends, changes or deletes waits here until you decide.
         </p>
       </header>

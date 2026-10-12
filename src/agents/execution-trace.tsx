@@ -44,7 +44,7 @@ function Io({ label, text, runHref }: { label: string; text: string; runHref?: s
   return (
     <div>
       <div className="mb-1 text-[11px] text-text-3">{label}</div>
-      <pre className="max-h-40 overflow-auto rounded-10 border border-white/[.08] bg-white/[.03] px-3 py-2.5 font-code text-[11.5px] break-words whitespace-pre-wrap text-text-2">{text}</pre>
+      <pre className="max-h-40 overflow-auto rounded-14 border border-white/[.08] bg-white/[.03] px-3 py-2.5 font-code text-[11.5px] break-words whitespace-pre-wrap text-text-2">{text}</pre>
       {text.endsWith("…") && runHref && (
         <a href={runHref} className="mt-1 inline-block text-[12px] text-cyan hover:text-cyan-soft">
           full detail in the run

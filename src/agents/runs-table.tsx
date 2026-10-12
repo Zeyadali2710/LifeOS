@@ -55,7 +55,7 @@ export function RunsTable({
   }
   return (
     <>
-      <div className="glass-card hidden overflow-x-auto rounded-26 px-2 min-[720px]:block">
+      <div className="glass-card hidden overflow-x-auto rounded-24 px-2 min-[720px]:block">
         <table role="table" className="w-full min-w-[760px] border-collapse text-[13px]">
           <thead>
             <tr>
@@ -102,7 +102,7 @@ export function RunsTable({
       <ul className="m-0 flex list-none flex-col gap-2 p-0 min-[720px]:hidden">
         {runs.map((r) => (
           <li key={r.id}>
-            <Link href={`/agents/runs/${r.id}`} className="flex min-h-11 flex-col gap-1 glass-card rounded-22 p-3">
+            <Link href={`/agents/runs/${r.id}`} className="flex min-h-11 flex-col gap-1 glass-card rounded-24 p-3">
               <span className="flex items-center justify-between">
                 <span className="text-[13px] font-medium">{agentName(r.agentId)}</span>
                 <Result status={r.status} />

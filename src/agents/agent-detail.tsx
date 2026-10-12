@@ -35,7 +35,7 @@ const PERM: Record<string, { label: string; tone: "neutral" | "blue" | "amber" |
 };
 
 const Card = ({ label, children }: { label: string; children: ReactNode }) => (
-  <section aria-label={label} className="glass-card flex flex-col gap-3 rounded-26 p-4">
+  <section aria-label={label} className="glass-card flex flex-col gap-3 rounded-24 p-4">
     <h2 className="text-[11px] font-medium tracking-[.12em] text-text-3">{label}</h2>
     {children}
   </section>
@@ -136,14 +136,14 @@ export function AgentDetail(d: AgentDetailProps) {
   );
 
   return (
-    <div className="mx-auto flex max-w-[1480px] flex-col gap-6">
+    <div className="mx-auto flex max-w-[1480px] flex-col gap-8">
       <Link href="/agents" className="inline-flex items-center gap-1.5 text-[13px] text-text-2 hover:text-text">
         <Icon name="arrow_back" size={16} />
         Agent command
       </Link>
-      <header className="flex flex-wrap items-start justify-between gap-4">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex items-start gap-4">
-          <span className="grid size-14 shrink-0 place-items-center rounded-14 bg-white/[.06]" style={{ color: agent.color }}>
+          <span className="grid size-14 shrink-0 place-items-center rounded-16 bg-white/[.06]" style={{ color: agent.color }}>
             <Icon name={agent.icon as IconName} size={28} />
           </span>
           <div>
@@ -217,7 +217,7 @@ export function AgentDetail(d: AgentDetailProps) {
 
           <aside className="flex min-w-0 flex-[1_1_320px] flex-col gap-4">
             {run?.status === "failed" && (
-              <section aria-label="Error" className="flex flex-col gap-2 glass-card rounded-26 !border-[rgba(255,105,97,.35)] p-4">
+              <section aria-label="Error" className="flex flex-col gap-2 glass-card rounded-24 !border-[rgba(255,105,97,.35)] p-4">
                 <div className="text-[11px] tracking-[.12em] text-red">LAST RUN FAILED</div>
                 <p className="text-[13px] text-text-2">{run.error ?? "The run stopped before it finished."}</p>
                 <div className="flex gap-3 text-[12.5px]">

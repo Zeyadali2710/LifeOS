@@ -64,7 +64,7 @@ export function ApprovalList({
       role="tab"
       aria-selected={tab === t}
       onClick={() => onTab(t)}
-      className={`h-7 flex-1 rounded-full px-3 text-[13px] ${tab === t ? "bg-white/[.16] text-white" : "text-text-3 hover:text-text-2"}`}
+      className={`h-[26px] flex-1 rounded-full px-3.5 text-[12.5px] ${tab === t ? "bg-white/[.16] text-white" : "text-text-3 hover:text-text-2"}`}
     >
       {label}
     </button>
@@ -82,7 +82,7 @@ export function ApprovalList({
           <EmptyState icon="verified_user" title="No decisions yet." body="Approved, rejected and expired requests are kept here." />
         )
       ) : (
-        <div ref={listRef} role="listbox" aria-label={tab === "pending" ? "Pending approvals" : "Resolved approvals"} onKeyDown={onKey} className="flex flex-col gap-2">
+        <div ref={listRef} role="listbox" aria-label={tab === "pending" ? "Pending approvals" : "Resolved approvals"} onKeyDown={onKey} className="glass-card flex flex-col gap-1 rounded-24 p-2">
           {items.map((a, n) => {
             const p = (a.edited ?? a.original) as { title?: unknown; repo?: unknown };
             const agent = getAgent(a.agentId);
@@ -96,8 +96,8 @@ export function ApprovalList({
                 tabIndex={sel || (!selectedId && n === 0) ? 0 : -1}
                 onClick={() => onSelect(a.id)}
                 style={sel ? { borderColor: `color-mix(in srgb, ${agent?.color ?? "#fff"} 40%, transparent)` } : undefined}
-                className={`flex cursor-pointer flex-col gap-2 rounded-14 border p-3.5 outline-none focus-visible:shadow-[var(--ring-input)] ${
-                  sel ? "bg-white/[.06]" : "border-white/[.08] hover:border-white/[.18]"
+                className={`flex cursor-pointer flex-col gap-2 rounded-16 border px-3 py-2.5 outline-none focus-visible:shadow-[var(--ring-input)] ${
+                  sel ? "bg-white/[.06]" : "border-transparent hover:bg-white/[.04]"
                 }`}
               >
                 <div className="flex items-center gap-2">

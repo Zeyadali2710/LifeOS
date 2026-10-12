@@ -98,7 +98,7 @@ function Resolved({ a, onRetry, retrying }: { a: ApprovalDTO; onRetry: () => voi
     text = `The run was cancelled before this was decided. ${nothing}`;
   }
   return (
-    <div ref={ref} role="status" tabIndex={-1} className={`flex animate-[lo-fade_200ms_ease-out] flex-wrap items-center gap-3 px-[22px] py-4 text-[13px] text-text-2 outline-none ${bg}`}>
+    <div ref={ref} role="status" tabIndex={-1} className={`flex animate-[lo-fade_200ms_ease-out] flex-wrap items-center gap-3 px-5 py-4 text-[13px] text-text-2 outline-none ${bg}`}>
       <Icon name={icon} size={18} className={tone} />
       <span className="min-w-0 flex-1 break-words">{text}</span>
       {issue && a.status === "executed" && isSafeGithubUrl(res?.url) && (
@@ -190,8 +190,8 @@ function EventApprovalShell({ approval: a, onChange }: DetailProps) {
     setEditing(false);
   };
   return (
-    <article aria-label="Approval detail" className={`glass-card overflow-hidden rounded-16 ${del ? "!border-[rgba(255,69,58,.4)]" : ""}`}>
-      <header className="border-b border-[rgba(255,255,255,.06)] bg-[linear-gradient(180deg,rgba(232,184,106,.06),transparent)] px-[22px] py-5">
+    <article aria-label="Approval detail" className={`glass-card overflow-hidden rounded-24 ${del ? "!border-[rgba(255,69,58,.4)]" : ""}`}>
+      <header className="border-b border-[rgba(255,255,255,.06)] bg-[linear-gradient(180deg,rgba(232,184,106,.06),transparent)] px-5 py-5">
         <div className="mb-2 text-[11px] font-medium tracking-[0.12em]">
           <span className="uppercase" style={{ color: agent?.color }}>
             {agent?.name ?? a.agentId}
@@ -201,17 +201,17 @@ function EventApprovalShell({ approval: a, onChange }: DetailProps) {
         <h2 className="font-display text-[26px] leading-[1.12] font-medium break-words">{editing ? draft.title : saved.title}</h2>
       </header>
       {a.reason && (
-        <section className="border-b border-[rgba(255,255,255,.06)] px-[22px] py-5">
+        <section className="border-b border-[rgba(255,255,255,.06)] px-5 py-5">
           <Fact k="WHY">{a.reason}</Fact>
         </section>
       )}
       <EventApprovalBody approval={a} editing={editing} draft={draft} errors={errors} onDraft={setDraft} edited={edited} />
       {pending ? (
-        <footer className="px-[22px] py-4">
+        <footer className="px-5 py-4">
           {stale && <p className="mb-3 text-[12.5px] text-amber">This event changed after the request was prepared, so it can&apos;t be applied. Reject it and ask again.</p>}
           <div className="flex flex-wrap items-center gap-2.5 max-[719px]:flex-col max-[719px]:items-stretch [&_button]:text-[13px] [&_button]:font-semibold [&_button]:tracking-[0.06em] [&_button]:uppercase max-[719px]:[&_button]:h-12">
             <Button
-              className={`h-[38px] min-w-[150px] rounded-9 px-[18px] ${del ? "bg-red text-on-accent hover:bg-red" : ""}`}
+              className={`h-[38px] min-w-[150px] rounded-full px-[18px] ${del ? "bg-red text-on-accent hover:bg-red" : ""}`}
               loading={busy === "approve"}
               disabled={stale || (busy !== null && busy !== "approve")}
               onClick={approve}
@@ -289,8 +289,8 @@ function IssueApprovalBody({ approval: a, write, onChange, issue }: DetailProps 
   };
 
   return (
-    <article aria-label="Approval detail" className="glass-card overflow-hidden rounded-16">
-      <header className="border-b border-[rgba(255,255,255,.06)] bg-[linear-gradient(180deg,rgba(232,184,106,.06),transparent)] px-[22px] py-5">
+    <article aria-label="Approval detail" className="glass-card overflow-hidden rounded-24">
+      <header className="border-b border-[rgba(255,255,255,.06)] bg-[linear-gradient(180deg,rgba(232,184,106,.06),transparent)] px-5 py-5">
         <div className="mb-2 text-[11px] font-medium tracking-[0.12em]">
           <span className="uppercase" style={{ color: agent?.color }}>
             {agent?.name ?? a.agentId}
@@ -300,7 +300,7 @@ function IssueApprovalBody({ approval: a, write, onChange, issue }: DetailProps 
         <h2 className="font-display text-[26px] leading-[1.12] font-medium break-words">{shown.title}</h2>
       </header>
 
-      <section className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-x-6 gap-y-[18px] border-b border-[rgba(255,255,255,.06)] px-[22px] py-5">
+      <section className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-x-6 gap-y-[18px] border-b border-[rgba(255,255,255,.06)] px-5 py-5">
         <Fact k="WHAT WILL HAPPEN">
           Creates one issue in {saved.repo}. {a.repoPrivate ? "Visible to you and collaborators." : "It is visible to anyone who can see that repository."}
         </Fact>
@@ -311,7 +311,7 @@ function IssueApprovalBody({ approval: a, write, onChange, issue }: DetailProps 
         <Fact k="WHEN">Immediately after approval</Fact>
       </section>
 
-      <section className="border-b border-[rgba(255,255,255,.06)] px-[22px] py-5">
+      <section className="border-b border-[rgba(255,255,255,.06)] px-5 py-5">
         <div className="mb-3 text-[10px] tracking-[0.14em] text-text-3">WHAT DATA WILL BE SENT</div>
         <ul className="flex flex-col gap-1.5 text-[13px]">
           {[`Issue title (${shown.title.length} characters)`, `Issue body (${shown.body.length} characters)`, ...(shown.labels.length ? [`${shown.labels.length} labels: ${shown.labels.join(", ")}`] : [])].map((t) => (
@@ -327,7 +327,7 @@ function IssueApprovalBody({ approval: a, write, onChange, issue }: DetailProps 
         </ul>
       </section>
 
-      <section className="border-b border-[rgba(255,255,255,.06)] px-[22px] py-5">
+      <section className="border-b border-[rgba(255,255,255,.06)] px-5 py-5">
         <div className="mb-3 flex items-center gap-2 text-[10px] tracking-[0.14em] text-text-3">
           PREVIEW
           {edited && (
@@ -351,7 +351,7 @@ function IssueApprovalBody({ approval: a, write, onChange, issue }: DetailProps 
       </section>
 
       {pending ? (
-        <footer className="px-[22px] py-4">
+        <footer className="px-5 py-4">
           {!canApprove && (
             <p className="mb-3 text-[12.5px] text-amber">
               The issues-write token is missing, so this can&apos;t be created. Add it in Settings → Connections.{" "}
@@ -361,7 +361,7 @@ function IssueApprovalBody({ approval: a, write, onChange, issue }: DetailProps 
             </p>
           )}
           <div className="flex flex-wrap items-center gap-2.5 max-[719px]:flex-col max-[719px]:items-stretch [&_button]:text-[13px] [&_button]:font-semibold [&_button]:tracking-[0.06em] [&_button]:uppercase max-[719px]:[&_button]:h-12">
-            <Button className="h-[38px] min-w-[150px] rounded-9 px-[18px]" loading={busy === "approve"} disabled={!canApprove || (busy !== null && busy !== "approve")} onClick={approve}>
+            <Button className="h-[38px] min-w-[150px] rounded-full px-[18px]" loading={busy === "approve"} disabled={!canApprove || (busy !== null && busy !== "approve")} onClick={approve}>
               <Icon name="check" size={16} />
               CREATE ISSUE
             </Button>

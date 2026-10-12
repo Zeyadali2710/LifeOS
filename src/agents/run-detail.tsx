@@ -41,7 +41,7 @@ function Block({ label, value }: { label: string; value: unknown }) {
           <Icon name="content_copy" size={14} />
         </button>
       </div>
-      <pre className="max-h-[280px] overflow-auto rounded-10 border border-white/[.08] bg-white/[.03] px-3 py-2.5 font-code text-[11.5px] break-words whitespace-pre-wrap text-text-2">{text}</pre>
+      <pre className="max-h-[280px] overflow-auto rounded-14 border border-white/[.08] bg-white/[.03] px-3 py-2.5 font-code text-[11.5px] break-words whitespace-pre-wrap text-text-2">{text}</pre>
     </div>
   );
 }
@@ -79,12 +79,12 @@ export function RunDetail({ run, agent, steps, toolCalls }: RunDetailProps) {
   const active = run.durationMs === null ? 0 : Math.round(run.durationMs / 1000);
 
   return (
-    <div className="mx-auto flex max-w-[1480px] flex-col gap-6">
+    <div className="mx-auto flex max-w-[1480px] flex-col gap-8">
       <Link href={`/agents/${run.agentId}`} className="inline-flex items-center gap-1.5 text-[13px] text-text-2 hover:text-text">
         <Icon name="arrow_back" size={16} />
         {agent?.name ?? run.agentId}
       </Link>
-      <header className="flex flex-wrap items-start justify-between gap-4">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3 font-mono text-[11px] tracking-[0.1em] text-text-3">
             <span>{shortId(run.id)}</span>
@@ -119,7 +119,7 @@ export function RunDetail({ run, agent, steps, toolCalls }: RunDetailProps) {
         </div>
       </header>
 
-      <dl className="glass-card m-0 grid [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))] gap-4 rounded-26 p-5">
+      <dl className="glass-card m-0 grid [grid-template-columns:repeat(auto-fit,minmax(220px,1fr))] gap-4 rounded-24 p-5">
         <Fact k="MODEL" v={`${modelLabel(run.model)}${run.tier ? ` · tag ${run.tier}` : ""}`} />
         <Fact k="STARTED" v={run.startedAt ? formatHM(new Date(run.startedAt)) : "—"} />
         <Fact k="DURATION" v={run.durationMs === null ? "—" : formatDuration(run.durationMs)} />
