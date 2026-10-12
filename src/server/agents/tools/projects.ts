@@ -113,6 +113,8 @@ async function runSources(ctx: ToolContext): Promise<string[]> {
     if (tool === "github.get_file") return `${i.repo} · ${i.path}`;
     if (tool === "github.list_tree") return `${i.repo} · (file list${i.prefix ? `: ${i.prefix}` : ""})`;
     if (tool === "github.get_pull_request") return `${i.repo} · (pull request #${i.number})`;
+    if (tool === "github.list_pull_requests") return `${i.repo ?? "all repos"} · (pull request list)`;
+    if (tool === "github.recent_commits") return `${i.repo ?? "all repos"} · (commit messages)`;
     return `${i.repo ?? "all repos"} · (issue list)`;
   };
   const all = rows.map((r) => {
