@@ -72,6 +72,8 @@ export interface TaskDTO {
   remindAt: string | null;
   completedAt: string | null;
   createdAt: string;
+  projectId: string | null;
+  milestoneId: string | null;
 }
 
 export interface PlanItemDTO {
@@ -98,6 +100,8 @@ export function toTaskDTO(r: {
   remindAt: Date | null;
   completedAt: Date | null;
   createdAt: Date;
+  projectId: string | null;
+  milestoneId: string | null;
 }): TaskDTO {
   return {
     id: r.id,
@@ -110,6 +114,8 @@ export function toTaskDTO(r: {
     remindAt: iso(r.remindAt),
     completedAt: iso(r.completedAt),
     createdAt: r.createdAt.toISOString(),
+    projectId: r.projectId,
+    milestoneId: r.milestoneId,
   };
 }
 
