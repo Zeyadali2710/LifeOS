@@ -26,7 +26,7 @@ export default async function OrganizationPage({ searchParams }: { searchParams:
   const instances = data.instances.map((i) => ({ ...i, repeatText: i.rrule ? humanRule(i.rrule) : null }));
 
   return (
-    <div className="max-w-[1480px]">
+    <div className="mx-auto max-w-[1600px]">
       <OrganizationView
         data={{ ...data, instances }}
         view={view}

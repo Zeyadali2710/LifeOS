@@ -79,14 +79,14 @@ export function OrganizationHeader({
   };
 
   const iconBtn =
-    "grid size-8 place-items-center rounded-8 border border-[rgba(255,255,255,.1)] bg-fill-1 text-text-2 hover:bg-[rgba(255,255,255,.06)] hover:text-text max-tab:size-11";
+    "grid size-8 place-items-center rounded-full border border-white/[.08] bg-white/[.04] text-text-2 hover:bg-white/[.08] hover:text-text [@media(pointer:coarse)]:size-11";
   const unit = view;
 
   return (
     <header className="mb-5 flex flex-wrap items-start justify-between gap-4">
       <div className="min-w-0">
-        <div className="font-mono text-[11px] font-medium tracking-[0.12em] text-[#4fd1a1]">ORGANIZATION</div>
-        <h1 className="mt-2 text-[clamp(28px,3vw,40px)] leading-[1.1] font-medium tracking-[-0.025em]">{headline}</h1>
+        <div className="text-[11px] font-medium tracking-[.12em] text-green">ORGANIZATION</div>
+        <h1 className="mt-2 font-display text-[clamp(34px,4.4vw,60px)] leading-[.95] font-normal">{headline}</h1>
         <p className="mt-2 text-[14px] leading-normal text-text-2">
           <Lead text={lead} />
         </p>
@@ -103,10 +103,10 @@ export function OrganizationHeader({
         <button type="button" className={iconBtn} aria-label={`Next ${unit}`} onClick={() => onNav(1)}>
           <Icon name="chevron_right" size={18} />
         </button>
-        <span aria-live="polite" className="min-w-[120px] text-center font-mono text-[12px] text-text-2">
+        <span aria-live="polite" className="min-w-[150px] text-center text-[12.5px] font-medium text-text-2">
           {rangeText}
         </span>
-        <div role="radiogroup" aria-label="Calendar view" className="flex rounded-9 border border-[rgba(255,255,255,.1)] bg-fill-1 p-0.5">
+        <div role="radiogroup" aria-label="Calendar view" className="flex rounded-10 border border-white/[.06] bg-white/[.04] p-[3px]">
           {VIEWS.map((v, i) => (
             <button
               key={v.key}
@@ -119,7 +119,7 @@ export function OrganizationHeader({
               tabIndex={view === v.key ? 0 : -1}
               onClick={() => onView(v.key)}
               onKeyDown={(e) => onRadioKey(e, i)}
-              className={`h-7 rounded-7 px-3 text-[12.5px] font-medium max-tab:h-11 ${view === v.key ? "bg-fill-3 text-text" : "text-text-2 hover:text-text"}`}
+              className={`h-7 rounded-full px-3 text-[12.5px] font-medium [@media(pointer:coarse)]:h-11 ${view === v.key ? "bg-white/[.16] text-white" : "text-text-2 hover:text-text"}`}
             >
               {v.label}
             </button>
