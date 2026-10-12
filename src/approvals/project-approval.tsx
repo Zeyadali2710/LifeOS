@@ -30,8 +30,11 @@ const list = (xs: string[]) => (xs.length < 2 ? xs.join("") : `${xs.slice(0, -1)
 
 // ---- edit draft ----
 type Row = { rid: string; removed: boolean };
-export type MRow = Row & { id?: string; ref?: string; title: string; dueDate: string };
-export type TRow = Row & { id?: string; ref?: string; title: string; dueDate: string; priority: string; milestone: string; blockedBy: string[] };
+// `init` is what the form first showed and `orig` the draft's own value: an untouched field sends `orig` back as-is,
+// so an omitted field (undefined = keep current on update) is never turned into null (= clear).
+type Orig = { dueDate?: string | null; priority?: number | null; milestoneRef?: string | null };
+export type MRow = Row & { id?: string; ref?: string; title: string; dueDate: string; init: { dueDate: string }; orig: Orig };
+export type TRow = Row & { id?: string; ref?: string; title: string; dueDate: string; priority: string; milestone: string; blockedBy: string[]; init: { dueDate: string; priority: string; milestone: string }; orig: Orig };
 export type LRow = Row & { link: DraftLink };
 export type ProjectDraft = {
   name: string;
@@ -63,10 +66,21 @@ export function toProjectDraft(p: ProjectPayload): ProjectDraft {
     category: f.category ?? "personal",
     priority: (f.priority ?? 2) as 1 | 2 | 3,
     targetDate: f.targetDate ?? "",
-    milestones: ms.map((m, i) => ({ rid: `m${i}`, removed: false, id: m.id, ref: m.ref, title: m.title, dueDate: m.dueDate ?? "" })),
+    milestones: ms.map((m, i) => {
+      // Update rows that omit a field show the current value from `before`.
+      const b = m.id && isUpdate(p) ? p.before.milestones.find((x) => x.id === m.id) : undefined;
+      const dueDate = (m.dueDate === undefined ? b?.dueDate : m.dueDate) ?? "";
+      return { rid: `m${i}`, removed: false, id: m.id, ref: m.ref, title: m.title, dueDate, init: { dueDate }, orig: { dueDate: m.dueDate } };
+    }),
     tasks: p.tasks.map((t, i) => {
       const x = t as { id?: string; ref?: string };
-      return { rid: `t${i}`, removed: false, id: x.id, ref: x.ref, title: t.title, dueDate: t.dueDate ?? "", priority: t.priority ? String(t.priority) : "", milestone: keyOf(t.milestoneRef), blockedBy: t.blockedBy ?? [] };
+      const b = x.id && isUpdate(p) ? p.before.tasks.find((y) => y.id === x.id) : undefined;
+      const init = {
+        dueDate: (t.dueDate === undefined ? b?.dueDate : t.dueDate) ?? "",
+        priority: String((t.priority === undefined ? b?.priority : t.priority) ?? ""),
+        milestone: keyOf(t.milestoneRef === undefined ? b?.milestoneId : t.milestoneRef),
+      };
+      return { rid: `t${i}`, removed: false, id: x.id, ref: x.ref, title: t.title, ...init, blockedBy: t.blockedBy ?? [], init, orig: { dueDate: t.dueDate, priority: t.priority, milestoneRef: t.milestoneRef } };
     }),
     links: p.links.map((link, i) => ({ rid: `l${i}`, removed: false, link })),
   };
@@ -85,16 +99,16 @@ export function validateProjectDraft(tool: string, base: ProjectPayload, d: Proj
   const km = d.milestones.filter((m) => !m.removed);
   const kt = d.tasks.filter((t) => !t.removed);
   const kl = d.links.filter((l) => !l.removed);
-  const milestones = km.map((m) => ({ ...(m.id ? { id: m.id } : {}), ...(m.ref ? { ref: m.ref } : {}), title: m.title, dueDate: m.dueDate || null }));
+  const milestones = km.map((m) => ({ ...(m.id ? { id: m.id } : {}), ...(m.ref ? { ref: m.ref } : {}), title: m.title, dueDate: m.dueDate === m.init.dueDate ? m.orig.dueDate : m.dueDate || null }));
   const tasks = kt.map((t) => {
     const deps = t.blockedBy.filter((b) => !goneT.has(b));
     return {
       ...(t.id ? { id: t.id } : {}),
       ...(t.ref ? { ref: t.ref } : {}),
       title: t.title,
-      dueDate: t.dueDate || null,
-      priority: t.priority ? Number(t.priority) : null,
-      milestoneRef: t.milestone && !goneM.has(t.milestone) ? t.milestone : null,
+      dueDate: t.dueDate === t.init.dueDate ? t.orig.dueDate : t.dueDate || null,
+      priority: t.priority === t.init.priority ? t.orig.priority : t.priority ? Number(t.priority) : null,
+      milestoneRef: t.milestone && goneM.has(t.milestone) ? null : t.milestone === t.init.milestone ? t.orig.milestoneRef : t.milestone || null,
       ...(deps.length ? { blockedBy: deps } : {}),
     };
   });
