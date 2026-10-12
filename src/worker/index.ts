@@ -9,6 +9,7 @@ import { QUEUES } from "@/server/queue";
 import { handleExpire, handleResume } from "./jobs/agents";
 import { handleCalendarSync } from "./jobs/calendar-sync";
 import { handleGithubSync } from "./jobs/github-sync";
+import { handleOutreachSync } from "./jobs/outreach-sync";
 import { handleSweep } from "./jobs/sweep";
 import { handleTaskReminders } from "./jobs/task-reminders";
 
@@ -36,6 +37,9 @@ async function main() {
   await boss.createQueue(QUEUES.sweep);
   await boss.createQueue(QUEUES.taskReminders);
   await boss.createQueue(QUEUES.calendarSync);
+  await boss.createQueue(QUEUES.eventsSync);
+  await boss.schedule(QUEUES.eventsSync, "0 */6 * * *", {}, { singletonKey: "outreach.events.sync" });
+  await boss.work(QUEUES.eventsSync, async () => handleOutreachSync());
   await boss.schedule(QUEUES.calendarSync, "*/5 * * * *", {}, { singletonKey: "calendar.sync" });
   await boss.work(QUEUES.calendarSync, async () => handleCalendarSync());
   await boss.schedule(QUEUES.githubSync, "*/15 * * * *", {}, { singletonKey: "github.sync" });
@@ -52,6 +56,7 @@ async function main() {
   // Fresh deploys should not wait 15 minutes for the first sync.
   await boss.send(QUEUES.githubSync, {}, { singletonKey: "github.sync", startAfter: 10 }).catch(() => undefined);
   await boss.send(QUEUES.calendarSync, {}, { singletonKey: "calendar.sync", startAfter: 10 }).catch(() => undefined);
+  await boss.send(QUEUES.eventsSync, {}, { singletonKey: "outreach.events.sync", startAfter: 30 }).catch(() => undefined);
 
   await emitActivity({ type: "system.worker_started", source: "system", title: "Worker started", detail: `v${process.env.LIFEOS_VERSION ?? "dev"}` });
   log.info("worker started");

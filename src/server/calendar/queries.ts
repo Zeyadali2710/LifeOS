@@ -57,7 +57,7 @@ const asStored = (r: EventRow): StoredEvent => ({
   originalStart: r.originalStart, status: r.status, transparency: r.transparency, declined: r.declined, raw: r.raw,
 });
 
-const sched = (i: { key: string; start: Date | string; end: Date | string; allDay: boolean; free: boolean; declined: boolean; status: string }): SchedItem => ({
+export const sched = (i: { key: string; start: Date | string; end: Date | string; allDay: boolean; free: boolean; declined: boolean; status: string }): SchedItem => ({
   id: i.key,
   start: +new Date(i.start),
   end: +new Date(i.end),
