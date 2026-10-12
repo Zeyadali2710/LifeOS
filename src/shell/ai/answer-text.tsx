@@ -66,7 +66,7 @@ function Inlines({ nodes }: { nodes: Inline[] }) {
     <>
       {nodes.map((n, i) => {
         if (n.t === "text") return n.text;
-        if (n.t === "code") return <code key={i} className="rounded-5 bg-fill-2 px-1 font-mono text-[12px]">{n.text}</code>;
+        if (n.t === "code") return <code key={i} className="rounded-5 bg-white/[.06] px-1 font-code text-[11.5px]">{n.text}</code>;
         if (!isSafeGithubUrl(n.url)) return n.ref;
         return (
           <a
@@ -75,7 +75,7 @@ function Inlines({ nodes }: { nodes: Inline[] }) {
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`${n.ref}, opens GitHub`}
-            className="mx-0.5 inline-flex items-center gap-1 rounded-6 bg-[rgba(139,140,255,.1)] px-1.5 py-px align-baseline font-mono text-[11.5px] text-indigo-text hover:bg-[rgba(139,140,255,.18)]"
+            className="mx-0.5 inline-flex items-center gap-1 rounded-6 bg-[rgba(100,210,255,.1)] px-1.5 py-px align-baseline font-code text-[11.5px] text-cyan hover:bg-[rgba(100,210,255,.18)] hover:text-cyan-soft"
           >
             {n.ref}
             <Icon name="open_in_new" size={12} />
@@ -98,10 +98,10 @@ export function AnswerText({ text, streaming = false }: { text: string; streamin
             {b.items.map((it, j) => <li key={j}><Inlines nodes={it} /></li>)}
           </ul>
         ) : (
-          <pre key={i} className="max-h-60 overflow-auto rounded-8 bg-inset px-3 py-2.5 font-mono text-[11.5px] whitespace-pre-wrap text-text-2">{b.text}</pre>
+          <pre key={i} className="max-h-60 overflow-auto rounded-10 border border-white/[.08] bg-white/[.03] px-3 py-2.5 font-code text-[11.5px] whitespace-pre-wrap text-text-2">{b.text}</pre>
         ),
       )}
-      {streaming && <span aria-hidden="true" className="inline-block h-[1em] w-[2px] animate-[lo-caret_1s_steps(1)_infinite] bg-indigo-text motion-reduce:animate-none" />}
+      {streaming && <span aria-hidden="true" className="inline-block h-[1em] w-[2px] animate-[lo-caret_1s_steps(1)_infinite] bg-cyan motion-reduce:animate-none" />}
     </div>
   );
 }

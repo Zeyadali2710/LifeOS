@@ -6,7 +6,7 @@ import { formatHM, sydneyParts } from "@/server/time";
 export function RecentThreads({ threads, currentId, onSelect }: { threads: ThreadDTO[]; currentId: string | null; onSelect: (id: string) => void }) {
   return (
     <div className="flex flex-col gap-2 p-5">
-      <div className="font-mono text-[10px] tracking-[0.08em] text-text-3">RECENT</div>
+      <div className="text-[10px] font-medium tracking-[.12em] text-text-3">RECENT</div>
       {threads.length === 0 ? (
         <p className="text-[13px] text-text-2">No conversations yet.</p>
       ) : (
@@ -19,10 +19,10 @@ export function RecentThreads({ threads, currentId, onSelect }: { threads: Threa
                   type="button"
                   aria-current={t.id === currentId || undefined}
                   onClick={() => onSelect(t.id)}
-                  className={`flex min-h-11 w-full flex-col gap-0.5 rounded-9 px-3 py-2 text-left hover:bg-fill-2 ${t.id === currentId ? "bg-[rgba(139,140,255,.08)]" : ""}`}
+                  className={`flex min-h-11 w-full flex-col gap-0.5 rounded-14 px-3 py-2 text-left hover:bg-white/[.06] ${t.id === currentId ? "bg-[rgba(10,132,255,.10)]" : ""}`}
                 >
                   <span className="truncate text-[13.5px]">{t.title}</span>
-                  <span className="font-mono text-[11px] text-text-3">
+                  <span className="text-[11px] text-text-3">
                     {sydneyParts(d).weekday} {formatHM(d)} · {t.messageCount} {t.messageCount === 1 ? "message" : "messages"}
                   </span>
                 </button>
