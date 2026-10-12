@@ -18,6 +18,7 @@ const SOURCES: Record<string, { icon: IconName; color: string }> = {
   social: { icon: "public", color: "text-pink" },
   agent: { icon: "memory", color: "text-purple-text" },
   project: { icon: "deployed_code", color: "text-amber" },
+  outreach: { icon: "travel_explore", color: "text-cyan" },
 };
 const FALLBACK = { icon: "dns" as IconName, color: "text-text-2" };
 const TONES = { red: "text-red", amber: "text-amber", green: "text-green" } as const;

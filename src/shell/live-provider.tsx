@@ -28,15 +28,15 @@ export function useLive(): Live {
   return v;
 }
 
-type LiveEvent = { kind: "run" | "approval" | "calendar" | "task" | "resync"; dto?: unknown };
+type LiveEvent = { kind: "run" | "approval" | "calendar" | "task" | "outreach" | "resync"; dto?: unknown };
 type Sub = (e: LiveEvent) => void;
 const SubsCtx = createContext<Set<Sub> | null>(null);
 
 /** Subscribe to run/approval frames (or "resync" on reconnect). Runs/approvals are not held in provider state. */
 export function useLiveEvents(kind: "run", cb: (dto: RunDTO | null) => void): void;
 export function useLiveEvents(kind: "approval", cb: (dto: ApprovalDTO | null) => void): void;
-export function useLiveEvents(kind: "calendar" | "task", cb: (dto: { id: string } | null) => void): void;
-export function useLiveEvents(kind: "run" | "approval" | "calendar" | "task", cb: (dto: never) => void): void {
+export function useLiveEvents(kind: "calendar" | "task" | "outreach", cb: (dto: { id: string } | null) => void): void;
+export function useLiveEvents(kind: "run" | "approval" | "calendar" | "task" | "outreach", cb: (dto: never) => void): void {
   const subs = useContext(SubsCtx);
   const ref = useRef(cb);
   useEffect(() => {
@@ -200,12 +200,13 @@ export function LiveProvider({
         const a = parse(e);
         if (isApproval(a)) dispatch({ kind: "approval", dto: a });
       });
-      const signal = (kind: "calendar" | "task") => (e: Event) => {
+      const signal = (kind: "calendar" | "task" | "outreach") => (e: Event) => {
         const s = parse(e) as { id?: unknown } | null;
         if (s && typeof s.id === "string") dispatch({ kind, dto: { id: s.id } });
       };
       es.addEventListener("calendar", signal("calendar"));
       es.addEventListener("task", signal("task"));
+      es.addEventListener("outreach", signal("outreach"));
       es.addEventListener("resync", () => {
         void resync();
         dispatch({ kind: "resync" });
