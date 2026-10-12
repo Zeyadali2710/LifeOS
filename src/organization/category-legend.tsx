@@ -16,10 +16,10 @@ export function CategoryLegend({ hidden, onToggle, onShowAll }: { hidden: Set<Ca
                 type="button"
                 aria-pressed={!off}
                 onClick={() => onToggle(k)}
-                className="flex h-7 items-center gap-1.5 rounded-full border bg-fill-1 px-2.5 text-[12px] text-text-2 hover:text-text max-tab:h-11"
-                style={{ borderColor: off ? "rgba(255,255,255,.1)" : c.color + "66" }}
+                className={`flex h-7 items-center gap-1.5 rounded-full border border-white/[.08] bg-white/[.04] px-2.5 text-[12px] text-text-2 hover:text-text [@media(pointer:coarse)]:h-11 ${off ? "opacity-40" : ""}`}
+                style={off ? undefined : { borderColor: c.color + "66" }}
               >
-                <span className="size-2 rounded-2" style={{ background: c.color, opacity: off ? 0.4 : 1 }} />
+                <span className="size-2 rounded-2" style={{ background: c.color }} />
                 {c.label}
               </button>
             </li>
