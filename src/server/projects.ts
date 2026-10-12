@@ -66,7 +66,8 @@ export async function updateProject(h: DB, id: string, raw: unknown, now: Date):
   const p = projectInput.safeParse(raw);
   if (!p.success) return { ok: false, errors: fieldErrors(p.error.issues) };
   const row = await withBlockTransition(h, await dependentsOf(h, id), now, async () => {
-    const [r] = await h.update(projects).set({ ...p.data, updatedAt: now }).where(eq(projects.id, id)).returning();
+    const archivedFrom = cur.status !== "archived" && p.data.status === "archived" ? cur.status : cur.archivedFrom;
+    const [r] = await h.update(projects).set({ ...p.data, archivedFrom, updatedAt: now }).where(eq(projects.id, id)).returning();
     return r!;
   });
   await aud(h, "project.update", id);
@@ -80,7 +81,11 @@ export async function setProjectArchived(h: DB, id: string, archived: boolean, n
   const [cur] = await h.select().from(projects).where(eq(projects.id, id));
   if (!cur) return { ok: false, error: "not_found" };
   const row = await withBlockTransition(h, await dependentsOf(h, id), now, async () => {
-    const [r] = await h.update(projects).set({ status: archived ? "archived" : "active", updatedAt: now }).where(eq(projects.id, id)).returning();
+    // Archive remembers the prior status; unarchive restores it (WR-02) instead of forcing "active".
+    const set = archived
+      ? { status: "archived", archivedFrom: cur.status === "archived" ? cur.archivedFrom : cur.status }
+      : { status: cur.status === "archived" ? (cur.archivedFrom ?? "active") : cur.status, archivedFrom: null };
+    const [r] = await h.update(projects).set({ ...set, updatedAt: now }).where(eq(projects.id, id)).returning();
     return r!;
   });
   await aud(h, archived ? "project.archive" : "project.unarchive", id);

@@ -62,6 +62,19 @@ describe("projects", () => {
     expect(await events("project.archived")).toBe(before + 1);
   });
 
+  it("unarchive restores the pre-archive status (WR-02)", async () => {
+    const p = await mk("was-done");
+    await updateProject(h(), p.id, { name: "was-done", status: "done" }, NOW);
+    await setProjectArchived(h(), p.id, true, NOW);
+    await setProjectArchived(h(), p.id, true, NOW); // re-archiving keeps the original
+    const un = await setProjectArchived(h(), p.id, false, NOW);
+    expect(un.ok && "project" in un && un.project.status).toBe("done");
+    await updateProject(h(), p.id, { name: "was-done", status: "paused" }, NOW);
+    await updateProject(h(), p.id, { name: "was-done", status: "archived" }, NOW);
+    const un2 = await setProjectArchived(h(), p.id, false, NOW);
+    expect(un2.ok && "project" in un2 && un2.project.status).toBe("paused");
+  });
+
   it("delete is refused with linked data unless confirmed; tasks survive unlinked", async () => {
     const p = await mk();
     const [task] = await h().insert(tasks).values({ title: "keep", projectId: p.id }).returning();

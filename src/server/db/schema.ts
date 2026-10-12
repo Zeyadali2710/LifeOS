@@ -496,6 +496,7 @@ export const projects = pgTable(
     workspacePath: text(),
     workspaceMachine: text(),
     blockerNote: text().notNull().default(""),
+    archivedFrom: text(), // status before archiving; unarchive restores it
     ...timestamps,
   },
   (t) => [
