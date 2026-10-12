@@ -58,11 +58,11 @@ function Resolved({ a }: { a: ApprovalDTO }) {
       text = `The run was cancelled before this was decided. ${nothing}`;
   }
   return (
-    <div role="status" tabIndex={-1} className="flex animate-[lo-fade_200ms_ease-out] flex-wrap items-center gap-2 rounded-8 bg-fill-1 px-3 py-2 text-[12.5px] text-text-2">
+    <div role="status" tabIndex={-1} className="flex animate-[lo-fade_200ms_ease-out] flex-wrap items-center gap-2 rounded-full bg-white/[.06] px-3.5 py-2 text-[12.5px] text-text-2">
       <Icon name={icon} size={16} className={tone} />
       <span className="flex-1">{text}</span>
       {issue && a.status === "executed" && isSafeGithubUrl(res?.url) && (
-        <a href={res.url} target="_blank" rel="noopener noreferrer" className="text-indigo-text hover:text-indigo-soft">
+        <a href={res.url} target="_blank" rel="noopener noreferrer" className="text-cyan hover:text-cyan-soft">
           View on GitHub
         </a>
       )}
@@ -98,9 +98,9 @@ export function ApprovalCard({ approval, onDecided }: { approval: ApprovalDTO; o
     onDecided();
   };
   return (
-    <div id={`approval-${a.runId}`} className="flex flex-col gap-2.5 rounded-10 border border-[rgba(232,184,106,.3)] bg-surface p-3">
-      <div className="flex items-center gap-1.5 font-mono text-[10.5px] font-medium tracking-[0.07em] text-amber">
-        <Icon name="verified_user" size={15} />
+    <div id={`approval-${a.runId}`} className="flex flex-col gap-2.5 rounded-18 border border-[rgba(255,159,10,.30)] bg-[rgba(255,159,10,.10)] p-3.5">
+      <div className="flex items-center gap-1.5 text-[10.5px] font-medium tracking-[.12em] text-amber">
+        <Icon name="verified_user" size={16} />
         APPROVAL REQUIRED
       </div>
       <p className="text-[13px] text-text-2">
@@ -108,7 +108,7 @@ export function ApprovalCard({ approval, onDecided }: { approval: ApprovalDTO; o
       </p>
       <h4 className="text-[15px] font-medium break-words">{p.title}</h4>
       {!iss && (
-        <div className="font-mono text-[11px] text-text-3">
+        <div className="text-[11px] text-text-3">
           {(() => {
             const e = eventOf(a);
             return a.kind === "event_delete" ? `Removes · ${whenText(e.start, e.end, e.allDay)}` : whenText(e.start, e.end, e.allDay);
@@ -118,7 +118,7 @@ export function ApprovalCard({ approval, onDecided }: { approval: ApprovalDTO; o
       {p.body && (
         <div>
           <p className={`${open ? "" : "line-clamp-4"} text-[13px] leading-normal break-words whitespace-pre-wrap text-text-2`}>{p.body}</p>
-          <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="mt-1 text-[12.5px] text-indigo-text hover:text-indigo-soft">
+          <button type="button" aria-expanded={open} onClick={() => setOpen(!open)} className="mt-1 text-[12.5px] text-cyan hover:text-cyan-soft">
             {open ? "Show less" : "Show full preview"}
           </button>
         </div>
@@ -130,7 +130,7 @@ export function ApprovalCard({ approval, onDecided }: { approval: ApprovalDTO; o
           ))}
         </div>
       )}
-      <div className="font-mono text-[11px] text-text-3">
+      <div className="text-[11px] text-text-3">
         {iss ? `GitHub · ${p.repo}` : "Calendar"} · expires {stamp(a.expiresAt)}
       </div>
       {a.status === "pending" && a.targetChanged === true && (
@@ -138,7 +138,7 @@ export function ApprovalCard({ approval, onDecided }: { approval: ApprovalDTO; o
       )}
       {a.status === "pending" ? (
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="inverse" className={`h-8 ${a.kind === "event_delete" ? "bg-[#f07a6e] text-[#0b0c10]" : ""}`} loading={busy === "approve"} disabled={busy !== null || a.targetChanged === true} onClick={() => void decide("approve")}>
+          <Button variant="inverse" className={`h-8 ${a.kind === "event_delete" ? "bg-red text-on-accent" : ""}`} loading={busy === "approve"} disabled={busy !== null || a.targetChanged === true} onClick={() => void decide("approve")}>
             <Icon name="check" size={15} />
             {EV[a.kind].ok}
           </Button>

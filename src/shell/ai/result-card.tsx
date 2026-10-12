@@ -12,15 +12,15 @@ import { AnswerText } from "./answer-text";
 
 const LIMIT_KIND: Record<string, string> = { "limit:tool_calls": "tool-call", "limit:tokens": "token", "limit:time": "time" };
 
-const KEY_COLOR = { FREE: "text-green", TASK: "text-indigo-text", EVENT: "text-text-2" } as const;
+const KEY_COLOR = { FREE: "text-green", TASK: "text-cyan", EVENT: "text-text-2" } as const;
 
 function Items({ items, more, onNavigate }: { items: ResultItemDTO[]; more: number; onNavigate: () => void }) {
   return (
-    <div className="flex flex-col gap-1 rounded-12 border border-[rgba(255,255,255,.07)] bg-fill-1 p-1.5">
+    <div className="flex flex-col gap-1 rounded-16 border border-white/[.10] bg-white/[.06] p-1.5">
       {items.map((it, i) => (
-        <Link key={`${it.key}|${it.href}|${it.title}|${it.subtitle}|${i}`} href={it.href} onClick={onNavigate} className="flex min-h-11 items-start gap-2.5 rounded-8 px-2.5 py-2 hover:bg-fill-2 tab:min-h-0">
+        <Link key={`${it.key}|${it.href}|${it.title}|${it.subtitle}|${i}`} href={it.href} onClick={onNavigate} className="flex min-h-11 items-start gap-2.5 rounded-8 px-2.5 py-2 hover:bg-white/[.06] tab:min-h-0">
           <span
-            className={`mt-0.5 w-9 shrink-0 font-mono text-[10.5px] font-medium tracking-[0.08em] ${KEY_COLOR[it.key]}`}
+            className={`mt-0.5 w-9 shrink-0 text-[10.5px] font-medium tracking-[.12em] ${KEY_COLOR[it.key]}`}
             style={it.key === "EVENT" && isCategory(it.category) ? { color: CATEGORY[it.category].color } : undefined}
           >
             {it.key}
@@ -32,7 +32,7 @@ function Items({ items, more, onNavigate }: { items: ResultItemDTO[]; more: numb
         </Link>
       ))}
       {more > 0 && (
-        <Link href="/organization" onClick={onNavigate} className="px-2.5 py-1.5 text-[12.5px] text-indigo-text hover:text-indigo-soft">
+        <Link href="/organization" onClick={onNavigate} className="px-2.5 py-1.5 text-[12.5px] text-cyan hover:text-cyan-soft">
           Show {more} more
         </Link>
       )}
@@ -66,16 +66,16 @@ export function ResultCard({ turn, streaming, onRetried }: { turn: TurnDTO; stre
     <div className="flex flex-col gap-2.5" aria-busy={live}>
       {withItems?.items && <Items items={withItems.items} more={withItems.itemsMore} onNavigate={onNavigate} />}
       {(answer || live) && (
-        <div className="flex flex-col gap-2 rounded-12 border border-[rgba(255,255,255,.07)] bg-fill-1 p-3.5">
-          <div className="font-mono text-[10px] tracking-[0.08em] text-text-3">RESULT</div>
+        <div className="flex flex-col gap-2 rounded-22 border border-white/[.12] bg-white/[.06] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,.10)] animate-[lo-rise_.25s_ease-out]">
+          <div className="text-[10px] font-medium tracking-[.12em] text-cyan">RESULT</div>
           <AnswerText text={answer} streaming={live} />
           {noCalendar && (
-            <Link href="/settings?section=connections" onClick={onNavigate} className="self-start rounded-6 px-2 py-1 text-[12.5px] text-text-2 hover:bg-fill-2 hover:text-text">
+            <Link href="/settings?section=connections" onClick={onNavigate} className="self-start rounded-6 px-2 py-1 text-[12.5px] text-text-2 hover:bg-white/[.06] hover:text-text">
               Open Connections
             </Link>
           )}
           {run?.status === "cancelled" && run.endedAt && (
-            <div className="font-mono text-[11px] text-text-3">Stopped at {formatHM(new Date(run.endedAt))}.</div>
+            <div className="text-[11px] text-text-3">Stopped at {formatHM(new Date(run.endedAt))}.</div>
           )}
         </div>
       )}
