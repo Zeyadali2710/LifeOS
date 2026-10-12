@@ -169,7 +169,17 @@ Plans:
 - [x] 04.1-14-PLAN.md — e2e/a11y updates, whole-src gates, owner VM verification
 - [x] 04.1-15-PLAN.md — Login re-skin (tokens only)
 
-### Phase 5–11
+### Phase 5: Career + Projects
+**Goal**: Career and Projects stop being honest-empty pages: GitHub repositories show live health and activity, cross-domain projects track tasks, milestones, dependencies and blockers on a timeline, and each project has a workspace view with its repos, tasks and Claude Code workspace links.
+**Depends on**: Phase 3 (GitHub read-only sync), Phase 4 (tasks), Phase 4.1 (Glass UI)
+**Requirements**: CAR-01..03
+**Success Criteria**:
+  1. The Career page shows a dashboard per synced repository (status/CI health, languages, recent commits, open PRs and issues, activity) from the existing read-only GitHub sync, with honest empty/error states
+  2. A project can be created, edited and archived; it links repos, tasks (reusing Phase 4 tasks), milestones, dependencies and blockers, and shows progress on a timeline; Home's "Active projects" reflects real projects
+  3. A project workspace view shows the project's repos, tasks, milestones and Claude Code workspace links, and agents can read project data through the tool gateway under existing permission tiers
+**Plans**: TBD
+
+### Phase 6–11
 Goals per phase list above; detailed when each phase is planned (`/gsd-plan-phase N`).
 
 ## Credentials & external access needed
