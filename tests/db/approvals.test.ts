@@ -1,13 +1,14 @@
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createProject, deleteProject, updateProject } from "@/server/projects";
 import { eventCreatePayload } from "@/lib/event-payload";
 import { ProviderError } from "@/server/calendar/errors";
 import { decide, executeApproved, expireDue, getApproval, listApprovals, retryApproval, saveEdit } from "@/server/agents/approvals";
 import { advance, createRun, runQueued } from "@/server/agents/loop";
 import { cancelRun } from "@/server/agents/runs";
 import { createThread } from "@/server/agents/threads";
-import { activityEvents, agentRuns, approvals, auditLog, githubRepos, notifications, settings, threadMessages, toolCalls } from "@/server/db/schema";
+import { activityEvents, agentRuns, approvals, auditLog, githubRepos, notifications, projects, settings, threadMessages, toolCalls } from "@/server/db/schema";
 import { saveToken } from "@/server/github/connections";
 import { QUEUES } from "@/server/queue";
 import user from "../fixtures/github/user.json";
@@ -251,5 +252,54 @@ describe("calendar kind", () => {
     await expireDue(h());
     const [note] = await h().select().from(notifications).where(eq(notifications.title, "Approval expired"));
     expect(note!.body).toContain("Nothing was created.");
+  });
+});
+
+describe("project kinds", () => {
+  const draft = { name: "Studio", description: "", context: "", category: "personal", priority: 2, targetDate: null, milestones: [], tasks: [{ ref: "t", title: "T" }], links: [{ kind: "url", label: "Docs", url: "https://a.example" }], sources: ["s"] };
+
+  async function projUpdate() {
+    const { id } = await suspended();
+    const res = await createProject(h(), { name: "Old" }, new Date());
+    if (!res.ok) throw new Error("project");
+    const [p] = await h().select().from(projects).where(eq(projects.id, res.project.id));
+    const payload = {
+      projectId: p!.id,
+      before: { name: p!.name, updatedAt: p!.updatedAt.toISOString(), fields: { name: p!.name, description: "", context: "", category: p!.category, priority: p!.priority, targetDate: null }, milestones: [], tasks: [] },
+      changes: { name: "New" },
+      milestones: [],
+      tasks: [],
+      links: [],
+      sources: [],
+    };
+    await h().update(approvals).set({ tool: "projects.update", originalPayload: payload, editedPayload: null }).where(eq(approvals.id, id));
+    return { id, pid: p!.id };
+  }
+
+  it("flags a project_update whose project changed or vanished", async () => {
+    const { id, pid } = await projUpdate();
+    expect((await getApproval(h(), id))?.targetChanged).toBe(false);
+    await updateProject(h(), pid, { name: "Touched" }, new Date(Date.now() + 5000));
+    expect((await getApproval(h(), id))?.targetChanged).toBe(true);
+    await deleteProject(h(), pid, true);
+    expect((await getApproval(h(), id))?.targetChanged).toBe(true);
+  });
+
+  it("expiry copy says nothing was created", async () => {
+    const { id } = await suspended();
+    await h().update(approvals).set({ tool: "projects.create", originalPayload: draft, expiresAt: new Date(Date.now() - 1000) }).where(eq(approvals.id, id));
+    await expireDue(h());
+    const [n] = await h().select().from(notifications).where(eq(notifications.title, "Approval expired"));
+    expect(n!.body).toBe('The project request "Studio" expired. Nothing was created. Nothing ran after the request expired.');
+  });
+
+  it("approve re-validates edits: links only removable, sources locked", async () => {
+    const { id } = await suspended();
+    await h().update(approvals).set({ tool: "projects.create", originalPayload: draft, editedPayload: null }).where(eq(approvals.id, id));
+    const enqueue = async () => {};
+    const more = [...draft.links, { kind: "url", label: "New", url: "https://b.example" }];
+    expect(await decide(h(), id, "approve", { enqueue, edited: { ...draft, links: more } })).toMatchObject({ ok: false, errors: { links: "Links can only be removed." } });
+    expect(await decide(h(), id, "approve", { enqueue, edited: { ...draft, sources: [] } })).toMatchObject({ ok: false, errors: { sources: "This can't be changed." } });
+    expect((await row(id)).status).toBe("pending");
   });
 });

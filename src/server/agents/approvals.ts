@@ -3,7 +3,7 @@ import type { ApprovalDTO } from "@/lib/agent-types";
 import { approvalKind, changedKeys, checkLocked, nothingText, payloadSchemaFor } from "@/lib/approval-kinds";
 import { ProviderError, providerLabel } from "../calendar/errors";
 import type { DB } from "../db/client";
-import { agentRuns, approvals, auditLog, calendarEvents, githubRepos, toolCalls } from "../db/schema";
+import { agentRuns, approvals, auditLog, calendarEvents, githubRepos, projects, toolCalls } from "../db/schema";
 import { emitActivity, notifyLive } from "../events";
 import { GithubError } from "../github/client";
 import { log } from "../log";
@@ -42,7 +42,8 @@ const live = async (h: DB, a: { id: string; runId: string }) => {
 
 const payloadOf = (r: Row): unknown => r.editedPayload ?? r.originalPayload;
 const titleOf = (r: Row) => {
-  const t = (payloadOf(r) as { title?: unknown } | null)?.title;
+  const p = payloadOf(r) as { title?: unknown; name?: unknown; before?: { name?: unknown } } | null;
+  const t = p?.title ?? p?.name ?? p?.before?.name;
   return typeof t === "string" ? t : "";
 };
 
@@ -263,7 +264,9 @@ export async function expireDue(h: DB, now: Date = new Date(), opts: { enqueue?:
         body:
           kind === "issue"
             ? `The issue "${titleOf(a)}" was not created. Nothing ran after the request expired.`
-            : `The calendar request "${titleOf(a)}" expired. ${nothingText(kind)} Nothing ran after the request expired.`,
+            : kind === "project_create" || kind === "project_update"
+              ? `The project request "${titleOf(a)}" expired. ${nothingText(kind)} Nothing ran after the request expired.`
+              : `The calendar request "${titleOf(a)}" expired. ${nothingText(kind)} Nothing ran after the request expired.`,
         actionUrl: `/approvals?id=${a.id}`,
       },
       h,
@@ -307,12 +310,20 @@ export async function toDTOs(h: DB, rows: Row[]): Promise<ApprovalDTO[]> {
   const targets = (r: Row) => (r.status === "pending" && ["event_update", "event_delete"].includes(approvalKind(r.tool)) ? [String((r.originalPayload as { eventId?: unknown }).eventId)] : []);
   const ids = [...new Set(rows.flatMap(targets))].filter((i) => /^[0-9a-f-]{36}$/i.test(i));
   const etags = new Map(ids.length ? (await h.select({ id: calendarEvents.id, e: calendarEvents.etag }).from(calendarEvents).where(inArray(calendarEvents.id, ids))).map((x) => [x.id, x.e]) : []);
+  // Project update: has the project changed (or vanished) since it was drafted?
+  const isProjUpd = (r: Row) => r.status === "pending" && approvalKind(r.tool) === "project_update";
+  const pids = [...new Set(rows.filter(isProjUpd).map((r) => String((r.originalPayload as { projectId?: unknown }).projectId)))].filter((i) => /^[0-9a-f-]{36}$/i.test(i));
+  const stamps = new Map(pids.length ? (await h.select({ id: projects.id, u: projects.updatedAt }).from(projects).where(inArray(projects.id, pids))).map((x) => [x.id, x.u.toISOString()]) : []);
   return rows.flatMap((r) => {
     try {
       // Event kinds: calendar data is always private (repoPrivate null).
       const priv = approvalKind(r.tool) === "issue" ? (repos.get(String((r.originalPayload as { repo?: unknown }).repo)) ?? null) : null;
       const p = r.originalPayload as { eventId?: string; etag?: string | null };
       const changed = targets(r).length ? !etags.has(String(p.eventId)) || etags.get(String(p.eventId)) !== (p.etag ?? null) : null;
+      if (isProjUpd(r)) {
+        const pp = r.originalPayload as { projectId: string; before: { updatedAt: string } };
+        return [toApprovalDTO(r, priv, stamps.get(pp.projectId) !== pp.before.updatedAt)];
+      }
       return [toApprovalDTO(r, priv, changed)];
     } catch (err) {
       log.error({ err, id: r.id }, "approval DTO failed");
