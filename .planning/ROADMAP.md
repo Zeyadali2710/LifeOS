@@ -15,7 +15,7 @@ From an empty repo to a personal OS: secure foundation and deploy path first, th
 - [x] **Phase 4.1: Glass redesign** (INSERTED) - Liquid-glass restyle of the whole app, same features (completed 2026-10-13)
 - [x] **Phase 5: Career + Projects** - Repo dashboards, cross-domain projects, project workspaces
  (completed 2026-10-13)
-- [ ] **Phase 5.1: Project agent writes + repo contents** (INSERTED) - Agent creates/updates projects via approval; reads repo files
+- [x] **Phase 5.1: Project agent writes + repo contents** (INSERTED) - Agent creates/updates projects via approval; reads repo files (completed 2026-10-13)
 - [ ] **Phase 6: Outreach** - Sydney event discovery, pipeline, email intelligence, drafting
 - [ ] **Phase 7: Socials** - Social providers, drafts, content calendar, analytics
 - [ ] **Phase 8: Knowledge + Goals** - Notes/docs/retrieval, goal hierarchy
@@ -244,4 +244,5 @@ Goals per phase list above; a detail section (goal, requirements, success criter
 | 4. Organization | 22/22 | Complete | 2026-10-11 |
 | 4.1 Glass redesign | 15/15 | Complete | 2026-10-12 |
 | 5. Career + Projects | 12/12 | Complete | 2026-10-13 |
-| 5.1–11 | - | Not started | - |
+| 5.1 Project agent writes | 8/8 | Complete (owner VM UAT pending) | 2026-10-13 |
+| 6–11 | - | Not started | - |
