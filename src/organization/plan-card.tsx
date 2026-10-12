@@ -172,7 +172,7 @@ export function TodaysPlanCard({
   const empty = plan.items.length === 0 && conflicts.length === 0;
 
   return (
-    <aside aria-label="Today's plan" className="glass-card relative overflow-hidden rounded-24 p-5 before:pointer-events-none before:absolute before:inset-0 before:bg-[linear-gradient(180deg,rgba(10,132,255,.10),transparent_45%)]">
+    <section aria-label="Today's plan" className="glass-card relative overflow-hidden rounded-24 p-5 before:pointer-events-none before:absolute before:inset-0 before:bg-[linear-gradient(180deg,rgba(10,132,255,.10),transparent_45%)]">
       <div className="relative">
       <div className="mb-3 flex items-center gap-2">
         <Icon name="auto_awesome" size={16} className="text-cyan" />
@@ -237,6 +237,6 @@ export function TodaysPlanCard({
         {note}
       </p>
       </div>
-    </aside>
+    </section>
   );
 }

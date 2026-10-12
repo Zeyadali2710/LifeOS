@@ -62,7 +62,7 @@ export function AccountMenu({ owner, version }: { owner: { name: string; email: 
     return shortcut.replace("Alt+", "⌥").replace("Ctrl+", "⌘");
   };
 
-  const item = "flex h-11 w-full items-center gap-3 rounded-[18px] px-3 text-left text-[14px] text-text hover:bg-white/[.10] hover:text-text focus-visible:bg-white/[.10] focus-visible:outline-none";
+  const item = "flex h-11 w-full items-center gap-3 rounded-[18px] px-3 text-left text-[14px] text-text hover:bg-white/[.10] hover:text-text focus-visible:bg-white/[.10] focus-visible:outline-none focus-visible:shadow-[inset_0_0_0_2px_var(--cyan)]";
 
   return (
     <div className="relative">

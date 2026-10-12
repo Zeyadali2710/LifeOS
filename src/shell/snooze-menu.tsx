@@ -61,7 +61,7 @@ export function SnoozeMenu({ anchor, onSelect, onClose }: { anchor: HTMLElement;
           tabIndex={i === idx ? 0 : -1}
           onClick={() => onSelect(p.until)}
           onMouseEnter={() => setIdx(i)}
-          className="flex h-8 w-full items-center justify-between gap-4 rounded-[18px] px-3 text-left text-[12.5px] hover:bg-white/[.10] focus:bg-white/[.10] focus:outline-none"
+          className="flex h-8 w-full items-center justify-between gap-4 rounded-[18px] px-3 text-left text-[12.5px] hover:bg-white/[.10] focus:bg-white/[.10] focus:outline-none focus-visible:shadow-[inset_0_0_0_2px_var(--cyan)]"
         >
           {p.label}
           <span className="font-mono text-[11px] text-text-3">{p.hint}</span>
