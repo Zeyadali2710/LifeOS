@@ -130,7 +130,18 @@ export async function callTool(
   const key = tool.sideEffect && !needsApproval ? sha(`${runId}:${toolUseId}`) : null;
   let approvalId: string | undefined;
   let payload: unknown = input;
-  if (needsApproval) payload = tool.toApproval?.(input).payload ?? input;
+  let reason: string | null = null;
+  if (needsApproval) {
+    // A throwing toApproval (e.g. schema drift) is a failed call the model can correct, not a failed run.
+    try {
+      const ap = tool.toApproval?.(input);
+      payload = ap?.payload ?? input;
+      reason = ap?.reason ?? null;
+    } catch (err) {
+      if (!(err instanceof ToolError)) log.error({ err, tool: tool.name }, "toApproval failed");
+      return reject(err instanceof ToolError ? err.message : "invalid input: the approval request could not be prepared");
+    }
+  }
   const claimed = await h.transaction(async (tx) => {
     const [row] = await tx
       .insert(toolCalls)
@@ -149,7 +160,7 @@ export async function callTool(
           tool: tool.name,
           originalPayload: payload,
           payloadHash: sha(canon(payload)),
-          reason: tool.toApproval?.(input).reason ?? null,
+          reason,
           expiresAt: new Date(now().getTime() + EXPIRY_MS),
         })
         .returning({ id: approvals.id });

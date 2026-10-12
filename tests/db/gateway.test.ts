@@ -90,6 +90,16 @@ describe("callTool", () => {
     expect(ft.calls).toMatchObject({ approve: 0, high: 0, read: 0 });
   });
 
+  it("WR-08: a throwing toApproval is a failed call, not a thrown run", async () => {
+    ft.tools["test.approve"]!.toApproval = () => {
+      throw new Error("schema drift");
+    };
+    const r = await call("test.approve", { repo: "o/r", title: "Bug" });
+    expect(r.status).toBe("error");
+    expect((await rows())[0]!.status).toBe("failed");
+    expect(await t.handle().select().from(approvals).where(eq(approvals.runId, runId))).toHaveLength(0);
+  });
+
   describe("content floor (D-06)", () => {
     const content = (rid: string, tool = "github.get_file") =>
       t.handle().insert(toolCalls).values({ runId: rid, toolUseId: `c_${Math.random()}`, kind: "tool", tool, tier: "READ", status: "done", seq: 1 });
