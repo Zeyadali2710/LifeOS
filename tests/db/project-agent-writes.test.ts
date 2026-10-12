@@ -1,5 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { toProjectDraft, validateProjectDraft, type ProjectPayload } from "@/approvals/project-approval";
 import { projectCreatePayload } from "@/lib/project-payload";
 import { decide, executeApproved, listApprovals, retryApproval } from "@/server/agents/approvals";
 import { callTool } from "@/server/agents/gateway";
@@ -226,6 +227,19 @@ describe("projects.update", () => {
     const out = await approve(id);
     expect(out).toMatchObject({ status: "failed", error: "This project changed after the request was prepared, so it can't be applied." });
     expect((await h().select().from(projects).where(eq(projects.id, s.pid)))[0]!.name).toBe("Live");
+  });
+
+  it("CR-02: an owner edit of a rename-only draft keeps due date, priority and milestone", async () => {
+    const s = await seed();
+    await h().update(tasks).set({ priority: 1 }).where(eq(tasks.id, s.tid));
+    const id = apId(await call("projects.update", { project: s.pid, tasks: [{ id: s.tid, title: "Agent title" }] }));
+    const base = (await row(id)).originalPayload as ProjectPayload;
+    const d = toProjectDraft(base);
+    const v = validateProjectDraft("projects.update", base, { ...d, tasks: [{ ...d.tasks[0]!, title: "Owner title" }] });
+    if (!("payload" in v)) throw new Error("invalid edit");
+    expect((await approve(id, v.payload)).status).toBe("executed");
+    const [tk] = await h().select().from(tasks).where(eq(tasks.id, s.tid));
+    expect(tk).toMatchObject({ title: "Owner title", dueDate: "2030-02-01", priority: 1, milestoneId: s.mid });
   });
 
   it("WR-03: refuses (and flags) a draft whose task was edited after drafting", async () => {
