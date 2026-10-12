@@ -102,7 +102,6 @@ function once(url: string, o: SafeGetOpts, maxBytes: number, deadline: number): 
 
   return new Promise<Once>((ok, fail) => {
     let done = false;
-    let timer: NodeJS.Timeout | undefined;
     const end = (f: () => void) => {
       if (done) return;
       done = true;
@@ -131,7 +130,7 @@ function once(url: string, o: SafeGetOpts, maxBytes: number, deadline: number): 
         res.on("error", () => end(() => fail(new SafeGetError("unreachable"))));
       },
     );
-    timer = setTimeout(() => end(() => (req.destroy(), fail(new SafeGetError("unreachable")))), Math.max(1, deadline - Date.now()));
+    const timer = setTimeout(() => end(() => (req.destroy(), fail(new SafeGetError("unreachable")))), Math.max(1, deadline - Date.now()));
     req.on("error", (e) => end(() => fail(e instanceof SafeGetError ? e : new SafeGetError("unreachable"))));
     req.end();
   });

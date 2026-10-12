@@ -4,6 +4,7 @@ import { issuePayloadSchema } from "@/lib/issue-payload";
 import { approvals, githubCommits, githubIssues, githubPullRequests, githubRepos, githubWorkflowRuns } from "../../db/schema";
 import { createGithub, GithubError } from "../../github/client";
 import { getConnections, readToken, writeToken } from "../../github/connections";
+import { capUtf8 } from "../../text";
 import { ToolError, type Tool, type ToolContext } from "../types";
 
 const NOT_CONNECTED = "GitHub isn't connected yet. Add a read token in Settings → Connections.";
@@ -335,11 +336,8 @@ const getFile: Tool<{ repo: string; path: string }, z.infer<typeof fileOut>> = {
     } catch {
       throw new ToolError("invalid_input", "That file is binary, not text.");
     }
-    // Cap is 16 KB of UTF-8; back off to a code-point start so no character (or surrogate pair) is split.
-    let end = Math.min(buf.length, FILE_CAP);
-    while (end < buf.length && end > 0 && (buf[end]! & 0xc0) === 0x80) end--;
-    const truncated = end < buf.length;
-    return { connected: true, repo: r.fullName, path: i.path, truncated, untrusted: true, content: truncated ? buf.subarray(0, end).toString("utf8") : text };
+    const { text: content, truncated } = capUtf8(text, FILE_CAP);
+    return { connected: true, repo: r.fullName, path: i.path, truncated, untrusted: true, content };
   },
 };
 
