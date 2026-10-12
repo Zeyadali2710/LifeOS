@@ -14,19 +14,18 @@ import { useDialog } from "./use-dialog";
 
 export function Palette() {
   const { paletteOpen } = useShell();
-  // Remount on each open so query/selection/wide reset.
+  // Remount on each open so query/selection reset.
   return paletteOpen ? <PaletteDialog /> : null;
 }
 
 function PaletteDialog() {
   const router = useRouter();
-  const { closePalette, openNotifications, openAI, toggleCompact, signOut, isApple } = useShell();
+  const { closePalette, openNotifications, openAI, signOut, isApple } = useShell();
   const listId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [sel, setSel] = useState(0);
   const approvalsWaiting = useAgentStatus().status?.approvalsWaiting ?? 0;
-  const [wide] = useState(() => window.innerWidth >= 1100);
   const ref = useDialog<HTMLDivElement>(true, closePalette, { modal: true, initialFocus: () => inputRef.current });
 
   const [data, setData] = useState<PaletteData | undefined>();
@@ -49,7 +48,7 @@ function PaletteDialog() {
   const shown = query.trim().length >= 2 ? data : undefined;
   const hasData = Boolean(shown && (shown.events.length || shown.tasks.length));
 
-  const { groups, noMatch } = useMemo(() => buildPalette(query, { wide, approvalsWaiting, data: shown, scope }), [query, wide, approvalsWaiting, shown, scope]);
+  const { groups, noMatch } = useMemo(() => buildPalette(query, { approvalsWaiting, data: shown, scope }), [query, approvalsWaiting, shown, scope]);
   const flat = useMemo(() => groups.flatMap((g) => g.items), [groups]);
   const rowId = (i: PaletteItem) => `${listId}-${i.id}`;
   const active = flat[Math.min(sel, flat.length - 1)];
@@ -67,9 +66,6 @@ function PaletteDialog() {
         break;
       case "ai":
         openAI(r.prompt);
-        break;
-      case "compact":
-        toggleCompact();
         break;
       case "signout":
         void signOut();
@@ -112,15 +108,15 @@ function PaletteDialog() {
 
   return (
     <div className="fixed inset-0 z-[70]">
-      <div aria-hidden="true" className="absolute inset-0 animate-[lo-fade_120ms_ease-out] bg-[rgba(5,6,9,.6)] backdrop-blur-[3px]" onClick={closePalette} />
+      <div aria-hidden="true" className="absolute inset-0 animate-[lo-fade_120ms_ease-out] bg-black/30" onClick={closePalette} />
       <div
         ref={ref}
         role="dialog"
         aria-modal="true"
         aria-label="Command palette"
-        className="absolute top-[8vh] left-1/2 z-[71] w-[min(680px,94vw)] -translate-x-1/2 animate-[lo-rise_160ms_ease-out] overflow-hidden rounded-16 border border-[rgba(255,255,255,.10)] bg-[rgba(18,20,26,.97)] shadow-palette tab:top-[12vh]"
+        className="absolute glass-palette top-[12vh] left-1/2 z-[71] w-[min(680px,94vw)] -translate-x-1/2 animate-[lo-rise_.16s_ease-out] overflow-hidden rounded-30"
       >
-        <div className="flex h-14 items-center gap-3 border-b border-[rgba(255,255,255,.06)] px-4">
+        <div className="flex h-14 items-center gap-3 border-b border-white/[.06] px-4">
           <Icon name="search" size={20} className="text-text-3" />
           <input
             ref={inputRef}
@@ -140,7 +136,7 @@ function PaletteDialog() {
               setScope("all");
               setData(undefined);
               // Default to the best match, not the Ask row; Ask stays one ArrowUp away (and is the only row when nothing matches).
-              setSel(buildPalette(e.target.value, { wide, approvalsWaiting, scope: "all" }).noMatch || !e.target.value.trim() ? 0 : 1);
+              setSel(buildPalette(e.target.value, { approvalsWaiting, scope: "all" }).noMatch || !e.target.value.trim() ? 0 : 1);
             }}
             onKeyDown={onKeyDown}
             className="min-w-0 flex-1 bg-transparent text-[16px] text-text outline-none placeholder:text-text-3"
@@ -150,7 +146,7 @@ function PaletteDialog() {
         <div id={listId} role="listbox" aria-label="Results" className="max-h-[min(420px,52vh)] overflow-y-auto px-2 pt-1.5 pb-2.5">
           {groups.map((g) => (
             <div key={g.label} role="group" aria-labelledby={`${listId}-g-${g.label}`.replace(/\s/g, "-")}>
-              <div id={`${listId}-g-${g.label}`.replace(/\s/g, "-")} className="px-2.5 pt-2.5 pb-1.5 font-mono text-[10.5px] tracking-[0.08em] text-text-3 uppercase">
+              <div id={`${listId}-g-${g.label}`.replace(/\s/g, "-")} className="px-2.5 pt-2.5 pb-1.5 font-mono text-[10.5px] tracking-[.12em] text-text-3 uppercase">
                 {g.label}
               </div>
               {g.items.map((item) => {
@@ -163,10 +159,10 @@ function PaletteDialog() {
                     aria-selected={selected}
                     onMouseMove={() => setSel(flat.indexOf(item))}
                     onClick={() => run(item)}
-                    className={`flex h-11 cursor-pointer items-center gap-3 rounded-8 px-2.5 text-[13.5px] tab:h-10 ${selected ? "bg-[rgba(139,140,255,.12)] text-text" : "text-text-2"}`}
+                    className={`flex h-[42px] cursor-pointer items-center gap-3 rounded-14 px-3 text-[13.5px] ${selected ? "bg-white/[.10] text-text" : "text-text-2"}`}
                   >
                     <span
-                      className={`grid size-[26px] shrink-0 place-items-center rounded-7 border border-[rgba(255,255,255,.06)] bg-[rgba(255,255,255,.04)] ${selected ? "text-[#a5a6ff]" : "text-text-3"}`}
+                      className={`grid size-[26px] shrink-0 place-items-center rounded-7 border border-white/[.06] bg-white/[.04] ${selected ? "text-text" : "text-text-3"}`}
                     >
                       <Icon name={item.icon} size={17} />
                     </span>
@@ -182,13 +178,13 @@ function PaletteDialog() {
           ))}
           {noMatch && <p className="px-4 py-7 text-center text-[13px] text-text-2">No commands or pages match. Press ↵ to ask LifeOS instead.</p>}
         </div>
-        <div className="flex items-center gap-4 border-t border-[rgba(255,255,255,.06)] px-4 py-2.5 font-mono text-[11px] text-text-3">
+        <div className="flex items-center gap-4 border-t border-white/[.06] px-4 py-2.5 font-mono text-[11px] text-text-3">
           <span>↑↓ navigate</span>
           <span>↵ open</span>
           {hasData && <span>tab {scope === "all" ? "events" : scope === "events" ? "tasks" : "all"}</span>}
           <span>esc close</span>
           <span className="flex-1" />
-          <span className="text-[#a5a6ff]">{isApple ? "⌘ J" : "Ctrl J"} ask LifeOS</span>
+          <span className="text-cyan">{isApple ? "⌘ J" : "Ctrl J"} ask LifeOS</span>
         </div>
       </div>
     </div>
