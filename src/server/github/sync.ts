@@ -200,7 +200,7 @@ export function createSync(opts: Opts = {}) {
 
         await issueRes?.save();
 
-        const commitRes = await cond(`${base}/commits?sha=${encodeURIComponent(branch)}&per_page=20`, z.array(Commit));
+        const commitRes = await cond(`${base}/commits?sha=${encodeURIComponent(branch)}&per_page=100`, z.array(Commit));
         const commits = commitRes?.data;
         if (commits?.length) {
           await h
@@ -232,6 +232,17 @@ export function createSync(opts: Opts = {}) {
           }
         }
         await runRes?.save();
+
+        // D-04: bytes per language; a 404 on one repo must not abort the others (P4).
+        try {
+          const langRes = await cond(`${base}/languages`, z.record(z.string(), z.number().int().nonnegative()));
+          if (langRes) {
+            await h.update(githubRepos).set({ languages: langRes.data }).where(eq(githubRepos.id, r.id));
+            await langRes.save();
+          }
+        } catch (e) {
+          if (!(e instanceof GithubError && e.kind === "not_found")) throw e;
+        }
       }
 
       if (conn?.status === "error") await h.update(connections).set({ status: "connected", lastError: null }).where(eq(connections.id, "github_read"));
