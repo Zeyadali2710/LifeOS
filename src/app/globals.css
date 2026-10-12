@@ -233,6 +233,9 @@
   button { font-family: inherit; }
   :focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }  /* fields opt out with outline-none and show their own ring */
   ::selection { background: rgba(10,132,255,.4); }
+  /* Native select popups are drawn by the OS (white on Windows Chrome) but inherit our light text: pin dark colours. */
+  select { color-scheme: dark; }
+  select option, select optgroup { background-color: #232326; color: var(--text); }
 }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; margin: 18px; }  /* keeps the thumb off rounded corners */
