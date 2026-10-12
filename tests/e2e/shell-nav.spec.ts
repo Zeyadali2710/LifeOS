@@ -27,17 +27,28 @@ test("unauthenticated /career redirects to /login", async ({ browser, baseURL })
   await ctx.close();
 });
 
-test("desktop: sidebar reaches every domain page, shortcuts and compact persistence", async ({ page, context }, info) => {
+test("desktop: header nav reaches every domain page and shortcuts", async ({ page }, info) => {
   test.skip(info.project.name !== "desktop");
-  const nav = page.getByRole("navigation", { name: "Primary" });
+  const nav = page.getByRole("banner").getByRole("navigation", { name: "Primary" });
+  const more = nav.getByRole("button", { name: /^More/ });
   for (const [href, name] of ROUTES) {
+    if (["/knowledge", "/goals", "/settings"].includes(href)) {
+      const label = href === "/knowledge" ? "Knowledge" : href === "/goals" ? "Goals" : "Settings";
+      await more.click();
+      await page.getByRole("menuitem", { name: label }).click();
+      await expect(page).toHaveURL(new RegExp(`${href}$`));
+      await expect(page.getByRole("heading", { level: 1 })).toHaveText(name);
+      await more.click();
+      await expect(page.getByRole("menuitem", { name: label })).toHaveAttribute("aria-current", "page");
+      await page.keyboard.press("Escape");
+      continue;
+    }
     const link = nav.locator(`a[href="${href}"]`);
     await link.click();
     await expect(page).toHaveURL(new RegExp(`${href}$`));
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(name);
     await expect(link).toHaveAttribute("aria-current", "page");
   }
-  await expect(page.getByRole("complementary", { name: "Primary" })).not.toContainText("0.9");
 
   await page.goto("/");
   // First press can land before hydration; retry until the shortcut listener exists.
@@ -46,34 +57,43 @@ test("desktop: sidebar reaches every domain page, shortcuts and compact persiste
     await expect(page).toHaveURL(/\/career$/, { timeout: 500 });
   }).toPass();
 
+  // Compact mode is gone: Ctrl+\ changes nothing.
   await page.keyboard.press("Control+Backslash");
-  await expect(page.getByRole("button", { name: "Expand sidebar" })).toBeVisible();
-  await expect(nav.getByText("Organization", { exact: true })).toBeHidden();
-  expect((await context.cookies()).find((c) => c.name === "lo_nav")?.value).toBe("compact");
-  await page.reload();
-  await expect(page.getByRole("button", { name: "Expand sidebar" })).toBeVisible();
+  await expect(page).toHaveURL(/\/career$/);
+  await expect(nav).toBeVisible();
 
-  await page.keyboard.press("Control+Backslash");
-  await expect(page.getByRole("button", { name: "Collapse sidebar" })).toBeVisible();
+  // Wide window: labels visible, no tooltips; More menu is keyboard operable.
+  await page.setViewportSize({ width: 1400, height: 900 });
+  await expect(nav.getByText("Career", { exact: true })).toBeVisible();
+  await expect(nav.getByRole("tooltip")).toHaveCount(0);
+  await more.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("menu")).toBeVisible();
+  await page.keyboard.press("ArrowDown");
+  await expect(page.getByRole("menuitem").first()).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("menu")).toBeHidden();
+  await expect(more).toBeFocused();
 });
 
-test("mobile: bottom bar and More reach domain pages", async ({ page }, info) => {
+test("mobile: tab bar and More reach domain pages", async ({ page }, info) => {
   test.skip(info.project.name !== "mobile");
-  await expect(page.getByRole("complementary", { name: "Primary" })).toBeHidden();
+  await expect(page.getByRole("banner").getByRole("navigation", { name: "Primary" })).toBeHidden();
   const bar = page.getByRole("navigation", { name: "Primary" });
-  for (const l of ["Home", "Organize", "Projects"]) await expect(bar.getByRole("link", { name: l })).toBeVisible();
+  for (const l of ["Home", "Approvals", "Agents"]) await expect(bar.getByRole("link", { name: l })).toBeVisible();
+  await expect(bar.getByRole("button", { name: "Open LifeOS assistant" })).toBeVisible();
   await expect(bar.getByRole("button", { name: "More" })).toBeVisible();
-
-  await bar.getByRole("link", { name: "Organize" }).click();
-  await expect(page).toHaveURL(/\/organization$/);
 
   const dialog = page.getByRole("dialog", { name: "More" });
   await bar.getByRole("button", { name: "More" }).click();
-  await dialog.getByRole("link", { name: "Goals" }).click();
-  await expect(page).toHaveURL(/\/goals$/);
+  await dialog.getByRole("link", { name: "Organization" }).click();
+  await expect(page).toHaveURL(/\/organization$/);
   await expect(dialog).toBeHidden();
 
   await bar.getByRole("button", { name: "More" }).click();
-  await dialog.getByRole("link", { name: "Approvals" }).click();
+  await dialog.getByRole("link", { name: "Goals" }).click();
+  await expect(page).toHaveURL(/\/goals$/);
+
+  await bar.getByRole("link", { name: "Approvals" }).click();
   await expect(page).toHaveURL(/\/approvals$/);
 });

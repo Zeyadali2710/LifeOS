@@ -20,7 +20,7 @@ test("desktop: skip link, landmarks, log", async ({ page }, info) => {
   await page.keyboard.press("Enter");
   await expect(page.locator("#main")).toBeFocused();
 
-  await expect(page.getByRole("complementary", { name: "Primary" }).getByRole("navigation", { name: "Primary" })).toBeVisible();
+  await expect(page.getByRole("banner").getByRole("navigation", { name: "Primary" })).toBeVisible();
   await expect(page.getByRole("banner")).toBeVisible();
   await expect(page.getByRole("main")).toBeVisible();
   await expect(page.getByRole("log")).toBeAttached();
@@ -59,11 +59,11 @@ test("desktop: palette and drawer trap focus and restore it", async ({ page }, i
   await expect(bell).toBeFocused();
 });
 
-test("desktop: rail tooltip on focus; reduced motion stops the status dot", async ({ page }, info) => {
+test("desktop: nav tooltip on focus; reduced motion stops the status dot", async ({ page }, info) => {
   test.skip(info.project.name !== "desktop");
   await page.setViewportSize({ width: 900, height: 900 });
   await page.goto("/");
-  const nav = page.getByRole("complementary", { name: "Primary" }).getByRole("navigation", { name: "Primary" });
+  const nav = page.getByRole("banner").getByRole("navigation", { name: "Primary" });
   await page.keyboard.press("Tab"); // ensure keyboard modality for :focus-visible
   await nav.getByRole("link").first().focus();
   await expect(nav.getByRole("tooltip").first()).toBeVisible();
@@ -80,7 +80,8 @@ test("mobile: bottom bar is labelled and touch-sized", async ({ page }, info) =>
   await expect(nav).toBeVisible();
   const controls = nav.locator("a, button");
   expect(await controls.count()).toBeGreaterThan(0);
-  for (const c of await controls.all()) {
+  const header = page.getByRole("banner").getByRole("button");
+  for (const c of [...(await controls.all()), ...(await header.all())]) {
     const box = await c.boundingBox();
     expect(box?.width).toBeGreaterThanOrEqual(44);
     expect(box?.height).toBeGreaterThanOrEqual(44);

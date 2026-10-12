@@ -116,14 +116,13 @@ test("desktop: Esc closes and returns focus to the bell", async ({ page }, info)
   await expect(bell(page)).toBeFocused();
 });
 
-test("mobile: bell opens a full-width sheet; More opens the same dialog", async ({ page }, info) => {
+test("mobile: bell opens a floating sheet; bell reopens it after close", async ({ page }, info) => {
   test.skip(info.project.name !== "mobile");
   await openWith(page, `Sheet ${uid()}`);
   const box = await drawer(page).boundingBox();
-  expect(box?.width).toBeGreaterThanOrEqual((page.viewportSize()?.width ?? 0) - 1);
+  expect(box?.width).toBeGreaterThanOrEqual((page.viewportSize()?.width ?? 0) - 24);
   await drawer(page).getByRole("button", { name: "Close notifications" }).click();
   await expect(drawer(page)).toBeHidden();
-  await page.getByRole("navigation", { name: "Primary" }).getByRole("button", { name: "More" }).click();
-  await page.getByRole("dialog", { name: "More" }).getByRole("button", { name: /Notifications/ }).click();
+  await bell(page).click();
   await expect(drawer(page)).toBeVisible();
 });

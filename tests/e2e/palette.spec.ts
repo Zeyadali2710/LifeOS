@@ -63,14 +63,14 @@ test("desktop: palette navigates, closes, and asks", async ({ page }, info) => {
   await expect(page).toHaveURL(/\/career$/);
 });
 
-test("mobile: assistant opens full-screen and answers honestly", async ({ page }, info) => {
+test("mobile: assistant opens as a floating sheet and answers honestly", async ({ page }, info) => {
   test.skip(info.project.name !== "mobile");
   await page.getByRole("button", { name: "Open LifeOS assistant" }).click();
   const assistant = page.getByRole("dialog", { name: "LifeOS assistant" });
   await expect(assistant).toBeVisible();
   const box = await assistant.boundingBox();
   const vp = page.viewportSize()!;
-  expect(box!.width).toBeGreaterThanOrEqual(vp.width - 1);
+  expect(box!.width).toBeGreaterThanOrEqual(vp.width - 24);
   // With no API key the composer is disabled and the panel says why.
   await expect(page.getByLabel("Message LifeOS")).toBeDisabled();
   await expect(assistant.getByRole("alert")).toContainText("LifeOS can't answer yet.");
