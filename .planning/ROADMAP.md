@@ -149,7 +149,7 @@ Plans:
 **Goal:** The whole app wears the owner's liquid-glass design (floating pill header, mobile pill tab bar, Ask bar, floating glass panels, Instrument Serif + Familjen Grotesk) with the same features, content and behaviour, WCAG AA contrast and solid fallbacks, and smooth scrolling on the VM.
 **Requirements**: TBD (CONTEXT decisions D-01..D-08)
 **Depends on:** Phase 4
-**Plans:** 13/15 plans executed
+**Plans:** 14/15 plans executed
 
 Plans:
 - [x] 04.1-01-PLAN.md — Glass tokens, tier utilities, a11y fallbacks, fonts, gate script
@@ -158,7 +158,7 @@ Plans:
 - [x] 04.1-04-PLAN.md — Floating AI panel and assistant sub-views
 - [x] 04.1-05-PLAN.md — Notifications, palette, toast as floating cards; compact palette command removed
 - [x] 04.1-06-PLAN.md — Mobile tab bar, More sheet, desktop Ask bar
-- [ ] 04.1-07-PLAN.md — Mount Glass shell, remove compact mode, delete old shell components
+- [x] 04.1-07-PLAN.md — Mount Glass shell, remove compact mode, delete old shell components
 - [x] 04.1-08-PLAN.md — Home and honest empty domain pages
 - [x] 04.1-09-PLAN.md — Organization header, legend, time/month grids, categories
 - [x] 04.1-10-PLAN.md — Organization plan/tasks cards and dialogs
