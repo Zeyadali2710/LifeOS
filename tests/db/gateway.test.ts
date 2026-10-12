@@ -89,4 +89,41 @@ describe("callTool", () => {
     expect((await call("test.read", { text: "a" })).status).toBe("waiting_approval");
     expect(ft.calls).toMatchObject({ approve: 0, high: 0, read: 0 });
   });
+
+  describe("content floor (D-06)", () => {
+    const content = (rid: string) =>
+      t.handle().insert(toolCalls).values({ runId: rid, toolUseId: `c_${Math.random()}`, kind: "tool", tool: "github.get_file", tier: "READ", status: "done", seq: 1 });
+    const override = () => t.handle().insert(permissions).values({ agentId: "projects", tool: "test.exec", tier: "EXECUTE" });
+    const exec = () => call("test.exec", { text: "go" });
+
+    it("executes directly without a content call", async () => {
+      await override();
+      expect((await exec()).status).toBe("ok");
+    });
+    it("requires approval after a content call in the same run", async () => {
+      await override();
+      await content(runId);
+      const r = await exec();
+      expect(r.status).toBe("waiting_approval");
+      const [ap] = await t.handle().select().from(approvals).where(eq(approvals.id, (r as { approvalId: string }).approvalId));
+      expect(ap).toBeTruthy();
+      expect(ft.calls.exec).toBe(0);
+    });
+    it("a sibling run's content call floors it too; a different tree is unaffected", async () => {
+      const [parent] = await t.handle().insert(agentRuns).values({ agentId: "projects", prompt: "p", model: "m" }).returning();
+      const mk = async (parentRunId: string | null) =>
+        (await t.handle().insert(agentRuns).values({ agentId: "projects", prompt: "p", model: "m", parentRunId }).returning())[0]!.id;
+      const me = await mk(parent!.id);
+      const sib = await mk(parent!.id);
+      runId = me;
+      await content(sib);
+      expect((await exec()).status).toBe("waiting_approval");
+      runId = await mk(null);
+      expect((await exec()).status).toBe("ok");
+    });
+    it("READ tools are unaffected", async () => {
+      await content(runId);
+      expect((await call("test.read", { text: "a" })).status).toBe("ok");
+    });
+  });
 });
