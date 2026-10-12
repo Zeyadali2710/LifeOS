@@ -183,9 +183,9 @@ Plans:
 - [x] 05-03: GitHub sync languages + commit depth; career query layer
 - [x] 05-04: Project writes: CRUD, cycle-safe dependencies, task project/milestone, audit + activity, server actions
 - [x] 05-05: Shared status/graphics components, RepoCard, ActivityFeed
-- [ ] 05-06: Project read model + projects.list/projects.get READ agent tools
-- [ ] 05-07: /career dashboard and /career/[owner]/[repo] detail
-- [ ] 05-08: Project, milestone, link and dependency dialogs; task dialog pickers
+- [x] 05-06: Project read model + projects.list/projects.get READ agent tools
+- [x] 05-07: /career dashboard and /career/[owner]/[repo] detail
+- [x] 05-08: Project, milestone, link and dependency dialogs; task dialog pickers
 - [ ] 05-09: /projects index (filters, sort, cards, create)
 - [ ] 05-10: /projects/[id] workspace (Claude Code card, tasks, timeline, blockers, links)
 - [ ] 05-11: Home Active projects + palette Projects scope
