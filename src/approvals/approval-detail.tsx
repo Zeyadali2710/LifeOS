@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { ApprovalDTO } from "@/lib/agent-types";
-import { nothingText, type ApprovalKind } from "@/lib/approval-kinds";
+import { nothingText, payloadSchemaFor, type ApprovalKind } from "@/lib/approval-kinds";
 import { issuePayloadSchema, type IssuePayload } from "@/lib/issue-payload";
 import { isSafeGithubUrl } from "@/lib/safe-url";
 import { approveAction, rejectAction, retryApprovalAction, saveEditAction } from "@/server/approval-actions";
@@ -16,6 +16,7 @@ import { Icon } from "@/ui/icon";
 import type { IconName } from "@/ui/icon-names";
 import { ApprovalEditForm, toDraft, toPayload, validateDraft, type Draft, type DraftErrors } from "./approval-edit-form";
 import { stamp } from "./approval-list";
+import { ProjectApprovalBody, projectOf, projectResolved, sameProject, toProjectDraft, validateProjectDraft, type ProjectDraft, type ProjectErrors, type ProjectPayload } from "./project-approval";
 import { EventApprovalBody, eventOf, eventResolved, sameEvent, toEventDraft, validateEventDraft, type EventDraft, type EventDraftErrors, type EventPayload } from "./event-approval";
 
 export type WriteFacts = { connected: boolean; login: string | null; last4: string | null };
@@ -69,7 +70,9 @@ function Resolved({ a, onRetry, retrying }: { a: ApprovalDTO; onRetry: () => voi
   const nothing = nothingText(a.kind);
   const res = a.result as { number?: number; url?: string } | null;
   const repo = issue ? ((a.edited ?? a.original) as { repo: string }).repo : "";
-  const ev = issue ? null : eventResolved(a, at);
+  const proj = a.kind === "project_create" || a.kind === "project_update";
+  const upd = a.kind === "project_update";
+  const ev = issue ? null : proj ? projectResolved(a, at) : eventResolved(a, at);
   let icon: IconName = "block";
   let tone = "text-red";
   let bg = "bg-[rgba(240,122,110,.06)]";
@@ -78,7 +81,7 @@ function Resolved({ a, onRetry, retrying }: { a: ApprovalDTO; onRetry: () => voi
     icon = "schedule";
     tone = "text-cyan";
     bg = "bg-fill-1";
-    text = issue ? "Creating the issue on GitHub…" : "Applying the change…";
+    text = issue ? "Creating the issue on GitHub…" : proj ? (upd ? "Updating the project…" : "Creating the project…") : "Applying the change…";
   } else if (a.status === "executed") {
     icon = "check_circle";
     tone = "text-green";
@@ -108,7 +111,7 @@ function Resolved({ a, onRetry, retrying }: { a: ApprovalDTO; onRetry: () => voi
       )}
       {ev?.href && (
         <a href={ev.href} className="rounded-6 border border-[rgba(255,255,255,.1)] px-2.5 py-1 text-[12.5px] text-text hover:bg-fill-2">
-          View in calendar
+          {proj ? "Open project" : "View in calendar"}
         </a>
       )}
       {a.status === "failed" && (
@@ -127,6 +130,10 @@ export function ApprovalDetail(props: DetailProps) {
   const issue = issueOf(props.approval);
   if (issue) return <IssueApprovalBody {...props} issue={issue} />;
   if (props.approval.kind === "issue") return <UnreadableApproval />;
+  if (props.approval.kind === "project_create" || props.approval.kind === "project_update") {
+    // safeParse: a malformed stored payload must not throw during render
+    return payloadSchemaFor(props.approval.tool).safeParse(projectOf(props.approval)).success ? <ProjectApprovalShell {...props} /> : <UnreadableApproval />;
+  }
   return <EventApprovalShell {...props} />;
 }
 
@@ -227,6 +234,102 @@ function EventApprovalShell({ approval: a, onChange }: DetailProps) {
               </Button>
             )}
             <Button variant="destructive" className="h-[38px]" autoFocus={del} loading={busy === "reject"} disabled={busy !== null && busy !== "reject"} onClick={() => void guard("reject", () => rejectAction(a.id), "Approval rejected")}>
+              REJECT
+            </Button>
+            <span className="flex-1" />
+            <span className="text-[11px] text-text-3">
+              requested {formatHM(new Date(a.createdAt))} · expires {stamp(a.expiresAt)}
+            </span>
+          </div>
+        </footer>
+      ) : (
+        <Resolved a={a} retrying={busy === "retry"} onRetry={() => void guard("retry", () => retryApprovalAction(a.id))} />
+      )}
+    </article>
+  );
+}
+
+// Project kinds: same shell as events around ProjectApprovalBody.
+function ProjectApprovalShell({ approval: a, onChange }: DetailProps) {
+  const { toast } = useShell();
+  const [busy, setBusy] = useState<"approve" | "reject" | "save" | "retry" | null>(null);
+  const saved = projectOf(a);
+  const [draft, setDraft] = useState<ProjectDraft>(() => toProjectDraft(saved));
+  const [editing, setEditing] = useState(false);
+  const [errors, setErrors] = useState<ProjectErrors>({});
+  const agent = getAgent(a.agentId);
+  const upd = a.kind === "project_update";
+  const pending = a.status === "pending";
+  const edited = a.edited != null && !sameProject(saved, a.original as ProjectPayload);
+  const stale = a.targetChanged === true;
+  const title = editing && !upd ? draft.name : "before" in saved ? saved.before.name : saved.name;
+  const guard = async (k: NonNullable<typeof busy>, fn: () => Promise<{ ok: boolean; approval?: ApprovalDTO; errors?: Record<string, string> }>, done?: string) => {
+    setBusy(k);
+    const r = await fn().catch(() => ({ ok: false }) as { ok: boolean; approval?: ApprovalDTO; errors?: Record<string, string> });
+    setBusy(null);
+    if (r.approval) onChange(r.approval);
+    if (r.errors) {
+      setErrors(r.errors);
+      setEditing(true);
+      return false;
+    }
+    if (!r.ok) {
+      toast("Couldn't record that decision. Try again.", "error");
+      return false;
+    }
+    if (done) toast(done);
+    return true;
+  };
+  const check = () => {
+    const v = validateProjectDraft(a.tool, saved, draft);
+    if ("errors" in v) {
+      setErrors(v.errors);
+      setEditing(true);
+      return null;
+    }
+    setErrors({});
+    return v.payload;
+  };
+  const approve = () => {
+    const payload = editing ? check() : saved;
+    if (!payload) return;
+    void guard("approve", () => approveAction(a.id, editing && !sameProject(payload, saved) ? payload : undefined), upd ? "Project updated" : "Project created");
+  };
+  const done = async () => {
+    const payload = check();
+    if (!payload) return;
+    if (!sameProject(payload, saved) && !(await guard("save", () => saveEditAction(a.id, payload)))) return;
+    setEditing(false);
+  };
+  return (
+    <article aria-label="Approval detail" className="glass-card overflow-hidden rounded-24">
+      <header className="border-b border-[rgba(255,255,255,.06)] bg-[linear-gradient(180deg,rgba(232,184,106,.06),transparent)] px-5 py-5">
+        <div className="mb-2 text-[11px] font-medium tracking-[0.12em]">
+          <span className="uppercase" style={{ color: agent?.color }}>
+            {agent?.name ?? a.agentId}
+          </span>{" "}
+          <span className="text-text-3">wants to</span> <span>{EVENT_VERB[a.kind]}</span>
+        </div>
+        <h2 className="font-display text-[26px] leading-[1.12] font-medium break-words">{title}</h2>
+      </header>
+      {a.reason && (
+        <section className="border-b border-[rgba(255,255,255,.06)] px-5 py-5">
+          <Fact k="WHY">{a.reason}</Fact>
+        </section>
+      )}
+      <ProjectApprovalBody approval={a} editing={editing} draft={draft} errors={errors} onDraft={setDraft} edited={edited} />
+      {pending ? (
+        <footer className="px-5 py-4">
+          {stale && <p className="mb-3 text-[12.5px] text-amber">This project changed after the request was prepared, so it can&apos;t be applied. Reject it and ask again.</p>}
+          <div className="flex flex-wrap items-center gap-2.5 max-[719px]:flex-col max-[719px]:items-stretch [&_button]:text-[13px] [&_button]:font-semibold [&_button]:tracking-[0.06em] [&_button]:uppercase max-[719px]:[&_button]:h-12">
+            <Button className="h-[38px] min-w-[150px] rounded-full px-[18px]" loading={busy === "approve"} disabled={stale || (busy !== null && busy !== "approve")} onClick={approve}>
+              <Icon name="check" size={16} />
+              {EVENT_OK[a.kind]}
+            </Button>
+            <Button variant="secondary" className="h-[38px]" loading={busy === "save"} disabled={busy !== null && busy !== "save"} onClick={() => (editing ? void done() : setEditing(true))}>
+              {editing ? "DONE" : "EDIT"}
+            </Button>
+            <Button variant="destructive" className="h-[38px]" loading={busy === "reject"} disabled={busy !== null && busy !== "reject"} onClick={() => void guard("reject", () => rejectAction(a.id), "Approval rejected")}>
               REJECT
             </Button>
             <span className="flex-1" />

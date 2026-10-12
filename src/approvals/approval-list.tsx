@@ -7,6 +7,7 @@ import { getAgent } from "@/server/agents/registry";
 import { formatHM, sydneyParts } from "@/server/time";
 import { Badge } from "@/ui/badge";
 import { EmptyState } from "@/ui/empty-state";
+import { Icon } from "@/ui/icon";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 export const stamp = (iso: string) => {
@@ -84,7 +85,8 @@ export function ApprovalList({
       ) : (
         <div ref={listRef} role="listbox" aria-label={tab === "pending" ? "Pending approvals" : "Resolved approvals"} onKeyDown={onKey} className="glass-card flex flex-col gap-1 rounded-24 p-2">
           {items.map((a, n) => {
-            const p = (a.edited ?? a.original) as { title?: unknown; repo?: unknown };
+            const p = (a.edited ?? a.original) as { title?: unknown; repo?: unknown; name?: unknown; before?: { name?: unknown } };
+            const proj = a.kind === "project_create" || a.kind === "project_update";
             const agent = getAgent(a.agentId);
             const sel = a.id === selectedId;
             const [label, tone] = STATE[a.status];
@@ -105,12 +107,13 @@ export function ApprovalList({
                     {agent?.name ?? a.agentId}
                   </span>
                   <span className="flex-1" />
+                  {proj && <Icon name="folder_open" size={16} className="text-text-3" />}
                   <Badge kind="tag" tone={a.kind === "event_delete" ? "red" : "neutral"}>
                     {BADGE[a.kind]}
                   </Badge>
                 </div>
                 <p className="text-[14px] leading-[1.4] break-words">
-                  {a.kind === "issue" ? `Create an issue in ${String(p.repo)}: ` : ""}&quot;{String(p.title ?? "")}&quot;
+                  {a.kind === "issue" ? `Create an issue in ${String(p.repo)}: ` : ""}&quot;{String(p.title ?? p.name ?? p.before?.name ?? "")}&quot;
                 </p>
                 <div className="flex flex-wrap items-center gap-2 text-[11px] text-text-3">
                   <span>Requested {formatHM(new Date(a.createdAt))}</span>

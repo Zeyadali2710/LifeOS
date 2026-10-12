@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import type { ApprovalDTO } from "@/lib/agent-types";
-import { nothingText, type ApprovalKind } from "@/lib/approval-kinds";
+import { nothingText, payloadSchemaFor, type ApprovalKind } from "@/lib/approval-kinds";
 import { isSafeGithubUrl } from "@/lib/safe-url";
 import { approveAction, rejectAction } from "@/server/approval-actions";
 import { issueOf, UnreadableApproval } from "@/approvals/approval-detail";
 import { eventOf, whenText } from "@/approvals/event-approval";
+import { projectOf, projectResolved } from "@/approvals/project-approval";
+import { draftCounts } from "@/lib/project-payload";
 import { sydneyParts, formatHM } from "@/server/time";
 import { Badge } from "@/ui/badge";
 import { Button } from "@/ui/button";
@@ -26,6 +28,8 @@ function Resolved({ a }: { a: ApprovalDTO }) {
   const nothing = nothingText(a.kind);
   const res = a.result as { number?: number; url?: string } | null;
   const repo = issueOf(a)?.current.repo ?? "";
+  const proj = a.kind === "project_create" || a.kind === "project_update";
+  const pr = proj ? projectResolved(a, at) : null;
   let icon: IconName = "schedule";
   let tone = "text-text-3";
   let text = "";
@@ -33,17 +37,17 @@ function Resolved({ a }: { a: ApprovalDTO }) {
     case "approved":
     case "executing":
       icon = "schedule";
-      text = issue ? "Creating the issue on GitHub…" : "Applying the change…";
+      text = issue ? "Creating the issue on GitHub…" : proj ? (a.kind === "project_update" ? "Updating the project…" : "Creating the project…") : "Applying the change…";
       break;
     case "executed":
       icon = "check_circle";
       tone = "text-green";
-      text = issue ? `Issue created: ${repo}#${res?.number ?? ""}. Approved at ${at}.` : `Done. Approved at ${at}.`;
+      text = issue ? `Issue created: ${repo}#${res?.number ?? ""}. Approved at ${at}.` : (pr?.text ?? `Done. Approved at ${at}.`);
       break;
     case "failed":
       icon = "error";
       tone = "text-red";
-      text = issue ? `Approved, but GitHub rejected it: ${a.error ?? "unknown error"}. Nothing was created.` : `Approved, but it was rejected: ${a.error ?? "unknown error"}. ${nothing}`;
+      text = issue ? `Approved, but GitHub rejected it: ${a.error ?? "unknown error"}. Nothing was created.` : pr ? pr.text : `Approved, but it was rejected: ${a.error ?? "unknown error"}. ${nothing}`;
       break;
     case "rejected":
       icon = "block";
@@ -61,6 +65,11 @@ function Resolved({ a }: { a: ApprovalDTO }) {
     <div role="status" tabIndex={-1} className="flex animate-[lo-fade_200ms_ease-out] flex-wrap items-center gap-2 rounded-full bg-white/[.06] px-3.5 py-2 text-[12.5px] text-text-2">
       <Icon name={icon} size={16} className={tone} />
       <span className="flex-1">{text}</span>
+      {pr?.href && a.status === "executed" && (
+        <a href={pr.href} className="text-cyan hover:text-cyan-soft">
+          Open project
+        </a>
+      )}
       {issue && a.status === "executed" && isSafeGithubUrl(res?.url) && (
         <a href={res.url} target="_blank" rel="noopener noreferrer" className="text-cyan hover:text-cyan-soft">
           View on GitHub
@@ -88,15 +97,21 @@ export function ApprovalCard({ approval, onDecided }: { approval: ApprovalDTO; o
   const a = approval.status === "pending" && local ? local : approval;
   const iss = issueOf(a);
   if (a.kind === "issue" && !iss) return <UnreadableApproval />;
+  const isProj = a.kind === "project_create" || a.kind === "project_update";
+  if (isProj && !payloadSchemaFor(a.tool).safeParse(projectOf(a)).success) return <UnreadableApproval />;
+  const pj = isProj ? projectOf(a) : null;
+  const pjName = pj ? ("before" in pj ? pj.before.name : pj.name) : "";
+  const pjCounts = pj ? draftCounts(pj) : null;
+  const pjMeta = pjCounts ? [pjCounts.milestones && `${pjCounts.milestones} milestones`, pjCounts.tasks && `${pjCounts.tasks} tasks`, pjCounts.links && `${pjCounts.links} links`].filter(Boolean).join(" · ") || "Project only" : "";
   const ev = (a.edited ?? a.original) as { title?: unknown; calendarLabel?: unknown };
-  const p = iss?.current ?? { repo: "", title: String(ev.title ?? ""), body: "", labels: [] as string[] };
+  const p = iss?.current ?? { repo: "", title: pj ? pjName : String(ev.title ?? ""), body: pj && "name" in pj ? pj.description : "", labels: [] as string[] };
   const decide = async (kind: "approve" | "reject") => {
     setBusy(kind);
     const r = await (kind === "approve" ? approveAction(a.id) : rejectAction(a.id)).catch(() => ({ ok: false, approval: undefined }));
     setBusy(null);
     if (!r.ok) return toast("Couldn't record that decision. Try again.", "error");
     if (r.approval) setLocal(r.approval);
-    toast(kind === "approve" ? (iss ? `Issue created in ${p.repo}` : "Calendar updated") : "Approval rejected");
+    toast(kind === "approve" ? (iss ? `Issue created in ${p.repo}` : pj ? (a.kind === "project_update" ? "Project updated" : "Project created") : "Calendar updated") : "Approval rejected");
     onDecided();
   };
   return (
@@ -106,10 +121,17 @@ export function ApprovalCard({ approval, onDecided }: { approval: ApprovalDTO; o
         APPROVAL REQUIRED
       </div>
       <p className="text-[13px] text-text-2">
-        {iss ? `${a.agentId} wants to create a GitHub issue in ${p.repo}` : `Organization agent wants to ${EV[a.kind].verb} ${String(ev.calendarLabel ?? "")}`}
+        {iss ? `${a.agentId} wants to create a GitHub issue in ${p.repo}` : pj ? (a.kind === "project_update" ? `Projects agent wants to change "${pjName}"` : "Projects agent wants to create a project") : `Organization agent wants to ${EV[a.kind].verb} ${String(ev.calendarLabel ?? "")}`}
       </p>
       <h4 className="text-[15px] font-medium break-words">{p.title}</h4>
-      {!iss && (
+      {pj && <div className="text-[11px] text-text-3">{pjMeta}</div>}
+      {pj && pj.sources.length > 0 && (
+        <p className="flex items-center gap-1.5 text-[12.5px] text-amber">
+          <Icon name="warning" size={14} />
+          Drafted from {pj.sources.length} repository files (untrusted)
+        </p>
+      )}
+      {!iss && !pj && (
         <div className="text-[11px] text-text-3">
           {(() => {
             const e = eventOf(a);
@@ -133,10 +155,10 @@ export function ApprovalCard({ approval, onDecided }: { approval: ApprovalDTO; o
         </div>
       )}
       <div className="text-[11px] text-text-3">
-        {iss ? `GitHub · ${p.repo}` : "Calendar"} · expires {stamp(a.expiresAt)}
+        {iss ? `GitHub · ${p.repo}` : pj ? "LifeOS · Projects" : "Calendar"} · expires {stamp(a.expiresAt)}
       </div>
       {a.status === "pending" && a.targetChanged === true && (
-        <p className="text-[12.5px] text-amber">This event changed after the request was prepared, so it can&apos;t be applied. Reject it and ask again.</p>
+        <p className="text-[12.5px] text-amber">This {pj ? "project" : "event"} changed after the request was prepared, so it can&apos;t be applied. Reject it and ask again.</p>
       )}
       {a.status === "pending" ? (
         <div className="flex flex-wrap items-center gap-2">
