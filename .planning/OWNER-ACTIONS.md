@@ -37,3 +37,4 @@ Things only the owner can do (VM, deploy, UAT, credentials). Autonomous runs app
   6. Edit the project's context in the dialog, then edit only its name: the context stays.
 
   Unblocks: phase 5.1 human verification (CAR-02, CAR-03, AGT-01 live). Any failure becomes a gap for `/gsd:plan-phase 5.1 --gaps`. Reply with the 0007 migrate log line and pass/issue per UAT item (never paste tokens).
+- [ ] **During the 5.1 UAT, also check the two edit-form review fixes** (05.1-REVIEW-FIX CR-01/CR-02): in an approval card, a task drafted without a milestone stays "No milestone" after you edit anything else; editing a `project_update` card doesn't clear existing tasks' due date / priority / milestone. Note: once a conversation has read repo files, issues, PRs or commit messages, any side-effecting tool now asks for approval even if you set it to auto (intended security floor, 05.1 WR-01/WR-02).
