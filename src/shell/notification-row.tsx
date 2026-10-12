@@ -62,7 +62,7 @@ export function NotificationRow({ n, fresh }: { n: NotificationDTO; fresh: boole
 
   return (
     <li
-      className={`grid grid-cols-[28px_1fr] gap-2.5 rounded-18 border p-3 ${
+      className={`grid grid-cols-[28px_1fr] gap-2.5 rounded-16 border p-3 ${
         important ? "border-white/[.08] bg-white/[.035]" : "border-transparent"
       } ${unread ? "" : "opacity-60"} ${fresh ? "animate-[lo-in_450ms_ease-out]" : ""}`}
     >

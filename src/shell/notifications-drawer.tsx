@@ -67,7 +67,7 @@ export function NotificationsDrawer() {
     body = (
       <div className="flex flex-col gap-3" aria-busy="true">
         {[0, 1, 2].map((i) => (
-          <Skeleton key={i} className="h-[68px] rounded-18" />
+          <Skeleton key={i} className="h-[68px] rounded-16" />
         ))}
       </div>
     );
@@ -106,7 +106,7 @@ export function NotificationsDrawer() {
   } else {
     body = groupNotifications(shown, now).map((g) => (
       <section key={g.group} aria-label={g.group}>
-        <div className="mt-3 px-2 py-1.5 font-mono text-[10.5px] font-medium tracking-[.12em] text-text-3">{g.group}</div>
+        <div className="mt-3 px-3 py-1.5 font-mono text-[10.5px] font-medium tracking-[.12em] text-text-3">{g.group}</div>
         <ul className="flex flex-col gap-1">
           {g.items.map((n) => (
             <NotificationRow key={n.id} n={n} fresh={freshIds.has(n.id)} />
@@ -126,7 +126,7 @@ export function NotificationsDrawer() {
         aria-labelledby={titleId}
         className="glass-panel absolute top-[80px] right-3 z-[70] flex max-h-[calc(100%-96px)] w-[min(420px,calc(100%-24px))] animate-[lo-rise_.2s_ease-out] flex-col overflow-hidden rounded-30"
       >
-        <header className="flex h-14 shrink-0 items-center gap-2 pr-3 pl-5">
+        <header className="flex h-14 shrink-0 items-center gap-2 px-5">
           <h2 id={titleId} className="flex-1 font-display text-[26px] leading-none font-normal">
             Notifications
           </h2>
@@ -143,12 +143,12 @@ export function NotificationsDrawer() {
           </button>
         </header>
         {present.length >= 2 && (
-          <div role="group" aria-label="Filter by category" className="flex shrink-0 gap-1.5 overflow-x-auto px-3 py-2">
+          <div role="group" aria-label="Filter by category" className="flex shrink-0 gap-1.5 overflow-x-auto px-5 py-2">
             {chip("All", null)}
             {present.map((c) => chip(c, c))}
           </div>
         )}
-        <div className="min-h-0 flex-1 overflow-y-auto px-3 pt-2 pb-6">{body}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-2 pt-1 pb-3">{body}</div>
       </div>
     </div>
   );

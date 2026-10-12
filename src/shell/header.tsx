@@ -14,7 +14,7 @@ function cap(n: number) {
   return n > 99 ? "99+" : String(n);
 }
 
-const pill = "glass-chrome rounded-full h-[54px] tab:h-[50px] flex items-center gap-1 p-[5px] pointer-events-auto";
+const pill = "glass-chrome rounded-full h-[50px] [@media(pointer:coarse)]:h-[54px] flex items-center gap-1 p-[5px] pointer-events-auto";
 const ctl = "relative grid size-10 shrink-0 place-items-center rounded-full [@media(pointer:coarse)]:size-11";
 
 export function Header({ owner, version }: { owner: { name: string; email: string }; version: string }) {
@@ -99,7 +99,7 @@ export function Header({ owner, version }: { owner: { name: string; email: strin
         </button>
         <button type="button" onClick={openNotifications} aria-label={bellLabel} aria-haspopup="dialog" className={`${ctl} text-soft hover:bg-white/[.10] hover:text-white`}>
           <Icon name="notifications" size={21} />
-          {unread > 0 && <span aria-hidden="true" className="absolute top-2 right-[9px] size-2 rounded-full bg-amber shadow-[0_0_0_2px_rgba(30,30,34,.9)]" />}
+          {unread > 0 && <span aria-hidden="true" className="absolute top-2.5 right-2.5 size-2 rounded-full bg-amber shadow-[0_0_0_2px_rgba(30,30,34,.9)]" />}
         </button>
         <button
           type="button"

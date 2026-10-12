@@ -85,7 +85,7 @@ export function AIPanel() {
       void submit(draft);
     }
   };
-  const iconBtn = "grid size-[30px] place-items-center rounded-8 text-text-2 hover:bg-white/[.06] hover:text-text [@media(pointer:coarse)]:size-11";
+  const iconBtn = "grid size-[30px] place-items-center rounded-full text-text-2 hover:bg-white/[.06] hover:text-text [@media(pointer:coarse)]:size-11";
   const modal = mode !== "docked";
   const repoRows: { icon: IconName; text: string }[] = [
     { icon: "priority_high", text: "What's happening in my repos?" },
@@ -149,7 +149,7 @@ export function AIPanel() {
       {...(modal ? { role: "dialog", "aria-modal": true } : {})}
       className="glass-panel absolute top-[80px] right-3 bottom-3 z-[60] flex w-[min(440px,calc(100%-24px))] animate-[lo-slide_.2s_ease] flex-col overflow-hidden rounded-30"
     >
-      <header className="flex h-14 shrink-0 items-center gap-2.5 border-b border-white/[.06] px-5 pr-4">
+      <header className="flex h-14 shrink-0 items-center gap-2.5 border-b border-white/[.06] px-5">
         <span aria-hidden="true" className="size-[9px] rotate-45 rounded-[2px] bg-accent" />
         <div className="flex flex-col">
           <span className="font-display text-[22px] leading-[1.15] italic">LifeOS</span>
@@ -195,7 +195,7 @@ export function AIPanel() {
                   type="button"
                   disabled={blocked || streaming}
                   onClick={() => void submit(s.text)}
-                  className="flex min-h-11 items-center gap-2.5 rounded-16 border border-white/[.10] bg-white/[.02] px-3 py-2.5 text-left text-[13.5px] hover:border-[rgba(10,132,255,.35)] hover:bg-[rgba(10,132,255,.06)] disabled:opacity-50"
+                  className="flex min-h-11 items-center gap-2.5 rounded-14 border border-white/[.10] bg-white/[.02] px-3 py-2.5 text-left text-[13.5px] hover:border-[rgba(10,132,255,.35)] hover:bg-[rgba(10,132,255,.06)] disabled:opacity-50"
                 >
                   <Icon name={s.icon} size={17} className="text-accent" />
                   {s.text}
@@ -224,8 +224,8 @@ export function AIPanel() {
         <div ref={endRef} />
       </div>
 
-      <div className="shrink-0 border-t border-white/[.06] px-3.5 pt-3 pb-3.5">
-        <div className="rounded-22 border border-white/[.14] bg-white/[.06] p-2.5 pt-2.5 pb-2 pl-3.5 focus-within:border-[rgba(100,210,255,.55)] focus-within:shadow-[var(--ring-input)]">
+      <div className="shrink-0 border-t border-white/[.06] p-3.5">
+        <div className="rounded-24 border border-white/[.14] bg-white/[.06] px-4 py-3 focus-within:border-[rgba(100,210,255,.55)] focus-within:shadow-[var(--ring-input)]">
           <textarea
             ref={areaRef}
             rows={2}
@@ -245,7 +245,7 @@ export function AIPanel() {
               aria-disabled="true"
               title="Voice input isn't available yet"
               aria-label="Voice input"
-              className="grid size-[30px] place-items-center rounded-8 text-text-4 [@media(pointer:coarse)]:size-11"
+              className="grid size-[30px] place-items-center rounded-full text-text-4 [@media(pointer:coarse)]:size-11"
             >
               <Icon name="mic" size={18} />
             </button>
@@ -255,7 +255,7 @@ export function AIPanel() {
                 aria-label="Stop run"
                 disabled={!activeRunId}
                 onClick={() => activeRunId && void chat.stop(activeRunId)}
-                className="grid size-[30px] place-items-center rounded-8 bg-white/[.10] text-text [@media(pointer:coarse)]:size-11"
+                className="grid size-[30px] place-items-center rounded-full bg-white/[.10] text-text [@media(pointer:coarse)]:size-11"
               >
                 <Icon name="stop" size={18} />
               </button>
@@ -265,7 +265,7 @@ export function AIPanel() {
                 aria-label="Send"
                 disabled={!draft.trim() || blocked}
                 onClick={() => void submit(draft)}
-                className="grid size-[30px] place-items-center rounded-8 bg-accent text-on-accent disabled:bg-white/[.10] disabled:text-text-4 [@media(pointer:coarse)]:size-11"
+                className="grid size-[30px] place-items-center rounded-full bg-accent text-on-accent disabled:bg-white/[.10] disabled:text-text-4 [@media(pointer:coarse)]:size-11"
               >
                 <Icon name="arrow_upward" size={18} />
               </button>

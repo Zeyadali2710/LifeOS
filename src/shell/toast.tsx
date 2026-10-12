@@ -14,7 +14,7 @@ export function Toast({ toast }: { toast: ToastState }) {
       {toast && (
         <div
           key={toast.id}
-          className="glass-menu pointer-events-auto flex max-w-[calc(100vw-32px)] animate-[lo-rise_.2s_ease-out] items-center gap-2.5 rounded-full px-[18px] py-3 text-[13.5px] text-text"
+          className="glass-menu pointer-events-auto flex max-w-[calc(100vw-32px)] animate-[lo-rise_.2s_ease-out] items-center gap-2.5 rounded-full px-5 py-3 text-[13.5px] text-text"
         >
           <Icon name={toast.kind === "error" ? "error" : "check_circle"} size={19} className={toast.kind === "error" ? "text-red" : "text-green"} />
           {toast.message}

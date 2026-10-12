@@ -51,7 +51,7 @@ export function SnoozeMenu({ anchor, onSelect, onClose }: { anchor: HTMLElement;
       aria-label="Snooze until"
       onKeyDown={onKeyDown}
       style={pos}
-      className="fixed z-[80] min-w-[200px] animate-[lo-rise_160ms_ease-out] glass-menu rounded-16 p-1"
+      className="fixed z-[80] min-w-[200px] animate-[lo-rise_160ms_ease-out] glass-menu rounded-24 p-1.5"
     >
       {presets.map((p, i) => (
         <button
@@ -61,7 +61,7 @@ export function SnoozeMenu({ anchor, onSelect, onClose }: { anchor: HTMLElement;
           tabIndex={i === idx ? 0 : -1}
           onClick={() => onSelect(p.until)}
           onMouseEnter={() => setIdx(i)}
-          className="flex h-8 w-full items-center justify-between gap-4 rounded-10 px-2.5 text-left text-[12.5px] hover:bg-white/[.10] focus:bg-white/[.10] focus:outline-none"
+          className="flex h-8 w-full items-center justify-between gap-4 rounded-[18px] px-3 text-left text-[12.5px] hover:bg-white/[.10] focus:bg-white/[.10] focus:outline-none"
         >
           {p.label}
           <span className="font-mono text-[11px] text-text-3">{p.hint}</span>

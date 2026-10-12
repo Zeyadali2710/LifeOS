@@ -11,7 +11,7 @@ const tones = {
 };
 
 export function Badge({ kind, tone, children }: { kind: "status" | "tag" | "count"; tone: keyof typeof tones; children: ReactNode }) {
-  const shape = kind === "tag" ? "rounded-5" : "rounded-full";
+  const shape = kind === "tag" ? "rounded-6" : "rounded-full";
   const type = kind === "count" ? "px-1.5 py-0.5 text-[10.5px] font-medium" : "px-2 py-[3px] text-[10px] font-semibold tracking-[0.08em] uppercase";
   return <span className={`inline-block font-mono leading-none ${shape} ${type} ${tones[tone]}`}>{children}</span>;
 }

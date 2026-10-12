@@ -30,7 +30,7 @@ export function InlineError({
   return (
     <div
       role="alert"
-      className="flex flex-col gap-2.5 rounded-16 border border-[rgba(255,105,97,.3)] bg-[linear-gradient(180deg,rgba(255,105,97,.08),rgba(255,105,97,.02))] p-[18px]"
+      className="flex flex-col gap-2.5 rounded-24 border border-[rgba(255,105,97,.3)] bg-[linear-gradient(180deg,rgba(255,105,97,.08),rgba(255,105,97,.02))] p-5"
     >
       <div className="flex items-center gap-2 text-[10.5px] font-medium tracking-[0.1em] text-red uppercase">
         <Icon name={icon} size={17} />
