@@ -179,7 +179,7 @@ Plans:
   3. A project workspace view shows the project's repos, tasks, milestones and Claude Code workspace links, and agents can read project data through the tool gateway under existing permission tiers
 **Plans**: 12 plans
 - [x] 05-01: Client-safe contracts (DTOs, zod payloads), pure rules module + unit tests, new icon glyphs
-- [ ] 05-02: [BLOCKING] Schema + migration 0005 (projects, milestones, dependencies, links, task FKs, repo languages); owner VM migrate gate
+- [x] 05-02: [BLOCKING] Schema + migration 0005 (projects, milestones, dependencies, links, task FKs, repo languages); owner VM migrate gate
 - [ ] 05-03: GitHub sync languages + commit depth; career query layer
 - [ ] 05-04: Project writes: CRUD, cycle-safe dependencies, task project/milestone, audit + activity, server actions
 - [ ] 05-05: Shared status/graphics components, RepoCard, ActivityFeed
