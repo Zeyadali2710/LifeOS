@@ -4,6 +4,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { connections, githubEtags, githubIssues, githubPullRequests, githubRepos, githubWorkflowRuns } from "@/server/db/schema";
 import { saveToken } from "@/server/github/connections";
 import { createSync } from "@/server/github/sync";
+import languages from "../fixtures/github/languages.json";
 import commits from "../fixtures/github/commits.json";
 import issues from "../fixtures/github/issues.json";
 import pulls from "../fixtures/github/pulls.json";
@@ -25,7 +26,7 @@ type Emitted = { a: { type: string; title: string; detail?: string; tone?: strin
 
 // Mutable world; every resource carries an ETag derived from its JSON so 304s are exercised.
 function world() {
-  const w = { user: 200, rate: false, data: { pulls: structuredClone(pulls), runs: structuredClone(runs) } as Record<string, unknown> };
+  const w = { user: 200, rate: false, data: { pulls: structuredClone(pulls), runs: structuredClone(runs) } as Record<string, unknown>, langs404: false };
   const res = (req: Request, body: unknown) => {
     if (w.rate) return new Response(JSON.stringify({ message: "limit" }), { status: 403, headers: { "x-ratelimit-remaining": "0" } });
     const etag = `"${Buffer.from(JSON.stringify(body)).toString("base64").slice(-24)}${JSON.stringify(body).length}"`;
@@ -42,6 +43,8 @@ function world() {
     "GET /repos/owner-test/private-app/commits": (r) => res(r, commits),
     "GET /repos/owner-test/private-app/actions/runs": (r) => res(r, w.data.runs),
   };
+  routes["GET /repos/owner-test/private-app/languages"] = (r) => (w.langs404 ? new Response(JSON.stringify({ message: "Not Found" }), { status: 404 }) : res(r, languages));
+  routes["GET /repos/owner-test/public-lib/languages"] = (r) => res(r, {});
   for (const p of ["pulls", "issues", "commits", "actions/runs"]) routes[`GET /repos/owner-test/public-lib/${p}`] = (r) => res(r, p === "actions/runs" ? { workflow_runs: [] } : []);
   return { w, fetch: fakeGithub(routes) };
 }
@@ -104,6 +107,30 @@ describe("github sync", () => {
     ev = [];
     await s.run();
     expect(ev).toEqual([]); // no duplicates
+  });
+
+  it("languages: stored as returned, {} distinct from null, 304 keeps, 404 skips one repo; commits per_page=100", async () => {
+    const h = t.handle();
+    await h.delete(githubEtags);
+    await h.delete(githubRepos);
+    const { w, fetch } = world();
+    const s = createSync({ handle: h, fetch, emit, now: () => NOW });
+    expect(await s.run()).toMatchObject({ ok: true });
+    const langs = async (id: number) => (await h.select().from(githubRepos).where(eq(githubRepos.id, id)))[0]!.languages;
+    expect(await langs(101)).toEqual(languages);
+    expect(await langs(103)).toEqual({});
+    expect(await langs(102)).toBeNull(); // archived: outside the active window, never fetched
+    expect(fetch.calls.some((c) => c.url.includes("/commits?") && c.url.includes("per_page=100"))).toBe(true);
+
+    await h.update(githubRepos).set({ languages: { Marker: 1 } }).where(eq(githubRepos.id, 101));
+    await s.run(); // unchanged ETag -> 304 -> untouched
+    expect(await langs(101)).toEqual({ Marker: 1 });
+
+    w.langs404 = true;
+    await h.delete(githubEtags);
+    expect(await s.run()).toMatchObject({ ok: true });
+    expect(await h.select().from(githubPullRequests)).toHaveLength(2);
+    expect(await langs(101)).toEqual({ Marker: 1 });
   });
 
   it("review requested emits; 401 errors once; rate limit records error", async () => {
