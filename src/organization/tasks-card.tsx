@@ -134,7 +134,7 @@ export function TasksCard({ tasks, allOpen, completed, today }: { tasks: TaskDTO
   })();
 
   return (
-    <section id="tasks" aria-label="Tasks" className="rounded-12 border border-[rgba(255,255,255,.07)] bg-fill-1 p-4">
+    <section id="tasks" aria-label="Tasks" className="glass-card rounded-26 p-4">
       <div className="relative flex items-center gap-2">
         <h2 className="font-mono text-[11px] font-medium tracking-[0.1em] text-text-2">{all ? "TASKS · ALL OPEN" : "TASKS · TODAY"}</h2>
         <span className="font-mono text-[11px] text-text-3">
@@ -151,7 +151,7 @@ export function TasksCard({ tasks, allOpen, completed, today }: { tasks: TaskDTO
           <Icon name="more_horiz" size={18} />
         </button>
         {menu && (
-          <div role="group" aria-label="Task list options" className="absolute top-8 right-0 z-10 flex w-52 flex-col rounded-9 border border-[rgba(255,255,255,.1)] bg-[#14161c] p-1 shadow-[var(--shadow-overlay)]">
+          <div role="group" aria-label="Task list options" className="absolute top-8 right-0 z-10 flex w-52 flex-col rounded-14 border border-[rgba(255,255,255,.12)] bg-[#202022] p-1">
             <button type="button" className="rounded-6 px-2.5 py-2 text-left text-[13px] hover:bg-fill-2" onClick={() => (setAll(!all), setMenu(false))}>
               {all ? "Show today only" : "Show all open tasks"}
             </button>

@@ -20,7 +20,7 @@ const ymd = (d: Date) => {
 const PROVIDER = { google: "Google Calendar", icloud: "iCloud" } as const;
 
 type State = "SUGGESTED" | "ON CALENDAR" | "SKIPPED" | "CONFLICT";
-const STATE_TONE: Record<State, string> = { SUGGESTED: "text-indigo-text", "ON CALENDAR": "text-green", SKIPPED: "text-text-3", CONFLICT: "text-red" };
+const STATE_TONE: Record<State, string> = { SUGGESTED: "text-cyan", "ON CALENDAR": "text-green", SKIPPED: "text-text-3", CONFLICT: "text-red" };
 
 export function TodaysPlanCard({
   plan,
@@ -105,7 +105,7 @@ export function TodaysPlanCard({
     const dim = state === "SKIPPED";
     return (
       <li key={it.id} className="py-2.5">
-        <div className={`rounded-7 px-2 py-1.5 ${dim ? "bg-[rgba(255,255,255,.015)]" : "bg-[rgba(255,255,255,.03)]"}`}>
+        <div className={`rounded-10 px-2 py-1.5 ${dim ? "bg-[rgba(18,18,20,.35)]" : "bg-[rgba(18,18,20,.55)]"}`}>
           <div className="flex items-center gap-2 font-mono text-[11.5px]">
             {time && <span className="text-text-2">{time}</span>}
             <span className="flex-1" />
@@ -141,7 +141,7 @@ export function TodaysPlanCard({
               >
                 Add to calendar
               </Button>
-              <Button size="xs" variant="secondary" className="max-tab:h-11" onClick={() => toggleSkip(it.id, true)}>
+              <Button size="xs" variant="ghost" className="max-tab:h-11" onClick={() => toggleSkip(it.id, true)}>
                 Skip
               </Button>
               {picking === it.id && (
@@ -172,10 +172,11 @@ export function TodaysPlanCard({
   const empty = plan.items.length === 0 && conflicts.length === 0;
 
   return (
-    <section aria-label="Today's plan" className="rounded-12 border border-[rgba(139,140,255,.25)] bg-[linear-gradient(180deg,rgba(139,140,255,.08),rgba(139,140,255,.02))] p-4">
+    <aside aria-label="Today's plan" className="rounded-14 border border-[rgba(10,132,255,.25)] bg-[linear-gradient(180deg,rgba(10,132,255,.08),rgba(28,28,32,1)_40%)] p-4">
       <div className="flex items-center gap-2">
-        <Icon name="auto_awesome" size={16} className="text-indigo-text" />
-        <h2 className="font-mono text-[11px] font-medium tracking-[0.1em] text-indigo-text">TODAY&apos;S PLAN</h2>
+        <Icon name="auto_awesome" size={16} className="text-cyan" />
+        <span aria-hidden className="size-[7px] rotate-45 bg-accent" />
+        <h2 className="font-mono text-[11px] font-medium tracking-[.14em] text-cyan">TODAY&apos;S PLAN</h2>
         <span className="font-mono text-[11px] text-text-3" title="Planning window 08:00–22:00">
           {today}
         </span>
@@ -234,6 +235,6 @@ export function TodaysPlanCard({
       <p role="status" aria-live="polite" className="sr-only">
         {note}
       </p>
-    </section>
+    </aside>
   );
 }
