@@ -13,6 +13,14 @@ async function seedCalendar(remoteId = "primary") {
 }
 
 describe("phase 4 schema", () => {
+  it("allows only one default calendar across all connections", async () => {
+    const a = await seedCalendar("d1");
+    const b = await seedCalendar("d2");
+    await h().update(calendars).set({ isDefault: true }).where(eq(calendars.id, a.id));
+    await expect(h().update(calendars).set({ isDefault: true }).where(eq(calendars.id, b.id))).rejects.toThrow();
+    await h().update(calendars).set({ isDefault: false }).where(eq(calendars.id, a.id));
+  });
+
   it("upserts events idempotently on (calendarId, remoteId)", async () => {
     const cal = await seedCalendar("c1");
     const row = { calendarId: cal.id, remoteId: "e1", raw: {} };

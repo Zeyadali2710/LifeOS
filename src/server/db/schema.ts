@@ -440,7 +440,11 @@ export const calendars = pgTable(
     lastSyncedAt: tstz(),
     ...timestamps,
   },
-  (t) => [uniqueIndex().on(t.connectionId, t.remoteId)],
+  (t) => [
+    uniqueIndex().on(t.connectionId, t.remoteId),
+    // At most one default calendar across all connections (D-09).
+    uniqueIndex("calendars_one_default_idx").on(t.isDefault).where(sql`${t.isDefault}`),
+  ],
 );
 
 export const calendarEvents = pgTable(

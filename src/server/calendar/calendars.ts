@@ -11,7 +11,7 @@ type Tx = Parameters<Parameters<DB["transaction"]>[0]>[0];
 
 // Serialises every default-calendar write: under READ COMMITTED two clear-then-set transactions could both commit
 // and leave two defaults. Statements after the lock see the other writer's committed change (IN-C02).
-// ponytail: app-level guarantee only; add a partial unique index on is_default with the next migration if needed.
+// The DB enforces one default (calendars_one_default_idx, migration 0004); the lock makes concurrent switches wait instead of failing on it.
 const lockDefault = (tx: Tx) => tx.execute(sql`select pg_advisory_xact_lock(hashtext('lifeos.calendars.default'))`);
 
 /** Sync the owner's calendar list. Keeps their enabled/category/default choices; new primary/owned calendars start ticked as Personal (D-01, D-02). */
