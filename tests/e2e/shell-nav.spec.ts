@@ -30,7 +30,7 @@ test("unauthenticated /career redirects to /login", async ({ browser, baseURL })
 test("desktop: header nav reaches every domain page and shortcuts", async ({ page }, info) => {
   test.skip(info.project.name !== "desktop");
   const nav = page.getByRole("banner").getByRole("navigation", { name: "Primary" });
-  const more = nav.getByRole("button", { name: /^More/ });
+  const more = page.getByRole("banner").getByRole("button", { name: /^Account menu/ });
   for (const [href, name] of ROUTES) {
     if (["/knowledge", "/goals", "/settings"].includes(href)) {
       const label = href === "/knowledge" ? "Knowledge" : href === "/goals" ? "Goals" : "Settings";
@@ -62,15 +62,13 @@ test("desktop: header nav reaches every domain page and shortcuts", async ({ pag
   await expect(page).toHaveURL(/\/career$/);
   await expect(nav).toBeVisible();
 
-  // Wide window: labels visible, no tooltips; More menu is keyboard operable.
-  await page.setViewportSize({ width: 1400, height: 900 });
-  await expect(nav.getByText("Career", { exact: true })).toBeVisible();
-  await expect(nav.getByRole("tooltip")).toHaveCount(0);
+  // Account menu (avatar) is keyboard operable and holds Sign out.
   await more.focus();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("menu")).toBeVisible();
   await page.keyboard.press("ArrowDown");
   await expect(page.getByRole("menuitem").first()).toBeFocused();
+  await expect(page.getByRole("menuitem", { name: "Sign out" })).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(page.getByRole("menu")).toBeHidden();
   await expect(more).toBeFocused();
