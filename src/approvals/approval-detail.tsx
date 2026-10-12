@@ -211,7 +211,7 @@ function EventApprovalShell({ approval: a, onChange }: DetailProps) {
           {stale && <p className="mb-3 text-[12.5px] text-amber">This event changed after the request was prepared, so it can&apos;t be applied. Reject it and ask again.</p>}
           <div className="flex flex-wrap items-center gap-2.5 max-[719px]:flex-col max-[719px]:items-stretch [&_button]:text-[13px] [&_button]:font-semibold [&_button]:tracking-[0.06em] [&_button]:uppercase max-[719px]:[&_button]:h-12">
             <Button
-              className={`h-[38px] min-w-[150px] rounded-9 px-[18px] ${del ? "bg-red text-white hover:bg-red" : ""}`}
+              className={`h-[38px] min-w-[150px] rounded-9 px-[18px] ${del ? "bg-red text-on-accent hover:bg-red" : ""}`}
               loading={busy === "approve"}
               disabled={stale || (busy !== null && busy !== "approve")}
               onClick={approve}
