@@ -10,6 +10,8 @@ export const taskInput = z
     priority: z.union([z.literal(1), z.literal(2), z.literal(3)]).nullable().default(null),
     // An offset is required: an offset-less time would be read in the server's zone (UTC), not Sydney.
     remindAt: z.iso.datetime({ offset: true, error: "Enter a valid reminder time." }).nullable().default(null),
+    projectId: z.uuid().nullable().default(null),
+    milestoneId: z.uuid().nullable().default(null),
   })
   .superRefine((v, ctx) => {
     if (v.dueTime && !v.dueDate) ctx.addIssue({ code: "custom", path: ["dueTime"], message: "Add a due date before choosing a time." });
