@@ -83,7 +83,7 @@ export function OrganizationHeader({
   const unit = view;
 
   return (
-    <header className="mb-5 flex flex-wrap items-start justify-between gap-4">
+    <header className="mb-5 flex flex-wrap items-end justify-between gap-x-4 gap-y-5">
       <div className="min-w-0">
         <div className="text-[11px] font-medium tracking-[.12em] text-green">ORGANIZATION</div>
         <h1 className="mt-2 font-display text-[clamp(34px,4.4vw,60px)] leading-[.95] font-normal">{headline}</h1>

@@ -9,9 +9,10 @@ import { isCurrent, MORE_ITEMS } from "./nav";
 import { useShell } from "./shell-provider";
 import { SystemBlock, useSystemState } from "./system-block";
 
-export function MoreMenu({ version }: { version: string }) {
+/** Avatar button that opens the account menu: Knowledge, Goals, Settings, system status, Sign out. */
+export function AccountMenu({ owner, version }: { owner: { name: string; email: string }; version: string }) {
   const pathname = usePathname();
-  const { isApple } = useShell();
+  const { isApple, signOut } = useShell();
   const { attention } = useSystemState();
   const [open, setOpen] = useState(false);
   const menuId = useId();
@@ -21,6 +22,8 @@ export function MoreMenu({ version }: { version: string }) {
   const currentIdx = MORE_ITEMS.findIndex((n) => isCurrent(pathname, n.href));
   const current = currentIdx >= 0 ? MORE_ITEMS[currentIdx] : null;
   const items = () => Array.from(menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []);
+  const name = owner.name.trim() || owner.email;
+  const initial = name.charAt(0).toUpperCase();
 
   useEffect(() => {
     if (!open) return;
@@ -59,6 +62,8 @@ export function MoreMenu({ version }: { version: string }) {
     return shortcut.replace("Alt+", "⌥").replace("Ctrl+", "⌘");
   };
 
+  const item = "flex h-11 w-full items-center gap-3 rounded-14 px-3 text-left text-[14px] text-text hover:bg-white/[.10] hover:text-text focus-visible:bg-white/[.10] focus-visible:outline-none";
+
   return (
     <div className="relative">
       <button
@@ -67,16 +72,19 @@ export function MoreMenu({ version }: { version: string }) {
         aria-haspopup="menu"
         aria-expanded={open}
         aria-controls={menuId}
-        aria-label={current ? `More: ${current.label}` : undefined}
+        aria-label={current ? `Account menu, ${name}: ${current.label}` : `Account menu, ${name}`}
         onClick={() => setOpen((o) => !o)}
-        className={`relative flex h-10 items-center gap-1 rounded-full px-[9px] text-[13.5px] transition-[background-color,color] duration-150 wide:pr-[10px] wide:pl-[13px] ${
-          current ? "bg-white/[.16] font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,.2)]" : "text-soft hover:text-white"
+        className={`relative grid size-10 shrink-0 place-items-center rounded-full text-[14px] font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,.3)] [@media(pointer:coarse)]:size-11 ${
+          current || open ? "ring-2 ring-white/40" : ""
         }`}
+        style={{ background: "linear-gradient(145deg,#5e5ce6,#bf5af2)" }}
       >
-        <span className="hidden wide:inline">{current ? current.label : "More"}</span>
-        <Icon name="expand_more" size={20} />
+        {initial}
         {attention && (
-          <span aria-hidden="true" className={`absolute top-1.5 right-1.5 size-2 rounded-full ${attention === "red" ? "bg-red" : "bg-amber"}`} />
+          <span
+            aria-hidden="true"
+            className={`absolute top-0 right-0 size-2.5 rounded-full shadow-[0_0_0_2px_rgba(30,30,34,.9)] ${attention === "red" ? "bg-red" : "bg-amber"}`}
+          />
         )}
       </button>
       {open && (
@@ -84,10 +92,14 @@ export function MoreMenu({ version }: { version: string }) {
           ref={menuRef}
           id={menuId}
           role="menu"
-          aria-label="More"
+          aria-label="Account"
           onKeyDown={onKeyDown}
-          className="glass-menu absolute top-[calc(100%+14px)] right-[-5px] min-w-[230px] animate-[lo-rise_.16s_ease-out] rounded-24 p-1.5"
+          className="glass-menu absolute top-[calc(100%+14px)] right-[-5px] z-40 min-w-[240px] animate-[lo-rise_.16s_ease-out] rounded-24 p-1.5"
         >
+          <div className="px-3 pt-2 pb-2.5">
+            <div className="truncate text-[14px] font-medium text-text">{name}</div>
+            {owner.name.trim() && <div className="truncate text-[12px] text-text-3">{owner.email}</div>}
+          </div>
           {MORE_ITEMS.map((n) => {
             const cur = isCurrent(pathname, n.href);
             return (
@@ -98,7 +110,7 @@ export function MoreMenu({ version }: { version: string }) {
                 tabIndex={-1}
                 aria-current={cur ? "page" : undefined}
                 onClick={() => setOpen(false)}
-                className={`flex h-11 items-center gap-3 rounded-16 px-3 text-[14px] text-text no-underline hover:bg-white/[.10] hover:text-text hover:no-underline focus-visible:bg-white/[.10] ${cur ? "bg-white/[.12]" : ""}`}
+                className={`${item} ${cur ? "bg-white/[.12]" : ""}`}
               >
                 <Icon name={n.icon} size={20} fill={cur} className={cur ? "text-cyan" : "text-text-2"} />
                 <span className="flex-1">{n.label}</span>
@@ -106,6 +118,19 @@ export function MoreMenu({ version }: { version: string }) {
               </Link>
             );
           })}
+          <button
+            type="button"
+            role="menuitem"
+            tabIndex={-1}
+            onClick={() => {
+              setOpen(false);
+              void signOut();
+            }}
+            className={item}
+          >
+            <Icon name="logout" size={20} className="text-text-2" />
+            <span className="flex-1">Sign out</span>
+          </button>
           <SystemBlock version={version} />
         </div>
       )}

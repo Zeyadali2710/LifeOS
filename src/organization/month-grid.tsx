@@ -66,16 +66,16 @@ export function MonthGrid({
 
   const rows = Array.from({ length: days.length / 7 }, (_, r) => days.slice(r * 7, r * 7 + 7));
   return (
-    <div ref={root} role="grid" aria-label="Month" className="overflow-hidden rounded-14 bg-white/[.06]">
-      <div role="row" className="grid grid-cols-7 gap-px">
+    <div ref={root} role="grid" aria-label="Month" className="glass-card overflow-hidden rounded-24">
+      <div role="row" className="grid grid-cols-7 border-b border-white/[.07]">
         {HEAD.map((h) => (
-          <div key={h} role="columnheader" className="bg-[#0b0b0d] py-2 text-center text-[10.5px] tracking-[.12em] text-text-3 uppercase">
+          <div key={h} role="columnheader" className="border-l border-white/[.05] px-2.5 py-2.5 text-[10.5px] font-medium tracking-[.12em] text-text-3 uppercase first:border-l-0 max-tab:px-0 max-tab:text-center">
             {h}
           </div>
         ))}
       </div>
       {rows.map((row, r) => (
-        <div key={r} role="row" className="mt-px grid grid-cols-7 gap-px">
+        <div key={r} role="row" className="grid grid-cols-7 border-b border-white/[.05] last:border-b-0">
           {row.map((ymd, c) => {
             const i = r * 7 + c;
             const items = instances
@@ -95,9 +95,9 @@ export function MonthGrid({
                   onFocus={() => setFocus(i)}
                   onKeyDown={(e) => onKey(e, i)}
                   onClick={() => onOpenDay(ymd)}
-                  className={`relative flex min-h-[104px] flex-col gap-0.5 p-2 text-left hover:bg-white/[.06] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent max-tab:min-h-[52px] [@media(pointer:coarse)]:min-h-11 max-tab:items-center ${
-                    isToday || ymd === selected ? "bg-[#16161a]" : "bg-[#0b0b0d]"
-                  } ${inMonth ? "" : "opacity-35"}`}
+                  className={`relative flex min-h-[104px] flex-col gap-1 p-2 text-left hover:bg-white/[.05] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-cyan max-tab:min-h-[52px] [@media(pointer:coarse)]:min-h-11 max-tab:items-center ${
+                    c > 0 ? "border-l border-white/[.05]" : ""
+                  } ${isToday || ymd === selected ? "bg-white/[.05]" : ""} ${inMonth ? "" : "opacity-35"}`}
                 >
                   <span
                     aria-hidden="true"

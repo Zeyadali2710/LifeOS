@@ -116,8 +116,8 @@ export function TimeGrid({
   };
 
   return (
-    <div className={`glass-card relative rounded-26 ${pending ? "opacity-60" : ""}`} aria-busy={pending || undefined}>
-      <div ref={scroller} className="max-h-[calc(100dvh-240px)] min-h-[420px] overflow-auto rounded-26">
+    <div className={`glass-card relative rounded-24 ${pending ? "opacity-60" : ""}`} aria-busy={pending || undefined}>
+      <div ref={scroller} className="max-h-[calc(100dvh-240px)] min-h-[420px] overflow-auto rounded-24">
         <div style={{ minWidth: minW }}>
           <div className="glass-sticky sticky top-0 z-[5] grid" style={{ gridTemplateColumns: template }}>
             <span />
