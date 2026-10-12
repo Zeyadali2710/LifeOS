@@ -24,15 +24,16 @@ async function run(fn: () => Promise<Result | { ok: boolean; error?: "not_found"
   }
 }
 
-/** Projects whose blocked state can flip when this task changes: its own and those whose tasks it blocks. */
-async function affectedProjects(h: DB, taskId: string): Promise<string[]> {
+/** Projects whose blocked state can flip when this task changes: its own (old and, on a move, new) and those whose tasks it blocks. */
+async function affectedProjects(h: DB, taskId: string, newProjectId?: unknown): Promise<string[]> {
   const own = await h.select({ p: tasks.projectId }).from(tasks).where(eq(tasks.id, taskId));
   const downstream = await h
     .select({ p: tasks.projectId })
     .from(taskDependencies)
     .innerJoin(tasks, eq(tasks.id, taskDependencies.taskId))
     .where(eq(taskDependencies.blockedByTaskId, taskId));
-  return [...own, ...downstream].map((r) => r.p).filter((p): p is string => p !== null);
+  const moved = uuid.safeParse(newProjectId);
+  return [...[...own, ...downstream].map((r) => r.p), moved.success ? moved.data : null].filter((p): p is string => p !== null);
 }
 
 export async function createTaskAction(raw: unknown): Promise<Result> {
@@ -44,7 +45,10 @@ export async function updateTaskAction(rawId: string, raw: unknown): Promise<Res
   await requireOwner();
   const id = uuid.safeParse(rawId);
   if (!id.success) return { ok: false, error: "not_found" };
-  return run(() => updateTask(db(), id.data, raw, new Date()));
+  const h = db();
+  const now = new Date();
+  const newProjectId = raw && typeof raw === "object" && "projectId" in raw ? raw.projectId : undefined;
+  return run(async () => withBlockTransition(h, await affectedProjects(h, id.data, newProjectId), now, () => updateTask(h, id.data, raw, now)));
 }
 
 export async function toggleTaskAction(rawId: string, done: boolean): Promise<Result> {
@@ -62,7 +66,10 @@ export async function deleteTaskAction(rawId: string): Promise<{ ok: true } | { 
   const id = uuid.safeParse(rawId);
   if (!id.success) return { ok: false, error: "not_found" };
   try {
-    return (await deleteTask(db(), id.data)).ok ? { ok: true } : { ok: false, error: "not_found" };
+    const h = db();
+    // Deleting cascades its task_dependencies rows, which can unblock downstream projects.
+    const ok = (await withBlockTransition(h, await affectedProjects(h, id.data), new Date(), () => deleteTask(h, id.data))).ok;
+    return ok ? { ok: true } : { ok: false, error: "not_found" };
   } catch (err) {
     log.error({ err }, "task action failed");
     return { ok: false, error: "failed" };
