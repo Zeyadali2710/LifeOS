@@ -12,6 +12,8 @@ import { useAgentStatus } from "./use-agent-status";
 import { useShell } from "./shell-provider";
 import { useDialog } from "./use-dialog";
 
+const NEXT_SCOPE: Record<PaletteScope, PaletteScope> = { all: "events", events: "tasks", tasks: "projects", projects: "all" };
+
 export function Palette() {
   const { paletteOpen } = useShell();
   // Remount on each open so query/selection reset.
@@ -46,7 +48,7 @@ function PaletteDialog() {
     };
   }, [query]);
   const shown = query.trim().length >= 2 ? data : undefined;
-  const hasData = Boolean(shown && (shown.events.length || shown.tasks.length));
+  const hasData = Boolean(shown && (shown.events.length || shown.tasks.length || shown.projects.length));
 
   const { groups, noMatch } = useMemo(() => buildPalette(query, { approvalsWaiting, data: shown, scope }), [query, approvalsWaiting, shown, scope]);
   const flat = useMemo(() => groups.flatMap((g) => g.items), [groups]);
@@ -99,7 +101,7 @@ function PaletteDialog() {
       case "Tab":
         e.preventDefault(); // D-06 scopes: All -> Events -> Tasks; no-op without search results
         if (hasData) {
-          setScope(scope === "all" ? "events" : scope === "events" ? "tasks" : "all");
+          setScope(NEXT_SCOPE[scope]);
           setSel(0);
         }
         break;
@@ -181,7 +183,7 @@ function PaletteDialog() {
         <div className="flex items-center gap-4 border-t border-white/[.06] px-5 py-2.5 font-mono text-[11px] text-text-3">
           <span>↑↓ navigate</span>
           <span>↵ open</span>
-          {hasData && <span>tab {scope === "all" ? "events" : scope === "events" ? "tasks" : "all"}</span>}
+          {hasData && <span>tab {NEXT_SCOPE[scope]}</span>}
           <span>esc close</span>
           <span className="flex-1" />
           <span className="text-cyan">{isApple ? "⌘ J" : "Ctrl J"} ask LifeOS</span>
