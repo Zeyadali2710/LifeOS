@@ -27,7 +27,7 @@ function fieldErrors(issues: { path: PropertyKey[]; message: string }[]): FieldE
   return errors;
 }
 
-function toProjectDTO(r: typeof projects.$inferSelect): ProjectDTO {
+export function toProjectDTO(r: typeof projects.$inferSelect): ProjectDTO {
   return {
     id: r.id,
     name: r.name,
