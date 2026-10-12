@@ -278,11 +278,11 @@ Copy actions (client island): `navigator.clipboard.writeText(brief)` requires a 
 | A6 | Table name `project_dependencies` for project to project edges | Schema | Naming only |
 | A7 | Deployed origin may be HTTP, limiting `navigator.clipboard` | Code Examples | Copy buttons need fallback |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Health edge cases (A2/A4)** - Recommendation: implement as written above, document in UI tooltip text, record in 05-DISCUSSION-LOG for owner review.
-2. **Raise commit fetch to 100?** Recommend yes for sparkline fidelity; costs one response size increase, no extra calls.
-3. **Notification for "project became blocked"** - Recommendation: activity event only this phase.
+1. **Health edge cases (A2/A3/A4)** - RESOLVED: adopted as CONTEXT D-10a (target passed & not Done = Behind; CI failing alone = At risk; Archived blocker doesn't block); logged in 05-DISCUSSION-LOG for owner review.
+2. **Raise commit fetch to 100?** - RESOLVED: yes (plan 05-03).
+3. **Notification for "project became blocked"** - RESOLVED: activity event only this phase.
 
 ## Environment Availability
 

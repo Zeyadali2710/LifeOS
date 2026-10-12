@@ -21,6 +21,10 @@
 | Owner writes | Direct or approval? | Direct + audit-logged (local data, Phase 4 D-06) | Approval for destructive ops |
 | Home / palette | Integration | Home Active projects real; palette Projects scope + New project | Leave Home empty until later |
 
+| Health edge cases | Target passed? CI alone? Archived blocker? | Target passed & not Done = Behind (A2); CI failing alone = At risk (A4); Archived blocking project doesn't block (A3) — recorded as D-10a | D-10 literal only |
+| Commit fetch size | Enough commits for a 14-day sparkline? | Raise sync commits per_page 20 → 100 | Keep 20 |
+| Blocked notification | Notify when a project becomes blocked? | Activity event only this phase | In-app notification |
+
 ## Claude's Discretion
 Table/column names, repo detail route shape, sparkline buckets, activity-event list, task dialog picker UX.
 
