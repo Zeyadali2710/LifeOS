@@ -5,6 +5,7 @@ export const metadata = { title: "Knowledge · LifeOS" };
 export default function KnowledgePage() {
   return (
     <DomainPage
+      eyebrowClass="text-purple-text"
       title="Knowledge"
       lead="Notes, documents and bookmarks."
       icon="library_books"

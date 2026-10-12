@@ -5,6 +5,7 @@ export const metadata = { title: "Career · LifeOS" };
 export default function CareerPage() {
   return (
     <DomainPage
+      eyebrowClass="text-amber"
       title="Career"
       lead="Repositories, pull requests and activity."
       icon="terminal"

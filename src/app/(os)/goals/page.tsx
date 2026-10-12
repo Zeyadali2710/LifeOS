@@ -5,6 +5,7 @@ export const metadata = { title: "Goals · LifeOS" };
 export default function GoalsPage() {
   return (
     <DomainPage
+      eyebrowClass="text-green"
       title="Goals"
       lead="From vision to tasks."
       icon="flag"

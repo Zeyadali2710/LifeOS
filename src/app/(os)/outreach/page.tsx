@@ -5,6 +5,7 @@ export const metadata = { title: "Outreach · LifeOS" };
 export default function OutreachPage() {
   return (
     <DomainPage
+      eyebrowClass="text-cyan"
       title="Outreach"
       lead="Events and email in one pipeline."
       icon="hub"

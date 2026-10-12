@@ -5,6 +5,7 @@ export const metadata = { title: "Projects · LifeOS" };
 export default function ProjectsPage() {
   return (
     <DomainPage
+      eyebrowClass="text-cyan"
       title="Projects"
       lead="Tasks, milestones and repositories together."
       icon="deployed_code"
