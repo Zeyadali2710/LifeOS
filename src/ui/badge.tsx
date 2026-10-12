@@ -1,12 +1,13 @@
 import type { ReactNode } from "react";
 
 const tones = {
-  red: "text-red bg-[rgba(240,122,110,.12)]",
-  amber: "text-amber bg-[rgba(232,184,106,.12)]",
-  green: "text-green bg-[rgba(79,209,161,.12)]",
-  blue: "text-blue bg-[rgba(108,182,255,.12)]",
-  indigo: "text-indigo-text bg-[rgba(139,140,255,.12)]",
-  neutral: "text-text-2 bg-[rgba(255,255,255,.07)]",
+  red: "text-red bg-[rgba(255,105,97,.12)]",
+  amber: "text-amber bg-[rgba(255,159,10,.12)]",
+  green: "text-green bg-[rgba(48,209,88,.12)]",
+  blue: "text-cyan bg-[rgba(100,210,255,.12)]",
+  indigo: "text-cyan bg-[rgba(10,132,255,.12)]",
+  neutral: "text-text-2 bg-white/[.07]",
+  purple: "text-purple-text bg-[rgba(191,90,242,.12)]",
 };
 
 export function Badge({ kind, tone, children }: { kind: "status" | "tag" | "count"; tone: keyof typeof tones; children: ReactNode }) {

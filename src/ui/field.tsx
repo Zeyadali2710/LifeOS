@@ -3,20 +3,20 @@ import type { InputHTMLAttributes, ReactElement, ReactNode, Ref, SelectHTMLAttri
 import { Icon } from "./icon";
 
 const base =
-  "w-full rounded-9 border border-border-strong bg-inset text-[14px] text-text placeholder:text-text-3 outline-none transition focus:border-[rgba(139,140,255,.45)] focus:shadow-[var(--ring-input)] disabled:cursor-not-allowed disabled:bg-fill-1 disabled:text-text-4 aria-[invalid=true]:border-[rgba(240,122,110,.5)]";
+  "w-full border border-white/[.10] bg-white/[.03] text-[14px] text-text placeholder:text-text-3 outline-none transition focus:border-[rgba(100,210,255,.55)] focus:shadow-[var(--ring-input)] disabled:cursor-not-allowed disabled:bg-white/[.06] disabled:text-text-3 aria-invalid:border-[rgba(255,105,97,.6)]";
 
 export function Input({ ref, className = "", ...p }: InputHTMLAttributes<HTMLInputElement> & { ref?: Ref<HTMLInputElement> }) {
-  return <input ref={ref} className={`${base} h-9 px-3 ${className}`} {...p} />;
+  return <input ref={ref} className={`${base} h-9 rounded-full px-3 [@media(pointer:coarse)]:h-11 ${className}`} {...p} />;
 }
 
 export function Textarea({ ref, className = "", rows = 7, ...p }: TextareaHTMLAttributes<HTMLTextAreaElement> & { ref?: Ref<HTMLTextAreaElement> }) {
-  return <textarea ref={ref} rows={rows} className={`${base} resize-y px-3.5 py-2.5 leading-normal ${className}`} {...p} />;
+  return <textarea ref={ref} rows={rows} className={`${base} resize-y rounded-14 px-3.5 py-2.5 leading-normal ${className}`} {...p} />;
 }
 
 export function Select({ ref, className = "", children, ...p }: SelectHTMLAttributes<HTMLSelectElement> & { ref?: Ref<HTMLSelectElement> }) {
   return (
     <span className="relative block">
-      <select ref={ref} className={`${base} h-9 appearance-none pr-9 pl-3 ${className}`} {...p}>
+      <select ref={ref} className={`${base} h-9 appearance-none rounded-full pr-9 pl-3 [@media(pointer:coarse)]:h-11 ${className}`} {...p}>
         {children}
       </select>
       <span className="pointer-events-none absolute top-1/2 right-2.5 -translate-y-1/2 text-text-3">
@@ -55,7 +55,7 @@ export function Field({ label, error, helper, children }: { label: string; error
 }
 
 const ctl =
-  "peer m-0 size-4 shrink-0 appearance-none border-[1.5px] border-[rgba(255,255,255,.25)] bg-transparent [color-scheme:dark] checked:border-indigo checked:bg-indigo focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo disabled:cursor-not-allowed disabled:opacity-50";
+  "peer m-0 size-4 shrink-0 appearance-none border-[1.5px] border-[rgba(255,255,255,.25)] bg-transparent [color-scheme:dark] checked:border-accent-solid checked:bg-accent-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan disabled:cursor-not-allowed disabled:opacity-50";
 
 export function Checkbox({
   ref,
@@ -68,7 +68,7 @@ export function Checkbox({
     <label className={`inline-flex items-center gap-2 text-[13.5px] text-text-2 ${hitArea ? "min-h-11 min-w-11 tab:min-h-0 tab:min-w-0" : ""} ${className}`}>
       <span className="relative inline-grid size-4 place-items-center">
         <input ref={ref} type="checkbox" className={`${ctl} rounded-5`} {...p} />
-        <span className="pointer-events-none absolute inset-0 hidden place-items-center text-[#0b0c10] peer-checked:grid">
+        <span className="pointer-events-none absolute inset-0 hidden place-items-center text-[#fff] peer-checked:grid">
           <Icon name="check" size={13} />
         </span>
       </span>
@@ -103,7 +103,7 @@ export function RadioGroup({
             checked={value === o.value}
             disabled={disabled}
             onChange={() => onChange(o.value)}
-            className={`${ctl} mt-0.5 rounded-full checked:shadow-[inset_0_0_0_3px_#14161c]`}
+            className={`${ctl} mt-0.5 rounded-full checked:shadow-[inset_0_0_0_3px_#232326]`}
           />
           <span>
             {o.label}
