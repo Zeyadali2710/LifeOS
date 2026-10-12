@@ -19,6 +19,12 @@ export const SECONDARY_ITEMS: NavItem[] = [
   { key: "settings", label: "Settings", href: "/settings", icon: "tune", shortcut: "Ctrl+,", crumb: "SETTINGS" },
 ];
 
+const byKey = (...keys: string[]) =>
+  keys.map((k) => [...NAV_ITEMS, ...SECONDARY_ITEMS].find((n) => n.key === k)!);
+
+export const PRIMARY_ITEMS: NavItem[] = byKey("home", "career", "socials", "outreach", "organization", "projects", "agents", "approvals");
+export const MORE_ITEMS: NavItem[] = byKey("knowledge", "goals", "settings");
+
 export function isCurrent(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/");
 }
