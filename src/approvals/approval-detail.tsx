@@ -31,14 +31,14 @@ export function issueOf(a: { kind: ApprovalKind; edited: unknown; original: unkn
 
 /** Shown instead of a request whose stored payload can't be read. */
 export function UnreadableApproval() {
-  return <p className="rounded-10 border border-[rgba(255,255,255,.06)] bg-inset p-4 text-[13.5px] text-text-2">This request can&apos;t be displayed. It expires on its own.</p>;
+  return <p className="rounded-14 border border-white/[.08] bg-white/[.03] p-4 text-[13.5px] text-text-2">This request can&apos;t be displayed. It expires on its own.</p>;
 }
 
 const same = (a: IssuePayload, b: IssuePayload) => a.title === b.title && a.body === b.body && a.labels.join("\n") === b.labels.join("\n");
 
 function Preview({ p }: { p: IssuePayload }) {
   return (
-    <div className="rounded-10 border border-[rgba(255,255,255,.06)] bg-inset p-4">
+    <div className="rounded-14 border border-white/[.08] bg-white/[.03] p-4">
       <div className="text-[15px] font-medium break-words">{p.title}</div>
       {p.labels.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1.5">
@@ -56,7 +56,7 @@ function Preview({ p }: { p: IssuePayload }) {
 
 const Fact = ({ k, children }: { k: string; children: React.ReactNode }) => (
   <div>
-    <div className="mb-1 font-mono text-[10.5px] tracking-[0.1em] text-text-3">{k}</div>
+    <div className="mb-1 text-[10px] tracking-[0.14em] text-text-3">{k}</div>
     <div className="text-[13.5px] leading-normal break-words">{children}</div>
   </div>
 );
@@ -76,7 +76,7 @@ function Resolved({ a, onRetry, retrying }: { a: ApprovalDTO; onRetry: () => voi
   let text = `Rejected at ${at}. ${nothing} The run was cancelled.`;
   if (a.status === "approved" || a.status === "executing") {
     icon = "schedule";
-    tone = "text-indigo-text";
+    tone = "text-cyan";
     bg = "bg-fill-1";
     text = issue ? "Creating the issue on GitHub…" : "Applying the change…";
   } else if (a.status === "executed") {
@@ -190,15 +190,15 @@ function EventApprovalShell({ approval: a, onChange }: DetailProps) {
     setEditing(false);
   };
   return (
-    <article aria-label="Approval detail" className={`overflow-hidden rounded-16 border ${del ? "border-[rgba(240,122,110,.35)]" : "border-[rgba(255,255,255,.08)]"}`}>
+    <article aria-label="Approval detail" className={`glass-card overflow-hidden rounded-16 ${del ? "!border-[rgba(255,69,58,.4)]" : ""}`}>
       <header className="border-b border-[rgba(255,255,255,.06)] bg-[linear-gradient(180deg,rgba(232,184,106,.06),transparent)] px-[22px] py-5">
-        <div className="mb-2 font-mono text-[10.5px] font-medium tracking-[0.07em]">
+        <div className="mb-2 text-[11px] font-medium tracking-[0.12em]">
           <span className="uppercase" style={{ color: agent?.color }}>
             {agent?.name ?? a.agentId}
           </span>{" "}
           <span className="text-text-3">wants to</span> <span>{EVENT_VERB[a.kind]}</span>
         </div>
-        <h2 className="text-[20px] leading-[1.3] font-medium break-words">{editing ? draft.title : saved.title}</h2>
+        <h2 className="font-display text-[26px] leading-[1.12] font-medium break-words">{editing ? draft.title : saved.title}</h2>
       </header>
       {a.reason && (
         <section className="border-b border-[rgba(255,255,255,.06)] px-[22px] py-5">
@@ -211,7 +211,7 @@ function EventApprovalShell({ approval: a, onChange }: DetailProps) {
           {stale && <p className="mb-3 text-[12.5px] text-amber">This event changed after the request was prepared, so it can&apos;t be applied. Reject it and ask again.</p>}
           <div className="flex flex-wrap items-center gap-2.5 max-[719px]:flex-col max-[719px]:items-stretch [&_button]:text-[13px] [&_button]:font-semibold [&_button]:tracking-[0.06em] [&_button]:uppercase max-[719px]:[&_button]:h-12">
             <Button
-              className={`h-[38px] min-w-[150px] rounded-9 px-[18px] ${del ? "bg-[#f07a6e] text-[#0b0c10] hover:bg-[#f07a6e]" : ""}`}
+              className={`h-[38px] min-w-[150px] rounded-9 px-[18px] ${del ? "bg-red text-white hover:bg-red" : ""}`}
               loading={busy === "approve"}
               disabled={stale || (busy !== null && busy !== "approve")}
               onClick={approve}
@@ -228,7 +228,7 @@ function EventApprovalShell({ approval: a, onChange }: DetailProps) {
               REJECT
             </Button>
             <span className="flex-1" />
-            <span className="font-mono text-[11px] text-text-3">
+            <span className="text-[11px] text-text-3">
               requested {formatHM(new Date(a.createdAt))} · expires {stamp(a.expiresAt)}
             </span>
           </div>
@@ -289,15 +289,15 @@ function IssueApprovalBody({ approval: a, write, onChange, issue }: DetailProps 
   };
 
   return (
-    <article aria-label="Approval detail" className="overflow-hidden rounded-16 border border-[rgba(255,255,255,.08)]">
+    <article aria-label="Approval detail" className="glass-card overflow-hidden rounded-16">
       <header className="border-b border-[rgba(255,255,255,.06)] bg-[linear-gradient(180deg,rgba(232,184,106,.06),transparent)] px-[22px] py-5">
-        <div className="mb-2 font-mono text-[10.5px] font-medium tracking-[0.07em]">
+        <div className="mb-2 text-[11px] font-medium tracking-[0.12em]">
           <span className="uppercase" style={{ color: agent?.color }}>
             {agent?.name ?? a.agentId}
           </span>{" "}
           <span className="text-text-3">wants to</span> <span>create a GitHub issue</span>
         </div>
-        <h2 className="text-[20px] leading-[1.3] font-medium break-words">{shown.title}</h2>
+        <h2 className="font-display text-[26px] leading-[1.12] font-medium break-words">{shown.title}</h2>
       </header>
 
       <section className="grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-x-6 gap-y-[18px] border-b border-[rgba(255,255,255,.06)] px-[22px] py-5">
@@ -312,7 +312,7 @@ function IssueApprovalBody({ approval: a, write, onChange, issue }: DetailProps 
       </section>
 
       <section className="border-b border-[rgba(255,255,255,.06)] px-[22px] py-5">
-        <div className="mb-3 font-mono text-[10.5px] tracking-[0.1em] text-text-3">WHAT DATA WILL BE SENT</div>
+        <div className="mb-3 text-[10px] tracking-[0.14em] text-text-3">WHAT DATA WILL BE SENT</div>
         <ul className="flex flex-col gap-1.5 text-[13px]">
           {[`Issue title (${shown.title.length} characters)`, `Issue body (${shown.body.length} characters)`, ...(shown.labels.length ? [`${shown.labels.length} labels: ${shown.labels.join(", ")}`] : [])].map((t) => (
             <li key={t} className="flex items-center gap-2 break-words">
@@ -321,14 +321,14 @@ function IssueApprovalBody({ approval: a, write, onChange, issue }: DetailProps 
             </li>
           ))}
           <li className="flex items-center gap-2">
-            <Icon name="shield" size={16} className="shrink-0 text-blue" />
+            <Icon name="shield" size={16} className="shrink-0 text-cyan" />
             No email, calendar or contact data
           </li>
         </ul>
       </section>
 
       <section className="border-b border-[rgba(255,255,255,.06)] px-[22px] py-5">
-        <div className="mb-3 flex items-center gap-2 font-mono text-[10.5px] tracking-[0.1em] text-text-3">
+        <div className="mb-3 flex items-center gap-2 text-[10px] tracking-[0.14em] text-text-3">
           PREVIEW
           {edited && (
             <Badge kind="tag" tone="amber">
@@ -355,7 +355,7 @@ function IssueApprovalBody({ approval: a, write, onChange, issue }: DetailProps 
           {!canApprove && (
             <p className="mb-3 text-[12.5px] text-amber">
               The issues-write token is missing, so this can&apos;t be created. Add it in Settings → Connections.{" "}
-              <a href="/settings?section=connections" className="text-indigo-text hover:text-indigo-soft">
+              <a href="/settings?section=connections" className="text-cyan hover:text-cyan-soft">
                 Open Connections
               </a>
             </p>
@@ -372,7 +372,7 @@ function IssueApprovalBody({ approval: a, write, onChange, issue }: DetailProps 
               REJECT
             </Button>
             <span className="flex-1" />
-            <span className="font-mono text-[11px] text-text-3">
+            <span className="text-[11px] text-text-3">
               requested {formatHM(new Date(a.createdAt))} · expires {stamp(a.expiresAt)}
             </span>
           </div>
