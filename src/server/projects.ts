@@ -32,6 +32,7 @@ export function toProjectDTO(r: typeof projects.$inferSelect): ProjectDTO {
     id: r.id,
     name: r.name,
     description: r.description,
+    context: r.context,
     category: r.category as ProjectCategory,
     status: r.status as ProjectStatus,
     priority: r.priority === 1 || r.priority === 3 ? r.priority : 2,

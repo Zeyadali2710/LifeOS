@@ -98,6 +98,7 @@ export interface ProjectDTO {
   id: string;
   name: string;
   description: string;
+  context: string;
   category: ProjectCategory;
   status: ProjectStatus;
   priority: 1 | 2 | 3;

@@ -39,6 +39,23 @@ describe("migrations", () => {
     );
   });
 
+  it("adds projects.context (0007)", async () => {
+    await runMigrations(testUrl);
+    const client = new Client({ connectionString: testUrl });
+    await client.connect();
+    try {
+      const { rows } = await client.query(
+        "select data_type, is_nullable, column_default from information_schema.columns where table_name = 'projects' and column_name = 'context'",
+      );
+      expect(rows).toHaveLength(1);
+      expect(rows[0].data_type).toBe("text");
+      expect(rows[0].is_nullable).toBe("NO");
+      expect(rows[0].column_default).toContain("''");
+    } finally {
+      await client.end();
+    }
+  });
+
   it("backfills saw_private", async () => {
     await runMigrations(testUrl);
     const client = new Client({ connectionString: testUrl });

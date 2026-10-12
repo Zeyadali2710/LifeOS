@@ -489,6 +489,7 @@ export const projects = pgTable(
     id: uuid().primaryKey().defaultRandom(),
     name: text().notNull(),
     description: text().notNull().default(""),
+    context: text().notNull().default(""),
     category: text().notNull().default("personal"),
     status: text().notNull().default("active"),
     priority: integer().notNull().default(2),
