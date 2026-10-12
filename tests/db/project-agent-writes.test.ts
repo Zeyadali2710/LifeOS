@@ -7,7 +7,7 @@ import { advance, createRun, runQueued } from "@/server/agents/loop";
 import { TOOLS } from "@/server/agents/tools";
 import { createThread } from "@/server/agents/threads";
 import {
-  activityEvents, agentRuns, approvals, auditLog, githubRepos, milestones, notifications, projectLinks, projects, settings, taskDependencies, tasks,
+  activityEvents, agentRuns, approvals, auditLog, githubRepos, milestones, notifications, projectLinks, projects, settings, taskDependencies, tasks, toolCalls,
 } from "@/server/db/schema";
 import { saveToken } from "@/server/github/connections";
 import { createProject } from "@/server/projects";
@@ -251,6 +251,14 @@ describe("projects.update", () => {
 });
 
 describe("studio flow", () => {
+  it("WR-02: sources include a sibling run's untrusted reads (issue titles too)", async () => {
+    const parent = await newRun();
+    const mk = async () => (await h().insert(agentRuns).values({ agentId: "projects", prompt: "p", model: "m", parentRunId: parent }).returning())[0]!.id;
+    const reader = await mk();
+    await h().insert(toolCalls).values({ runId: reader, toolUseId: "x1", kind: "tool", tool: "github.list_issues", tier: "READ", status: "done", seq: 1, input: { repo: "me/studio" } });
+    const id = apId(await call("projects.create", { name: "Studio" }, await mk()));
+    expect((await row(id)).originalPayload).toMatchObject({ sources: ["me/studio · (issue list)"] });
+  });
   it("studio: list_tree, parallel get_file, one create, owner edits a task out, approve, resume", async () => {
     const runId = await newRun("Create a project from me/studio");
     const create = {

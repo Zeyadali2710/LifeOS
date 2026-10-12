@@ -8,7 +8,7 @@ export function resolvePolicy(defaultTier: ToolTier, override: ToolTier | null |
 }
 
 /** Tools that return third-party text (repo files, PR bodies, issue titles): untrusted for the D-06 floor and the draft banner. */
-export const CONTENT_TOOLS = ["github.get_file", "github.list_tree"] as const;
+export const CONTENT_TOOLS = ["github.get_file", "github.list_tree", "github.get_pull_request", "github.list_issues"] as const;
 
 /**
  * Run ids whose content reads count for `runId`: its orchestrator tree (self, parent, siblings, children), the run it

@@ -127,7 +127,7 @@ describe("callTool", () => {
         (await t.handle().insert(agentRuns).values({ agentId: "projects", prompt: "p", model: "m", ...v }).returning())[0]!.id;
       const [th] = await t.handle().insert(threads).values({ title: "t" }).returning();
       const earlier = await mk({ threadId: th!.id });
-      await content(await mk({ parentRunId: earlier }));
+      await content(await mk({ parentRunId: earlier }), "github.list_issues");
       runId = await mk({ threadId: th!.id });
       expect((await exec()).status).toBe("waiting_approval");
 

@@ -1,6 +1,6 @@
 // LifeOS project reads (D-17): READ-only, bounded, and picked field by field so the workspace path,
 // machine label, launch command and brief never reach the model. Owner-private: taints the run (D-09).
-import { and, asc, eq, ilike, inArray } from "drizzle-orm";
+import { and, asc, eq, ilike, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { draftCounts, projectCreatePayload, projectUpdatePayload, type DraftLink } from "@/lib/project-payload";
 import type { DB } from "../../db/client";
@@ -8,7 +8,7 @@ import { auditLog, githubRepos, milestones, projects, tasks, toolCalls } from ".
 import { listProjects, loadProject } from "../../project-queries";
 import { addLink, addTaskDependency, createMilestone, createProject, updateMilestone, updateProject } from "../../projects";
 import { createTask, updateTask } from "../../tasks";
-import { CONTENT_TOOLS } from "../policy";
+import { CONTENT_TOOLS, contentScope } from "../policy";
 import { ToolError, type Tool, type ToolContext } from "../types";
 
 const MAX_STR = 2000;
@@ -102,20 +102,24 @@ const writeOut = z.object({
 });
 type WriteOut = z.infer<typeof writeOut>;
 
-/** Server-built provenance: this run's repo content reads, never model-supplied (D-15). */
+/** Server-built provenance: untrusted reads in the same scope as the gateway's content floor, never model-supplied (D-15). */
 async function runSources(ctx: ToolContext): Promise<string[]> {
   const rows = await ctx.handle
     .select({ tool: toolCalls.tool, input: toolCalls.input })
     .from(toolCalls)
-    .where(and(eq(toolCalls.runId, ctx.runId), eq(toolCalls.status, "done"), inArray(toolCalls.tool, [...CONTENT_TOOLS])))
-    .orderBy(asc(toolCalls.seq));
-  return rows
-    .map((r) => {
-      const i = (r.input ?? {}) as { repo?: string; path?: string; prefix?: string };
-      const s = r.tool === "github.get_file" ? `${i.repo} · ${i.path}` : `${i.repo} · (file list${i.prefix ? `: ${i.prefix}` : ""})`;
-      return s.length > 300 ? `${s.slice(0, 299)}…` : s;
-    })
-    .slice(0, 50);
+    .where(and(sql`${toolCalls.runId} in ${contentScope(ctx.runId)}`, eq(toolCalls.status, "done"), inArray(toolCalls.tool, [...CONTENT_TOOLS])))
+    .orderBy(asc(toolCalls.startedAt), asc(toolCalls.seq));
+  const label = (tool: string, i: { repo?: string; path?: string; prefix?: string; number?: number }) => {
+    if (tool === "github.get_file") return `${i.repo} · ${i.path}`;
+    if (tool === "github.list_tree") return `${i.repo} · (file list${i.prefix ? `: ${i.prefix}` : ""})`;
+    if (tool === "github.get_pull_request") return `${i.repo} · (pull request #${i.number})`;
+    return `${i.repo ?? "all repos"} · (issue list)`;
+  };
+  const all = rows.map((r) => {
+    const s = label(r.tool, (r.input ?? {}) as Parameters<typeof label>[1]);
+    return s.length > 300 ? `${s.slice(0, 299)}…` : s;
+  });
+  return [...new Set(all)].slice(0, 50);
 }
 
 /** Model-facing message for the first schema issue, with the offending ref value for ref paths. */
