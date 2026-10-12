@@ -40,7 +40,7 @@ export function IcloudForm({ onDone, onCancel }: { onDone: (calendars: number) =
   }
 
   return (
-    <form onSubmit={submit} className="flex animate-[lo-rise_.25s_ease-out] flex-col gap-3.5 rounded-18 border border-white/[.10] bg-white/[.03] px-[18px] py-4">
+    <form onSubmit={submit} className="flex animate-[lo-rise_.25s_ease-out] flex-col gap-3.5 rounded-14 border border-white/[.10] bg-white/[.03] p-4">
       <Field label="Apple ID">
         <Input type="email" autoComplete="off" spellCheck={false} autoCapitalize="off" data-1p-ignore value={appleId} onChange={(e) => setAppleId(e.target.value)} />
       </Field>

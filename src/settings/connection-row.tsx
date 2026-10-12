@@ -59,9 +59,9 @@ export function ConnectionRow({
   return (
     <div className="flex flex-col gap-2">
       <div
-        className={`flex flex-wrap items-center gap-3.5 glass-card rounded-22 px-4 py-3.5 ${status === "error" ? "!border-[rgba(255,105,97,.3)]" : ""}`}
+        className={`flex flex-wrap items-center gap-3.5 glass-card rounded-24 p-4 ${status === "error" ? "!border-[rgba(255,105,97,.3)]" : ""}`}
       >
-        <span className="grid size-9 shrink-0 place-items-center rounded-9 bg-white/[.10] font-mono text-[11px] font-semibold">{tile}</span>
+        <span className="grid size-9 shrink-0 place-items-center rounded-14 bg-white/[.10] font-mono text-[11px] font-semibold">{tile}</span>
         <div className="min-w-[200px] flex-1">
           <div className="text-[14px] font-medium">{name}</div>
           <div className="text-[12.5px] text-text-3">{detail}</div>

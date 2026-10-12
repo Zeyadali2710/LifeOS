@@ -62,16 +62,16 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
 
   return (
     <div className="mx-auto max-w-[1280px]">
-      <header className="mb-8 flex flex-wrap items-start justify-between gap-4">
+      <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="text-[11px] font-medium tracking-[.12em] text-text-2">SETTINGS</div>
-          <h1 className="mt-2 font-display text-[clamp(34px,4.4vw,60px)] leading-[.95] font-normal tracking-[-0.015em]">
+          <h1 className="mt-2.5 font-display text-[clamp(34px,4.4vw,60px)] leading-[.95] font-normal tracking-[-0.015em]">
             {section === "ai" ? "AI and spend" : "Connections"}
           </h1>
         </div>
         <SignOut />
       </header>
-      <div className="flex flex-col gap-7 tab:flex-row">
+      <div className="flex flex-col gap-6 tab:flex-row">
         <SettingsNav current={section} />
         <div className="min-w-0 flex-[1_1_560px]">{body}</div>
       </div>
