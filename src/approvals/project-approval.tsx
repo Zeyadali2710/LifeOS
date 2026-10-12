@@ -358,7 +358,7 @@ function UpdateDiff({ p }: { p: ProjectUpdatePayload }) {
   const ms = p.milestones.flatMap((m) => {
     if (!m.id) return [{ m, tag: "NEW", detail: "" }];
     const b = p.before.milestones.find((x) => x.id === m.id);
-    const d = [b && b.title !== m.title && `${b.title} → ${m.title}`, b && b.dueDate !== (m.dueDate ?? null) && `${day(b.dueDate) || "No due date"} → ${day(m.dueDate) || "No due date"}`].filter(Boolean);
+    const d = [b && b.title !== m.title && `${b.title} → ${m.title}`, b && m.dueDate !== undefined && b.dueDate !== m.dueDate && `${day(b.dueDate) || "No due date"} → ${day(m.dueDate) || "No due date"}`].filter(Boolean);
     return d.length ? [{ m, tag: "CHANGED", detail: d.join(" · ") }] : [];
   });
   const ts = p.tasks.flatMap((t) => {
@@ -366,9 +366,9 @@ function UpdateDiff({ p }: { p: ProjectUpdatePayload }) {
     const b = p.before.tasks.find((x) => x.id === t.id);
     const d = [
       b && b.title !== t.title && `${b.title} → ${t.title}`,
-      b && b.dueDate !== (t.dueDate ?? null) && `${day(b.dueDate) || "No due date"} → ${day(t.dueDate) || "No due date"}`,
-      b && b.priority !== (t.priority ?? null) && `${PRI(b.priority)} → ${PRI(t.priority)}`,
-      b && (b.milestoneId ?? null) !== (t.milestoneRef ?? null) && "milestone changes",
+      b && t.dueDate !== undefined && b.dueDate !== t.dueDate && `${day(b.dueDate) || "No due date"} → ${day(t.dueDate) || "No due date"}`,
+      b && t.priority !== undefined && b.priority !== t.priority && `${PRI(b.priority)} → ${PRI(t.priority)}`,
+      b && t.milestoneRef !== undefined && b.milestoneId !== t.milestoneRef && "milestone changes",
     ].filter(Boolean);
     return d.length ? [{ t, tag: "CHANGED", detail: d.join(" · ") }] : [];
   });
