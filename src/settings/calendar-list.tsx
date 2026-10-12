@@ -55,7 +55,7 @@ export function CalendarList({ calendars, defaultOpen = false }: { calendars: Ca
     <Disclosure summary={<span className="text-[13px] text-text-2">{rows.length} calendars</span>} defaultOpen={defaultOpen}>
       <ul className="mt-3 flex flex-col gap-2">
         {rows.map((c) => (
-          <li key={c.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-10 border border-[rgba(255,255,255,.07)] bg-inset px-3 py-2.5">
+          <li key={c.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-14 border border-white/[.10] bg-white/[.03] px-3 py-2.5">
             <Checkbox
               hitArea
               label="Sync"
@@ -99,7 +99,7 @@ export function CalendarList({ calendars, defaultOpen = false }: { calendars: Ca
                 <input
                   type="radio"
                   name="default-calendar"
-                  className="size-4 accent-[#8b8cff]"
+                  className="size-4 accent-accent-solid"
                   checked={c.isDefault}
                   onChange={() => change(c.id, (r) => r.map((x) => ({ ...x, isDefault: x.id === c.id })), () => setDefaultCalendarAction(c.id))}
                 />

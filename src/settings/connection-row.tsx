@@ -13,7 +13,7 @@ export type RowStatus = "connected" | "none" | "error" | "syncing";
 
 const LABEL = { connected: "CONNECTED", none: "NOT CONNECTED", error: "RECONNECT", syncing: "SYNCING" } as const;
 const DOT = { connected: "online", none: "none", error: "attention", syncing: "running" } as const;
-const COLOR = { connected: "text-green", none: "text-text-3", error: "text-red", syncing: "text-indigo-text" } as const;
+const COLOR = { connected: "text-green", none: "text-text-3", error: "text-red", syncing: "text-cyan-soft" } as const;
 
 export function ConnectionRow({
   id,
@@ -59,14 +59,14 @@ export function ConnectionRow({
   return (
     <div className="flex flex-col gap-2">
       <div
-        className={`flex flex-wrap items-center gap-3.5 rounded-12 border bg-surface px-4 py-3.5 ${status === "error" ? "border-[rgba(240,122,110,.3)]" : "border-[rgba(255,255,255,.07)]"}`}
+        className={`flex flex-wrap items-center gap-3.5 glass-card rounded-22 px-4 py-3.5 ${status === "error" ? "!border-[rgba(255,105,97,.3)]" : ""}`}
       >
-        <span className="grid size-9 shrink-0 place-items-center rounded-9 bg-fill-2 font-mono text-[11px] font-semibold">{tile}</span>
+        <span className="grid size-9 shrink-0 place-items-center rounded-9 bg-white/[.10] font-mono text-[11px] font-semibold">{tile}</span>
         <div className="min-w-[200px] flex-1">
-          <div className="text-[14.5px] font-medium">{name}</div>
+          <div className="text-[14px] font-medium">{name}</div>
           <div className="text-[12.5px] text-text-3">{detail}</div>
         </div>
-        <span className={`inline-flex items-center gap-1.5 font-mono text-[10.5px] font-semibold tracking-[0.1em] ${COLOR[status]}`}>
+        <span className={`inline-flex items-center gap-1.5 font-mono text-[10.5px] font-semibold tracking-[0.14em] ${COLOR[status]}`}>
           <StatusDot state={DOT[status]} pulse={status === "syncing"} />
           {LABEL[status]}
         </span>
