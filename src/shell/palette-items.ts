@@ -5,7 +5,6 @@ export type PaletteRun =
   | { type: "nav"; href: string }
   | { type: "notifications" }
   | { type: "ai"; prompt?: string }
-  | { type: "compact" }
   | { type: "signout" };
 
 export type PaletteItem = { id: string; label: string; icon: IconName; hint?: string; run: PaletteRun };
@@ -16,7 +15,7 @@ export type PaletteScope = "all" | "events" | "tasks";
 
 const spaced = (s?: string) => s?.replace("+", " ");
 
-export function buildPalette(query: string, opts: { wide: boolean; approvalsWaiting?: number; data?: PaletteData; scope?: PaletteScope }): { groups: PaletteGroup[]; noMatch: boolean } {
+export function buildPalette(query: string, opts: { approvalsWaiting?: number; data?: PaletteData; scope?: PaletteScope }): { groups: PaletteGroup[]; noMatch: boolean } {
   const commands: PaletteItem[] = [
     { id: "cmd-notifications", label: "Open notifications", icon: "notifications", run: { type: "notifications" } },
     { id: "cmd-approvals", label: "Open approvals", icon: "verified_user", hint: `${opts.approvalsWaiting ?? 0} waiting`, run: { type: "nav", href: "/approvals" } },
@@ -24,9 +23,6 @@ export function buildPalette(query: string, opts: { wide: boolean; approvalsWait
     { id: "cmd-new-event", label: "New event", icon: "add", run: { type: "nav", href: "/organization?new=event" } },
     { id: "cmd-new-task", label: "New task", icon: "task_alt", run: { type: "nav", href: "/organization?new=task" } },
     { id: "cmd-ai", label: "Ask LifeOS", icon: "auto_awesome", hint: "Ctrl J", run: { type: "ai" } },
-    ...(opts.wide
-      ? [{ id: "cmd-compact", label: "Toggle compact sidebar", icon: "left_panel_close", hint: "Ctrl \\", run: { type: "compact" } } satisfies PaletteItem]
-      : []),
     { id: "cmd-signout", label: "Sign out", icon: "logout", run: { type: "signout" } },
   ];
   const jump: PaletteItem[] = [...NAV_ITEMS, ...SECONDARY_ITEMS].map((n) => ({
