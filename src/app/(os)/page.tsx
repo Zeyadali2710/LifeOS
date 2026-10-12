@@ -8,6 +8,8 @@ import { getSydneyWeather } from "@/server/weather";
 import { counts } from "@/server/agents/runs";
 import { db } from "@/server/db/client";
 import { recentActivity } from "@/server/events";
+import { loadActiveProjects } from "@/server/project-queries";
+import { ActiveProjects } from "@/projects/active-projects";
 import { ActivityList, Item as ActivityItem } from "@/shell/activity-list";
 import { SystemTile } from "@/shell/system-tile";
 import { EmptyState } from "@/ui/empty-state";
@@ -44,7 +46,7 @@ function Section({
 export default async function HomePage() {
   const { user } = await requireOwner();
   const now = new Date();
-  const [health, weather, unreadImportant, agentCounts, agentActivity] = await Promise.all([
+  const [health, weather, unreadImportant, agentCounts, agentActivity, activeProjects] = await Promise.all([
     checkHealth(now.getTime()),
     getSydneyWeather(),
     unreadImportantCount().catch(() => 0),
@@ -52,6 +54,7 @@ export default async function HomePage() {
     recentActivity(db(), 50)
       .then((a) => a.filter((x) => x.type.startsWith("agent.")).slice(0, 5))
       .catch(() => []),
+    loadActiveProjects(db(), now).catch(() => []),
   ]);
   const first = user.name.trim().split(/\s+/)[0] ?? "";
 
@@ -113,15 +116,9 @@ export default async function HomePage() {
       </div>
 
       <div className="hidden flex-wrap gap-6 tab:flex">
-        <Section
-          id="h-projects"
-          label="Active projects"
-          link={{ href: "/projects", label: "All projects →" }}
-          icon="deployed_code"
-          title="No projects yet."
-          body="Projects appear here once GitHub is connected."
-          className="min-w-0 flex-[1.5_1_520px]"
-        />
+        <div className="min-w-0 flex-[1.5_1_520px]">
+          <ActiveProjects cards={activeProjects} />
+        </div>
         {agentActivity.length > 0 ? (
           <section aria-labelledby="h-agents" className="min-w-0 flex-[1_1_340px]">
             <SectionHeader id="h-agents" label="Agent activity" link={{ href: "/agents", label: "Agent command →" }} />
