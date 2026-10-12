@@ -1,6 +1,6 @@
 type Route = (req: Request) => Response | Promise<Response>;
 export type GoogleCall = { method: string; url: string; headers: Headers; body: unknown };
-const HOSTS = new Set(["accounts.google.com", "oauth2.googleapis.com", "www.googleapis.com"]);
+const HOSTS = new Set(["accounts.google.com", "oauth2.googleapis.com", "www.googleapis.com", "gmail.googleapis.com"]);
 
 // Route key "GET /calendar/v3/calendars/x/events" matches method + pathname; include "?" to match the query too.
 // A route may be an array: responses are served in order (the last repeats).
