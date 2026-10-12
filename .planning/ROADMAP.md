@@ -144,6 +144,16 @@ Plans:
 - [x] 04-21-PLAN.md — Palette scopes, e2e, validation, owner VM verification
 - [x] 04-22-PLAN.md — Docs: integrations, database, third-party, agents, permissions, security
 
+### Phase 04.1: Glass redesign: liquid-glass restyle of tokens, fonts, UI primitives, shell (floating top pill nav, Ask bar, mobile pill tab bar, floating glass panels) and every page per the Claude Design LifeOS Glass files; same features and content, style and layout only (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 4
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd-plan-phase 04.1 to break down)
+
 ### Phase 5–11
 Goals per phase list above; detailed when each phase is planned (`/gsd-plan-phase N`).
 
