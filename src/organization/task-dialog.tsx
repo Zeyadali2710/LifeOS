@@ -217,7 +217,7 @@ function Form({ task, initialTitle, onClose }: { task?: TaskDTO; initialTitle: s
         <button type="submit" hidden disabled={busy} />
       </form>
       {discard && (
-        <div role="alert" className="mt-3 flex items-center gap-2 rounded-9 border border-[rgba(232,184,106,.3)] bg-[rgba(232,184,106,.08)] p-3 text-[13px] text-amber">
+        <div role="alert" className="mt-3 flex items-center gap-2 rounded-9 border border-[rgba(255,159,10,.3)] bg-[rgba(255,159,10,.08)] p-3 text-[13px] text-amber">
           <span className="mr-auto">Discard changes?</span>
           <Button size="xs" variant="ghost" onClick={() => setDiscard(false)}>
             Keep editing
