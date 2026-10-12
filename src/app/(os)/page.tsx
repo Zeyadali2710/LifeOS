@@ -59,7 +59,7 @@ export default async function HomePage() {
     <div className="mx-auto flex max-w-[1480px] flex-col gap-8">
       <header>
         <p className="text-[11px] font-medium tracking-[.14em] text-text-3 uppercase">{dateLine(now, weather)}</p>
-        <h1 className="mt-2 font-display text-[clamp(36px,5.2vw,76px)] leading-[.92] font-normal tracking-[-0.015em] [text-wrap:pretty]">
+        <h1 className="mt-2.5 font-display text-[clamp(36px,5.2vw,76px)] leading-[.92] font-normal tracking-[-0.015em] [text-wrap:pretty]">
           {first ? (
             <>
               {greeting(now)}, <span className="text-amber italic">{first}</span>.
@@ -68,7 +68,7 @@ export default async function HomePage() {
             `${greeting(now)}.`
           )}
         </h1>
-        <p className="mt-3 max-w-[640px] text-[15px] leading-normal text-text-2 tab:text-[17px]">
+        <p className="mt-2.5 max-w-[640px] text-[15px] leading-normal text-text-2 tab:text-[17px]">
           {lead({ unreadImportant, health }).map((p, i) => (
             <span key={i} className={p.strong ? "text-text" : undefined}>
               {p.text}
@@ -103,7 +103,7 @@ export default async function HomePage() {
         <div className="min-w-0 flex-[1_1_340px]">
           <Link
             href="/agents"
-            className="mb-6 flex min-h-11 items-center justify-between glass-card rounded-22 px-3.5 text-[11px] font-medium tracking-[0.08em] text-text-2 uppercase tab:hidden"
+            className="mb-6 flex min-h-11 items-center justify-between glass-card rounded-24 px-3.5 text-[11px] font-medium tracking-[0.08em] text-text-2 uppercase tab:hidden"
           >
             {agentCounts.running} agents running
             <Icon name="chevron_right" size={18} />
@@ -125,7 +125,7 @@ export default async function HomePage() {
         {agentActivity.length > 0 ? (
           <section aria-labelledby="h-agents" className="min-w-0 flex-[1_1_340px]">
             <SectionHeader id="h-agents" label="Agent activity" link={{ href: "/agents", label: "Agent command →" }} />
-            <ul className="glass-card rounded-26 p-1.5">
+            <ul className="glass-card rounded-24 p-2">
               {agentActivity.map((a) => (
                 <ActivityItem key={a.id} a={a} fresh={false} />
               ))}

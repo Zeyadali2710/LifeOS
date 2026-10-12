@@ -28,7 +28,7 @@ export function Item({ a, fresh }: { a: ActivityDTO; fresh: boolean }) {
   const color = a.tone ? TONES[a.tone] : s.color;
   return (
     <li
-      className={`grid grid-cols-[44px_26px_minmax(0,1fr)] gap-2.5 rounded-9 p-2.5 transition-colors duration-1000 ${
+      className={`grid grid-cols-[44px_26px_minmax(0,1fr)] gap-2.5 rounded-16 px-3 py-2.5 transition-colors duration-1000 ${
         fresh ? "animate-[lo-in_450ms_ease] bg-white/5" : "bg-transparent"
       }`}
     >
@@ -59,7 +59,7 @@ export function ActivityList() {
   return (
     <section aria-labelledby="live-activity">
       <div className="mb-3.5 flex items-center gap-3">
-        <h2 id="live-activity" className="text-[11px] leading-[1.3] font-medium tracking-[0.1em] text-text-3 uppercase">
+        <h2 id="live-activity" className="text-[11px] leading-[1.3] font-medium tracking-[.14em] text-text-3 uppercase">
           Live activity
         </h2>
         <span
@@ -67,7 +67,7 @@ export function ActivityList() {
           className={`size-1.5 rounded-full ${connected ? "animate-[lo-pulse-g_2s_ease-out_infinite] bg-green" : "bg-amber"}`}
         />
         {!connected && <span className="text-[10.5px] text-amber">RECONNECTING</span>}
-        <span aria-hidden="true" className="h-px flex-1 bg-white/10" />
+        <span aria-hidden="true" className="h-px flex-1 bg-white/[.06]" />
         <button
           type="button"
           aria-pressed={frozen !== null}
@@ -78,7 +78,7 @@ export function ActivityList() {
         </button>
       </div>
       {!loaded ? (
-        <div className="flex flex-col gap-2 glass-card rounded-26 p-1.5">
+        <div className="flex flex-col gap-2 glass-card rounded-24 p-2">
           {[0, 1, 2].map((i) => (
             <Skeleton key={i} className="h-12" />
           ))}
@@ -94,7 +94,7 @@ export function ActivityList() {
           role="log"
           aria-live="polite"
           aria-relevant="additions"
-          className="max-h-[520px] overflow-hidden glass-card rounded-26 p-1.5"
+          className="max-h-[520px] overflow-hidden glass-card rounded-24 p-2"
         >
           {shown.map((a) => (
             <Item key={a.id} a={a} fresh={freshIds.has(a.id)} />
