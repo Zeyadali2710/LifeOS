@@ -15,7 +15,7 @@ import { useLive } from "./live-provider";
 import { useShell } from "./shell-provider";
 import { SnoozeMenu } from "./snooze-menu";
 
-const secondary = "h-[26px] rounded-6 border border-[rgba(255,255,255,.08)] px-2 text-[12px] text-text-2 hover:text-text";
+const secondary = "h-[26px] rounded-full border border-white/[.08] px-2.5 text-[12px] text-text-2 hover:text-text [@media(pointer:coarse)]:min-h-11";
 
 export function NotificationRow({ n, fresh }: { n: NotificationDTO; fresh: boolean }) {
   const router = useRouter();
@@ -62,8 +62,8 @@ export function NotificationRow({ n, fresh }: { n: NotificationDTO; fresh: boole
 
   return (
     <li
-      className={`grid grid-cols-[28px_1fr] gap-2.5 rounded-10 border p-3 ${
-        important ? "border-[rgba(255,255,255,.08)] bg-[rgba(255,255,255,.035)]" : "border-transparent"
+      className={`grid grid-cols-[28px_1fr] gap-2.5 rounded-18 border p-3 ${
+        important ? "border-white/[.08] bg-white/[.035]" : "border-transparent"
       } ${unread ? "" : "opacity-60"} ${fresh ? "animate-[lo-in_450ms_ease-out]" : ""}`}
     >
       <span
@@ -75,7 +75,7 @@ export function NotificationRow({ n, fresh }: { n: NotificationDTO; fresh: boole
       </span>
       <div className="flex min-w-0 flex-col gap-1">
         <div className="flex items-start justify-between gap-2">
-          <h3 className={`text-[13.5px] leading-snug break-words ${important ? "font-semibold" : "font-normal"}`}>
+          <h3 className={`text-[13.5px] leading-snug break-words ${unread ? "font-medium" : "font-normal"}`}>
             <span className="sr-only">{unread ? "Unread: " : "Read: "}</span>
             {n.title}
           </h3>
@@ -91,7 +91,7 @@ export function NotificationRow({ n, fresh }: { n: NotificationDTO; fresh: boole
         {n.body && <p className="text-[12.5px] leading-[1.45] break-words text-text-2">{n.body}</p>}
         <div className="mt-1 flex flex-wrap gap-1">
           {(isSafePath(n.actionUrl) || isSafeGithubUrl(n.actionUrl)) && (
-            <Button size="xs" onClick={open}>
+            <Button size="xs" className="[@media(pointer:coarse)]:min-h-11" onClick={open}>
               Open
             </Button>
           )}

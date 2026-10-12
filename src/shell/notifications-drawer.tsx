@@ -55,7 +55,7 @@ export function NotificationsDrawer() {
       aria-pressed={active === value}
       onClick={() => setFilter(value)}
       className={`h-7 shrink-0 rounded-full border px-3 text-[12.5px] ${
-        active === value ? "border-[rgba(139,140,255,.5)] bg-[rgba(139,140,255,.12)] text-text" : "border-[rgba(255,255,255,.1)] text-text-2"
+        active === value ? "border-transparent bg-white/[.16] text-white" : "border-white/10 text-text-2"
       }`}
     >
       {label}
@@ -67,7 +67,7 @@ export function NotificationsDrawer() {
     body = (
       <div className="flex flex-col gap-3" aria-busy="true">
         {[0, 1, 2].map((i) => (
-          <Skeleton key={i} className="h-[68px] rounded-10" />
+          <Skeleton key={i} className="h-[68px] rounded-18" />
         ))}
       </div>
     );
@@ -106,7 +106,7 @@ export function NotificationsDrawer() {
   } else {
     body = groupNotifications(shown, now).map((g) => (
       <section key={g.group} aria-label={g.group}>
-        <div className="mt-3 px-2 py-1.5 font-mono text-[10.5px] font-medium tracking-[0.08em] text-text-3">{g.group}</div>
+        <div className="mt-3 px-2 py-1.5 font-mono text-[10.5px] font-medium tracking-[.12em] text-text-3">{g.group}</div>
         <ul className="flex flex-col gap-1">
           {g.items.map((n) => (
             <NotificationRow key={n.id} n={n} fresh={freshIds.has(n.id)} />
@@ -118,26 +118,26 @@ export function NotificationsDrawer() {
 
   return (
     <div className="fixed inset-0 z-[70]">
-      <div aria-hidden="true" className="absolute inset-0 animate-[lo-fade_150ms_ease-out] bg-[rgba(5,6,9,.45)]" onClick={closeNotifications} />
+      <div aria-hidden="true" className="absolute inset-0 animate-[lo-fade_.15s] bg-black/20" onClick={closeNotifications} />
       <div
         ref={ref}
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="absolute inset-y-0 right-0 flex w-screen animate-[lo-slide_200ms_ease-out] flex-col border-l border-[rgba(255,255,255,.08)] bg-[#101217] shadow-drawer tab:w-[min(420px,94vw)]"
+        className="glass-panel absolute top-[80px] right-3 z-[70] flex max-h-[calc(100%-96px)] w-[min(420px,calc(100%-24px))] animate-[lo-rise_.2s_ease-out] flex-col overflow-hidden rounded-30"
       >
         <header className="flex h-14 shrink-0 items-center gap-2 pr-3 pl-5">
-          <h2 id={titleId} className="flex-1 text-[15px] font-medium">
+          <h2 id={titleId} className="flex-1 font-display text-[26px] leading-none font-normal">
             Notifications
           </h2>
-          <Button variant="ghost" size="sm" disabled={unread === 0} onClick={() => void readAll()}>
+          <Button variant="ghost" size="sm" className="h-7 rounded-full text-[12.5px] text-text-2" disabled={unread === 0} onClick={() => void readAll()}>
             Mark all read
           </Button>
           <button
             type="button"
             aria-label="Close notifications"
             onClick={closeNotifications}
-            className="grid size-11 place-items-center rounded-8 text-text-3 hover:bg-fill-2 hover:text-text tab:size-[30px]"
+            className="grid size-11 place-items-center rounded-full text-text-3 hover:bg-fill-2 hover:text-text tab:size-[30px]"
           >
             <Icon name="close" size={18} />
           </button>
