@@ -58,10 +58,17 @@ export default async function OutreachPage({ searchParams }: { searchParams: Pro
     // ?draft=1 only ever drafts for the exact requested mail; never fall back to another one (CR-U01)
     const missing = sp.mail !== undefined && selectedId !== want;
     mail = { status, ...view, cat, selectedId, approval, autoDraft: sp.draft === "1" && want !== null && selectedId === want, missing };
+  } catch (e) {
+    console.error("outreach: mail load failed", e instanceof Error ? e.name : "unknown");
+  }
+
+  // separate from mail: a Gmail/mail-table failure must not hide event follow-ups (WR-U09)
+  try {
+    const h = db();
     followUpN = await followUpCount(h);
     if (sp.tab === "follow-ups") followUps = await listFollowUps(h);
   } catch (e) {
-    console.error("outreach: mail load failed", e instanceof Error ? e.name : "unknown");
+    console.error("outreach: follow-ups load failed", e instanceof Error ? e.name : "unknown");
   }
 
   return (
