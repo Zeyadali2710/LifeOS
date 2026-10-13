@@ -111,7 +111,7 @@ describe("recipients are server-filled", () => {
     const { status, ap } = await propose({ messageId: m1.id, subject: "Re: Agenda", body: "Sure.", to: evil, cc: evil, threadId: "evil", inReplyTo: "<evil@evil.test>", references: "<evil@evil.test>" }, f);
     expect(status).toBe("waiting_approval");
     expect(ap).toMatchObject({ tool: "mail.send_reply" });
-    expect(ap!.originalPayload).toMatchObject({ to: [{ name: "Lee Direct", address: "lee.direct@example.org" }], cc: [], threadId: "t-reply", inReplyTo: "<reply-1@example.org>", originalSubject: "Agenda" });
+    expect(ap!.originalPayload).toMatchObject({ to: [{ name: "Lee Direct", address: "lee.direct@example.org" }], cc: [], threadId: "t-reply", inReplyTo: "<reply-1@example.org>", originalSubject: "Agenda", from: { name: "Lee List", address: "lee@example.org" } });
     expect(JSON.stringify(ap!.originalPayload)).not.toContain("evil");
     const [tc] = await h().select().from(toolCalls).where(eq(toolCalls.id, ap!.toolCallId));
     expect(tc!.tier).toBe("APPROVE");

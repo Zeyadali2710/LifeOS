@@ -7,7 +7,7 @@ import { isSafeGithubUrl } from "@/lib/safe-url";
 import { approveAction, rejectAction } from "@/server/approval-actions";
 import { issueOf, UnreadableApproval } from "@/approvals/approval-detail";
 import { eventOf, whenText } from "@/approvals/event-approval";
-import { mailOf, mailResolved } from "@/approvals/mail-approval";
+import { mailOf, mailResolved, redirectNote } from "@/approvals/mail-approval";
 import { projectOf, projectResolved } from "@/approvals/project-approval";
 import { draftCounts } from "@/lib/project-payload";
 import { sydneyParts, formatHM } from "@/server/time";
@@ -138,7 +138,7 @@ export function ApprovalCard({ approval, onDecided }: { approval: ApprovalDTO; o
         APPROVAL REQUIRED
       </div>
       <p className="text-[13px] text-text-2">
-        {mp ? `Outreach agent wants to reply to ${mp.to[0]?.name || mp.to[0]?.address || "the sender"}` : iss ? `${a.agentId} wants to create a GitHub issue in ${p.repo}` : pj ? (a.kind === "project_update" ? `Projects agent wants to change "${pjName}"` : "Projects agent wants to create a project") : `Organization agent wants to ${EV[a.kind].verb} ${String(ev.calendarLabel ?? "")}`}
+        {mp ? `Outreach agent wants to reply to ${mp.to[0]?.name || mp.to[0]?.address || "the sender"}${mp.cc.length ? ` and ${mp.cc.length} other${mp.cc.length > 1 ? "s" : ""}` : ""}` : iss ? `${a.agentId} wants to create a GitHub issue in ${p.repo}` : pj ? (a.kind === "project_update" ? `Projects agent wants to change "${pjName}"` : "Projects agent wants to create a project") : `Organization agent wants to ${EV[a.kind].verb} ${String(ev.calendarLabel ?? "")}`}
       </p>
       <h4 className="text-[15px] font-medium break-words">{p.title}</h4>
       {pj && <div className="text-[11px] text-text-3">{pjMeta}</div>}
@@ -148,7 +148,13 @@ export function ApprovalCard({ approval, onDecided }: { approval: ApprovalDTO; o
           Drafted from {pj.sources.length} repository files (untrusted)
         </p>
       )}
-      {mp && <div className="text-[11px] text-text-3">To {mp.to[0]?.address}</div>}
+      {mp && (
+        <div className="font-code text-[11px] break-words text-text-3">
+          To {mp.to.map((x) => x.address).join(", ")}
+          {mp.cc.length > 0 && ` · Cc ${mp.cc.map((x) => x.address).join(", ")}`}
+        </div>
+      )}
+      {mp && redirectNote(mp) && <p className="text-[12.5px] text-amber">{redirectNote(mp)}</p>}
       {mp && (
         <p className="flex items-center gap-1.5 text-[12.5px] text-amber">
           <Icon name="warning" size={14} />

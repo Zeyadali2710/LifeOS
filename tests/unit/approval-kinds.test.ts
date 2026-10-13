@@ -163,7 +163,7 @@ describe("mail_reply kind", () => {
     expect(schema().safeParse({ ...mr, to: [] }).success).toBe(false);
   });
   it("locks recipients and thread, allows subject and body", () => {
-    for (const [k, v] of Object.entries({ to: [{ name: "", address: "evil@example.org" }], cc: [a], threadId: "z", messageId: "44444444-4444-4444-8444-444444444444", inReplyTo: "<y>", references: "<y>", originalSubject: "z" })) {
+    for (const [k, v] of Object.entries({ to: [{ name: "", address: "evil@example.org" }], cc: [a], threadId: "z", messageId: "44444444-4444-4444-8444-444444444444", inReplyTo: "<y>", references: "<y>", originalSubject: "z", from: a })) {
       expect(checkLocked("mail_reply", mr, { ...mr, [k]: v })).toEqual({ [k]: "Recipients and the thread can't be changed." });
     }
     expect(checkLocked("mail_reply", mr, { ...mr, subject: "Re: Other", body: "Changed" })).toBeNull();

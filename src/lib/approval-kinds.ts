@@ -36,7 +36,7 @@ export const LOCKED: Record<ApprovalKind, string[]> = {
   event_delete: Object.keys(eventDeletePayload.shape),
   project_create: ["sources"],
   project_update: ["projectId", "before", "sources"],
-  mail_reply: ["messageId", "threadId", "to", "cc", "inReplyTo", "references", "originalSubject"],
+  mail_reply: ["messageId", "threadId", "to", "cc", "inReplyTo", "references", "originalSubject", "from"],
 };
 
 // Key-order-independent: the stored original comes back from jsonb, which reorders object keys.

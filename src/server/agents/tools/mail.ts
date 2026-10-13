@@ -144,6 +144,7 @@ const locked = {
   inReplyTo: sh.inReplyTo.optional(), // always overwritten by resolve
   references: sh.references.optional(), // always overwritten by resolve
   originalSubject: sh.originalSubject.optional(), // always overwritten by resolve
+  from: sh.from, // always overwritten by resolve
 };
 const replyIn = z.object({
   messageId: z.uuid(),
@@ -181,7 +182,8 @@ const sendReplyTool: Tool<ReplyIn, { messageId: string; threadId: string }> = {
       if (e instanceof ProviderError) throw new ToolError("unavailable", e.kind === "scope" ? NOT_ALLOWED : "Couldn't reach Gmail. Try again later.");
       throw e;
     }
-    const sender = parseAddrList(headerOf(hs, "Reply-To"))[0] ?? parseAddrList(headerOf(hs, "From"))[0] ?? { name: row.fromName, address: row.fromAddress };
+    const from = parseAddrList(headerOf(hs, "From"))[0] ?? { name: row.fromName, address: row.fromAddress };
+    const sender = parseAddrList(headerOf(hs, "Reply-To"))[0] ?? from;
     const to = [sender];
     let cc: { name: string; address: string }[] = [];
     if (i.replyAll) {
@@ -204,6 +206,7 @@ const sendReplyTool: Tool<ReplyIn, { messageId: string; threadId: string }> = {
       inReplyTo: msgId,
       references: headerOf(hs, "References"),
       originalSubject: cut(headerOf(hs, "Subject") ?? row.subject, 300),
+      from: emailOk(from) && from.address.length <= 320 ? { name: cut(from.name, 200), address: from.address } : undefined,
       subject: i.subject,
       body: i.body,
     });

@@ -35,6 +35,12 @@ export function validateMailDraft(tool: string, base: MailReplyPayload, d: MailD
 
 export const sameMail = (a: MailReplyPayload, b: MailReplyPayload) => a.subject === b.subject && a.body === b.body;
 
+/** Set when the reply goes to a Reply-To address that isn't the email's sender (WR-U06). */
+export function redirectNote(p: MailReplyPayload): string | null {
+  const to = p.to?.[0]?.address;
+  return p.from && to && p.from.address.toLowerCase() !== to.toLowerCase() ? `Replies go to ${to} (the email's Reply-To), not the sender ${p.from.address}.` : null;
+}
+
 const nameOf = (a?: Addr) => a?.name || a?.address || "the sender";
 const list = (xs: Addr[]) => xs.map((x) => x.address).join(", ");
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
