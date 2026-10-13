@@ -90,7 +90,10 @@ function Form({ event, onClose }: { event: Ev; onClose: () => void }) {
                 <button
                   type="button"
                   aria-label={`Remove task ${i + 1}`}
-                  onClick={() => setLines((ls) => ls.filter((x) => x.key !== l.key))}
+                  onClick={() => {
+                    setLines((ls) => ls.filter((x) => x.key !== l.key));
+                    setErrors({}); // errors are keyed by row index, which shifts on removal; the next submit re-checks (WR-U07)
+                  }}
                   className="grid size-8 place-items-center rounded-full text-text-2 hover:bg-white/[.06] hover:text-text max-tab:size-11"
                 >
                   <Icon name="close" size={16} />
