@@ -56,3 +56,31 @@ Two fine-grained personal access tokens, added in Settings -> Connections. They 
 - **Google**: create an OAuth client (web) with the redirect URI above. The consent screen must be **In production** or refresh tokens expire after 7 days. The Google Auth Platform **Branding** page requires an app home page URL and a privacy policy URL on the authorised domain `<tailnet>.ts.net` before "Publish app" is allowed.
 - `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` (optional; app boots without them) must be set in `.env` and reach **both** the `web` and `worker` containers.
 - **iCloud**: generate an app-specific password at appleid.apple.com and enter it in Settings -> Connections. It is never put in `.env`.
+
+## Outreach (Phase 6)
+Sydney events and Gmail, shown on `/outreach`. Nothing here posts, registers or sends without an owner approval.
+
+### Event sources
+| Source | Status | Notes |
+|---|---|---|
+| iCal feeds (`ics`) | Real, the main discovery path | Add feed URLs in Settings → Event feeds. URLs are encrypted at rest; only the host is shown. |
+| URL import | Real | `Import event` reads schema.org JSON-LD `Event` data from a public page (Eventbrite, Humanitix, Meetup, Luma pages). |
+| Eventbrite | MOCK until a private token is added | The token lists only the owner's own organizers (Settings → organizer ids). When the API refuses listing, the source shows its `discover: false` wording instead of failing. |
+| Luma API | MOCK until a Luma Plus key is added | Covers only the Luma Plus calendar the key was made on. Use the iCal feed for Sydney discovery. |
+| Meetup, Humanitix | MOCK | No public discovery API. Import their pages by URL. |
+
+MOCK events are badged, can be saved to the pipeline, but cannot go on the calendar or create follow-up tasks.
+
+**Luma Sydney feed.** Open luma.com/sydney, choose "Add iCal Subscription", copy the link, and paste it in Settings → Event feeds.
+
+**Fetch safety.** Every outbound event fetch goes through the SSRF guard (public https only, no private or link-local addresses, redirects re-checked) with a 2 MB response cap.
+
+**Cadence.** Events sync every 6 hours (pg-boss) plus Sync now; mail syncs every 5 minutes plus Sync now. Events are kept 60 days ahead; saved events are never pruned.
+
+### Gmail (same Google client as Calendar)
+- **Scopes (least privilege):** `https://www.googleapis.com/auth/gmail.readonly` (read the inbox) and `https://www.googleapis.com/auth/gmail.compose` (create drafts and send a reply the owner approved). `gmail.modify` and `gmail.send` are deliberately not requested: LifeOS never deletes, relabels or marks mail, and cannot send without first creating the checkpointed draft.
+- **Consent is granular.** Google lets the owner untick Gmail on the consent screen. Granted scopes are stored on the connection (`connections.scopes`); without Gmail the EMAIL tab shows "Gmail access wasn't granted" and Calendar keeps working. Use **Reconnect Google** to grant it later.
+- **Unverified app.** An unverified personal OAuth client shows Google's "unverified app" screen once; continue past it (the app is the owner's own). Unverified apps are capped at 100 lifetime users, which does not matter for a single-owner install.
+- **Stored vs live.** Only metadata is stored (sender, recipients, subject, date, labels, snippet, triage output). Bodies are fetched live per open, as capped plain text (16 KB); HTML is stripped and no remote images load.
+- **Sync.** Quota-safe and resumable: a first sync pulls the last 30 days (capped per run), later runs use the Gmail history id. A 404 on the history id triggers a full resync. Archive and flag in LifeOS are local only; Gmail is never changed.
+- **Reconnect.** A 401/invalid grant marks the connection as needing reconnect and pauses mail sync.

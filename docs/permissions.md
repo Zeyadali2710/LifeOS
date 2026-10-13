@@ -34,3 +34,15 @@ Per ORG-02: owner UI writes run directly and are audit-logged (`calendar.event.c
 | `projects.create`, `projects.update` | APPROVE |
 
 **Content floor (D-06, `withContentFloor` + `contentScope` in `src/server/agents/policy.ts`):** once any run in scope has read third-party content — `github.get_file`, `list_tree`, `get_pull_request`, `list_issues`, `list_pull_requests` or `recent_commits` (`CONTENT_TOOLS`) — every side-effect tool resolves to at least APPROVE. Scope = the run tree (self, parent, siblings, children), the run it retries (and its parent), and every run in those threads, so repo-derived text carried into later thread turns stays floored. HIGH_RISK is unchanged. The write handlers refuse to run without an approval. No agent deletes projects, milestones or tasks this phase.
+
+## Outreach tools (Phase 6)
+| Tool | Tier |
+|---|---|
+| `outreach.list_events`, `outreach.get_event`, `mail.list`, `mail.get_message` | READ |
+| `mail.send_reply` | APPROVE |
+
+- **Content floor.** The event and mail tools are in `CONTENT_TOOLS`, so once any of them has run in a run's scope every side-effect tool resolves to at least APPROVE (the 5.1 floor).
+- **Hard mail taint.** `mail.list`, `mail.get_message` and `mail.send_reply` (`MAIL_TOOLS`) mark the whole run scope private with no override: the `ai.free_private_ok` setting does not apply to mail, and a run that touched mail can never use a free model.
+- **`mail_reply` approval.** Recipients (`to`, `cc`), thread id and reply headers are rebuilt server-side from the stored message and are locked: the owner can edit only the subject and body, and the server re-validates on approve. The approval card carries an "untrusted" note. Alternatives: **Save to Gmail drafts** (creates a plain draft, marks the approval rejected, never sends) and Reject.
+- **Idempotent send.** Approving creates a threaded draft with a deterministic `Message-ID` (derived from the approval id), checkpoints `draftId` and the draft's message id on the approval, then sends. A retry after an ambiguous failure first looks for the draft (send never landed), then for a SENT copy or the `rfc822msgid` (send landed) and adopts it instead of sending twice. Sending needs the `gmail.compose` scope; without it the approval fails with a Reconnect Google message and nothing is sent.
+- **Owner-only writes.** Pipeline stage changes, dismiss/restore, import, follow-up task creation, Add as task, archive and flag are owner UI actions (audit-logged). Agents never create tasks from events or mail, and mail-linked task titles are redacted to "Email follow-up (private)" in agent tool output.

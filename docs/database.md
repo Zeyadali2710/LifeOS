@@ -54,3 +54,14 @@ Also: `github_repos.languages` (jsonb byte counts, null = never fetched); `tasks
 - Memory: `user_preferences`, `facts`, `observations`
 - Automations: `automations`, `automation_runs`
 - pg-boss creates and owns its own `pgboss` schema.
+
+## Phase 6 tables (migration `0008_outreach`)
+| Table | Purpose |
+|---|---|
+| `event_sources` | Event feed sources (`ics` rows plus one built-in row per provider kind); feed URL stored encrypted (`url_ciphertext`), display `host`, per-source `config` (organizer ids, discover flag), last sync and error |
+| `outreach_events` | Deduplicated events with score, signals, why, `is_mock`, `sources` (jsonb), pipeline `stage` (SAVED, INTERESTED, ATTENDING, ATTENDED, FOLLOW_UP), optional `calendar_event_id`, `dismissed_at` |
+| `mail_messages` | Gmail metadata only (no body): sender, recipients, subject, labels, snippet, `bulk`, triage output (category, importance, summary, action, action_items), local `archived_at` / `flagged_at`, `notified_at` |
+
+Also: `tasks.outreach_event_id` and `tasks.mail_message_id` (both FKs ON DELETE SET NULL; they drive FOLLOW-UPS); `connections.scopes` (granted Google scopes, jsonb array).
+
+Settings keys: `outreach.interests` (string array, event scoring and filter chips), `mail.sync` (Gmail history id, first-sync state, last sync and error), `mail.triage_paused` (true while the spend cap pauses triage).

@@ -75,3 +75,10 @@ Tools now also include `github.list_tree`, `github.get_file` (READ) and `project
 
 ## Organization agent (Phase 4)
 Live. Tools: `calendar.list_events`, `calendar.find_free_slots`, `calendar.detect_conflicts`, `tasks.list` (READ), `calendar.create_event`, `calendar.update_event` (APPROVE), `calendar.delete_event` (HIGH_RISK). Tasks are READ-only for the agent. No tool can create recurring events. Every system prompt carries a Sydney "Current time" line. Calendar tool output marks the run private, so free models never see it unless `ai.free_private_ok` is on. Tiers: `permissions.md`.
+
+## Outreach agent (Phase 6)
+Live. Model: Sonnet, **not routable** (never a free model: mail must not reach one). Tools: `outreach.list_events`, `outreach.get_event`, `mail.list`, `mail.get_message` (READ) and `mail.send_reply` (APPROVE). It cannot change the pipeline, create tasks, archive or flag mail; those are owner actions in the UI. Event and mail tool output is third-party text and is treated as untrusted data in the system prompt.
+
+- **Draft with agent** sends `Draft a reply to email {id}` through the normal chat/run plumbing. The orchestrator delegates to the Outreach agent with `tier: reasoning`; the agent reads the message and calls `mail.send_reply` once, which suspends the run as `waiting_approval`.
+- **Triage** is a pg-boss job, not a chat run: Haiku classifies, summarises, flags and extracts action items for new INBOX mail (batches of 10, bodies fetched live and discarded). Bulk or promotional mail is classed by rules and never sent to the model. Each batch is recorded as a run and counts against the monthly spend cap; at the cap triage pauses (`mail.triage_paused`), mail keeps syncing with its snippet, and it resumes automatically.
+- **Orchestrator** delegates email, inbox and Sydney-events questions to the Outreach agent.
