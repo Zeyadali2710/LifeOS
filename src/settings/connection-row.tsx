@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { ReactNode } from "react";
+import { removeEventKeyAction } from "@/server/outreach-actions";
 import { removeTokenAction } from "@/server/settings-actions";
 import { useShell } from "@/shell/shell-provider";
 import { Button } from "@/ui/button";
@@ -25,11 +26,12 @@ export function ConnectionRow({
   noun,
   removeBody,
   readOnly = false,
+  statusLabel,
   action,
   onChanged,
   children,
 }: {
-  id?: "github_read" | "github_write" | "openrouter";
+  id?: "github_read" | "github_write" | "openrouter" | "eventbrite" | "luma";
   title?: string;
   tile: string;
   name: string;
@@ -38,6 +40,7 @@ export function ConnectionRow({
   noun?: string;
   removeBody?: string;
   readOnly?: boolean;
+  statusLabel?: string;
   action?: ReactNode;
   onChanged?: (message: string) => void;
   children?: ReactNode;
@@ -45,13 +48,15 @@ export function ConnectionRow({
   const [open, setOpen] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const { toast } = useShell();
+  const keyed = id === "eventbrite" || id === "luma";
 
   async function remove() {
     setConfirm(false);
-    const r = await removeTokenAction(id!);
+    const ev = id === "eventbrite" || id === "luma";
+    const r = ev ? await removeEventKeyAction(id) : await removeTokenAction(id!);
     if (r.ok) {
       setOpen(false);
-      toast(title ? `${title} removed` : `${noun === "read" ? "GitHub read" : "Issues-write"} token removed`);
+      toast(title ? `${title} removed` : id === "eventbrite" ? "Eventbrite key removed" : id === "luma" ? "Luma key removed" : `${noun === "read" ? "GitHub read" : "Issues-write"} token removed`);
       onChanged?.("removed");
     } else toast("Couldn't save that. Try again.", "error");
   }
@@ -68,7 +73,7 @@ export function ConnectionRow({
         </div>
         <span className={`inline-flex items-center gap-1.5 font-mono text-[10.5px] font-semibold tracking-[0.14em] ${COLOR[status]}`}>
           <StatusDot state={DOT[status]} pulse={status === "syncing"} />
-          {LABEL[status]}
+          {statusLabel ?? LABEL[status]}
         </span>
         {action}
         {!readOnly && !action && (
@@ -79,7 +84,7 @@ export function ConnectionRow({
             aria-expanded={open}
             onClick={() => setOpen(!open)}
           >
-            {status === "error" ? "Reconnect" : status === "connected" ? "Replace" : "Connect"}
+            {keyed ? (status === "connected" ? "Replace key" : "Add key") : status === "error" ? "Reconnect" : status === "connected" ? "Replace" : "Connect"}
           </Button>
         )}
       </div>
@@ -91,14 +96,14 @@ export function ConnectionRow({
             onCancel={() => setOpen(false)}
             onDone={(r) => {
               setOpen(false);
-              toast(id === "openrouter" ? "OpenRouter connected · free models on" : id === "github_read" ? `GitHub connected · ${r.repos} repositories` : `Issue creation enabled · ${r.repos} repositories`);
+              toast(id === "eventbrite" ? "Eventbrite connected" : id === "luma" ? "Luma connected" : id === "openrouter" ? "OpenRouter connected · free models on" : id === "github_read" ? `GitHub connected · ${r.repos} repositories` : `Issue creation enabled · ${r.repos} repositories`);
               onChanged?.("saved");
             }}
           />
           {status !== "none" && (
             <div>
               <Button variant="ghost" className="text-red" onClick={() => setConfirm(true)}>
-                Remove token
+                {keyed ? "Remove key" : "Remove token"}
               </Button>
             </div>
           )}
@@ -115,12 +120,12 @@ export function ConnectionRow({
               Cancel
             </Button>
             <Button variant="destructive" onClick={remove}>
-              Remove token
+              {keyed ? "Remove key" : "Remove token"}
             </Button>
           </>
         }
       >
-        The encrypted token is deleted from LifeOS. {removeBody} You can add a token again at any time.
+        The encrypted {keyed ? "key" : "token"} is deleted from LifeOS. {removeBody} You can add a {keyed ? "key" : "token"} again at any time.
       </Dialog>
     </div>
   );

@@ -7,11 +7,11 @@ test.beforeEach(async ({ page }) => {
 
 test("connections: five rows and empty token validation", async ({ page }) => {
   await page.goto("/settings");
-  await expect(page.getByText("GitHub · read access")).toBeVisible();
-  await expect(page.getByText("GitHub · create issues")).toBeVisible();
-  await expect(page.getByText("Anthropic API")).toBeVisible();
-  await expect(page.getByText("Google Calendar", { exact: true }).first()).toBeVisible();
-  await expect(page.getByText("iCloud Calendar", { exact: true }).first()).toBeVisible();
+  await expect(page.locator("#main").getByText("GitHub · read access")).toBeVisible();
+  await expect(page.locator("#main").getByText("GitHub · create issues")).toBeVisible();
+  await expect(page.locator("#main").getByText("Anthropic API")).toBeVisible();
+  await expect(page.locator("#main").getByText("Google Calendar", { exact: true }).first()).toBeVisible();
+  await expect(page.locator("#main").getByText("iCloud Calendar", { exact: true }).first()).toBeVisible();
   await page.getByRole("button", { name: "Connect", exact: true }).first().click();
   await page.getByRole("button", { name: "Save token" }).click();
   await expect(page.getByText("Paste a token to continue.")).toBeVisible();

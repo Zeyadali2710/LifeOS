@@ -10,6 +10,7 @@ import { useShell } from "@/shell/shell-provider";
 import { Button } from "@/ui/button";
 import { Dialog } from "@/ui/dialog";
 import { Icon } from "@/ui/icon";
+import { StatusDot } from "@/ui/status-dot";
 import { CalendarList } from "./calendar-list";
 import { ConnectionRow, type RowStatus } from "./connection-row";
 import { IcloudForm } from "./icloud-form";
@@ -53,15 +54,16 @@ export function CalendarConnectionRow({ conn, notice, open = false }: { conn: Ca
           : m.empty
         : `${conn.account ?? ""} · ${syncingCount} of ${conn.calendars.length} calendars syncing${last ? ` · last synced ${formatHM(last)}` : ""}`;
 
-  const label = conn.status === "error" ? "Reconnect" : connected ? "Reconnect" : `Connect ${m.name}`;
+  const label = connected ? "Reconnect Google" : `Connect ${m.name}`;
+  const gmailMissing = google && connected && conn.status !== "error" && conn.gmail === "missing";
   const btn = `inline-flex h-8 min-w-[110px] items-center justify-center rounded-full px-3.5 text-[13px] font-medium transition [@media(pointer:coarse)]:min-h-11 ${
-    conn.status === "error" ? "bg-text text-on-accent font-semibold hover:bg-white" : connected ? "border border-white/10 bg-white/[.03] text-text hover:border-white/20 hover:bg-white/[.06]" : "bg-accent-solid text-white hover:bg-[#0066cc]"
+    conn.status === "error" ? "bg-text text-on-accent font-semibold hover:bg-white" : gmailMissing ? "bg-accent-solid text-white hover:bg-[#0066cc]" : connected ? "border border-white/10 bg-white/[.03] text-text hover:border-white/20 hover:bg-white/[.06]" : "bg-accent-solid text-white hover:bg-[#0066cc]"
   }`;
   const action =
     google ? (
       conn.configured ? (
         <a href="/api/connections/google/start" className={btn}>
-          {label}
+          {google && connected ? label : conn.status === "error" ? "Reconnect" : label}
         </a>
       ) : null
     ) : (
@@ -106,6 +108,19 @@ export function CalendarConnectionRow({ conn, notice, open = false }: { conn: Ca
               router.refresh();
             }}
           />
+        )}
+        {google && connected && (
+          <div className="flex flex-col gap-1 glass-card rounded-24 px-4 py-3">
+            <div className="flex items-center gap-2 text-[12.5px]">
+              <span className="text-text-2">Gmail</span>
+              <StatusDot state={conn.status === "error" ? "attention" : gmailMissing ? "paused" : "online"} />
+              <span className={conn.status === "error" ? "text-red" : gmailMissing ? "text-amber" : "text-green"}>
+                {conn.status === "error" ? "Needs reconnect" : gmailMissing ? "Not allowed" : "Allowed"}
+              </span>
+              {gmailMissing && <span className="text-text-3">Reconnect Google to allow Gmail.</span>}
+            </div>
+            <p className="text-[12.5px] text-text-3">Google will show an &quot;unverified app&quot; screen once. This is your own LifeOS, so continue past it.</p>
+          </div>
         )}
         {connected && (
           <div className="flex flex-col gap-3 glass-card rounded-24 p-4">
@@ -153,6 +168,7 @@ export function CalendarConnectionRow({ conn, notice, open = false }: { conn: Ca
         }
       >
         LifeOS stops syncing and deletes the saved access and its synced events. Your events in {m.short} are not changed. You can connect again at any time.
+        {google && " This also removes Gmail access. Synced mail stays in LifeOS until it's pruned."}
       </Dialog>
     </div>
   );

@@ -99,6 +99,7 @@ export type EventSourceDTO = {
   lastSyncAt: string | null;
   lastSyncError: string | null;
   discover: boolean | null;
+  organizerIds: string[];
 };
 
 export type MailMessageDTO = {

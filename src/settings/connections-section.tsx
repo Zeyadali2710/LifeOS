@@ -10,8 +10,10 @@ import { useShell } from "@/shell/shell-provider";
 import { Button } from "@/ui/button";
 import { Disclosure } from "@/ui/disclosure";
 import { Icon } from "@/ui/icon";
+import type { EventSourceDTO } from "@/lib/outreach-types";
 import { CalendarConnectionRow } from "./calendar-connection-row";
 import { ConnectionRow, type RowStatus } from "./connection-row";
+import { OutreachConnections, type EventKeys } from "./outreach-connections";
 
 const SYNC_MS = 15 * 60_000;
 const expiry = (iso: string | null) =>
@@ -30,13 +32,17 @@ export function ConnectionsSection({
   freePrivateOk,
   calendarConnections,
   googleResult,
+  eventSources,
+  eventKeys,
 }: {
   connections: ConnectionDTO[];
   privacy: Record<string, boolean>;
   anthropic: boolean;
   freePrivateOk: boolean;
   calendarConnections: CalendarConnectionDTO[];
-  googleResult: { google: string; n: number | null } | null;
+  googleResult: { google: string; n: number | null; gmail: boolean | null } | null;
+  eventSources: EventSourceDTO[];
+  eventKeys: EventKeys;
 }) {
   const router = useRouter();
   const { toast } = useShell();
@@ -50,7 +56,7 @@ export function ConnectionsSection({
   // Announce the OAuth return once, then drop the params from the URL.
   useEffect(() => {
     if (!googleResult) return;
-    if (g === "connected") toast(`Google Calendar connected · ${googleResult.n ?? 0} calendars`);
+    if (g === "connected") toast(googleResult.gmail === null ? `Google Calendar connected · ${googleResult.n ?? 0} calendars` : `Google reconnected · Gmail ${googleResult.gmail ? "allowed" : "not allowed"}`);
     else if (!GOOGLE_NOTES[g ?? ""]) toast("Couldn't save that. Try again.", "error");
     router.replace("/settings?section=connections");
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -202,6 +208,7 @@ export function ConnectionsSection({
         {calendarConnections.map((c) => (
           <CalendarConnectionRow key={c.id} conn={c} notice={c.id === "google_calendar" ? googleNote : undefined} open={c.id === "google_calendar" && googleOpen} />
         ))}
+        <OutreachConnections sources={eventSources} keys={eventKeys} />
       </div>
     </div>
   );

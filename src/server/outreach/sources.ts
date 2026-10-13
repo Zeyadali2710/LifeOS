@@ -80,6 +80,7 @@ export async function listEventSources(h: DB): Promise<EventSourceDTO[]> {
     lastSyncAt: r.lastSyncAt?.toISOString() ?? null,
     lastSyncError: r.lastSyncError,
     discover: r.config.discover ?? null,
+    organizerIds: r.config.organizerIds ?? [],
   }));
 }
 
