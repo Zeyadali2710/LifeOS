@@ -242,7 +242,7 @@ function EventApprovalShell({ approval: a, onChange }: DetailProps) {
               {EVENT_OK[a.kind]}
             </Button>
             {!del && (
-              <Button variant="secondary" className="h-[38px]" loading={busy === "save"} disabled={busy !== null && busy !== "save"} onClick={() => (editing ? void done() : setEditing(true))}>
+              <Button variant="secondary" className="h-[38px]" loading={busy === "save"} disabled={busy !== null && busy !== "save"} onClick={() => (editing ? void done() : (setDraft(toEventDraft(saved)), setErrors({}), setEditing(true)))}>
                 {editing ? "DONE" : "EDIT"}
               </Button>
             )}
@@ -268,6 +268,8 @@ function MailApprovalShell({ approval: a, onChange }: DetailProps) {
   const [busy, setBusy] = useState<"approve" | "reject" | "save" | "retry" | "draft" | null>(null);
   const saved = mailOf(a);
   const [draft, setDraft] = useState<MailDraft>(() => toMailDraft(saved));
+  // the payload the editor was seeded from; if the approval changes underneath, the edit is refused (CR-U02)
+  const [base, setBase] = useState(saved);
   const [editing, setEditing] = useState(false);
   const [errors, setErrors] = useState<MailDraftErrors>({});
   const pending = a.status === "pending";
@@ -289,7 +291,18 @@ function MailApprovalShell({ approval: a, onChange }: DetailProps) {
     if (done) toast(done);
     return true;
   };
+  const startEdit = () => {
+    setDraft(toMailDraft(saved));
+    setBase(saved);
+    setErrors({});
+    setEditing(true);
+  };
   const check = () => {
+    if (!sameMail(base, saved)) {
+      startEdit();
+      toast("This draft changed while you were editing. Showing the latest version; check it and try again.", "error");
+      return null;
+    }
     const v = validateMailDraft(a.tool, saved, draft);
     if ("errors" in v) {
       setErrors(v.errors);
@@ -341,7 +354,7 @@ function MailApprovalShell({ approval: a, onChange }: DetailProps) {
               <Icon name="check" size={16} />
               {EVENT_OK[a.kind]}
             </Button>
-            <Button variant="secondary" className="h-[38px]" loading={busy === "save"} disabled={busy !== null && busy !== "save"} onClick={() => (editing ? void done() : setEditing(true))}>
+            <Button variant="secondary" className="h-[38px]" loading={busy === "save"} disabled={busy !== null && busy !== "save"} onClick={() => (editing ? void done() : startEdit())}>
               {editing ? "DONE" : "EDIT"}
             </Button>
             <Button variant="secondary" className="h-[38px]" loading={busy === "draft"} disabled={editing || (busy !== null && busy !== "draft")} onClick={toDrafts}>
@@ -440,7 +453,7 @@ function ProjectApprovalShell({ approval: a, onChange }: DetailProps) {
               <Icon name="check" size={16} />
               {EVENT_OK[a.kind]}
             </Button>
-            <Button variant="secondary" className="h-[38px]" loading={busy === "save"} disabled={busy !== null && busy !== "save"} onClick={() => (editing ? void done() : setEditing(true))}>
+            <Button variant="secondary" className="h-[38px]" loading={busy === "save"} disabled={busy !== null && busy !== "save"} onClick={() => (editing ? void done() : (setDraft(toProjectDraft(saved)), setErrors({}), setEditing(true)))}>
               {editing ? "DONE" : "EDIT"}
             </Button>
             <Button variant="destructive" className="h-[38px]" loading={busy === "reject"} disabled={busy !== null && busy !== "reject"} onClick={() => void guard("reject", () => rejectAction(a.id), "Approval rejected")}>

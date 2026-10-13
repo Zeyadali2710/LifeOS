@@ -154,6 +154,8 @@ function Pending({ a, onPatch, extraActions }: { a: ApprovalDTO; onPatch: (a: Ap
   const { toast } = useShell();
   const saved = mailOf(a);
   const [draft, setDraft] = useState<MailDraft>(() => toMailDraft(saved));
+  // the payload the editor was seeded from; if the approval changes underneath, the edit is refused (CR-U02)
+  const [base, setBase] = useState(saved);
   const [editing, setEditing] = useState(false);
   const [errors, setErrors] = useState<MailDraftErrors>({});
   const [busy, setBusy] = useState<Busy>(null);
@@ -176,7 +178,18 @@ function Pending({ a, onPatch, extraActions }: { a: ApprovalDTO; onPatch: (a: Ap
     if (done) toast(done);
     return true;
   };
+  const startEdit = () => {
+    setDraft(toMailDraft(saved));
+    setBase(saved);
+    setErrors({});
+    setEditing(true);
+  };
   const check = () => {
+    if (!sameMail(base, saved)) {
+      startEdit();
+      toast("This draft changed while you were editing. Showing the latest version; check it and try again.", "error");
+      return null;
+    }
     const v = validateMailDraft(a.tool, saved, draft);
     if ("errors" in v) {
       setErrors(v.errors);
@@ -264,7 +277,7 @@ function Pending({ a, onPatch, extraActions }: { a: ApprovalDTO; onPatch: (a: Ap
           <Icon name="check" size={16} />
           Send reply
         </Button>
-        <Button variant="secondary" size="sm" loading={busy === "save"} disabled={off("save")} onClick={() => (editing ? void done() : setEditing(true))}>
+        <Button variant="secondary" size="sm" loading={busy === "save"} disabled={off("save")} onClick={() => (editing ? void done() : startEdit())}>
           {editing ? "Done editing" : "Edit draft"}
         </Button>
         <Button variant="secondary" size="sm" disabled={editing || off("draft")} loading={busy === "draft"} onClick={toDrafts}>
