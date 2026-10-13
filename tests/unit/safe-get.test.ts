@@ -54,6 +54,19 @@ describe("safeGet", () => {
     const r = await safeGet("https://example.com/a", { lookup: pub, request: f.request });
     expect(r).toMatchObject({ status: 200, body: "hi", contentType: "text/html", finalUrl: "https://example.com/a" });
   });
+  it.each(["172.66.154.15", "104.20.30.124", "93.184.216.34"])("lets a public IPv4 (%s) through the real guarded lookup", async (ip) => {
+    // Regression: a ::ffff:0:0/96 BlockList rule matched every IPv4, so Luma feeds were "not allowed".
+    const lookup = ((_h: string, _o: unknown, cb: (...a: unknown[]) => void) => cb(null, [{ address: ip, family: 4 }])) as never;
+    const e = await err(safeGet("https://feed.test/", { lookup, request: https.request, timeoutMs: 300 }));
+    expect(e.code).not.toBe("blocked");
+  });
+  it.each(["https://[::ffff:7f00:1]/", "https://[::ffff:a00:1]/", "https://[::ffff:c0a8:1]/"])("blocks mapped private literal %s", async (u) => {
+    expect((await err(safeGet(u, { lookup: vi.fn() as never }))).code).toBe("blocked");
+  });
+  it("blocks a hostname resolving to a mapped private IPv6", async () => {
+    const lookup = ((_h: string, _o: unknown, cb: (...a: unknown[]) => void) => cb(null, [{ address: "::ffff:10.0.0.1", family: 6 }])) as never;
+    expect((await err(safeGet("https://internal.test/", { lookup, request: https.request }))).code).toBe("blocked");
+  });
   it("blocks a redirect to a private host", async () => {
     const f = fake([{ status: 302, headers: { location: "https://127.0.0.1/" } }]);
     expect((await err(safeGet("https://example.com/", { request: f.request }))).code).toBe("blocked");

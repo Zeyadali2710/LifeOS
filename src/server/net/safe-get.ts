@@ -45,16 +45,29 @@ for (const [n, p] of [
   ["fc00::", 7],
   ["fe80::", 10],
   ["ff00::", 8],
-  ["::ffff:0:0", 96],
+  // No ::ffff:0:0/96 rule: node's BlockList applies it to every plain IPv4 address. Mapped addresses are unwrapped below.
   ["64:ff9b::", 96], // NAT64 can embed any IPv4, including private ones (IN-S01)
   ["64:ff9b:1::", 48],
   ["2002::", 16], // 6to4 embeds an IPv4 (e.g. 2002:0a00:0001:: = 10.0.0.1)
 ] as const)
   deny.addSubnet(n, p, "ipv6");
 
+/** ::ffff:a.b.c.d or ::ffff:hhhh:hhhh → the embedded IPv4, else null. */
+function mappedV4(ip: string): string | null {
+  const m = /^(?:0{0,4}:){0,5}:?ffff:(.+)$/i.exec(ip);
+  if (!m) return null;
+  if (isIP(m[1]!) === 4) return m[1]!;
+  const h = /^([0-9a-f]{1,4}):([0-9a-f]{1,4})$/i.exec(m[1]!);
+  if (!h) return null;
+  const [a, b] = [parseInt(h[1]!, 16), parseInt(h[2]!, 16)];
+  return `${a >> 8}.${a & 255}.${b >> 8}.${b & 255}`;
+}
+
 const isBlocked = (ip: string) => {
   const v = isIP(ip);
-  return v === 0 || deny.check(ip, v === 6 ? "ipv6" : "ipv4");
+  if (v === 0) return true;
+  const v4 = v === 6 ? mappedV4(ip) : ip;
+  return v4 ? deny.check(v4, "ipv4") : deny.check(ip, "ipv6");
 };
 
 export type SafeGetOpts = {
