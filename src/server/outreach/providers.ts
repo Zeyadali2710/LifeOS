@@ -30,7 +30,7 @@ export const DISCOVER_DENIED = "Eventbrite doesn't allow listing this organizer'
 
 const EVENTBRITE_HOST = "https://www.eventbriteapi.com/v3";
 const LUMA_HOST = "https://public-api.luma.com";
-// [ASSUMED A2] Luma list-events path; docs.luma.com was not reachable from this run. The MOCK fallback covers a wrong path.
+// Luma list-events path + x-luma-api-key header cross-checked 2026-10-13 against third-party API docs (jentic, lava.so); official reference page not reachable.
 const LUMA_LIST = "/v1/calendar/list-events";
 const MAX = 500;
 
