@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolvePolicy, withContentFloor } from "@/server/agents/policy";
+import { CONTENT_TOOLS, MAIL_TOOLS, resolvePolicy, withContentFloor } from "@/server/agents/policy";
 
 describe("resolvePolicy", () => {
   it("never lowers HIGH_RISK", () => {
@@ -33,5 +33,14 @@ describe("limitsFor", () => {
     expect(limitsFor(getAgent("projects"))).toEqual({ toolCalls: 16, tokens: 150_000, activeMs: 240_000, turnMaxTokens: 8192 });
     expect(limitsFor(getAgent("organization"))).toEqual(RUN_LIMITS);
     expect(limitsFor(undefined)).toEqual(RUN_LIMITS);
+  });
+});
+
+describe("CONTENT_TOOLS / MAIL_TOOLS (D-19, D-28, D-29)", () => {
+  it("floors on events and mail reads", () => {
+    for (const n of ["outreach.list_events", "outreach.get_event", "mail.list", "mail.get_message"]) expect(CONTENT_TOOLS).toContain(n);
+  });
+  it("treats every mail tool, including the later send_reply, as mail", () => {
+    expect([...MAIL_TOOLS]).toEqual(["mail.list", "mail.get_message", "mail.send_reply"]);
   });
 });

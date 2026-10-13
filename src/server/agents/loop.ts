@@ -9,6 +9,7 @@ import { log } from "../log";
 import { enqueue as realEnqueue, QUEUES, type Enqueue } from "../queue";
 import { routeSteps, toApprovalDTO, toRunDTO, toStepDTO } from "./dto";
 import { callTool } from "./gateway";
+import { mailInScope } from "./policy";
 import { getLlm } from "./llm";
 import { costUsd } from "./pricing";
 import { FreeModelError } from "./openrouter";
@@ -60,6 +61,7 @@ export async function createRun(
   const agent = getAgent(p.agentId)!;
   const cfg = await agentConfig(h, p.agentId);
   const at = (p.now ?? (() => new Date()))();
+  const mail = await mailInScope(h, p.parentRunId ?? p.privacyAnchor ?? null); // D-28: mail never reaches a free model, toggle or not
   const { model, mode, reason, blocked } = resolveModel({
     agentId: p.agentId,
     pref: cfg.pref,
@@ -68,8 +70,8 @@ export async function createRun(
     tier: p.tier ?? null,
     hasKey: await hasFreeKey(h),
     coolingDown: freeCoolingDown(at),
-    privateTainted: await privateInTree(h, p.parentRunId ?? p.privacyAnchor ?? null),
-    privateOk: await getFreePrivateOk(h),
+    privateTainted: mail || (await privateInTree(h, p.parentRunId ?? p.privacyAnchor ?? null)),
+    privateOk: (await getFreePrivateOk(h)) && !mail,
   });
   if (blocked) return { ok: false, code: blocked };
   const history: Msg[] = p.threadId ? await threadHistory(h, p.threadId, 20) : [];
@@ -278,11 +280,12 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
       // every turn: the opt-in may have been switched off since createRun (e.g. during an approval wait).
       if (
         isFree(curModel) &&
-        !(await getFreePrivateOk(h)) &&
-        (tainted ||
-          (await privateInTree(h, run0.parentRunId ?? run0.id)) ||
-          (!!run0.retryOf && (await privateInTree(h, run0.retryOf))) ||
-          mentionsSensitive(messages, await sensitiveRepoNames(h)))
+        ((await mailInScope(h, run0.parentRunId ?? run0.id)) || // D-28: hard mail check, ignores the toggle
+          (!(await getFreePrivateOk(h)) &&
+            (tainted ||
+              (await privateInTree(h, run0.parentRunId ?? run0.id)) ||
+              (!!run0.retryOf && (await privateInTree(h, run0.retryOf))) ||
+              mentionsSensitive(messages, await sensitiveRepoNames(h)))))
       ) {
         const s = await switchToSonnet("private", "private repo data");
         if (s) return s;

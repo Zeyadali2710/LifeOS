@@ -6,13 +6,13 @@ import { redact, summarize } from "@/server/agents/redact";
 import { apiName, toAnthropicTool } from "@/server/agents/types";
 
 describe("registry", () => {
-  it("lists 11 agents in order with orchestrator, organization and projects live", () => {
+  it("lists 11 agents in order with orchestrator, outreach, organization and projects live", () => {
     expect(AGENTS.map((a) => a.id)).toEqual([
       "orchestrator", "home", "career", "social", "outreach", "organization", "projects", "knowledge", "goals", "finance", "agentops",
     ]);
-    expect(AGENTS.filter((a) => a.live).map((a) => a.id)).toEqual(["orchestrator", "organization", "projects"]);
+    expect(AGENTS.filter((a) => a.live).map((a) => a.id)).toEqual(["orchestrator", "outreach", "organization", "projects"]);
     expect(Object.fromEntries(AGENTS.map((a) => [a.id, a.arrival]))).toMatchObject({
-      home: "Phase 9", career: "Phase 5", social: "Phase 7", outreach: "Phase 6", organization: null,
+      home: "Phase 9", career: "Phase 5", social: "Phase 7", outreach: null, organization: null,
       knowledge: "Phase 8", goals: "Phase 8", finance: null, agentops: null,
     });
   });

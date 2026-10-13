@@ -5,6 +5,7 @@ import { advance, createRun } from "@/server/agents/loop";
 import { costUsd } from "@/server/agents/pricing";
 import { FreeModelError } from "@/server/agents/openrouter";
 import { freeCoolingDown, freeModel, mentionsSensitive, resetFreeCooldown } from "@/server/agents/routing";
+import { getAgent } from "@/server/agents/registry";
 import { githubTools } from "@/server/agents/tools/github";
 import { TOOLS } from "@/server/agents/tools";
 import {
@@ -336,5 +337,70 @@ describe("guard: every GitHub READ tool output carries the repo full name", () =
       const out = await tool.handler(input, { handle: h(), fetch, runId: "r", agentId: "projects", now: () => new Date() } as never);
       expect(mentionsSensitive(out, ["me/secret"]), tool.name).toBe(true);
     }
+  });
+});
+
+describe("mail is always private (D-28, Pitfall 1)", () => {
+  const mailCall = (runId: string, tool = "mail.get_message") =>
+    h().insert(toolCalls).values({ runId, toolUseId: `m_${Math.random()}`, kind: "tool", tool, tier: "READ", status: "done", seq: 1 });
+  const toggleOn = () => h().insert(settings).values({ key: "ai.free_private_ok", value: true });
+
+  it("control: toggle on and no mail keeps a simple organization child on the free model", async () => {
+    await withKey();
+    await toggleOn();
+    const parent = await mk("orchestrator");
+    expect((await run(await mk("organization", "x", { parentRunId: parent, tier: "simple" }))).model).toBe(freeModel());
+  });
+
+  it("toggle on + a mail tool already ran in the tree: createRun picks Sonnet", async () => {
+    await withKey();
+    await toggleOn();
+    const parent = await mk("orchestrator");
+    await mailCall(parent);
+    const r = await run(await mk("organization", "x", { parentRunId: parent, tier: "simple" }));
+    expect(r.model).toBe(SONNET);
+    expect(r.model).not.toBe(freeModel());
+  });
+
+  it("a mail call in a sibling run counts too (toggle on)", async () => {
+    await withKey();
+    await toggleOn();
+    const parent = await mk("orchestrator");
+    await mailCall(await mk("outreach", "read mail", { parentRunId: parent }));
+    expect((await run(await mk("organization", "x", { parentRunId: parent, tier: "simple" }))).model).toBe(SONNET);
+  });
+
+  it("toggle on + mail appears after createRun: the next turn switches to Sonnet, the free model never gets a turn", async () => {
+    await withKey();
+    await toggleOn();
+    const parent = await mk("orchestrator");
+    const id = await mk("organization", "x", { parentRunId: parent, tier: "simple" });
+    expect((await run(id)).model).toBe(freeModel());
+    await mailCall(await mk("outreach", "read mail", { parentRunId: parent }));
+    const llm = scriptedLlm([{ text: "done" }]);
+    expect(await advance(id, { handle: h(), llm })).toBe("completed");
+    expect(models(llm)).toEqual([SONNET]);
+    expect((await run(id)).routeEvents.at(-1)).toMatchObject({ kind: "private", to: SONNET });
+  });
+
+  it("Free-only pin with mail in scope fails private_blocked even with the toggle on", async () => {
+    await withKey();
+    await toggleOn();
+    await h().insert(agents).values({ id: "organization", model: "free" });
+    const parent = await mk("orchestrator");
+    await mailCall(parent);
+    const r = await createRun(h(), { agentId: "organization", prompt: "x", parentRunId: parent, tier: "simple" });
+    expect(r).toMatchObject({ ok: false, code: "private_blocked" });
+  });
+
+  it("the Outreach agent is live, non-routable and always on Sonnet even with a free key and a simple tier", async () => {
+    expect(getAgent("outreach")).toMatchObject({ live: true, defaultModel: SONNET });
+    expect(getAgent("outreach")?.routable).toBeFalsy();
+    await withKey();
+    await toggleOn();
+    const parent = await mk("orchestrator");
+    const r = await run(await mk("outreach", "x", { parentRunId: parent, tier: "simple" }));
+    expect(r.model).toBe(SONNET);
+    expect(r.routeMode).toBeNull();
   });
 });
