@@ -55,7 +55,9 @@ export default async function OutreachPage({ searchParams }: { searchParams: Pro
     }
     const selectedId = view.items.find((m) => m.id === want)?.id ?? view.items[0]?.id ?? null;
     const approval = selectedId ? await pendingReplyFor(h, selectedId) : null;
-    mail = { status, ...view, cat, selectedId, approval, autoDraft: sp.draft === "1" };
+    // ?draft=1 only ever drafts for the exact requested mail; never fall back to another one (CR-U01)
+    const missing = sp.mail !== undefined && selectedId !== want;
+    mail = { status, ...view, cat, selectedId, approval, autoDraft: sp.draft === "1" && want !== null && selectedId === want, missing };
     followUpN = await followUpCount(h);
     if (sp.tab === "follow-ups") followUps = await listFollowUps(h);
   } catch (e) {

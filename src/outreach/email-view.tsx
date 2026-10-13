@@ -63,16 +63,19 @@ export type EmailData = {
   selectedId: string | null;
   approval: ApprovalDTO | null;
   autoDraft: boolean;
+  /** `?mail=` named a message that isn't in this list (unknown, left the inbox, or past the 200-row limit) */
+  missing: boolean;
 };
 
 export function EmailView({ data }: { data: EmailData }) {
-  const { status, counts, items, cat, selectedId, approval, autoDraft } = data;
+  const { status, counts, items, cat, selectedId, approval, autoDraft, missing } = data;
   const router = useRouter();
   const sp = useSearchParams();
   const { toast } = useShell();
   const [now] = useState(() => Date.now());
   const [syncing, setSyncing] = useState(false);
-  const [sheet, setSheet] = useState(false);
+  // a ?draft=1 link opens the sheet on mobile so the draft starts (and the param is dropped) there too
+  const [sheet, setSheet] = useState(autoDraft);
   const mobile = useMobile();
   const refs = useRef(new Map<string, HTMLButtonElement>());
 
@@ -81,6 +84,7 @@ export function EmailView({ data }: { data: EmailData }) {
   const setParams = (patch: Record<string, string | null>) => {
     const q = new URLSearchParams(sp.toString());
     q.set("tab", "email");
+    q.delete("draft"); // one-shot: any navigation drops it, so it can't start a draft for another email
     for (const [k, v] of Object.entries(patch)) {
       if (v === null) q.delete(k);
       else q.set(k, v);
@@ -166,6 +170,11 @@ export function EmailView({ data }: { data: EmailData }) {
             </p>
           </div>
         </div>
+      )}
+      {missing && (
+        <p role="status" className="text-[13.5px] text-text-2">
+          Couldn&apos;t find that email. It may have left your inbox in Gmail.
+        </p>
       )}
       {status.lastSyncError && (
         <InlineError
