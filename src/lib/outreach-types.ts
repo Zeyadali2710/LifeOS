@@ -122,3 +122,16 @@ export type MailMessageDTO = {
   archivedAt: string | null;
   triagedAt: string | null;
 };
+
+// ---- Mail view + follow-ups (plan 17). Never carries a body. ----
+export type MailCat = Lowercase<MailCategory> | "untriaged" | "archived";
+export type MailCounts = Record<MailCategory | "UNTRIAGED" | "ARCHIVED", number>;
+export type MailState = "not_connected" | "scope_missing" | "reconnect" | "first_sync" | "ok";
+export type MailStatus = { state: MailState; lastSyncAt: string | null; lastSyncError: string | null; triagePaused: boolean };
+
+export type FollowUpDTO = {
+  id: string;
+  title: string;
+  dueDate: string | null;
+  context: { kind: "event"; id: string; title: string } | { kind: "email"; id: string; subject: string; sender: string };
+};
