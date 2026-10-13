@@ -242,7 +242,18 @@ Plans:
 - [x] 06-18-PLAN.md — e2e outreach spec on seeded rows + docs
 - [x] 06-19-PLAN.md — Phase gate: local gates, validation map, OWNER-ACTIONS, owner VM migrate + UAT
 
-### Phase 7–11
+### Phase 7: Socials
+**Goal**: Socials stops being an honest-empty page: the owner drafts posts once and gets platform variants, plans them on a content calendar, and publishes or schedules through each provider only as far as its API honestly allows — every publish behind approval — with analytics shown where APIs permit.
+**Depends on**: Phase 3 (agents, approvals), Phase 4 (calendar view patterns), Phase 5/6 (projects/events as post sources, encrypted connection store, mocks)
+**Requirements**: SOC-01, SOC-02, SOC-03
+**Success Criteria**:
+  1. A `SocialProvider` seam covers LinkedIn, Instagram, TikTok and Portfolio, each declaring real `capabilities` (draft/publish/schedule/analytics) verified at research time; providers without approved developer apps run as real mock classes badged MOCK, and credentials are entered only in Settings → Connections (encrypted), never in .env.
+  2. The owner (or the Socials agent, PREPARE tier) creates a draft from scratch or from a project/event/repo, gets per-platform variants with length/format checks, and places drafts on a content calendar (week/month) alongside existing calendar views.
+  3. Publishing or scheduling a variant is an APPROVE-tier action with edit-before-approve, idempotent on retry, and honest when a provider can't publish (copy-to-clipboard/open-in-app fallback instead of pretending).
+  4. Analytics per post/platform are synced where the API permits and shown on the Socials page; elsewhere the page says what isn't available. Page follows the Claude Design Socials file in the Glass system; e2e + VM DB tests cover providers (fixtures/mocks), drafts, calendar and the publish approval path.
+**Plans**: TBD
+
+### Phase 8–11
 Goals per phase list above; a detail section (goal, requirements, success criteria) is written before each phase's discuss.
 
 ## Credentials & external access needed
