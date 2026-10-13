@@ -29,6 +29,7 @@ export async function upsertEvents(
   raws: RawEvent[],
   isMock: boolean,
   now: Date,
+  opts: { filter?: boolean } = {},
 ): Promise<{ added: string[]; updated: number }> {
   const added: string[] = [];
   let updated = 0;
@@ -36,7 +37,7 @@ export async function upsertEvents(
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext('outreach.upsert'))`);
     for (const raw of raws) {
       const sc = sydneyCheck(raw);
-      if (!inWindow(raw, now) || !sc.keep) continue;
+      if (opts.filter !== false && (!inWindow(raw, now) || !sc.keep)) continue; // owner imports (D-05) skip the filter
       const canonicalUrl = canonUrl(raw.url);
       const titleKey = canonTitle(raw.title);
       const fields = {
