@@ -57,6 +57,8 @@ export function OutreachView({
   const router = useRouter();
   const sp = useSearchParams();
   const { toast } = useShell();
+  // the event detail's "All events" link returns here with the same tab and filters (WR-U05)
+  useEffect(() => sessionStorage.setItem("outreach:list", `/outreach${sp.size ? `?${sp}` : ""}`), [sp]);
   const [syncing, setSyncing] = useState(false);
   const [importing, setImporting] = useState(false);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);

@@ -70,10 +70,12 @@ export function EventDetail({ event, calendars, defaultCalendarId }: { event: Ou
   const move = (to: Stage | null, key: string) => run(key, () => moveStageAction(event.id, stage, to));
 
   const goBack = (e: React.MouseEvent) => {
-    // keep the previous ?tab&interest&view query when we came from the list
-    if (document.referrer.includes("/outreach") && !document.referrer.includes("/outreach/events")) {
+    // keep the last list query (?tab&interest&view), saved by OutreachView; plain /outreach otherwise
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return; // new tab/window: let the plain link work
+    const last = sessionStorage.getItem("outreach:list");
+    if (last && /^\/outreach(\?|$)/.test(last)) {
       e.preventDefault();
-      router.back();
+      router.push(last);
     }
   };
 
