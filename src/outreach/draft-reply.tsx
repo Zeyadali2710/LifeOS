@@ -57,6 +57,8 @@ export function DraftReply({
   }
   const a = local && local.id === approval?.id ? local : approval;
   const [phase, setPhase] = useState<"idle" | "drafting" | "failed" | "cap">("idle");
+  // the draft arrived: a later reject/expiry ends the run, which must not read as "the agent didn't draft" (WR-U04)
+  if (phase === "drafting" && a?.status === "pending") setPhase("idle");
 
   useLiveEvents("run", (dto) => {
     if (dto && phase === "drafting" && dto.prompt.includes(mailId) && TERMINAL.includes(dto.status)) {
