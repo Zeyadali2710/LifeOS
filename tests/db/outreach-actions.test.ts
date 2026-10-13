@@ -142,6 +142,15 @@ describe("import URL", () => {
     expect(await h().select().from(outreachEvents)).toHaveLength(1);
   });
 
+  it("importing the URL of a dismissed event restores it and saves it (WR-S08)", async () => {
+    const r = await importEventUrl(h(), "https://example.com/e/mixer", { get: page(html), now: NOW });
+    if (!r.ok) throw new Error();
+    await h().update(outreachEvents).set({ stage: null, dismissedAt: NOW }).where(eq(outreachEvents.id, r.id));
+    expect(await importEventUrl(h(), "https://example.com/e/mixer", { get: page(html), now: NOW })).toEqual({ ok: true, id: r.id, existed: true });
+    const [e] = await h().select().from(outreachEvents).where(eq(outreachEvents.id, r.id));
+    expect(e).toMatchObject({ stage: "SAVED", dismissedAt: null });
+  });
+
   it("returns no_event for a page without JSON-LD and maps fetch failures", async () => {
     expect(await importEventUrl(h(), "https://example.com/x", { get: page(noJsonLd), now: NOW })).toEqual({ ok: false, error: "no_event" });
     expect(await h().select().from(outreachEvents)).toHaveLength(0);

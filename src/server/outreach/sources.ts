@@ -12,7 +12,7 @@ import { safeGet, SafeGetError } from "../net/safe-get";
 import { aud } from "./connections";
 import { parseFeed } from "./ics";
 import { extractEvent } from "./jsonld";
-import { moveStage } from "./pipeline";
+import { moveStage, restoreEvent } from "./pipeline";
 import { rescoreAll, upsertEvents } from "./sync";
 
 type Get = typeof safeGet;
@@ -104,13 +104,14 @@ export async function importEventUrl(h: DB, url: string, deps: { get?: Get; now?
   if (!raw) return { ok: false, error: "no_event" };
   const { added } = await upsertEvents(h, { id: "url", kind: "url" }, [raw], false, now, { filter: false });
   const [row] = await h
-    .select({ id: outreachEvents.id, stage: outreachEvents.stage })
+    .select({ id: outreachEvents.id, stage: outreachEvents.stage, dismissedAt: outreachEvents.dismissedAt })
     .from(outreachEvents)
     .where(sql`${outreachEvents.sources} @> ${JSON.stringify([{ sourceId: "url", remoteId: raw.remoteId }])}::jsonb`)
     .limit(1);
   if (!row) return { ok: false, error: "no_event" };
   let existed = !added.includes(row.id);
   if (row.stage === null) {
+    if (row.dismissedAt) await restoreEvent(h, row.id, now); // importing a dismissed event un-dismisses it (WR-S08)
     const m = await moveStage(h, row.id, null, "SAVED", now);
     if (!m.ok && m.error !== "changed") return { ok: false, error: "no_event" };
   } else existed = true;
