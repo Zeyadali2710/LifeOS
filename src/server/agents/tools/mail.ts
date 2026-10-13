@@ -46,7 +46,8 @@ const list: Tool<ListIn, z.infer<typeof listOut>> = {
       .from(mailMessages)
       .where(
         and(
-          i.includeArchived ? undefined : isNull(mailMessages.archivedAt),
+          // Archived = archived in LifeOS or no longer in the Gmail INBOX (same as the Email tab, IN-S08).
+          i.includeArchived ? undefined : and(isNull(mailMessages.archivedAt), sql`'INBOX' = any(${mailMessages.labelIds})`),
           i.category ? eq(mailMessages.category, i.category) : undefined,
           i.importance ? eq(mailMessages.importance, i.importance) : undefined,
           i.sender ? or(ilike(mailMessages.fromAddress, like(i.sender)), ilike(mailMessages.fromName, like(i.sender))) : undefined,
@@ -67,7 +68,7 @@ const list: Tool<ListIn, z.infer<typeof listOut>> = {
         summary: cut(m.summary, 500) || null,
         snippet: cut(m.snippet, 300),
         flagged: m.flagged,
-        archived: m.archivedAt !== null,
+        archived: m.archivedAt !== null || !m.labelIds.includes("INBOX"),
       })),
     };
   },

@@ -38,7 +38,7 @@ async function event(title: string, o: Partial<typeof outreachEvents.$inferInser
   return e!;
 }
 async function mail(gmailId: string, o: Partial<typeof mailMessages.$inferInsert> = {}) {
-  const [m] = await h().insert(mailMessages).values({ gmailId, threadId: `t-${gmailId}`, receivedAt: NOW, ...o }).returning();
+  const [m] = await h().insert(mailMessages).values({ gmailId, threadId: `t-${gmailId}`, receivedAt: NOW, labelIds: ["INBOX"], ...o }).returning();
   return m!;
 }
 const connect = (scopes: string[]) =>
@@ -93,10 +93,11 @@ describe("mail tools", () => {
     await mail("a", { fromName: "Ann", fromAddress: "ann@x.test", subject: "Invoice 100%", category: "IMPORTANT", importance: "HIGH" });
     await mail("b", { fromName: "Bob", fromAddress: "bob@y.test", subject: "Hello", category: "OTHER", importance: "LOW", summary: "lunch plans" });
     await mail("c", { subject: "Old", archivedAt: NOW });
+    await mail("d", { subject: "Archived in Gmail", labelIds: [] });
     const subj = async (i: object) => items(await call("mail.list", i)).map((m) => m.subject).sort();
     expect(output(await call("mail.list", {}))).toMatchObject({ untrusted: true });
     expect(await subj({})).toEqual(["Hello", "Invoice 100%"]);
-    expect(await subj({ includeArchived: true })).toEqual(["Hello", "Invoice 100%", "Old"]);
+    expect(await subj({ includeArchived: true })).toEqual(["Archived in Gmail", "Hello", "Invoice 100%", "Old"]);
     expect(await subj({ category: "IMPORTANT" })).toEqual(["Invoice 100%"]);
     expect(await subj({ importance: "LOW" })).toEqual(["Hello"]);
     expect(await subj({ sender: "bob@y" })).toEqual(["Hello"]);
