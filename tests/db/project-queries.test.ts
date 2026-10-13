@@ -74,7 +74,7 @@ describe("project read model", () => {
     ]);
     const cards = await listProjects(h, NOW);
     const c = cards.find((x) => x.project.id === p.id)!;
-    expect(c.nextTask).toEqual({ title: "dated", dueDate: "2026-11-10" });
+    expect(c.nextTask).toEqual({ id: expect.any(String), title: "dated", dueDate: "2026-11-10" });
     expect(c.openTasks).toBe(2);
     expect(c.lastActivity).toEqual({ at: "2026-10-03T00:00:00.000Z", label: "Task completed" });
     expect(c.timeline).not.toBeNull();

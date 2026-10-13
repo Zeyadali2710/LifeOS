@@ -117,7 +117,7 @@ export function eventResolved(a: ApprovalDTO, at: string): { text: string; href:
 }
 
 // ---- views ----
-const Fact = ({ k, children }: { k: string; children: React.ReactNode }) => (
+export const Fact = ({ k, children }: { k: string; children: React.ReactNode }) => (
   <div>
     <div className="mb-1 text-[10px] tracking-[0.14em] text-text-3">{k}</div>
     <div className="text-[13.5px] leading-normal break-words">{children}</div>
