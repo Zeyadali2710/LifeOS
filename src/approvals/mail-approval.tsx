@@ -79,6 +79,7 @@ function Recipients({ p, describedBy }: { p: MailReplyPayload; describedBy?: str
             <span className={mono}>{xs.map((x) => (x.name ? `${x.name} <${x.address}>` : x.address)).join(", ")}</span>
           </div>
         ))}
+      {redirectNote(p) && <p className="text-[12.5px] break-words text-amber">{redirectNote(p)}</p>}
     </div>
   );
 }

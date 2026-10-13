@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import type { ApprovalDTO } from "@/lib/agent-types";
 import type { MailReplyPayload } from "@/lib/mail-payload";
-import { mailOf, sameMail, toMailDraft, validateMailDraft, type MailDraft, type MailDraftErrors } from "@/approvals/mail-approval";
+import { mailOf, redirectNote, sameMail, toMailDraft, validateMailDraft, type MailDraft, type MailDraftErrors } from "@/approvals/mail-approval";
 import { approveAction, rejectAction, saveEditAction } from "@/server/approval-actions";
 import { saveReplyToDraftsAction } from "@/server/mail-actions";
 import { useLiveEvents } from "@/shell/live-provider";
@@ -256,6 +256,7 @@ function Pending({ a, onPatch, extraActions }: { a: ApprovalDTO; onPatch: (a: Ap
         <p id={`locked-${a.id}`} className="text-[12.5px] text-text-3">
           Replies only go to people already in this thread.
         </p>
+        {redirectNote(saved) && <p className="text-[12.5px] break-words text-amber">{redirectNote(saved)}</p>}
       </div>
       {editing ? (
         <div className="flex flex-col gap-4">
