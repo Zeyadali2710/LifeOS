@@ -6,7 +6,7 @@ import { TOOLS } from "@/server/agents/tools";
 import type { ToolContext } from "@/server/agents/types";
 import { saveCalendarSecret } from "@/server/calendar/connections";
 import { GMAIL_COMPOSE, GMAIL_READ } from "@/server/calendar/google/client";
-import { agentRuns, approvals, auditLog, connections, mailMessages, settings, tasks } from "@/server/db/schema";
+import { agentRuns, approvals, auditLog, connections, mailMessages, settings, taskDependencies, tasks } from "@/server/db/schema";
 import { createProject } from "@/server/projects";
 import { fakeGmail } from "../helpers/fake-gmail";
 import { scriptedLlm } from "../helpers/fake-llm";
@@ -145,7 +145,10 @@ describe("agent-facing redaction (D-28)", () => {
     const p = await createProject(h(), { name: "Alpha" }, NOW);
     if (!p.ok) throw new Error("project");
     const [linked] = await h().insert(tasks).values({ title: "Wire $5000 to Eve", projectId: p.project.id, mailMessageId: mail.id }).returning();
-    await h().insert(tasks).values({ title: "Plain task", projectId: p.project.id });
+    const [plain] = await h().insert(tasks).values({ title: "Plain task", projectId: p.project.id }).returning();
+    const [other] = await h().insert(tasks).values({ title: "Other task", projectId: p.project.id }).returning();
+    // blocker labels quote both titles, in either direction (WR-S04)
+    await h().insert(taskDependencies).values([{ taskId: plain!.id, blockedByTaskId: linked!.id }, { taskId: linked!.id, blockedByTaskId: other!.id }]);
     const ctx = { handle: h(), runId: "r", agentId: "organization", toolUseId: "x", now: () => NOW } as ToolContext;
 
     const list = (await TOOLS["tasks.list"]!.handler({ which: "open", limit: 20 }, ctx)) as { items: { id: string; title: string }[] };
@@ -153,8 +156,12 @@ describe("agent-facing redaction (D-28)", () => {
     expect(list.items.find((i) => i.title === "Plain task")).toBeTruthy();
 
     const get = (await TOOLS["projects.get"]!.handler({ project: p.project.id }, ctx)) as { tasks: { title: string }[] };
-    expect(get.tasks.map((x) => x.title).sort()).toEqual(["Email follow-up (private)", "Plain task"]);
+    expect(get.tasks.map((x) => x.title).sort()).toEqual(["Email follow-up (private)", "Other task", "Plain task"]);
     expect(JSON.stringify(get)).not.toContain("Eve");
+    expect((get as unknown as { blockers: { label: string }[] }).blockers.map((b) => b.label).sort()).toEqual([
+      'Task "Email follow-up (private)" is blocked by "Other task"',
+      'Task "Plain task" is blocked by "Email follow-up (private)"',
+    ]);
 
     const pl = (await TOOLS["projects.list"]!.handler({ limit: 20 }, ctx)) as { items: { nextTask: { title: string } | null }[] };
     expect(JSON.stringify(pl)).not.toContain("Eve");

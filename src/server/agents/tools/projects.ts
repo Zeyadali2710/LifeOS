@@ -8,7 +8,7 @@ import { auditLog, githubRepos, milestones, projectLinks, projects, tasks, toolC
 import { rescoreAfterProjectChange } from "../../outreach/sources";
 import { listProjects, loadProject } from "../../project-queries";
 import { addLink, addTaskDependency, createMilestone, createProject, updateMilestone, updateProject } from "../../projects";
-import { createTask, MAIL_TASK_TITLE, mailLinkedTaskIds, updateTask } from "../../tasks";
+import { createTask, MAIL_TASK_TITLE, mailBlockerRedactor, mailLinkedTaskIds, updateTask } from "../../tasks";
 import { CONTENT_TOOLS, contentScope } from "../policy";
 import { ToolError, type Tool, type ToolContext } from "../types";
 
@@ -66,6 +66,8 @@ const getTool: Tool<{ project: string }, Record<string, unknown>> = {
     if (!w) throw new ToolError("not_found", `Unknown project ${cut(i.project).slice(0, 80)}`);
     const p = w.project;
     const mail = await mailLinkedTaskIds(ctx.handle, w.tasks.slice(0, 50).map((t) => t.id)); // D-28
+    const bl = w.blockers.slice(0, 30);
+    const redact = await mailBlockerRedactor(ctx.handle, bl.flatMap((b) => (b.kind === "task_blocked" ? [b.refId] : [])));
     return {
       project: {
         id: p.id,
@@ -82,7 +84,7 @@ const getTool: Tool<{ project: string }, Record<string, unknown>> = {
       healthReason: w.healthReason,
       tasks: w.tasks.slice(0, 50).map((t) => ({ id: t.id, title: mail.has(t.id) ? MAIL_TASK_TITLE : cut(t.title), dueDate: t.dueDate, priority: t.priority, completed: t.completedAt !== null, milestoneId: t.milestoneId })),
       milestones: w.milestones.slice(0, 30).map((m) => ({ id: m.id, title: cut(m.title), dueDate: m.dueDate, completed: m.completedAt !== null, taskCount: m.taskCount, doneCount: m.doneCount })),
-      blockers: w.blockers.slice(0, 30).map((b) => ({ kind: b.kind, label: cut(b.label) })),
+      blockers: bl.map((b) => ({ kind: b.kind, label: cut(redact(b.label)) })),
       links: w.links.slice(0, 30).map((l) => (l.kind === "repo" ? { kind: "repo", fullName: l.repo.fullName, ci: l.repo.ci } : { kind: "url", label: cut(l.label), url: cut(l.url) })),
       dependsOn: w.dependsOn.map((d) => ({ id: d.id, name: cut(d.name), status: d.status })),
       blockerNote: cut(p.blockerNote),

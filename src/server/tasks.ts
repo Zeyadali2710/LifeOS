@@ -3,7 +3,7 @@ import { toTaskDTO, type TaskDTO } from "@/lib/calendar-types";
 import { taskInput } from "@/lib/task-payload";
 import type { FieldErrors } from "./agents/approvals";
 import type { DB } from "./db/client";
-import { auditLog, milestones, projects, tasks } from "./db/schema";
+import { auditLog, milestones, projects, taskDependencies, tasks } from "./db/schema";
 import { emitActivity, notifyLive } from "./events";
 import { log } from "./log";
 import { sydneyInstant, sydneyParts } from "./time";
@@ -176,4 +176,13 @@ export async function mailLinkedTaskIds(h: DB, ids: string[]): Promise<Set<strin
   if (!ids.length) return new Set();
   const rows = await h.select({ id: tasks.id }).from(tasks).where(and(inArray(tasks.id, ids), isNotNull(tasks.mailMessageId)));
   return new Set(rows.map((r) => r.id));
+}
+
+/** D-28 (WR-S04): blocker labels quote task titles; swap any mail-linked title (the task or its blocker) for MAIL_TASK_TITLE. */
+export async function mailBlockerRedactor(h: DB, taskIds: string[]): Promise<(label: string) => string> {
+  if (!taskIds.length) return (s) => s;
+  const by = await h.select({ id: taskDependencies.blockedByTaskId }).from(taskDependencies).where(inArray(taskDependencies.taskId, taskIds));
+  const ids = [...new Set([...taskIds, ...by.map((b) => b.id)])];
+  const rows = await h.select({ title: tasks.title }).from(tasks).where(and(inArray(tasks.id, ids), isNotNull(tasks.mailMessageId)));
+  return (s) => rows.reduce((acc, r) => acc.replaceAll(`"${r.title}"`, `"${MAIL_TASK_TITLE}"`), s);
 }
