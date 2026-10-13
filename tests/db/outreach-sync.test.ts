@@ -207,6 +207,22 @@ describe("outreach sync", () => {
     expect(r!.why).toContain("project Zeta");
   });
 
+  it("skips an event with an invalid date instead of failing the source (WR-S06)", async () => {
+    const good = mockEvents("luma", NOW)[0]!;
+    const bad = { ...good, remoteId: "bad", title: "Bad start" };
+    const badEnd = { ...good, remoteId: "bad-end", title: "Bad end" };
+    const r = await upsertEvents(
+      t.handle(),
+      { id: "s", kind: "luma" },
+      [{ ...bad, startAt: new Date("nope") }, { ...badEnd, endAt: new Date("nope") }, good],
+      false,
+      NOW,
+      { filter: false },
+    );
+    expect(r.added).toHaveLength(1);
+    expect((await all()).map((e) => e.title)).toEqual([good.title]);
+  });
+
   it("upsertEvents is reusable for url imports", async () => {
     const raw = { ...mockEvents("luma", NOW)[0]!, remoteId: "imp" };
     const r = await upsertEvents(t.handle(), { id: "url", kind: "url" }, [raw], false, NOW);

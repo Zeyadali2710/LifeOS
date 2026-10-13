@@ -33,9 +33,15 @@ export async function upsertEvents(
 ): Promise<{ added: string[]; updated: number }> {
   const added: string[] = [];
   let updated = 0;
+  let invalid = 0;
   await h.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtext('outreach.upsert'))`);
     for (const raw of raws) {
+      // One bad provider date must not roll back the whole source (WR-S06).
+      if (Number.isNaN(raw.startAt.getTime()) || (raw.endAt && Number.isNaN(raw.endAt.getTime()))) {
+        invalid++;
+        continue;
+      }
       const sc = sydneyCheck(raw);
       if (opts.filter !== false && (!inWindow(raw, now) || !sc.keep)) continue; // owner imports (D-05) skip the filter
       const canonicalUrl = canonUrl(raw.url);
@@ -100,6 +106,7 @@ export async function upsertEvents(
       }
     }
   });
+  if (invalid) log.warn({ source: source.kind, invalid }, "outreach events with invalid dates skipped");
   return { added, updated };
 }
 
