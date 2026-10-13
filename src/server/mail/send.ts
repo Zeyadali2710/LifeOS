@@ -1,0 +1,75 @@
+// Reply sending (D-30..D-33): a threaded draft is created and checkpointed, then sent. A retry after an ambiguous
+// failure adopts whatever already happened (draft, SENT copy, rfc822msgid) before it ever sends again.
+import { eq } from "drizzle-orm";
+import type { MailReplyPayload } from "@/lib/mail-payload";
+import { markCalendarError } from "../calendar/connections";
+import { ProviderError } from "../calendar/errors";
+import { googleTokenSource } from "../calendar/google/client";
+import type { DB } from "../db/client";
+import { approvals, connections } from "../db/schema";
+import { ToolError } from "../agents/types";
+import { createGmail, gmailAllowed } from "./client";
+import { buildReplyMime, replyMessageId } from "./mime";
+
+export const RECONNECT = "Gmail isn't allowed. Reconnect Google in Settings → Connections.";
+
+type Opts = { fetch?: typeof fetch; key?: Buffer; now?: () => Date };
+
+async function gmailFor(h: DB, o: Opts) {
+  const [conn] = await h.select({ s: connections.scopes }).from(connections).where(eq(connections.id, "google_calendar"));
+  if (!conn || !gmailAllowed(conn.s, "compose")) throw new ToolError("unavailable", RECONNECT);
+  return createGmail({ getToken: googleTokenSource(h, { fetch: o.fetch, now: o.now, key: o.key }), fetch: o.fetch });
+}
+
+const out = (m: { id: string; threadId: string }) => ({ messageId: m.id, threadId: m.threadId });
+const mime = (p: MailReplyPayload, approvalId: string | null) =>
+  buildReplyMime({ to: p.to, cc: p.cc, subject: p.subject, body: p.body, inReplyTo: p.inReplyTo, references: p.references, approvalId });
+
+export async function sendReply(
+  h: DB,
+  { approvalId, payload, adopt, ...o }: { approvalId: string; payload: MailReplyPayload; adopt: boolean } & Opts,
+): Promise<{ messageId: string; threadId: string }> {
+  const gmail = await gmailFor(h, o);
+  const notFound = (e: unknown) => {
+    if (!(e instanceof ProviderError && e.kind === "not_found")) throw e;
+    return null;
+  };
+  try {
+    if (adopt) {
+      const [ap] = await h.select({ r: approvals.result }).from(approvals).where(eq(approvals.id, approvalId));
+      const cp = (ap?.r ?? {}) as { draftId?: string; draftMessageId?: string };
+      // (a) the draft still exists: the send never landed.
+      if (cp.draftId && (await gmail.getDraft(cp.draftId).catch(notFound))) return out(await gmail.sendDraft(cp.draftId));
+      // (b) the draft is gone and its message carries SENT: the send landed.
+      if (cp.draftMessageId) {
+        const m = await gmail.getMetadata(cp.draftMessageId, ["Message-ID"]).catch(notFound);
+        if (m?.labelIds?.includes("SENT")) return { messageId: m.id, threadId: m.threadId };
+      }
+      // (c) Gmail gave the sent copy a new id: find it by our deterministic Message-ID.
+      const found = await gmail.findSent(replyMessageId(approvalId));
+      if (found) return { messageId: found, threadId: payload.threadId };
+      // (d) nothing happened: fall through and send once.
+    }
+    const draft = await gmail.createDraft(mime(payload, approvalId), payload.threadId);
+    await h.update(approvals).set({ result: { draftId: draft.id, draftMessageId: draft.message?.id ?? null } }).where(eq(approvals.id, approvalId));
+    return out(await gmail.sendDraft(draft.id));
+  } catch (e) {
+    if (e instanceof ProviderError) {
+      if (e.kind === "auth") await markCalendarError(h, "google_calendar", "Access was rejected.").catch(() => undefined);
+      if (e.kind === "scope") throw new ToolError("unavailable", RECONNECT);
+    }
+    throw e;
+  }
+}
+
+/** D-31: save a reply as a plain Gmail draft (no deterministic Message-ID; never sent from here). */
+export async function saveReplyDraft(h: DB, payload: MailReplyPayload, o: Opts = {}): Promise<{ draftId: string }> {
+  const gmail = await gmailFor(h, o);
+  try {
+    return { draftId: (await gmail.createDraft(mime(payload, null), payload.threadId)).id };
+  } catch (e) {
+    if (e instanceof ProviderError && e.kind === "auth") await markCalendarError(h, "google_calendar", "Access was rejected.").catch(() => undefined);
+    if (e instanceof ProviderError && e.kind === "scope") throw new ToolError("unavailable", RECONNECT);
+    throw e;
+  }
+}

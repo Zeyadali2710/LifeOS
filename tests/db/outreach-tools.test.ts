@@ -57,9 +57,9 @@ beforeEach(async () => {
 describe("tool contracts", () => {
   it("are READ and side-effect free; mail is private, outreach is not; all four are registered", () => {
     for (const n of Object.keys(outreachTools)) expect(TOOLS[n]).toMatchObject({ tier: "READ", sideEffect: false, private: false });
-    for (const n of Object.keys(mailTools)) expect(TOOLS[n]).toMatchObject({ tier: "READ", sideEffect: false, private: true });
+    for (const n of Object.keys(mailTools).filter((x) => x !== "mail.send_reply")) expect(TOOLS[n]).toMatchObject({ tier: "READ", sideEffect: false, private: true });
     expect(Object.keys(outreachTools).sort()).toEqual(["outreach.get_event", "outreach.list_events"]);
-    expect(Object.keys(mailTools).sort()).toEqual(["mail.get_message", "mail.list"]);
+    expect(Object.keys(mailTools).sort()).toEqual(["mail.get_message", "mail.list", "mail.send_reply"]); // send_reply is APPROVE: covered in mail-agent.test.ts
   });
 });
 

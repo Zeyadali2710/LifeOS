@@ -2,11 +2,14 @@
 // (hard mail taint in policy.mailInScope). Bodies are fetched live and never stored.
 import { and, desc, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import { z } from "zod";
+import { mailReplyPayload, type MailReplyPayload } from "@/lib/mail-payload";
 import { IMPORTANCE, MAIL_CATEGORIES } from "@/lib/outreach-types";
 import { ProviderError } from "../../calendar/errors";
 import { googleTokenSource } from "../../calendar/google/client";
 import { connections, mailMessages } from "../../db/schema";
 import { createGmail, gmailAllowed } from "../../mail/client";
+import { sendReply } from "../../mail/send";
+import { mailSyncState } from "../../mail/sync";
 import { bodyText, headerOf, parseAddrList, type GmailPayload } from "../../mail/text";
 import { ToolError, type Tool } from "../types";
 
@@ -130,6 +133,94 @@ const getMessage: Tool<{ id: string }, z.infer<typeof msgOut>> = {
   },
 };
 
+const sh = mailReplyPayload.shape;
+// threadId/to/cc/inReplyTo/references/originalSubject are declared only so executeApproved's tool.input.parse(payload)
+// keeps them; resolve() ALWAYS overwrites them from the stored message and live Gmail headers.
+const locked = {
+  threadId: sh.threadId.optional(), // always overwritten by resolve
+  to: sh.to.optional(), // always overwritten by resolve
+  cc: sh.cc.optional(), // always overwritten by resolve
+  inReplyTo: sh.inReplyTo.optional(), // always overwritten by resolve
+  references: sh.references.optional(), // always overwritten by resolve
+  originalSubject: sh.originalSubject.optional(), // always overwritten by resolve
+};
+const replyIn = z.object({
+  messageId: z.uuid(),
+  subject: z.string().max(300),
+  body: z.string().max(12000),
+  replyAll: z.boolean().optional(),
+  reason: z.string().max(500).optional(),
+  ...locked,
+});
+type ReplyIn = z.infer<typeof replyIn>;
+const HEADERS = ["From", "To", "Cc", "Reply-To", "Message-ID", "References", "Subject"];
+const emailOk = (a: { address: string }) => z.email().safeParse(a.address).success;
+
+const sendReplyTool: Tool<ReplyIn, { messageId: string; threadId: string }> = {
+  name: "mail.send_reply",
+  label: "Drafting an email reply",
+  description: "Draft a reply to an email thread. The owner reviews and approves before anything is sent. Recipients are fixed to the thread's participants.",
+  input: replyIn,
+  output: z.object({ messageId: z.string(), threadId: z.string() }),
+  tier: "APPROVE",
+  sideEffect: true,
+  private: true,
+  async available(ctx) {
+    const [conn] = await ctx.handle.select({ scopes: connections.scopes }).from(connections).where(eq(connections.id, "google_calendar"));
+    return conn && gmailAllowed(conn.scopes, "compose") ? null : NOT_ALLOWED;
+  },
+  async resolve(i, ctx) {
+    const [row] = await ctx.handle.select().from(mailMessages).where(eq(mailMessages.id, i.messageId));
+    if (!row) throw new ToolError("not_found", "Unknown message.");
+    let hs: { name: string; value: string }[];
+    try {
+      const gmail = createGmail({ getToken: googleTokenSource(ctx.handle, { fetch: ctx.fetch, now: ctx.now }), fetch: ctx.fetch });
+      hs = (await gmail.getMetadata(row.gmailId, HEADERS)).payload?.headers ?? [];
+    } catch (e) {
+      if (e instanceof ProviderError) throw new ToolError("unavailable", e.kind === "scope" ? NOT_ALLOWED : "Couldn't reach Gmail. Try again later.");
+      throw e;
+    }
+    const sender = parseAddrList(headerOf(hs, "Reply-To"))[0] ?? parseAddrList(headerOf(hs, "From"))[0] ?? { name: row.fromName, address: row.fromAddress };
+    const to = [sender];
+    let cc: { name: string; address: string }[] = [];
+    if (i.replyAll) {
+      const owner = (await mailSyncState(ctx.handle)).email?.toLowerCase();
+      const skip = new Set([...(owner ? [owner] : []), sender.address.toLowerCase()]);
+      for (const a of [...parseAddrList(headerOf(hs, "To")), ...parseAddrList(headerOf(hs, "Cc"))]) {
+        const k = a.address.toLowerCase();
+        if (skip.has(k) || !emailOk(a)) continue;
+        skip.add(k);
+        cc.push(a);
+      }
+      cc = cc.slice(0, 20);
+    }
+    const msgId = headerOf(hs, "Message-ID");
+    const full = mailReplyPayload.safeParse({
+      messageId: row.id,
+      threadId: row.threadId,
+      to,
+      cc,
+      inReplyTo: msgId,
+      references: headerOf(hs, "References"),
+      originalSubject: cut(headerOf(hs, "Subject") ?? row.subject, 300),
+      subject: i.subject,
+      body: i.body,
+    });
+    if (!full.success) throw new ToolError("invalid_input", full.error.issues[0]?.message ?? "Invalid reply.");
+    return { ...full.data, replyAll: i.replyAll, reason: i.reason };
+  },
+  // Validation already ran in resolve(): this only destructures so it can never throw on model data.
+  toApproval({ reason, replyAll: _replyAll, ...payload }) {
+    return { payload, reason: reason ?? null };
+  },
+  async handler(i, ctx) {
+    if (!ctx.approvalId) throw new ToolError("not_allowed", "Sending a reply requires an approval.");
+    const p = mailReplyPayload.safeParse(i);
+    if (!p.success) throw new ToolError("invalid_input", p.error.issues[0]?.message ?? "Invalid reply.");
+    return sendReply(ctx.handle, { approvalId: ctx.approvalId, payload: p.data as MailReplyPayload, adopt: !!ctx.adopt, fetch: ctx.fetch, now: ctx.now });
+  },
+};
+
 export const mailTools: Record<string, Tool<never, Record<string, unknown>>> = Object.fromEntries(
-  [list, getMessage].map((t) => [t.name, t as unknown as Tool<never, Record<string, unknown>>]),
+  [list, getMessage, sendReplyTool].map((t) => [t.name, t as unknown as Tool<never, Record<string, unknown>>]),
 );
