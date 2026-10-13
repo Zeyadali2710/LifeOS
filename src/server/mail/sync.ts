@@ -1,5 +1,5 @@
 // Gmail metadata sync (D-22, D-23): resumable full backfill, then history-based incremental. Bodies are never fetched or stored.
-import { and, eq, inArray, lt, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, lt, notInArray, sql } from "drizzle-orm";
 import { GMAIL_COMPOSE, GMAIL_READ, googleTokenSource } from "../calendar/google/client";
 import { markCalendarError } from "../calendar/connections";
 import { ProviderError } from "../calendar/errors";
@@ -92,7 +92,26 @@ export function createMailSync(opts: Opts = {}) {
           await save(h, state);
         }
         const l = await gmail.listMessages({ q: "newer_than:30d", labelIds: ["INBOX"], maxResults: 100, maxPages: 5 });
-        const r = await fetchNew(l.ids.map((x) => x.id), MAX_GETS_PER_RUN);
+        const listed = l.ids.map((x) => x.id);
+        if (!l.truncated) {
+          // The listing is the INBOX truth for the window: stored rows refresh their INBOX label (WR-S05).
+          const inWindow = gte(mailMessages.receivedAt, new Date(+now - 30 * DAY));
+          const has = sql`'INBOX' = any(${mailMessages.labelIds})`;
+          const gone = await h
+            .update(mailMessages)
+            .set({ labelIds: sql`array_remove(${mailMessages.labelIds}, 'INBOX')`, updatedAt: now })
+            .where(and(inWindow, has, listed.length ? notInArray(mailMessages.gmailId, listed) : undefined))
+            .returning({ id: mailMessages.id });
+          const back = listed.length
+            ? await h
+                .update(mailMessages)
+                .set({ labelIds: sql`array_append(${mailMessages.labelIds}, 'INBOX')`, updatedAt: now })
+                .where(and(inArray(mailMessages.gmailId, listed), sql`not (${has})`))
+                .returning({ id: mailMessages.id })
+            : [];
+          changed ||= gone.length + back.length > 0;
+        }
+        const r = await fetchNew(listed, MAX_GETS_PER_RUN);
         added += r.stored;
         changed ||= r.stored > 0;
         state = { ...state, full: r.left > 0 ? "pending" : "done" };
@@ -101,7 +120,15 @@ export function createMailSync(opts: Opts = {}) {
 
       async function incremental(): Promise<void> {
         const r = await gmail.history(state.historyId!);
-        const addIds = [...new Set(r.history.flatMap((x) => (x.messagesAdded ?? []).map((a) => a.message.id)))];
+        // Unknown messages moved (back) into INBOX are fetched like new ones (WR-S05); fetchNew skips known ids.
+        const addIds = [
+          ...new Set(
+            r.history.flatMap((x) => [
+              ...(x.messagesAdded ?? []).map((a) => a.message.id),
+              ...(x.labelsAdded ?? []).filter((a) => a.labelIds?.includes("INBOX")).map((a) => a.message.id),
+            ]),
+          ),
+        ];
         const f = await fetchNew(addIds, MAX_GETS_PER_RUN);
         added += f.stored;
         changed ||= f.stored > 0;

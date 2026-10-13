@@ -92,6 +92,29 @@ describe("mail sync", () => {
     expect((await mailSyncState(t.handle())).historyId).toBe("1200");
   });
 
+  it("incremental: an unknown message moved back into INBOX is fetched (WR-S05)", async () => {
+    const f = fakeGmail();
+    await mk(f).run();
+    f.state.mailbox.set("m-unarchived", { ...FIXTURE.messages.plain!, id: "m-unarchived", threadId: "t-u" });
+    f.state.historyId = "1200";
+    f.state.history = [{ id: "1100", labelsAdded: [{ message: { id: "m-unarchived", threadId: "t-u" }, labelIds: ["INBOX"] }] }];
+    expect(await mk(f).run()).toMatchObject({ ok: true, added: 1 });
+    expect((await rows()).find((x) => x.gmailId === "m-unarchived")!.labelIds).toContain("INBOX");
+  });
+
+  it("a 404 full resync drops INBOX from rows archived during the gap and restores it on listed ones (WR-S05)", async () => {
+    const f = fakeGmail();
+    await mk(f).run();
+    await t.handle().update(mailMessages).set({ labelIds: ["UNREAD"] }).where(eq(mailMessages.gmailId, "m-plain")); // stale: unarchived in Gmail
+    const archived = f.state.mailbox.get("m-html")!;
+    f.state.mailbox.set("m-html", { ...archived, labelIds: [] }); // archived in Gmail during the gap
+    f.state.historyGone = true;
+    await mk(f).run();
+    const by = Object.fromEntries((await rows()).map((r) => [r.gmailId, r]));
+    expect(by["m-html"]!.labelIds).not.toContain("INBOX");
+    expect(by["m-plain"]!.labelIds).toContain("INBOX");
+  });
+
   it("history 404 resets state and runs a full sync in the same call", async () => {
     const f = fakeGmail();
     await mk(f).run();
