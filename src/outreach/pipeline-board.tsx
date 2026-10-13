@@ -106,15 +106,23 @@ export function PipelineBoard({ events, onShowList }: { events: OutreachEventDTO
                           )}
                           {next &&
                             (next === "FOLLOW_UP" ? (
-                              <Button
-                                variant="secondary"
-                                size="xs"
-                                disabled={e.isMock}
-                                title={e.isMock ? "Mock events can't create follow-up tasks." : undefined}
-                                onClick={() => setFollowUp(e)}
-                              >
-                                Follow up
-                              </Button>
+                              <>
+                                <Button
+                                  variant="secondary"
+                                  size="xs"
+                                  disabled={e.isMock}
+                                  aria-describedby={e.isMock ? `${uid}-mock-${e.id}` : undefined}
+                                  title={e.isMock ? "Mock events can't create follow-up tasks." : undefined}
+                                  onClick={() => setFollowUp(e)}
+                                >
+                                  Follow up
+                                </Button>
+                                {e.isMock && (
+                                  <span id={`${uid}-mock-${e.id}`} className="sr-only">
+                                    Mock events can&apos;t create follow-up tasks.
+                                  </span>
+                                )}
+                              </>
                             ) : (
                               <Button variant="secondary" size="xs" aria-label={`Move ${e.title} to ${STAGE[next].label}`} onClick={() => move(e.id, next)}>
                                 {STAGE[next].label === "Attending" ? "Attend" : STAGE[next].label}

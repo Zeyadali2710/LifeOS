@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { isSafeUrl } from "@/lib/safe-url";
 import { SOURCE_LABEL, STAGE, STAGE_ORDER, STAGES, nextStage, prevStage, type EventSourceKind, type OutreachEventDTO, type Stage } from "@/lib/outreach-types";
 import { dismissEventAction, moveStageAction, restoreEventAction } from "@/server/outreach-pipeline-actions";
@@ -43,6 +43,7 @@ export function EventDetail({ event, calendars, defaultCalendarId }: { event: Ou
   const { toast } = useShell();
   const [busy, setBusy] = useState<string | null>(null);
   const [calDialog, setCalDialog] = useState(false);
+  const mockId = useId();
   const [followDialog, setFollowDialog] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
@@ -163,7 +164,7 @@ export function EventDetail({ event, calendars, defaultCalendarId }: { event: Ou
                     variant="primary"
                     loading={busy === "next"}
                     disabled={next === "FOLLOW_UP" && event.isMock}
-                    title={next === "FOLLOW_UP" && event.isMock ? "Mock events can't create follow-up tasks." : undefined}
+                    aria-describedby={next === "FOLLOW_UP" && event.isMock ? mockId : undefined}
                     onClick={() => (next === "FOLLOW_UP" ? setFollowDialog(true) : move(next, "next"))}
                   >
                     {NEXT_LABEL[stage ?? "none"]}
@@ -180,10 +181,15 @@ export function EventDetail({ event, calendars, defaultCalendarId }: { event: Ou
                   </div>
                 ) : (
                   idx >= 3 && (
-                    <Button variant="secondary" disabled={event.isMock} title={event.isMock ? "Mock events can't go on your calendar." : undefined} onClick={() => setCalDialog(true)}>
+                    <Button variant="secondary" disabled={event.isMock} aria-describedby={event.isMock ? mockId : undefined} onClick={() => setCalDialog(true)}>
                       Add to calendar
                     </Button>
                   )
+                )}
+                {event.isMock && (next === "FOLLOW_UP" || (!event.calendarEventId && idx >= 3)) && (
+                  <p id={mockId} className="text-[12.5px] text-text-3">
+                    Mock events can&apos;t create follow-up tasks or go on your calendar.
+                  </p>
                 )}
                 {back !== null || stage === "SAVED" ? (
                   <Button variant="ghost" loading={busy === "back"} onClick={() => move(back, "back")}>
