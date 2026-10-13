@@ -99,3 +99,9 @@ export async function listFollowUps(h: DB): Promise<FollowUpDTO[]> {
     : [],
   );
 }
+
+/** Category tab a mail belongs in (so a bare ?mail= link opens the right list). */
+export async function mailCatOf(h: DB, id: string): Promise<MailCat | null> {
+  const [r] = await h.select({ c: mailMessages.category, a: mailMessages.archivedAt }).from(mailMessages).where(eq(mailMessages.id, id));
+  return !r ? null : r.a ? "archived" : r.c ? (r.c.toLowerCase() as MailCat) : "untriaged";
+}
