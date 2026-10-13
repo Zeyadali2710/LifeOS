@@ -23,7 +23,8 @@ export interface CalendarConnectionDTO {
   lastSyncAt: string | null;
   lastSyncError: string | null;
   calendars: CalendarDTO[];
-  gmail: "granted" | "missing";
+  /** read_only: gmail.readonly without gmail.compose, so mail syncs but replies can't be sent */
+  gmail: "granted" | "read_only" | "missing";
 }
 
 export interface InstanceDTO {

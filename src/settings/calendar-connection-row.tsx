@@ -55,7 +55,7 @@ export function CalendarConnectionRow({ conn, notice, open = false }: { conn: Ca
         : `${conn.account ?? ""} · ${syncingCount} of ${conn.calendars.length} calendars syncing${last ? ` · last synced ${formatHM(last)}` : ""}`;
 
   const label = !connected ? `Connect ${m.name}` : google ? "Reconnect Google" : "Reconnect";
-  const gmailMissing = google && connected && conn.status !== "error" && conn.gmail === "missing";
+  const gmailMissing = google && connected && conn.status !== "error" && conn.gmail !== "granted";
   const btn = `inline-flex h-8 min-w-[110px] items-center justify-center rounded-full px-3.5 text-[13px] font-medium transition [@media(pointer:coarse)]:min-h-11 ${
     conn.status === "error" ? "bg-text text-on-accent font-semibold hover:bg-white" : gmailMissing ? "bg-accent-solid text-white hover:bg-[#0066cc]" : connected ? "border border-white/10 bg-white/[.03] text-text hover:border-white/20 hover:bg-white/[.06]" : "bg-accent-solid text-white hover:bg-[#0066cc]"
   }`;
@@ -115,9 +115,9 @@ export function CalendarConnectionRow({ conn, notice, open = false }: { conn: Ca
               <span className="text-text-2">Gmail</span>
               <StatusDot state={conn.status === "error" ? "attention" : gmailMissing ? "paused" : "online"} />
               <span className={conn.status === "error" ? "text-red" : gmailMissing ? "text-amber" : "text-green"}>
-                {conn.status === "error" ? "Needs reconnect" : gmailMissing ? "Not allowed" : "Allowed"}
+                {conn.status === "error" ? "Needs reconnect" : !gmailMissing ? "Allowed" : conn.gmail === "read_only" ? "Read only" : "Not allowed"}
               </span>
-              {gmailMissing && <span className="text-text-3">Reconnect Google to allow Gmail.</span>}
+              {gmailMissing && <span className="text-text-3">{conn.gmail === "read_only" ? "Reconnect Google to allow replies." : "Reconnect Google to allow Gmail."}</span>}
             </div>
             <p className="text-[12.5px] text-text-3">Google will show an &quot;unverified app&quot; screen once. This is your own LifeOS, so continue past it.</p>
           </div>

@@ -105,7 +105,7 @@ export async function getCalendarConnections(h: DB = db(), opts: { googleConfigu
       account: r.login,
       lastSyncAt: r.lastSyncAt?.toISOString() ?? null,
       lastSyncError: r.lastSyncError,
-      gmail: id === "google_calendar" && hasGmail(r.scopes, "read") ? "granted" : "missing",
+      gmail: id !== "google_calendar" || !hasGmail(r.scopes, "read") ? "missing" : hasGmail(r.scopes, "compose") ? "granted" : "read_only",
       calendars: cals.filter((c) => c.connectionId === id).map(toCalendarDTO),
     };
   });

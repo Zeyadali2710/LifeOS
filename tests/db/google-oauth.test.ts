@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
-import { CALENDAR_SCOPES, GOOGLE_SCOPES } from "@/server/calendar/google/client";
+import { CALENDAR_SCOPES, GMAIL_READ, GOOGLE_SCOPES } from "@/server/calendar/google/client";
 import { completeGoogleOAuth, startGoogleOAuth } from "@/server/calendar/google/oauth";
 import { getCalendarConnections } from "@/server/calendar/connections";
 import { eq } from "drizzle-orm";
@@ -85,6 +85,9 @@ describe("google oauth", () => {
     expect((await getCalendarConnections(h, { googleConfigured: true })).find((c) => c.id === "google_calendar")!.gmail).toBe("granted");
     expect(await run(CALENDAR_SCOPES.join(" "))).toMatchObject({ gmail: false });
     expect((await h.select().from(connections))[0]!.scopes).toEqual(CALENDAR_SCOPES);
+    // granular consent: read ticked, compose unticked (WR-U02)
+    expect(await run([...CALENDAR_SCOPES, GMAIL_READ].join(" "))).toMatchObject({ gmail: false });
+    expect((await getCalendarConnections(h, { googleConfigured: true })).find((c) => c.id === "google_calendar")!.gmail).toBe("read_only");
   });
 
   it("reconnecting a different account wipes mail state and queues a mail sync; the same account keeps it (CR-S01)", async () => {
