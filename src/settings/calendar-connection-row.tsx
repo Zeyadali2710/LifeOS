@@ -54,7 +54,7 @@ export function CalendarConnectionRow({ conn, notice, open = false }: { conn: Ca
           : m.empty
         : `${conn.account ?? ""} · ${syncingCount} of ${conn.calendars.length} calendars syncing${last ? ` · last synced ${formatHM(last)}` : ""}`;
 
-  const label = connected ? "Reconnect Google" : `Connect ${m.name}`;
+  const label = !connected ? `Connect ${m.name}` : google ? "Reconnect Google" : "Reconnect";
   const gmailMissing = google && connected && conn.status !== "error" && conn.gmail === "missing";
   const btn = `inline-flex h-8 min-w-[110px] items-center justify-center rounded-full px-3.5 text-[13px] font-medium transition [@media(pointer:coarse)]:min-h-11 ${
     conn.status === "error" ? "bg-text text-on-accent font-semibold hover:bg-white" : gmailMissing ? "bg-accent-solid text-white hover:bg-[#0066cc]" : connected ? "border border-white/10 bg-white/[.03] text-text hover:border-white/20 hover:bg-white/[.06]" : "bg-accent-solid text-white hover:bg-[#0066cc]"
@@ -63,7 +63,7 @@ export function CalendarConnectionRow({ conn, notice, open = false }: { conn: Ca
     google ? (
       conn.configured ? (
         <a href="/api/connections/google/start" className={btn}>
-          {google && connected ? label : conn.status === "error" ? "Reconnect" : label}
+          {label}
         </a>
       ) : null
     ) : (
