@@ -207,7 +207,7 @@ function Pending({ a, onPatch, extraActions }: { a: ApprovalDTO; onPatch: (a: Ap
   const approve = () => {
     const payload = editing ? check() : saved;
     if (!payload) return;
-    void guard("approve", () => approveAction(a.id, editing && !sameMail(payload, saved) ? payload : undefined), "Reply sent");
+    void guard("approve", () => approveAction(a.id, editing && !sameMail(payload, saved) ? payload : undefined), "Reply approved · sending");
   };
   const done = async () => {
     const payload = check();

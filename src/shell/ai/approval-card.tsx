@@ -128,7 +128,7 @@ export function ApprovalCard({ approval, onDecided }: { approval: ApprovalDTO; o
     setBusy(null);
     if (!r.ok) return toast("Couldn't record that decision. Try again.", "error");
     if (r.approval) setLocal(r.approval);
-    toast(kind === "approve" ? (iss ? `Issue created in ${p.repo}` : pj ? (a.kind === "project_update" ? "Project updated" : "Project created") : mp ? "Reply sent" : "Calendar updated") : "Approval rejected");
+    toast(kind === "approve" ? (iss ? `Issue created in ${p.repo}` : pj ? (a.kind === "project_update" ? "Project updated" : "Project created") : mp ? "Reply approved · sending" : "Calendar updated") : "Approval rejected");
     onDecided();
   };
   return (
