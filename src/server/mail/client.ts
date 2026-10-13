@@ -96,6 +96,9 @@ export function createGmail({ getToken, fetch }: { getToken: () => Promise<strin
     sendDraft: async (did: string) => (await g.call("POST", "/drafts/send", sent, { body: { id: did } }))!,
     deleteDraft: async (did: string) => void (await g.call("DELETE", `/drafts/${id(did)}`, z.unknown())),
 
+    /** Thread message ids, labels and internalDate only (no headers, no bodies). */
+    getThread: (tid: string) => get(`/threads/${id(tid)}?format=minimal`, z.object({ messages: z.array(message).nullish() })),
+
     async findSent(rfc822MessageId: string): Promise<string | null> {
       const r = await get(`/messages${qs({ q: `rfc822msgid:${rfc822MessageId} in:sent`, maxResults: 1 })}`, ids);
       return r.messages?.[0]?.id ?? null;

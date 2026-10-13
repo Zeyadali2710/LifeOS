@@ -22,6 +22,10 @@ export function fakeGmail(init: { messages?: FakeMsg[]; historyId?: string } = {
     unauthorized: false,
     rateLimit: false,
     newIdOnSend: false,
+    /** findSent sees nothing (Gmail rewrote Message-ID or search lags). */
+    searchBlind: false,
+    /** drafts/send answers 400 (a definite failure) without sending. */
+    rejectSend: false,
     drafts: new Map<string, { id: string; raw: string; threadId: string; messageId: string }>(),
     sent: [] as { id: string; raw: string; threadId: string }[],
   };
@@ -41,7 +45,7 @@ export function fakeGmail(init: { messages?: FakeMsg[]; historyId?: string } = {
       const query = q.get("q") ?? "";
       const id = /rfc822msgid:(\S+)/.exec(query)?.[1];
       let list = [...s.mailbox.values()];
-      if (id) list = list.filter((m) => m.labelIds.includes("SENT") && hdr(m, "Message-ID") === id);
+      if (id) list = s.searchBlind ? [] : list.filter((m) => m.labelIds.includes("SENT") && hdr(m, "Message-ID") === id);
       else {
         const labels = q.getAll("labelIds");
         list = list.filter((m) => labels.every((l) => m.labelIds.includes(l)));
@@ -62,6 +66,12 @@ export function fakeGmail(init: { messages?: FakeMsg[]; historyId?: string } = {
       return reply({ ...m, payload: { mimeType: m.payload.mimeType, headers: (m.payload.headers ?? []).filter((h) => !want.length || want.includes(h.name.toLowerCase())) } });
     }
 
+    const th = /^\/threads\/([^/]+)$/.exec(p);
+    if (req.method === "GET" && th) {
+      const msgs = [...s.mailbox.values()].filter((m) => m.threadId === decodeURIComponent(th[1]!)).map((m) => ({ id: m.id, threadId: m.threadId, labelIds: m.labelIds, internalDate: m.internalDate }));
+      return msgs.length ? reply({ id: th[1], messages: msgs }) : err(404, "notFound");
+    }
+
     if (req.method === "GET" && p === "/history") {
       if (s.historyGone) return err(404, "notFound");
       const start = Number(q.get("startHistoryId"));
@@ -77,6 +87,7 @@ export function fakeGmail(init: { messages?: FakeMsg[]; historyId?: string } = {
       return reply({ id: d.id, message: { id: d.messageId, threadId: d.threadId } });
     }
     if (req.method === "POST" && p === "/drafts/send") {
+      if (s.rejectSend) return err(400, "invalidArgument");
       const { id } = (await req.json()) as { id: string };
       const d = s.drafts.get(id);
       if (!d) return err(404, "notFound");

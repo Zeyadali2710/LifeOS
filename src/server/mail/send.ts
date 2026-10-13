@@ -34,12 +34,22 @@ export async function sendReply(
     if (!(e instanceof ProviderError && e.kind === "not_found")) throw e;
     return null;
   };
+  // A definite send failure deletes the draft (best effort) so a retry never leaves an orphan in Drafts (WR-S03).
+  const send = async (draftId: string) => {
+    try {
+      return out(await gmail.sendDraft(draftId));
+    } catch (e) {
+      if (e instanceof ProviderError && e.kind !== "unavailable") await gmail.deleteDraft(draftId).catch(() => undefined);
+      throw e;
+    }
+  };
   try {
-    if (adopt) {
-      const [ap] = await h.select({ r: approvals.result }).from(approvals).where(eq(approvals.id, approvalId));
-      const cp = (ap?.r ?? {}) as { draftId?: string; draftMessageId?: string };
+    const [ap] = await h.select({ r: approvals.result }).from(approvals).where(eq(approvals.id, approvalId));
+    const cp = (ap?.r ?? {}) as { draftId?: string; draftMessageId?: string; at?: string };
+    // Any checkpoint means an earlier attempt happened, whatever `adopt` says (WR-S03).
+    if (adopt || cp.draftId) {
       // (a) the draft still exists: the send never landed.
-      if (cp.draftId && (await gmail.getDraft(cp.draftId).catch(notFound))) return out(await gmail.sendDraft(cp.draftId));
+      if (cp.draftId && (await gmail.getDraft(cp.draftId).catch(notFound))) return await send(cp.draftId);
       // (b) the draft is gone and its message carries SENT: the send landed.
       if (cp.draftMessageId) {
         const m = await gmail.getMetadata(cp.draftMessageId, ["Message-ID"]).catch(notFound);
@@ -48,11 +58,20 @@ export async function sendReply(
       // (c) Gmail gave the sent copy a new id: find it by our deterministic Message-ID.
       const found = await gmail.findSent(replyMessageId(approvalId));
       if (found) return { messageId: found, threadId: payload.threadId };
+      // (c2) Gmail may rewrite Message-ID and search lags: a SENT message in the thread since the checkpoint counts (WR-S02).
+      // ponytail: an owner reply sent from Gmail itself in that window also counts; preferred over a double send.
+      if (adopt && cp.at) {
+        const since = Date.parse(cp.at) - 60_000; // clock-skew margin between the VM and Gmail
+        const t = await gmail.getThread(payload.threadId).catch(notFound);
+        const m = t?.messages?.find((x) => x.labelIds?.includes("SENT") && Number(x.internalDate) >= since);
+        if (m) return { messageId: m.id, threadId: m.threadId };
+      }
       // (d) nothing happened: fall through and send once.
     }
+    const at = (o.now ?? (() => new Date()))().toISOString();
     const draft = await gmail.createDraft(mime(payload, approvalId), payload.threadId);
-    await h.update(approvals).set({ result: { draftId: draft.id, draftMessageId: draft.message?.id ?? null } }).where(eq(approvals.id, approvalId));
-    return out(await gmail.sendDraft(draft.id));
+    await h.update(approvals).set({ result: { draftId: draft.id, draftMessageId: draft.message?.id ?? null, at } }).where(eq(approvals.id, approvalId));
+    return await send(draft.id);
   } catch (e) {
     if (e instanceof ProviderError) {
       if (e.kind === "auth") await markCalendarError(h, "google_calendar", "Access was rejected.").catch(() => undefined);

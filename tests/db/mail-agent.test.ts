@@ -209,6 +209,46 @@ describe("approve, send and idempotency", () => {
     expect(counts(f)).toEqual({ creates: 2, sent: 1 });
   });
 
+  it("adopt: Gmail rewrote Message-ID and search lags -> the thread's SENT copy since the checkpoint is adopted (WR-S02)", async () => {
+    const { f, id } = await ambiguous("after", { newId: true });
+    f.state.searchBlind = true;
+    const out = await executeApproved(h(), id, { fetch: f });
+    expect(out).toMatchObject({ status: "executed", result: { messageId: f.sent[0]!.id, threadId: "t-reply" } });
+    expect(counts(f)).toEqual({ creates: 1, sent: 1 });
+  });
+
+  it("a definite send failure deletes its draft; the retry sends exactly once and leaves no orphan (WR-S03)", async () => {
+    const f = gmail();
+    const { ap } = await propose({ messageId: m1.id, subject: "Re: Agenda", body: "Hello" }, f);
+    await approve(ap!.id);
+    f.state.rejectSend = true;
+    expect(await executeApproved(h(), ap!.id, { fetch: f })).toMatchObject({ status: "failed", ambiguous: false });
+    expect(f.drafts.size).toBe(0);
+    f.state.rejectSend = false;
+    expect(await retryApproval(h(), ap!.id, { enqueue: noop })).toEqual({ ok: true });
+    expect(await executeApproved(h(), ap!.id, { fetch: f })).toMatchObject({ status: "executed" });
+    expect(counts(f)).toEqual({ creates: 2, sent: 1 });
+    expect(f.drafts.size).toBe(0);
+  });
+
+  it("a definite retry reuses a checkpointed draft that still exists instead of creating another (WR-S03)", async () => {
+    const f = gmail();
+    const { ap } = await propose({ messageId: m1.id, subject: "Re: Agenda", body: "Hello" }, f);
+    await approve(ap!.id);
+    // 400 on send and on the cleanup delete: the draft survives.
+    const w = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const r = new Request(input, init);
+      if (new URL(r.url).pathname.endsWith("/drafts/send") || r.method === "DELETE") return new Response(JSON.stringify({ error: { code: 400 } }), { status: 400 });
+      return f(input, init);
+    }) as typeof fetch;
+    expect(await executeApproved(h(), ap!.id, { fetch: w })).toMatchObject({ status: "failed", ambiguous: false });
+    expect(f.drafts.size).toBe(1);
+    expect(await retryApproval(h(), ap!.id, { enqueue: noop })).toEqual({ ok: true });
+    expect(await executeApproved(h(), ap!.id, { fetch: f })).toMatchObject({ status: "executed" });
+    expect(counts(f)).toEqual({ creates: 1, sent: 1 });
+    expect(f.drafts.size).toBe(0);
+  });
+
   it("a 401 during send marks the Google connection errored and fails the approval definitively", async () => {
     const f = gmail();
     const { ap } = await propose({ messageId: m1.id, subject: "Re: Agenda", body: "Hello" }, f);
