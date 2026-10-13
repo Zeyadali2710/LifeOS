@@ -8,8 +8,9 @@ import { advance, createRun, runQueued } from "@/server/agents/loop";
 import { TOOLS } from "@/server/agents/tools";
 import { createThread } from "@/server/agents/threads";
 import {
-  activityEvents, agentRuns, approvals, auditLog, githubRepos, milestones, notifications, projectLinks, projects, settings, taskDependencies, tasks, toolCalls,
+  activityEvents, agentRuns, approvals, auditLog, githubRepos, milestones, notifications, outreachEvents, projectLinks, projects, settings, taskDependencies, tasks, toolCalls,
 } from "@/server/db/schema";
+import { upsertEvents } from "@/server/outreach/sync";
 import { saveToken } from "@/server/github/connections";
 import { createProject } from "@/server/projects";
 import contentsReadme from "../fixtures/github/contents-readme.json";
@@ -82,6 +83,17 @@ const draft = {
 };
 
 describe("projects.create", () => {
+  it("D-14: an approved agent project write rescores outreach events", async () => {
+    const now = new Date();
+    await upsertEvents(h(), { id: "seed", kind: "ics" }, [{ remoteId: "r1", title: "Studio founders night", startAt: new Date(+now + 7 * 86_400_000), endAt: null, allDay: false, timeZone: "Australia/Sydney", location: "Sydney NSW", lat: null, lng: null, online: false, organizer: null, priceText: null, url: "https://example.com/s", description: "", categories: [] }], false, now);
+    const id = apId(await call("projects.create", draft));
+    expect((await approve(id)).status).toBe("executed");
+    await vi.waitFor(async () => {
+      const sig = ((await h().select().from(outreachEvents))[0]!.signals as { label: string; value: number }[]).find((x) => x.label === "PROJECTS");
+      expect(sig?.value).toBe(10);
+    });
+  });
+
   it("proposes exactly one approval and writes nothing", async () => {
     const id = apId(await call("projects.create", { ...draft, reason: "r", sources: ["lie"] }));
     expect(await count(projects)).toBe(0);

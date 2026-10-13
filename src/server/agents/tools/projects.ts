@@ -5,6 +5,7 @@ import { z } from "zod";
 import { draftCounts, projectCreatePayload, projectUpdatePayload, type DraftLink, type ProjectUpdatePayload } from "@/lib/project-payload";
 import type { DB } from "../../db/client";
 import { auditLog, githubRepos, milestones, projectLinks, projects, tasks, toolCalls } from "../../db/schema";
+import { rescoreAfterProjectChange } from "../../outreach/sources";
 import { listProjects, loadProject } from "../../project-queries";
 import { addLink, addTaskDependency, createMilestone, createProject, updateMilestone, updateProject } from "../../projects";
 import { createTask, updateTask } from "../../tasks";
@@ -164,6 +165,12 @@ function must<T extends { ok: boolean }>(r: T, label: string): Extract<T, { ok: 
 }
 
 async function applyDraft(ctx: ToolContext, kind: "create" | "update", raw: Record<string, unknown>): Promise<WriteOut> {
+  const out = await applyDraftTx(ctx, kind, raw);
+  void rescoreAfterProjectChange(ctx.handle, ctx.now()); // D-14, fire-and-forget after commit; never fails the write
+  return out;
+}
+
+async function applyDraftTx(ctx: ToolContext, kind: "create" | "update", raw: Record<string, unknown>): Promise<WriteOut> {
   needApproval(ctx);
   const parsed = (kind === "create" ? projectCreatePayload : projectUpdatePayload).safeParse({ ...raw, sources: [] });
   if (!parsed.success) throw badDraft(parsed.error.issues, raw);

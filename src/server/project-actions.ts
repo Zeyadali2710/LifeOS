@@ -4,6 +4,7 @@ import { z } from "zod";
 import type { TaskDialogOptions } from "@/lib/project-types";
 import { db } from "./db/client";
 import { log } from "./log";
+import { rescoreAfterProjectChange } from "./outreach/sources";
 import {
   addLink,
   addProjectDependency,
@@ -43,19 +44,25 @@ function withIds<A extends [string] | [string, string], T>(raw: A, fn: (ids: A) 
   return run(() => fn(ids.map((i) => i.data!) as A));
 }
 
+/** D-14: fire-and-forget rescore after a successful project write; the result is returned unchanged. */
+function rescored<R>(r: R): R {
+  if ((r as { ok?: boolean }).ok === true) void rescoreAfterProjectChange(db(), new Date());
+  return r;
+}
+
 export async function createProjectAction(raw: unknown) {
   await requireOwner();
-  return run(() => createProject(db(), raw, new Date()));
+  return rescored(await run(() => createProject(db(), raw, new Date())));
 }
 
 export async function updateProjectAction(id: string, raw: unknown) {
   await requireOwner();
-  return withIds([id], ([i]) => updateProject(db(), i, raw, new Date()));
+  return rescored(await withIds([id], ([i]) => updateProject(db(), i, raw, new Date())));
 }
 
 export async function setProjectArchivedAction(id: string, archived: boolean) {
   await requireOwner();
-  return withIds([id], ([i]) => setProjectArchived(db(), i, archived === true, new Date()));
+  return rescored(await withIds([id], ([i]) => setProjectArchived(db(), i, archived === true, new Date())));
 }
 
 export async function deleteProjectAction(id: string, confirmUnlink: boolean) {
