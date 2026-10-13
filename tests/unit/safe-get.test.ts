@@ -35,7 +35,7 @@ describe("safeGet", () => {
   it("rejects credentials in the URL", async () => {
     expect((await err(safeGet("https://u:p@example.com/"))).code).toBe("invalid");
   });
-  it.each(["https://127.0.0.1/", "https://10.1.2.3/", "https://169.254.169.254/", "https://[::1]/", "https://[::ffff:127.0.0.1]/", "https://100.64.0.1/"])(
+  it.each(["https://127.0.0.1/", "https://10.1.2.3/", "https://169.254.169.254/", "https://[::1]/", "https://[::ffff:127.0.0.1]/", "https://100.64.0.1/", "https://[64:ff9b::a00:1]/", "https://[2002:a00:1::1]/"])(
     "blocks literal %s without lookup",
     async (u) => {
       const lookup = vi.fn();
