@@ -43,9 +43,9 @@
 - [x] **CAR-03**: Project workspace view incl. Claude Code workspace links
 
 ### Outreach
-- [ ] **OUT-01**: Sydney event discovery from real sources with relevance scoring
-- [ ] **OUT-02**: Pipeline SAVED→INTERESTED→ATTENDING→ATTENDED→FOLLOW_UP
-- [ ] **OUT-03**: Email intelligence: classify, summarize, flag, extract actions, draft replies (send = APPROVE)
+- [x] **OUT-01**: Sydney event discovery from real sources with relevance scoring
+- [x] **OUT-02**: Pipeline SAVED→INTERESTED→ATTENDING→ATTENDED→FOLLOW_UP
+- [x] **OUT-03**: Email intelligence: classify, summarize, flag, extract actions, draft replies (send = APPROVE)
 
 ### Socials
 - [ ] **SOC-01**: Providers for LinkedIn, Instagram, TikTok, Portfolio honest about API capabilities
