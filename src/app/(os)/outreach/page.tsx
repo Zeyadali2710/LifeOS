@@ -2,7 +2,7 @@ import Link from "next/link";
 import { OutreachView } from "@/outreach/outreach-view";
 import { writableCalendars, pickDefaultCalendar } from "@/server/calendar/queries";
 import { db } from "@/server/db/client";
-import { loadInterests, loadOutreachEvents, sourceStatus } from "@/server/outreach/queries";
+import { loadInterests, loadOutreachEvents, pipelineEvents, sourceStatus } from "@/server/outreach/queries";
 import { requireOwner } from "@/server/session";
 import { PageHeader } from "@/ui/page-header";
 
@@ -20,13 +20,14 @@ export default async function OutreachPage({ searchParams }: { searchParams: Pro
     const status = await sourceStatus(h);
     // `mock=1` shows mocks, `mock=0` hides them; by default they are hidden once a real source exists.
     const hideMock = sp.mock === "1" ? false : sp.mock === "0" ? true : status.hasRealSource;
-    const [events, interests, cals, defaultCalendarId] = await Promise.all([
+    const [events, pipeline, interests, cals, defaultCalendarId] = await Promise.all([
       loadOutreachEvents(h, now, { hideMock }),
+      pipelineEvents(h),
       loadInterests(h),
       writableCalendars(h),
       pickDefaultCalendar(h),
     ]);
-    data = { events, interests, status, hideMock, defaultCalendarId, calendars: cals.map((c) => ({ id: c.id, name: c.name })) };
+    data = { events, pipeline, interests, status, hideMock, defaultCalendarId, calendars: cals.map((c) => ({ id: c.id, name: c.name })) };
   } catch (e) {
     console.error("outreach: load failed", e instanceof Error ? e.name : "unknown");
   }

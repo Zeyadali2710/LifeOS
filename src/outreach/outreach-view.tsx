@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { OutreachEventDTO } from "@/lib/outreach-types";
 import type { SourceStatus } from "@/server/outreach/queries";
 import { syncEventsNowAction } from "@/server/outreach-actions";
@@ -12,7 +12,9 @@ import { Badge } from "@/ui/badge";
 import { Button } from "@/ui/button";
 import { Icon } from "@/ui/icon";
 import type { CalendarOption } from "./add-to-calendar-dialog";
-import { EventList } from "./event-list";
+import { EventList, SourceStrip } from "./event-list";
+import { ImportUrlDialog } from "./import-url-dialog";
+import { PipelineBoard } from "./pipeline-board";
 
 const chip = (on: boolean) =>
   `inline-flex h-8 shrink-0 snap-start items-center gap-2 rounded-full border px-3.5 text-[13px] max-tab:min-h-11 ${
@@ -24,6 +26,7 @@ const TABS = [{ key: "events", label: "EVENTS" }] as const;
 
 export function OutreachView({
   events,
+  pipeline,
   status,
   interests,
   calendars,
@@ -31,6 +34,7 @@ export function OutreachView({
   hideMock,
 }: {
   events: OutreachEventDTO[];
+  pipeline: OutreachEventDTO[];
   status: SourceStatus;
   interests: string[];
   calendars: CalendarOption[];
@@ -41,9 +45,24 @@ export function OutreachView({
   const sp = useSearchParams();
   const { toast } = useShell();
   const [syncing, setSyncing] = useState(false);
+  const [importing, setImporting] = useState(false);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   useLiveEvents("outreach", () => router.refresh());
+
+  // palette command: ?import=1 opens the dialog once, then the param is dropped
+  const importParam = sp.get("import");
+  useEffect(() => {
+    if (importParam !== "1") return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot URL command, param is dropped right after
+    setImporting(true);
+    const q = new URLSearchParams(window.location.search);
+    q.delete("import");
+    router.replace(q.size ? `/outreach?${q}` : "/outreach", { scroll: false });
+    // only when the param changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [importParam]);
+  const view = sp.get("view") === "pipeline" ? "pipeline" : "list";
 
   const selected = useMemo(() => (sp.get("interest") ?? "").split(",").filter((i) => interests.includes(i)), [sp, interests]);
   const setParams = (patch: Record<string, string | null>) => {
@@ -126,22 +145,52 @@ export function OutreachView({
                 Hide mock
               </button>
             )}
+            <div className="inline-flex rounded-full border border-white/[.06] bg-white/[.04] p-[3px]">
+              {(["list", "pipeline"] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  aria-pressed={view === v}
+                  onClick={() => setParams({ view: v === "list" ? null : v })}
+                  className={`h-[26px] rounded-full px-3.5 text-[12.5px] max-tab:min-h-11 ${view === v ? "bg-white/[.12] text-text" : "text-text-2"}`}
+                >
+                  {v === "list" ? "List" : "Pipeline"}
+                </button>
+              ))}
+            </div>
             <Button variant="secondary" size="sm" loading={syncing} onClick={sync}>
               <Icon name="refresh" size={16} />
               Sync now
             </Button>
+            <Button variant="primary" size="sm" onClick={() => setImporting(true)}>
+              <Icon name="add" size={16} />
+              Import event
+            </Button>
           </div>
         </div>
-        <p className="text-[12.5px] text-text-3">{`${shown.length} events · Sydney · next 60 days · sorted by relevance`}</p>
-        <span aria-live="polite" className="sr-only">{`${shown.length} events shown`}</span>
-        <EventList
-          events={shown}
-          total={events.length}
-          status={status}
-          calendars={calendars}
-          defaultCalendarId={defaultCalendarId}
-          onClear={() => setParams({ interest: null })}
-        />
+        <p className="text-[12.5px] text-text-3">
+          {view === "pipeline" ? `${pipeline.length} saved events by stage` : `${shown.length} events · Sydney · next 60 days · sorted by relevance`}
+        </p>
+        <span aria-live="polite" className="sr-only">
+          {view === "pipeline" ? `${pipeline.length} saved events shown` : `${shown.length} events shown`}
+        </span>
+        {view === "pipeline" ? (
+          <>
+            <SourceStrip status={status} onImport={() => setImporting(true)} />
+            <PipelineBoard events={pipeline} onShowList={() => setParams({ view: null })} />
+          </>
+        ) : (
+          <EventList
+            events={shown}
+            total={events.length}
+            status={status}
+            calendars={calendars}
+            defaultCalendarId={defaultCalendarId}
+            onClear={() => setParams({ interest: null })}
+            onImport={() => setImporting(true)}
+          />
+        )}
+        <ImportUrlDialog open={importing} onClose={() => setImporting(false)} />
       </div>
     </div>
   );
