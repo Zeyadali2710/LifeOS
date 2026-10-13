@@ -168,7 +168,7 @@ export function CalendarConnectionRow({ conn, notice, open = false }: { conn: Ca
         }
       >
         LifeOS stops syncing and deletes the saved access and its synced events. Your events in {m.short} are not changed. You can connect again at any time.
-        {google && " This also removes Gmail access. Synced mail stays in LifeOS until it's pruned."}
+        {google && " This also removes Gmail access. Synced mail is removed from LifeOS."}
       </Dialog>
     </div>
   );

@@ -33,7 +33,7 @@ Per ORG-02: owner UI writes run directly and are audit-logged (`calendar.event.c
 | `github.list_tree`, `github.get_file` | READ |
 | `projects.create`, `projects.update` | APPROVE |
 
-**Content floor (D-06, `withContentFloor` + `contentScope` in `src/server/agents/policy.ts`):** once any run in scope has read third-party content — `github.get_file`, `list_tree`, `get_pull_request`, `list_issues`, `list_pull_requests` or `recent_commits` (`CONTENT_TOOLS`) — every side-effect tool resolves to at least APPROVE. Scope = the run tree (self, parent, siblings, children), the run it retries (and its parent), and every run in those threads, so repo-derived text carried into later thread turns stays floored. HIGH_RISK is unchanged. The write handlers refuse to run without an approval. No agent deletes projects, milestones or tasks this phase.
+**Content floor (D-06, `withContentFloor` + `contentScope` in `src/server/agents/policy.ts`):** once any run in scope has read third-party content — `github.get_file`, `list_tree`, `get_pull_request`, `list_issues`, `list_pull_requests`, `recent_commits`, and (Phase 6) the outreach event and mail tools (`CONTENT_TOOLS`) — every side-effect tool resolves to at least APPROVE. Scope = the run tree (self, parent, siblings, children), the run it retries (and its parent), and every run in those threads, so repo-derived text carried into later thread turns stays floored. HIGH_RISK is unchanged. The write handlers refuse to run without an approval. No agent deletes projects, milestones or tasks this phase.
 
 ## Outreach tools (Phase 6)
 | Tool | Tier |
