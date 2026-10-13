@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { OutreachEventDTO } from "@/lib/outreach-types";
+import type { FollowUpDTO, OutreachEventDTO } from "@/lib/outreach-types";
 import type { SourceStatus } from "@/server/outreach/queries";
 import { syncEventsNowAction } from "@/server/outreach-actions";
 import { useLiveEvents } from "@/shell/live-provider";
@@ -12,7 +12,9 @@ import { Badge } from "@/ui/badge";
 import { Button } from "@/ui/button";
 import { Icon } from "@/ui/icon";
 import type { CalendarOption } from "./add-to-calendar-dialog";
+import { EmailView, type EmailData } from "./email-view";
 import { EventList, SourceStrip } from "./event-list";
+import { FollowUps } from "./follow-ups";
 import { ImportUrlDialog } from "./import-url-dialog";
 import { PipelineBoard } from "./pipeline-board";
 
@@ -21,8 +23,13 @@ const chip = (on: boolean) =>
     on ? "border-[rgba(100,210,255,.45)] bg-[rgba(100,210,255,.12)] text-text" : "border-white/10 bg-white/[.03] text-text-2 hover:bg-white/[.06]"
   }`;
 
-// Plan 17 appends EMAIL and FOLLOW-UPS here.
-const TABS = [{ key: "events", label: "EVENTS" }] as const;
+export type MailData = EmailData;
+const TABS = [
+  { key: "events", label: "EVENTS" },
+  { key: "email", label: "EMAIL" },
+  { key: "follow-ups", label: "FOLLOW-UPS" },
+] as const;
+type Tab = (typeof TABS)[number]["key"];
 
 export function OutreachView({
   events,
@@ -32,6 +39,9 @@ export function OutreachView({
   calendars,
   defaultCalendarId,
   hideMock,
+  mail,
+  followUps,
+  followUpCount,
 }: {
   events: OutreachEventDTO[];
   pipeline: OutreachEventDTO[];
@@ -40,6 +50,9 @@ export function OutreachView({
   calendars: CalendarOption[];
   defaultCalendarId: string | null;
   hideMock: boolean;
+  mail: MailData | null;
+  followUps: FollowUpDTO[] | null;
+  followUpCount: number;
 }) {
   const router = useRouter();
   const sp = useSearchParams();
@@ -62,6 +75,7 @@ export function OutreachView({
     // only when the param changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [importParam]);
+  const tab: Tab = sp.get("tab") === "email" ? "email" : sp.get("tab") === "follow-ups" ? "follow-ups" : "events";
   const view = sp.get("view") === "pipeline" ? "pipeline" : "list";
 
   const selected = useMemo(() => (sp.get("interest") ?? "").split(",").filter((i) => interests.includes(i)), [sp, interests]);
@@ -96,8 +110,12 @@ export function OutreachView({
     const d = e.key === "ArrowRight" ? 1 : e.key === "ArrowLeft" ? -1 : 0;
     if (!d) return;
     e.preventDefault();
-    tabRefs.current[(i + d + TABS.length) % TABS.length]?.focus();
+    const n = (i + d + TABS.length) % TABS.length;
+    tabRefs.current[n]?.focus();
+    goTab(TABS[n]!.key);
   };
+  const goTab = (k: Tab) => setParams({ tab: k === "events" ? null : k, cat: null, mail: null, draft: null });
+  const counts: Record<Tab, number> = { events: events.length, email: mail?.inboxCount ?? 0, "follow-ups": followUpCount };
 
   return (
     <div className="flex flex-col gap-4">
@@ -110,22 +128,42 @@ export function OutreachView({
             }}
             type="button"
             role="tab"
-            id="outreach-tab-events"
-            aria-selected
-            aria-controls="outreach-panel-events"
-            tabIndex={0}
+            id={`outreach-tab-${t.key}`}
+            aria-selected={tab === t.key}
+            aria-controls={`outreach-panel-${t.key}`}
+            tabIndex={tab === t.key ? 0 : -1}
             onKeyDown={(e) => onTabKey(e, i)}
-            onClick={() => setParams({ tab: null })}
-            className="relative inline-flex h-10 items-center gap-2 text-[12.5px] font-medium tracking-[.1em] text-text uppercase after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-cyan"
+            onClick={() => goTab(t.key)}
+            className={`relative inline-flex h-10 shrink-0 items-center gap-2 text-[12.5px] font-medium tracking-[.1em] uppercase ${tab === t.key ? "text-text after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-cyan" : "text-text-3 hover:text-text-2"}`}
           >
             {t.label}
             <Badge kind="count" tone="neutral">
-              {events.length}
+              {counts[t.key]}
             </Badge>
           </button>
         ))}
       </div>
 
+      {tab === "email" && (
+        <div role="tabpanel" id="outreach-panel-email" aria-labelledby="outreach-tab-email">
+          {mail ? (
+            <EmailView data={mail} />
+          ) : (
+            <div role="alert" className="flex flex-col items-start gap-3 rounded-24 border border-[rgba(255,105,97,.3)] bg-[rgba(255,105,97,.06)] p-5 text-[13.5px] text-text-2">
+              Couldn&apos;t load email.
+              <Button variant="secondary" size="sm" onClick={() => router.refresh()}>
+                Try again
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+      {tab === "follow-ups" && (
+        <div role="tabpanel" id="outreach-panel-follow-ups" aria-labelledby="outreach-tab-follow-ups">
+          <FollowUps items={followUps} onDraft={(id) => setParams({ tab: "email", mail: id, cat: null, draft: "1" })} />
+        </div>
+      )}
+      {tab === "events" && (
       <div role="tabpanel" id="outreach-panel-events" aria-labelledby="outreach-tab-events" className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2">
           <div role="group" aria-label="Filter by interest" className="flex flex-wrap items-center gap-2">
@@ -192,6 +230,7 @@ export function OutreachView({
         )}
         <ImportUrlDialog open={importing} onClose={() => setImporting(false)} />
       </div>
+      )}
     </div>
   );
 }
