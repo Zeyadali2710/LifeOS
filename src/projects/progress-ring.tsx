@@ -4,17 +4,23 @@ export function ProgressRing({
   stroke = 3,
   label,
   done = false,
+  color: override,
+  text,
 }: {
   pct: number | null;
   size?: number;
   stroke?: number;
   label: string;
   done?: boolean;
+  /** overrides the built-in colour rule */
+  color?: string;
+  /** overrides the centre text (default: the percentage) */
+  text?: string;
 }) {
   const v = Math.max(0, Math.min(100, pct ?? 0));
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
-  const color = done || v >= 100 ? "var(--green)" : v >= 80 ? "var(--amber)" : "var(--accent)";
+  const color = override ?? (done || v >= 100 ? "var(--green)" : v >= 80 ? "var(--amber)" : "var(--accent)");
   const big = size >= 72;
   return (
     <div
@@ -43,7 +49,7 @@ export function ProgressRing({
         )}
       </svg>
       <span className={`absolute text-text ${big ? "font-display text-[20px]" : "text-[11px] font-medium"}`}>
-        {pct === null ? "—" : `${Math.round(v)}%`}
+        {text ?? (pct === null ? "—" : `${Math.round(v)}%`)}
       </span>
     </div>
   );
