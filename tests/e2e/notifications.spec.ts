@@ -119,8 +119,10 @@ test("desktop: Esc closes and returns focus to the bell", async ({ page }, info)
 test("mobile: bell opens a floating sheet; bell reopens it after close", async ({ page }, info) => {
   test.skip(info.project.name !== "mobile");
   await openWith(page, `Sheet ${uid()}`);
-  const box = await drawer(page).boundingBox();
-  expect(box?.width).toBeGreaterThanOrEqual((page.viewportSize()?.width ?? 0) - 26);
+  // poll: the sheet animates in, a one-shot measure can land mid-transition (sub-pixel)
+  await expect
+    .poll(async () => (await drawer(page).boundingBox())?.width ?? 0)
+    .toBeGreaterThanOrEqual((page.viewportSize()?.width ?? 0) - 27);
   await drawer(page).getByRole("button", { name: "Close notifications" }).click();
   await expect(drawer(page)).toBeHidden();
   await bell(page).click();

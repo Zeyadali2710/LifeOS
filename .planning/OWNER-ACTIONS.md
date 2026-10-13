@@ -48,4 +48,26 @@ Things only the owner can do (VM, deploy, UAT, credentials). Autonomous runs app
 - [ ] **Eventbrite (optional):** eventbrite.com → Account Settings → Developer Links → API Keys → copy the **Private token** → LifeOS Settings → Connections → Eventbrite (never .env/chat). Add organizer IDs to follow (number in an organizer page URL).
 - [ ] **Luma API (optional, only with a Luma Plus calendar you own):** luma.com/calendar/manage/api-keys → generate → Settings → Connections → Luma.
 - [ ] **Settings → Outreach:** edit interests (seeded with the design's eight filters).
-- [ ] **Review auto-decisions** in `.planning/phases/06-outreach/06-DISCUSSION-LOG.md` (37 decisions — e.g. Haiku triage of mail at ≤ spend cap, mail bodies never stored, NETWORK tab dropped, Eventbrite/Luma APIs can't discover public Sydney events so discovery = Luma iCal + URL import).
+- [ ] **Review auto-decisions** in `.planning/phases/06-outreach/06-DISCUSSION-LOG.md` and `06-UI-SPEC.md` (37 decisions — e.g. Haiku triage of mail at <= spend cap, mail bodies never stored, NETWORK tab dropped, Eventbrite/Luma APIs can't discover public Sydney events so discovery = Luma iCal + URL import). Also check: scoring weights and project keyword matching, Sydney filter, triage 7-day backfill, Outreach agent on Sonnet, mail-linked task titles redacted for agents, and the D-37 test split (e2e covers UI flows on seeded rows; URL import, Add to calendar against Google and the real Gmail send are covered by DB tests with fakes because the e2e server has no worker/LLM/outbound network).
+
+### Phase 6 — [BLOCKING] deploy, migrate 0008 (`0008_outreach`), VM tests, live UAT
+
+- [ ] **Deploy + apply migration 0008 (`0008_outreach`)**; the worker restart registers the `outreach.events.sync`, `mail.sync` and `mail.triage` schedules.
+  ```bash
+  cd ~/lifeos && git pull && lc up -d --build
+  lc logs migrate | tail -5        # expect 0008_outreach applied, no error
+  bash scripts/vm-db-test.sh tests/db/migrations.test.ts tests/db/outreach-sync.test.ts tests/db/outreach-pipeline.test.ts tests/db/outreach-actions.test.ts tests/db/outreach-queries.test.ts tests/db/outreach-tools.test.ts tests/db/google-oauth.test.ts tests/db/mail-sync.test.ts tests/db/mail-triage.test.ts tests/db/mail-agent.test.ts tests/db/mail-actions.test.ts tests/db/mail-queries.test.ts tests/db/routing-loop.test.ts tests/db/gateway.test.ts tests/db/approvals.test.ts
+  ```
+  Unblocks: everything live in Phase 6 (migration is additive: new tables and nullable columns).
+- [ ] **Live UAT** (browser, tailnet HTTPS origin; needs the Reconnect Google and Luma feed items above):
+  1. Settings -> Connections -> Google: Gmail shows "Not allowed"; Reconnect Google, continue past the unverified-app screen, allow Gmail; toast "Google reconnected - Gmail allowed"; Calendar still syncs.
+  2. Settings -> Event feeds: add Luma's Sydney iCal link; within a minute (or after Sync now on /outreach) real Sydney events appear without MOCK badges, mocks hidden by default, scores and WHY lines make sense against your interests.
+  3. Import an Eventbrite or Humanitix event URL from /outreach -> opens in SAVED. Move Interested -> Attend -> Add to calendar (event appears in Organization with the URL in its description) -> Mark attended -> Follow up -> task appears in FOLLOW-UPS and Organization tasks. Activity shows each transition.
+  4. EMAIL tab: inbox mail appears within ~5 minutes with summaries/categories; bulk mail is BULK; a HIGH mail produced one IMPORTANT notification; opening a mail shows plain text only.
+  5. On a real thread you own (e.g. an email you sent yourself from another address, so the reply goes to an address you control): Draft with agent -> DRAFT REPLY shows To locked to the thread; edit the body; Send reply through the approval card -> exactly one reply arrives in the same Gmail thread. On a second draft, Save to Gmail drafts creates a Gmail draft and marks the approval "Moved to Gmail drafts".
+  6. Command Centre shows the outreach triage runs with cost; mail only ran on Sonnet/Haiku (no free model).
+
+  Reply with the `lc logs migrate` 0008 line, the vm-db-test summary line, and pass/issue per item (never paste tokens, feed URLs or mail content). Any failure becomes a gap for `/gsd:plan-phase 6 --gaps`.
+- [ ] **Visual passes on the VM** (from plans 15-17): /outreach with real feeds; pipeline board horizontal scroll; event detail at 760-1099px; follow-up dialog (needs an event at ATTENDED); URL import against a real Eventbrite/Luma page; EMAIL category nav at 760-1099px and mobile sheet; real Draft-with-agent round trip (needs Anthropic key + worker); Open in Gmail on a long message.
+- [ ] **Eventbrite organizer probe (A1, from 06-07):** after entering the private token and organizer ids, check the source row: either organizer events list, or it shows the "doesn't allow listing / only your own events" message. Report which.
+- [ ] **Luma API path check (A2, from 06-07):** verify the list-events path against https://docs.luma.com/reference before relying on a Luma key (constant `LUMA_LIST` in `src/server/outreach/providers.ts`); report whether events list with your key.

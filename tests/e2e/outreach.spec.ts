@@ -64,7 +64,7 @@ test("seeded event moves Save to Follow up and the task shows in FOLLOW-UPS", as
   await dlg.getByRole("button", { name: "Create follow-up task" }).click();
   await expect(dlg).toBeHidden();
   await page.goto("/outreach?tab=follow-ups");
-  await expect(page.getByText(`From event · ${title}`)).toBeVisible();
+  await expect(page.getByText(`From event · ${title}`).locator("visible=true").first()).toBeVisible();
 });
 
 test("mock event shows MOCK and a disabled Calendar cell", async ({ page }) => {
