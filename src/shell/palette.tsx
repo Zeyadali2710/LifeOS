@@ -12,7 +12,7 @@ import { useAgentStatus } from "./use-agent-status";
 import { useShell } from "./shell-provider";
 import { useDialog } from "./use-dialog";
 
-const NEXT_SCOPE: Record<PaletteScope, PaletteScope> = { all: "events", events: "tasks", tasks: "projects", projects: "all" };
+const NEXT_SCOPE: Record<PaletteScope, PaletteScope> = { all: "events", events: "outreach", outreach: "tasks", tasks: "projects", projects: "all" };
 
 export function Palette() {
   const { paletteOpen } = useShell();
@@ -48,7 +48,7 @@ function PaletteDialog() {
     };
   }, [query]);
   const shown = query.trim().length >= 2 ? data : undefined;
-  const hasData = Boolean(shown && (shown.events.length || shown.tasks.length || shown.projects.length));
+  const hasData = Boolean(shown && (shown.events.length || shown.outreach.length || shown.tasks.length || shown.projects.length));
 
   const { groups, noMatch } = useMemo(() => buildPalette(query, { approvalsWaiting, data: shown, scope }), [query, approvalsWaiting, shown, scope]);
   const flat = useMemo(() => groups.flatMap((g) => g.items), [groups]);

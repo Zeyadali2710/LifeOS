@@ -1,18 +1,22 @@
 "use server";
 
+import { desc, ilike, isNull, and, sql } from "drizzle-orm";
 import { z } from "zod";
+import { STAGE } from "@/lib/outreach-types";
 import type { PaletteData } from "@/shell/palette-items";
 import { db } from "./db/client";
 import { addDaysYmd, sydneyYmd } from "./calendar/free-slots";
 import { listEvents, loadTasks } from "./calendar/queries";
 import { CATEGORY_LABEL, HEALTH_LABEL } from "@/lib/project-types";
+import { outreachEvents } from "./db/schema";
 import { log } from "./log";
 import { searchProjects } from "./project-queries";
 import { requireOwner } from "./session";
 import { dueBody } from "./tasks";
 import { formatHM, sydneyParts } from "./time";
 
-const EMPTY: PaletteData = { events: [], tasks: [], projects: [] };
+const EMPTY: PaletteData = { events: [], outreach: [], tasks: [], projects: [] };
+const escapeLike = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
 const Q = z.string().trim().min(2).max(100);
 
 // Title-only search over a fixed window; both reads are parameterised drizzle queries.
@@ -25,10 +29,16 @@ export async function paletteSearchAction(raw: unknown): Promise<PaletteData> {
     const now = new Date();
     const today = sydneyYmd(now);
     // 7 back + 55 ahead = the 62-day listEvents cap, so nothing is silently clamped (IN-C03).
-    const [hits, open, found] = await Promise.all([
+    const [hits, open, found, outreach] = await Promise.all([
       listEvents(db(), addDaysYmd(today, -7), addDaysYmd(today, 55), q),
       loadTasks(db(), "open", now),
       searchProjects(db(), q),
+      db()
+        .select({ id: outreachEvents.id, title: outreachEvents.title, startAt: outreachEvents.startAt, stage: outreachEvents.stage, score: outreachEvents.score, isMock: outreachEvents.isMock })
+        .from(outreachEvents)
+        .where(and(isNull(outreachEvents.dismissedAt), ilike(outreachEvents.title, `%${escapeLike(q)}%`)))
+        .orderBy(sql`${outreachEvents.stage} is null`, desc(outreachEvents.score))
+        .limit(8),
     ]);
     // Upcoming/ongoing first (soonest first), then past (most recent first), so last week can't crowd out next week.
     const nowIso = now.toISOString();
@@ -52,6 +62,12 @@ export async function paletteSearchAction(raw: unknown): Promise<PaletteData> {
           subtitle: `${p.weekday} ${p.day} ${month}${e.allDay ? "" : ` ${formatHM(d)}`} · ${e.calendarName}`,
           href: `/organization?view=day&date=${sydneyYmd(d)}&event=${encodeURIComponent(e.eventId)}`,
         };
+      }),
+      outreach: outreach.map((e) => {
+        const label = e.stage ? STAGE[e.stage as keyof typeof STAGE].label : `${e.score}/100`;
+        const month = new Intl.DateTimeFormat("en-AU", { timeZone: "Australia/Sydney", month: "short" }).format(e.startAt);
+        const p = sydneyParts(e.startAt);
+        return { id: e.id, title: e.title, subtitle: `${p.weekday} ${p.day} ${month} � ${label}${e.isMock ? " � Mock" : ""}`, href: `/outreach/events/${e.id}` };
       }),
       tasks: open
         .filter((t) => t.title.toLowerCase().includes(q))
