@@ -8,7 +8,7 @@ import { auditLog, githubRepos, milestones, projectLinks, projects, tasks, toolC
 import { rescoreAfterProjectChange } from "../../outreach/sources";
 import { listProjects, loadProject } from "../../project-queries";
 import { addLink, addTaskDependency, createMilestone, createProject, updateMilestone, updateProject } from "../../projects";
-import { createTask, updateTask } from "../../tasks";
+import { createTask, MAIL_TASK_TITLE, mailLinkedTaskIds, updateTask } from "../../tasks";
 import { CONTENT_TOOLS, contentScope } from "../policy";
 import { ToolError, type Tool, type ToolContext } from "../types";
 
@@ -29,10 +29,11 @@ const listTool: Tool<{ status?: "active" | "paused" | "done" | "archived" | "all
   sideEffect: false,
   private: true,
   async handler(i, ctx) {
-    const items = (await listProjects(ctx.handle, ctx.now()))
+    const cards = (await listProjects(ctx.handle, ctx.now()))
       .filter((c) => (i.status && i.status !== "all" ? c.project.status === i.status : i.status === "all" || c.project.status !== "archived"))
-      .slice(0, i.limit)
-      .map((c) => ({
+      .slice(0, i.limit);
+    const mail = await mailLinkedTaskIds(ctx.handle, cards.flatMap((c) => (c.nextTask ? [c.nextTask.id] : []))); // D-28
+    const items = cards.map((c) => ({
         id: c.project.id,
         name: cut(c.project.name),
         category: c.project.category,
@@ -43,7 +44,7 @@ const listTool: Tool<{ status?: "active" | "paused" | "done" | "archived" | "all
         health: c.health,
         openTasks: c.openTasks,
         blocked: c.blocked,
-        nextTask: c.nextTask ? { title: cut(c.nextTask.title), dueDate: c.nextTask.dueDate } : null,
+        nextTask: c.nextTask ? { title: mail.has(c.nextTask.id) ? MAIL_TASK_TITLE : cut(c.nextTask.title), dueDate: c.nextTask.dueDate } : null,
       }));
     return { items };
   },
@@ -64,6 +65,7 @@ const getTool: Tool<{ project: string }, Record<string, unknown>> = {
     const w = row ? await loadProject(ctx.handle, row.id, ctx.now()) : null;
     if (!w) throw new ToolError("not_found", `Unknown project ${cut(i.project).slice(0, 80)}`);
     const p = w.project;
+    const mail = await mailLinkedTaskIds(ctx.handle, w.tasks.slice(0, 50).map((t) => t.id)); // D-28
     return {
       project: {
         id: p.id,
@@ -78,7 +80,7 @@ const getTool: Tool<{ project: string }, Record<string, unknown>> = {
       progress: w.progress,
       health: w.health,
       healthReason: w.healthReason,
-      tasks: w.tasks.slice(0, 50).map((t) => ({ id: t.id, title: cut(t.title), dueDate: t.dueDate, priority: t.priority, completed: t.completedAt !== null, milestoneId: t.milestoneId })),
+      tasks: w.tasks.slice(0, 50).map((t) => ({ id: t.id, title: mail.has(t.id) ? MAIL_TASK_TITLE : cut(t.title), dueDate: t.dueDate, priority: t.priority, completed: t.completedAt !== null, milestoneId: t.milestoneId })),
       milestones: w.milestones.slice(0, 30).map((m) => ({ id: m.id, title: cut(m.title), dueDate: m.dueDate, completed: m.completedAt !== null, taskCount: m.taskCount, doneCount: m.doneCount })),
       blockers: w.blockers.slice(0, 30).map((b) => ({ kind: b.kind, label: cut(b.label) })),
       links: w.links.slice(0, 30).map((l) => (l.kind === "repo" ? { kind: "repo", fullName: l.repo.fullName, ci: l.repo.ci } : { kind: "url", label: cut(l.label), url: cut(l.url) })),

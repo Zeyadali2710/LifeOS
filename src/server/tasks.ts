@@ -1,4 +1,4 @@
-import { and, eq, isNull, lte, sql } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, lte, sql } from "drizzle-orm";
 import { toTaskDTO, type TaskDTO } from "@/lib/calendar-types";
 import { taskInput } from "@/lib/task-payload";
 import type { FieldErrors } from "./agents/approvals";
@@ -167,4 +167,13 @@ export async function fireDueReminders(h: DB, now: Date, emit: typeof emitActivi
     else await h.update(tasks).set({ remindedAt: null }).where(and(eq(tasks.id, r.id), eq(tasks.remindedAt, now)));
   }
   return fired;
+}
+
+/** D-28: titles of mail-linked tasks carry email text, so agent-facing tools show this instead. */
+export const MAIL_TASK_TITLE = "Email follow-up (private)";
+
+export async function mailLinkedTaskIds(h: DB, ids: string[]): Promise<Set<string>> {
+  if (!ids.length) return new Set();
+  const rows = await h.select({ id: tasks.id }).from(tasks).where(and(inArray(tasks.id, ids), isNotNull(tasks.mailMessageId)));
+  return new Set(rows.map((r) => r.id));
 }

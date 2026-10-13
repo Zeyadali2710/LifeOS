@@ -112,7 +112,7 @@ function toCard(g: Gathered, r: Gathered["rows"][number], now: Date): ProjectCar
     project: s.dtoP,
     progress: s.prog,
     health: s.hr.health,
-    nextTask: s.open[0] ? { title: s.open[0].title, dueDate: s.open[0].dueDate } : null,
+    nextTask: s.open[0] ? { id: s.open[0].id, title: s.open[0].title, dueDate: s.open[0].dueDate } : null,
     openTasks: s.open.length,
     lastActivity: { at: last.at.toISOString(), label: last.label },
     repoSparkline: repoLink?.repoId != null ? (g.cards.get(repoLink.repoId)?.sparkline ?? null) : null,

@@ -12,6 +12,7 @@ import { createEvent, deleteEvent, updateEvent, type WriteCtx, type WriteOutcome
 import { providerFor } from "../../calendar/providers";
 import { addDaysYmd } from "../../calendar/free-slots";
 import { conflictsIn, freeSlotsOn, listEvents, loadTasks, occurrenceOf, pickDefaultCalendar, storedEvent, viewRange } from "../../calendar/queries";
+import { MAIL_TASK_TITLE, mailLinkedTaskIds } from "../../tasks";
 import { ToolError, type Tool, type ToolContext } from "../types";
 
 const NOT_CONNECTED = "No calendar is connected yet, so I can't see your schedule. Connect Google Calendar or iCloud in Settings → Connections.";
@@ -114,14 +115,17 @@ const tasksTool = calRead(
   "Reading your tasks",
   "List LifeOS tasks: due today (plus overdue), all open, or recently completed.",
   z.object({ which: z.enum(["today", "open", "completed"]).default("today"), limit }),
-  async (i, ctx) =>
-    (await loadTasks(ctx.handle, i.which, ctx.now())).slice(0, i.limit).map((t) => ({
+  async (i, ctx) => {
+    const rows = (await loadTasks(ctx.handle, i.which, ctx.now())).slice(0, i.limit);
+    const mail = await mailLinkedTaskIds(ctx.handle, rows.map((t) => t.id)); // D-28
+    return rows.map((t) => ({
       id: t.id,
-      title: cut(t.title),
+      title: mail.has(t.id) ? MAIL_TASK_TITLE : cut(t.title),
       due: t.dueAt,
       priority: t.priority,
       completed: t.completedAt !== null,
-    })),
+    }));
+  },
   false,
 );
 

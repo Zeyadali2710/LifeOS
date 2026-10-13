@@ -136,7 +136,7 @@ export interface ProjectCardDTO {
   project: ProjectDTO;
   progress: Progress;
   health: Health | null;
-  nextTask: { title: string; dueDate: string | null } | null;
+  nextTask: { id: string; title: string; dueDate: string | null } | null;
   openTasks: number;
   lastActivity: { at: string; label: string } | null;
   repoSparkline: number[] | null;
