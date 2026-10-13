@@ -111,7 +111,12 @@ export function DraftReply({
               <Skeleton className="h-3.5 w-[92%]" />
               <Skeleton className="h-3.5 w-[96%]" />
               <Skeleton className="h-3.5 w-[60%]" />
-              <p className="text-[12.5px] text-text-3">Outreach agent is drafting…</p>
+              <p className="flex flex-wrap items-center gap-2 text-[12.5px] text-text-3">
+                Outreach agent is drafting… Follow it in the AI panel.
+                <button type="button" onClick={() => setPhase("idle")} className="text-cyan">
+                  Stop waiting
+                </button>
+              </p>
             </div>
           ) : (
             <p className="text-[13.5px] text-text-2">

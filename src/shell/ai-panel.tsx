@@ -28,7 +28,7 @@ const subscribe = (cb: () => void) => {
 const getMode = (): Mode => (window.innerWidth >= 1100 ? "docked" : window.innerWidth >= 760 ? "overlay" : "sheet");
 
 export function AIPanel() {
-  const { aiOpen, closeAI, consumeAIPrompt, toast } = useShell();
+  const { aiOpen, aiPrompt, closeAI, consumeAIPrompt, toast } = useShell();
   const router = useRouter();
   const { status } = useAgentStatus();
   const chat = useChat();
@@ -58,14 +58,17 @@ export function AIPanel() {
   };
 
   useEffect(() => {
-    if (!aiOpen || !status) return; // wait for status so a blocked assistant (no key, cap) never POSTs
+    // wait for status so a blocked assistant (no key, cap) never POSTs; a prompt sent while a run streams waits for it (CR-U04)
+    if (!aiOpen || !status || !aiPrompt || streaming) return;
     const t = setTimeout(() => {
       const p = consumeAIPrompt(); // deferred so setState never runs synchronously in the effect
-      if (p) void submit(p);
+      if (!p) return;
+      if (blocked) setDraft(p); // the block error shows; the prompt stays in the box instead of vanishing
+      else void submit(p);
     }, 0);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- submit is recreated each render; only the open edge should consume a prompt
-  }, [aiOpen, status === null, consumeAIPrompt]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- submit is recreated each render; consume on open and on every new prompt
+  }, [aiOpen, aiPrompt, status === null, streaming, consumeAIPrompt]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView?.({ block: "end" });
