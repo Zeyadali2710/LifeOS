@@ -1,10 +1,11 @@
 import { formatHM, sydneyParts, TZ } from "@/server/time";
 import { eventCreatePayload, eventDeletePayload, eventUpdatePayload } from "./event-payload";
 import { issuePayloadSchema } from "./issue-payload";
+import { mailReplyPayload, type MailReplyPayload } from "./mail-payload";
 import { draftCounts, projectCreatePayload, projectUpdatePayload } from "./project-payload";
 
 // Per-tool-kind approval contract (client-safe).
-export type ApprovalKind = "issue" | "event_create" | "event_update" | "event_delete" | "project_create" | "project_update";
+export type ApprovalKind = "issue" | "event_create" | "event_update" | "event_delete" | "project_create" | "project_update" | "mail_reply";
 
 const KINDS: Record<string, ApprovalKind> = {
   "calendar.create_event": "event_create",
@@ -12,6 +13,7 @@ const KINDS: Record<string, ApprovalKind> = {
   "calendar.delete_event": "event_delete",
   "projects.create": "project_create",
   "projects.update": "project_update",
+  "mail.send_reply": "mail_reply", // never the "issue" fallback: bodies must not reach audit_log
 };
 export const approvalKind = (tool: string): ApprovalKind => KINDS[tool] ?? "issue";
 
@@ -22,6 +24,7 @@ const SCHEMAS = {
   event_delete: eventDeletePayload,
   project_create: projectCreatePayload,
   project_update: projectUpdatePayload,
+  mail_reply: mailReplyPayload,
 };
 export const payloadSchemaFor = (tool: string) => SCHEMAS[approvalKind(tool)];
 
@@ -33,6 +36,7 @@ export const LOCKED: Record<ApprovalKind, string[]> = {
   event_delete: Object.keys(eventDeletePayload.shape),
   project_create: ["sources"],
   project_update: ["projectId", "before", "sources"],
+  mail_reply: ["messageId", "threadId", "to", "cc", "inReplyTo", "references", "originalSubject"],
 };
 
 // Key-order-independent: the stored original comes back from jsonb, which reorders object keys.
@@ -53,7 +57,7 @@ export function checkLocked(kind: ApprovalKind, orig: unknown, next: unknown): R
   const n = (next ?? {}) as Record<string, unknown>;
   for (const k of LOCKED[kind]) {
     if (stable(o[k]) !== stable(n[k])) {
-      return { [k]: k === "repo" ? "Repository can't be changed." : k === "calendarId" ? "Calendar can't be changed." : "This can't be changed." };
+      return { [k]: k === "repo" ? "Repository can't be changed." : k === "calendarId" ? "Calendar can't be changed." : kind === "mail_reply" ? "Recipients and the thread can't be changed." : "This can't be changed." };
     }
   }
   if (kind === "project_create" || kind === "project_update") {
@@ -71,6 +75,7 @@ const NOTHING: Record<ApprovalKind, string> = {
   event_delete: "Nothing was deleted.",
   project_create: "Nothing was created.",
   project_update: "Nothing was changed.",
+  mail_reply: "Nothing was sent.",
 };
 export const nothingText = (kind: ApprovalKind) => NOTHING[kind];
 
@@ -108,6 +113,11 @@ export function approvalSummary(tool: string, payload: unknown, expiresAt: Date)
     }
     const k = c.fields + c.tasks + c.milestones + c.links;
     return { title: `Approval waiting: change project "${(pp as { before: { name: string } }).before.name}"`, body: `${k} changes. Expires ${exp}.` };
+  }
+  if (kind === "mail_reply") {
+    const m = parsed.data as MailReplyPayload;
+    const to = m.to[0]!;
+    return { title: `Approval waiting: reply to ${to.name || to.address} · ${m.subject}`, body: `${m.body.length} characters to ${to.address}. Expires ${exp}.` };
   }
   const p = parsed.data as { title: string; start: string; allDay: boolean; calendarLabel: string };
   const s = new Date(p.allDay ? `${p.start}T12:00:00Z` : p.start);

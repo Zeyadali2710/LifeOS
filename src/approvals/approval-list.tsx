@@ -15,7 +15,7 @@ export const stamp = (iso: string) => {
   return `${p.weekday} ${p.day} ${MONTHS[p.month - 1]} ${formatHM(new Date(iso))}`;
 };
 
-const BADGE: Record<ApprovalKind, string> = { issue: "CREATE ISSUE", event_create: "CREATE EVENT", event_update: "EDIT EVENT", event_delete: "DELETE EVENT", project_create: "CREATE PROJECT", project_update: "EDIT PROJECT" };
+const BADGE: Record<ApprovalKind, string> = { issue: "CREATE ISSUE", event_create: "CREATE EVENT", event_update: "EDIT EVENT", event_delete: "DELETE EVENT", project_create: "CREATE PROJECT", project_update: "EDIT PROJECT", mail_reply: "REPLY" };
 
 const STATE: Record<ApprovalStatus, [string, string]> = {
   pending: ["PENDING", "text-amber"],

@@ -38,7 +38,7 @@ describe("limitsFor", () => {
 
 describe("CONTENT_TOOLS / MAIL_TOOLS (D-19, D-28, D-29)", () => {
   it("floors on events and mail reads", () => {
-    for (const n of ["outreach.list_events", "outreach.get_event", "mail.list", "mail.get_message"]) expect(CONTENT_TOOLS).toContain(n);
+    for (const n of ["outreach.list_events", "outreach.get_event", "mail.list", "mail.get_message", "mail.send_reply"]) expect(CONTENT_TOOLS).toContain(n);
   });
   it("treats every mail tool, including the later send_reply, as mail", () => {
     expect([...MAIL_TOOLS]).toEqual(["mail.list", "mail.get_message", "mail.send_reply"]);

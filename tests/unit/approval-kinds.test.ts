@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { approvalKind, approvalSummary, checkLocked, nothingText, payloadSchemaFor } from "@/lib/approval-kinds";
+import { mailReplyPayload } from "@/lib/mail-payload";
 
 const cal = { calendarId: "11111111-1111-4111-8111-111111111111", calendarLabel: "Personal", provider: "google" as const };
 const ev = { ...cal, title: "Lunch", start: "2026-10-12T01:00:00Z", end: "2026-10-12T02:00:00Z" };
@@ -130,5 +131,50 @@ describe("project approval kinds", () => {
     expect(s.body).toMatch(/^1 tasks, 1 milestones, 2 links\. Expires /);
     expect(approvalSummary("projects.create", { ...pc, milestones: [], tasks: [], links: [] }, exp).body).toMatch(/^Expires /);
     expect(approvalSummary("projects.create", { nope: 1 }, exp)).toEqual({ title: "", body: undefined });
+  });
+});
+
+describe("mail_reply kind", () => {
+  const a = { name: "Hannah Example", address: "hannah@example.org" };
+  const mr = {
+    messageId: "33333333-3333-4333-8333-333333333333",
+    threadId: "t-1",
+    to: [a],
+    cc: [],
+    inReplyTo: "<x@example.org>",
+    references: "<x@example.org>",
+    originalSubject: "Demo night slot",
+    subject: "Re: Demo night slot",
+    body: "Thanks, see you there.",
+  };
+  const schema = () => payloadSchemaFor("mail.send_reply");
+  const msg = (p: object) => {
+    const r = schema().safeParse(p);
+    return r.success ? null : r.error.issues[0]!.message;
+  };
+  it("maps the tool to mail_reply, never the issue fallback", () => {
+    expect(approvalKind("mail.send_reply")).toBe("mail_reply");
+  });
+  it("validates", () => {
+    expect(schema().safeParse(mr).success).toBe(true);
+    expect(msg({ ...mr, subject: " " })).toBe("Add a subject.");
+    expect(msg({ ...mr, body: " " })).toBe("Write a reply.");
+    expect(schema().safeParse({ ...mr, body: "x".repeat(10001) }).success).toBe(false);
+    expect(schema().safeParse({ ...mr, to: [] }).success).toBe(false);
+  });
+  it("locks recipients and thread, allows subject and body", () => {
+    for (const [k, v] of Object.entries({ to: [{ name: "", address: "evil@example.org" }], cc: [a], threadId: "z", messageId: "44444444-4444-4444-8444-444444444444", inReplyTo: "<y>", references: "<y>", originalSubject: "z" })) {
+      expect(checkLocked("mail_reply", mr, { ...mr, [k]: v })).toEqual({ [k]: "Recipients and the thread can't be changed." });
+    }
+    expect(checkLocked("mail_reply", mr, { ...mr, subject: "Re: Other", body: "Changed" })).toBeNull();
+  });
+  it("summarises and has nothing text", () => {
+    const s = approvalSummary("mail.send_reply", mr, new Date("2026-10-14T01:00:00Z"));
+    expect(s.title).toBe("Approval waiting: reply to Hannah Example · Re: Demo night slot");
+    expect(s.body).toMatch(/^22 characters to hannah@example\.org\. Expires /);
+    expect(nothingText("mail_reply")).toBe("Nothing was sent.");
+  });
+  it("has no secret-looking field names", () => {
+    expect(Object.keys(mailReplyPayload.shape).filter((k) => /key|token|secret|password|authorization/i.test(k))).toEqual([]);
   });
 });

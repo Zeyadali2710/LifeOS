@@ -144,8 +144,9 @@ const EVENT_VERB: Record<ApprovalKind, string> = {
   event_delete: "delete a calendar event",
   project_create: "create a project",
   project_update: "change a project",
+  mail_reply: "send an email reply",
 };
-const EVENT_OK: Record<ApprovalKind, string> = { issue: "", event_create: "ADD TO CALENDAR", event_update: "UPDATE EVENT", event_delete: "DELETE EVENT", project_create: "CREATE PROJECT", project_update: "UPDATE PROJECT" };
+const EVENT_OK: Record<ApprovalKind, string> = { issue: "", event_create: "ADD TO CALENDAR", event_update: "UPDATE EVENT", event_delete: "DELETE EVENT", project_create: "CREATE PROJECT", project_update: "UPDATE PROJECT", mail_reply: "SEND REPLY" };
 
 // Event kinds: shared header, reason, expiry and decisions around EventApprovalBody.
 function EventApprovalShell({ approval: a, onChange }: DetailProps) {

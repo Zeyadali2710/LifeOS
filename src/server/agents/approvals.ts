@@ -43,8 +43,8 @@ const live = async (h: DB, a: { id: string; runId: string }) => {
 
 const payloadOf = (r: Row): unknown => r.editedPayload ?? r.originalPayload;
 const titleOf = (r: Row) => {
-  const p = payloadOf(r) as { title?: unknown; name?: unknown; before?: { name?: unknown } } | null;
-  const t = p?.title ?? p?.name ?? p?.before?.name;
+  const p = payloadOf(r) as { title?: unknown; name?: unknown; before?: { name?: unknown }; subject?: unknown } | null;
+  const t = p?.title ?? p?.name ?? p?.before?.name ?? p?.subject;
   return typeof t === "string" ? t : "";
 };
 
@@ -263,7 +263,9 @@ export async function expireDue(h: DB, now: Date = new Date(), opts: { enqueue?:
         category: "FYI",
         title: "Approval expired",
         body:
-          kind === "issue"
+          kind === "mail_reply"
+            ? `The reply "${titleOf(a)}" was not sent. Nothing ran after the request expired.`
+            : kind === "issue"
             ? `The issue "${titleOf(a)}" was not created. Nothing ran after the request expired.`
             : kind === "project_create" || kind === "project_update"
               ? `The project request "${titleOf(a)}" expired. ${nothingText(kind)} Nothing ran after the request expired.`
