@@ -1,5 +1,5 @@
 // Mail triage (D-25): classify, summarise, flag and extract actions with Haiku. Bodies are fetched live and never stored.
-import { and, desc, eq, gte, inArray, isNull } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { IMPORTANCE, MAIL_CATEGORIES } from "@/lib/outreach-types";
 import { googleTokenSource } from "../calendar/google/client";
@@ -26,7 +26,7 @@ const TriageItem = z.object({
 });
 export type TriageItem = z.infer<typeof TriageItem>;
 
-// Over-long fields are rejected, not cut: a bad batch leaves its rows untriaged and is retried.
+// Over-long fields are rejected, not cut: a bad batch leaves its rows untriaged and is retried once automatically (WR-S01).
 export const triageResult = z.object({ results: z.array(TriageItem).max(10) });
 
 export const RECORD_TRIAGE_TOOL: AnthropicTool = {
@@ -46,6 +46,16 @@ const SYSTEM =
 type Row = typeof mailMessages.$inferSelect;
 type Deps = { llm: LlmClient; gmail: ReturnType<typeof createGmail> | null; now: Date };
 export type TriageOpts = { handle?: DB; llm?: LlmClient | null; fetch?: typeof fetch; now?: () => Date; key?: Buffer; ids?: string[] };
+
+/** Failed attempts live in triage_model while triaged_at is null: null -> failed:1 -> failed:2 (then only the owner's Triage retries). */
+export const TRIAGE_GAVE_UP = "failed:2";
+async function markFailed(h: DB, ids: string[]) {
+  if (!ids.length) return;
+  await h
+    .update(mailMessages)
+    .set({ triageModel: sql`case when ${mailMessages.triageModel} = 'failed:1' then ${TRIAGE_GAVE_UP} else 'failed:1' end` })
+    .where(and(inArray(mailMessages.id, ids), isNull(mailMessages.triagedAt)));
+}
 
 async function setPaused(h: DB, v: boolean) {
   await h.insert(settings).values({ key: TRIAGE_PAUSED_KEY, value: v }).onConflictDoUpdate({ target: settings.key, set: { value: v, updatedAt: new Date() } });
@@ -103,6 +113,7 @@ export async function triageBatch(h: DB, rows: Row[], d: Deps): Promise<"ok" | "
     log.error({ err }, "mail triage model call failed");
   }
   if (!parsed) {
+    await markFailed(h, rows.map((r) => r.id));
     await finish("failed", "Triage output was unusable.");
     return "failed";
   }
@@ -129,6 +140,7 @@ export async function triageBatch(h: DB, rows: Row[], d: Deps): Promise<"ok" | "
       .where(and(eq(mailMessages.id, row.id), isNull(mailMessages.triagedAt)));
     if (t.importance === "HIGH" && (await notifyHigh(h, row, d.now))) high++;
   }
+  await markFailed(h, rows.filter((r) => !seen.has(r.id)).map((r) => r.id)); // omitted by the model
   await finish("completed");
   await setPaused(h, false);
   if (seen.size) await notifyLive(h, "outreach", "mail");
@@ -141,7 +153,7 @@ export async function runTriage(opts: TriageOpts = {}): Promise<{ triaged: numbe
   const now = (opts.now ?? (() => new Date()))();
   const rows = opts.ids?.length
     ? await h.select().from(mailMessages).where(and(inArray(mailMessages.id, opts.ids), isNull(mailMessages.triagedAt)))
-    : await h.select().from(mailMessages).where(and(isNull(mailMessages.triagedAt), gte(mailMessages.receivedAt, new Date(+now - 7 * DAY)))).orderBy(desc(mailMessages.receivedAt)).limit(100);
+    : await h.select().from(mailMessages).where(and(isNull(mailMessages.triagedAt), or(isNull(mailMessages.triageModel), ne(mailMessages.triageModel, TRIAGE_GAVE_UP)), gte(mailMessages.receivedAt, new Date(+now - 7 * DAY)))).orderBy(desc(mailMessages.receivedAt)).limit(100);
 
   const bulk = rows.filter((r) => r.bulk);
   if (bulk.length) {

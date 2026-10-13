@@ -5,7 +5,7 @@ import { saveCalendarSecret } from "@/server/calendar/connections";
 import { GMAIL_COMPOSE, GMAIL_READ } from "@/server/calendar/google/client";
 import { MODELS } from "@/server/agents/registry";
 import { activityEvents, agentRuns, connections, mailMessages, notifications, runTurns, settings } from "@/server/db/schema";
-import { runTriage, TRIAGE_PAUSED_KEY } from "@/server/mail/triage";
+import { runTriage, TRIAGE_GAVE_UP, TRIAGE_PAUSED_KEY } from "@/server/mail/triage";
 import { fakeGmail } from "../helpers/fake-gmail";
 import { scriptedLlm, type Turn } from "../helpers/fake-llm";
 import { setupTestDb } from "./helpers";
@@ -101,6 +101,26 @@ describe("mail triage", () => {
     await run(llm);
     expect((await row(a.id)).triagedAt).toBeNull();
     expect((await t.handle().select().from(agentRuns))[0]).toMatchObject({ status: "failed" });
+  });
+
+  it("gives up automatic retries after two failed attempts, but the owner's Triage still retries (WR-S01)", async () => {
+    const a = await msg();
+    const omitted = await msg();
+    const bad = { toolUses: [{ name: "record_triage", input: { results: [{ id: a.id, category: "SPAM" }] } }] };
+    const llm = scriptedLlm([bad, bad, answer()]);
+    await run(llm);
+    expect((await row(a.id)).triageModel).toBe("failed:1");
+    await run(llm);
+    expect((await row(a.id)).triageModel).toBe(TRIAGE_GAVE_UP);
+    expect((await row(omitted.id)).triageModel).toBe(TRIAGE_GAVE_UP);
+    await run(llm);
+    expect(llm.calls).toHaveLength(2); // no third paid attempt
+    await run(llm, { ids: [a.id] });
+    expect(await row(a.id)).toMatchObject({ triageModel: MODELS.haiku });
+    expect((await row(a.id)).triagedAt).not.toBeNull();
+    const only = await msg();
+    await run(scriptedLlm([(p) => ({ toolUses: [{ name: "record_triage", input: { results: [{ id: idsOf(p).find((x) => x !== only.id) ?? "x", ...ok }] } }] })]));
+    expect((await row(only.id)).triageModel).toBe("failed:1"); // omitted id counts as an attempt
   });
 
   it("stops at the spend cap, sets mail.triage_paused, and clears it after a successful batch", async () => {
