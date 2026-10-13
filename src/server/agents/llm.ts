@@ -17,6 +17,7 @@ export function anthropicClient(apiKey: string | undefined = env().ANTHROPIC_API
           max_tokens: p.maxTokens,
           system: [{ type: "text", text: p.system, cache_control: { type: "ephemeral" } }],
           tools: p.tools,
+          ...(p.toolChoice ? { tool_choice: p.toolChoice } : {}),
           messages: p.messages,
         },
         { signal },

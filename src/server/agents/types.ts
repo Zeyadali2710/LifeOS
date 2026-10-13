@@ -22,7 +22,7 @@ export type AnthropicTool = { name: string; description: string; input_schema: A
 
 export interface LlmClient {
   stream(
-    params: { model: string; system: string; messages: Anthropic.MessageParam[]; tools: AnthropicTool[]; maxTokens: number },
+    params: { model: string; system: string; messages: Anthropic.MessageParam[]; tools: AnthropicTool[]; maxTokens: number; toolChoice?: { type: "tool"; name: string } },
     onText: (t: string) => void,
     signal?: AbortSignal,
   ): Promise<LlmTurn>;

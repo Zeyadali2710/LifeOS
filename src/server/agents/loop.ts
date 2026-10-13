@@ -3,7 +3,7 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import type { ChatEvent, RouteEvent, RunStatus } from "@/lib/agent-types";
 import { formatDuration } from "@/lib/format";
 import { db, type DB } from "../db/client";
-import { agentRuns, approvals, runTurns, toolCalls } from "../db/schema";
+import { agentRuns, approvals, toolCalls } from "../db/schema";
 import { emitActivity, notifyLive } from "../events";
 import { log } from "../log";
 import { enqueue as realEnqueue, QUEUES, type Enqueue } from "../queue";
@@ -11,7 +11,7 @@ import { routeSteps, toApprovalDTO, toRunDTO, toStepDTO } from "./dto";
 import { callTool } from "./gateway";
 import { mailInScope } from "./policy";
 import { getLlm } from "./llm";
-import { costUsd } from "./pricing";
+import { addRunUsage } from "./usage";
 import { FreeModelError } from "./openrouter";
 import { getAgent, limitsFor, MODELS } from "./registry";
 import {
@@ -294,29 +294,7 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
 
       const t0 = now().getTime();
       const model = curModel; // one turn is priced with exactly the model that served it (D-14)
-      const addUsage = async (u: LlmUsage, m: string) => {
-        const cost = costUsd(m, u).toFixed(6);
-        await h
-          .update(agentRuns)
-          .set({
-            inputTokens: sql`${agentRuns.inputTokens} + ${u.input}`,
-            outputTokens: sql`${agentRuns.outputTokens} + ${u.output}`,
-            cacheWriteTokens: sql`${agentRuns.cacheWriteTokens} + ${u.cacheWrite}`,
-            cacheReadTokens: sql`${agentRuns.cacheReadTokens} + ${u.cacheRead}`,
-            costUsd: sql`${agentRuns.costUsd} + (${cost})::numeric`,
-          })
-          .where(eq(agentRuns.id, runId));
-        await h.insert(runTurns).values({
-          runId,
-          seq: sql`(select coalesce(max(seq), 0) + 1 from run_turns where run_id = ${runId})`,
-          model: m,
-          inputTokens: u.input,
-          outputTokens: u.output,
-          cacheWriteTokens: u.cacheWrite,
-          cacheReadTokens: u.cacheRead,
-          costUsd: cost,
-        });
-      };
+      const addUsage = (u: LlmUsage, m: string) => addRunUsage(h, runId, u, m);
       let streamedChars = 0;
       let turn;
       try {
