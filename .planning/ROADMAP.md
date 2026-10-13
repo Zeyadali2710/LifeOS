@@ -222,25 +222,25 @@ Plans:
   4. The Outreach page (events list + pipeline board, email triage view) follows the Claude Design Outreach file in the Glass system; e2e + VM DB tests cover providers (fixtures), pipeline, Gmail sync and the send approval path.
 **Plans**: 19 plans in 10 waves
 Plans:
-- [ ] 06-01-PLAN.md — Schema + migration 0008 (event_sources, outreach_events, mail_messages, task FKs, connections.scopes), queue names, client-safe outreach types
-- [ ] 06-02-PLAN.md — SSRF-safe safeGet, shared text helpers, Gmail body extraction, reply MIME builder
-- [ ] 06-03-PLAN.md — iCal feed parser (reuses Phase 4 expansion) and schema.org JSON-LD event extraction
-- [ ] 06-04-PLAN.md — Normalize/dedup keys, Sydney/window filter, explainable 60/20/20 relevance score + why line
-- [ ] 06-05-PLAN.md — Google scope split (Gmail optional, calendar required), stored scopes, Gmail client
-- [ ] 06-06-PLAN.md — Pipeline server: stage transitions + activity, Add to calendar, follow-up tasks, 'outreach' live kind
-- [ ] 06-07-PLAN.md — Event providers (ics, Eventbrite/Luma keyed-or-mock, Meetup/Humanitix mocks), sync/upsert/merge/prune/score, 6-hour worker
-- [ ] 06-08-PLAN.md — Gmail incremental sync (metadata only, quota-safe, 404 fallback) + fake Gmail helper
-- [ ] 06-09-PLAN.md — Feeds, Eventbrite/Luma keys, organizer ids, URL import, interests, Sync now actions
-- [ ] 06-10-PLAN.md — Outreach agent live with READ tools, content floor, hard mail taint
-- [ ] 06-11-PLAN.md — Haiku mail triage as recorded runs with cap pause + mail worker schedules
-- [ ] 06-12-PLAN.md — mail.send_reply APPROVE tool, mail_reply approval kind, idempotent send
-- [ ] 06-13-PLAN.md — Settings: Reconnect Google + Gmail status, event keys/feeds, Outreach interests, icons
-- [ ] 06-14-PLAN.md — Mail owner actions (body, archive, flag, add as task, triage, Save to Gmail drafts) + mail approval UI
-- [ ] 06-15-PLAN.md — /outreach page, EVENTS list, EventCard, WHY block, Add to calendar dialog
-- [ ] 06-16-PLAN.md — Pipeline board, follow-up + import dialogs, event detail route, palette scope + command
-- [ ] 06-17-PLAN.md — EMAIL and FOLLOW-UPS tabs with draft-reply approval flow
-- [ ] 06-18-PLAN.md — e2e outreach spec on seeded rows + docs
-- [ ] 06-19-PLAN.md — Phase gate: local gates, validation map, OWNER-ACTIONS, owner VM migrate + UAT
+- [x] 06-01-PLAN.md — Schema + migration 0008 (event_sources, outreach_events, mail_messages, task FKs, connections.scopes), queue names, client-safe outreach types
+- [x] 06-02-PLAN.md — SSRF-safe safeGet, shared text helpers, Gmail body extraction, reply MIME builder
+- [x] 06-03-PLAN.md — iCal feed parser (reuses Phase 4 expansion) and schema.org JSON-LD event extraction
+- [x] 06-04-PLAN.md — Normalize/dedup keys, Sydney/window filter, explainable 60/20/20 relevance score + why line
+- [x] 06-05-PLAN.md — Google scope split (Gmail optional, calendar required), stored scopes, Gmail client
+- [x] 06-06-PLAN.md — Pipeline server: stage transitions + activity, Add to calendar, follow-up tasks, 'outreach' live kind
+- [x] 06-07-PLAN.md — Event providers (ics, Eventbrite/Luma keyed-or-mock, Meetup/Humanitix mocks), sync/upsert/merge/prune/score, 6-hour worker
+- [x] 06-08-PLAN.md — Gmail incremental sync (metadata only, quota-safe, 404 fallback) + fake Gmail helper
+- [x] 06-09-PLAN.md — Feeds, Eventbrite/Luma keys, organizer ids, URL import, interests, Sync now actions
+- [x] 06-10-PLAN.md — Outreach agent live with READ tools, content floor, hard mail taint
+- [x] 06-11-PLAN.md — Haiku mail triage as recorded runs with cap pause + mail worker schedules
+- [x] 06-12-PLAN.md — mail.send_reply APPROVE tool, mail_reply approval kind, idempotent send
+- [x] 06-13-PLAN.md — Settings: Reconnect Google + Gmail status, event keys/feeds, Outreach interests, icons
+- [x] 06-14-PLAN.md — Mail owner actions (body, archive, flag, add as task, triage, Save to Gmail drafts) + mail approval UI
+- [x] 06-15-PLAN.md — /outreach page, EVENTS list, EventCard, WHY block, Add to calendar dialog
+- [x] 06-16-PLAN.md — Pipeline board, follow-up + import dialogs, event detail route, palette scope + command
+- [x] 06-17-PLAN.md — EMAIL and FOLLOW-UPS tabs with draft-reply approval flow
+- [x] 06-18-PLAN.md — e2e outreach spec on seeded rows + docs
+- [x] 06-19-PLAN.md — Phase gate: local gates, validation map, OWNER-ACTIONS, owner VM migrate + UAT
 
 ### Phase 7–11
 Goals per phase list above; a detail section (goal, requirements, success criteria) is written before each phase's discuss.
