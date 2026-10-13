@@ -114,7 +114,12 @@ test("pending mail_reply can be edited and approved from the email detail", asyn
   await detail.getByRole("button", { name: "Done editing" }).click();
   await expect(detail.getByText("EDITED", { exact: true })).toBeVisible();
   await detail.getByRole("button", { name: "Send reply" }).click();
-  await expect.poll(async () => (await readApproval(ap.id)).status).toMatch(/^(approved|executing|executed|failed)$/);
+  // The e2e stack has no worker or outbound network, so the honest outcome here is exactly "approved" and the
+  // UI must not claim the reply was sent. "Approve → fake Gmail records exactly one send of the edited body" (D-37)
+  // is asserted end to end in tests/db/mail-agent.test.ts ("sends the edited body once ...").
+  await expect(page.getByText("Reply approved · sending")).toBeVisible();
+  await expect(detail.getByText("Sending the reply…")).toBeVisible();
+  await expect.poll(async () => (await readApproval(ap.id)).status).toBe("approved");
   const stored = await readApproval(ap.id);
   expect(stored.edited?.body).toBe(body);
   expect(stored.edited?.to).toEqual(ap.payload.to);
