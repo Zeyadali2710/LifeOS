@@ -180,3 +180,124 @@ export async function deleteProject(id: string) {
     await c.query("delete from projects where id = $1", [id]);
   });
 }
+
+// ---- Phase 6 seed helpers (test-only). The e2e server has no worker, LLM or outbound network. ----
+
+/** Raw-SQL outreach event 5 days out. Pass a unique title; desktop and mobile share the DB. */
+export async function insertOutreachEvent(o: { title: string; isMock?: boolean; stage?: string | null; score?: number; why?: string; startAt?: Date }): Promise<string> {
+  return withDb(async (c) => {
+    const start = o.startAt ?? new Date(Date.now() + 5 * 86_400_000);
+    const kind = o.isMock ? "meetup_mock" : "ics";
+    const r = await c.query(
+      `insert into outreach_events (title, title_key, start_at, end_at, is_mock, sources, score, why, stage, location)
+       values ($1, $2, $3, $4, $5, $6::jsonb, $7, $8, $9, 'Sydney NSW') returning id`,
+      [
+        o.title,
+        o.title.toLowerCase(),
+        start,
+        new Date(+start + 2 * 3600_000),
+        o.isMock ?? false,
+        JSON.stringify([{ sourceId: "e2e", kind, remoteId: `e2e-${randomBytes(4).toString("hex")}` }]),
+        o.score ?? 99,
+        o.why ?? "Matches your interests.",
+        o.stage ?? null,
+      ],
+    );
+    return r.rows[0].id as string;
+  });
+}
+
+export async function deleteOutreachEvent(id: string) {
+  await withDb(async (c) => {
+    await c.query("delete from tasks where outreach_event_id = $1", [id]);
+    await c.query("delete from outreach_events where id = $1", [id]);
+  });
+}
+
+/** A triaged INBOX message. */
+export async function insertMailMessage(o: {
+  subject: string;
+  fromName: string;
+  fromAddress: string;
+  category?: string;
+  importance?: string;
+  summary: string;
+  actionItems?: { text: string; due?: string | null }[];
+}): Promise<string> {
+  return withDb(async (c) => {
+    const r = await c.query(
+      `insert into mail_messages (gmail_id, thread_id, from_name, from_address, "to", subject, received_at, label_ids, snippet, category, importance, summary, action, action_items, triaged_at, triage_model)
+       values ($1, $2, $3, $4, '[{"name":"Owner","address":"owner@example.test"}]'::jsonb, $5, now(), array['INBOX'], 'Snippet text', $6, $7, $8, 'Reply this week', $9::jsonb, now(), 'e2e') returning id`,
+      [`g-${randomBytes(6).toString("hex")}`, `t${randomBytes(6).toString("hex")}`, o.fromName, o.fromAddress, o.subject, o.category ?? "IMPORTANT", o.importance ?? "HIGH", o.summary, JSON.stringify(o.actionItems ?? [])],
+    );
+    return r.rows[0].id as string;
+  });
+}
+
+export async function deleteMailMessage(id: string) {
+  await withDb(async (c) => {
+    await c.query("delete from tasks where mail_message_id = $1", [id]);
+    await c.query("delete from mail_messages where id = $1", [id]);
+  });
+}
+
+/** Google connection with Gmail scopes and a dummy ciphertext: the e2e server never calls Google. */
+export async function insertGmailConnection() {
+  await withDb((c) =>
+    c.query(
+      `insert into connections (id, ciphertext, last4, login, status, scopes)
+       values ('google_calendar', 'v1.e2e.e2e.e2e', 'e2e1', 'owner@example.test', 'connected', $1::jsonb)
+       on conflict (id) do update set status = 'connected', scopes = excluded.scopes`,
+      [JSON.stringify(["https://www.googleapis.com/auth/calendar", "https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/gmail.compose"])],
+    ),
+  );
+}
+
+export async function removeGmailConnection() {
+  await withDb((c) => c.query("delete from connections where id = 'google_calendar'")); // cascades to calendars and events
+}
+
+export type SeededMailPayload = {
+  messageId: string;
+  threadId: string;
+  to: { name: string; address: string }[];
+  cc: { name: string; address: string }[];
+  inReplyTo: string | null;
+  references: string | null;
+  originalSubject: string;
+  subject: string;
+  body: string;
+};
+
+/** Pending mail.send_reply approval (APPROVE tier) for a seeded message. Remove with deleteApprovalRun. */
+export async function insertMailApproval(o: { mailId: string; subject: string; body?: string }): Promise<{ id: string; payload: SeededMailPayload }> {
+  return withDb(async (c) => {
+    const payload: SeededMailPayload = {
+      messageId: o.mailId,
+      threadId: "thread-e2e",
+      to: [{ name: "Lee Direct", address: "lee.direct@example.test" }],
+      cc: [],
+      inReplyTo: null,
+      references: null,
+      originalSubject: o.subject,
+      subject: `Re: ${o.subject}`,
+      body: o.body ?? "Thanks, I will send the slides on Friday.",
+    };
+    const run = await c.query(
+      `insert into agent_runs (agent_id, prompt, model, status, started_at) values ('outreach', 'Draft a reply', 'claude-sonnet-5-5', 'waiting_approval', now()) returning id`,
+    );
+    const tc = await c.query(
+      `insert into tool_calls (run_id, tool_use_id, seq, tool, tier, status, input, started_at)
+       values ($1, 'toolu_mail', 1, 'mail.send_reply', 'APPROVE', 'waiting_approval', $2::jsonb, now()) returning id`,
+      [run.rows[0].id, JSON.stringify(payload)],
+    );
+    const a = await c.query(
+      `insert into approvals (run_id, tool_call_id, agent_id, tool, status, original_payload, payload_hash, reason, expires_at)
+       values ($1, $2, 'outreach', 'mail.send_reply', 'pending', $3::jsonb, $4, 'You asked for a reply.', now() + interval '7 days') returning id`,
+      [run.rows[0].id, tc.rows[0].id, JSON.stringify(payload), `e2e-mail-${randomBytes(8).toString("hex")}`],
+    );
+    const id = a.rows[0].id as string;
+    await c.query("select pg_notify('lifeos_events', $1)", [JSON.stringify({ k: "approval", id })]);
+    return { id, payload };
+  });
+}
