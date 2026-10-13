@@ -1,8 +1,8 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { toCalendarDTO, type CalendarConnectionDTO, type CalendarConnectionId } from "../../lib/calendar-types";
 import { decrypt, encrypt } from "../crypto";
 import { db, type DB } from "../db/client";
-import { auditLog, calendars, connections } from "../db/schema";
+import { auditLog, calendars, connections, mailMessages, settings } from "../db/schema";
 import { log } from "../log";
 import { GMAIL_COMPOSE, GMAIL_READ } from "./google/client";
 
@@ -72,9 +72,18 @@ async function revokeGoogle(h: DB, opts: { fetch?: typeof fetch; key?: Buffer })
   }
 }
 
-/** Cascades to calendars and their events. Google's refresh token is revoked first (best effort). */
+/** Drops the local Gmail copy and sync state (CR-S01). tasks.mail_message_id is ON DELETE SET NULL. */
+export async function resetMailState(h: DB): Promise<void> {
+  await h.delete(mailMessages);
+  await h.delete(settings).where(inArray(settings.key, ["mail.sync", "mail.triage_paused"]));
+}
+
+/** Cascades to calendars and their events. Google's refresh token is revoked first (best effort); local mail is wiped. */
 export async function removeCalendarConnection(h: DB = db(), id: CalendarConnectionId, opts: { fetch?: typeof fetch; key?: Buffer } = {}): Promise<void> {
-  if (id === "google_calendar") await revokeGoogle(h, opts);
+  if (id === "google_calendar") {
+    await revokeGoogle(h, opts);
+    await resetMailState(h);
+  }
   await h.delete(connections).where(eq(connections.id, id));
   await aud(h, "connection.remove", id, { id });
 }

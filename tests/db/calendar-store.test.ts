@@ -12,7 +12,7 @@ import {
 } from "@/server/calendar/connections";
 import type { RemoteCalendar } from "@/server/calendar/types";
 import { decrypt } from "@/server/crypto";
-import { auditLog, calendarEvents, calendars, connections, settings } from "@/server/db/schema";
+import { auditLog, calendarEvents, calendars, connections, mailMessages, settings } from "@/server/db/schema";
 import { setupTestDb } from "./helpers";
 
 const t = setupTestDb();
@@ -70,7 +70,12 @@ describe("calendar connections", () => {
       sent.push({ url: String(u), body: String(init?.body) });
       return new Response("", { status: 503 });
     }) as typeof globalThis.fetch;
+    await h.insert(mailMessages).values({ gmailId: "g1", threadId: "t", receivedAt: new Date(), labelIds: ["INBOX"] });
+    await h.insert(settings).values([{ key: "mail.sync", value: { historyId: "1", full: "done" } }, { key: "mail.triage_paused", value: true }]);
     await removeCalendarConnection(h, "google_calendar", { fetch, key });
+    expect(await h.select().from(mailMessages)).toHaveLength(0); // CR-S01
+    expect((await h.select().from(settings)).map((r) => r.key)).not.toContain("mail.sync");
+    expect((await h.select().from(settings)).map((r) => r.key)).not.toContain("mail.triage_paused");
     expect(sent).toEqual([{ url: "https://oauth2.googleapis.com/revoke", body: "token=NEW-REFRESH" }]);
     expect(await h.select().from(connections).where(eq(connections.id, "google_calendar"))).toHaveLength(0);
     expect((await h.select().from(calendars)).filter((c) => c.connectionId === "google_calendar")).toHaveLength(0);

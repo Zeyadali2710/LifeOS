@@ -3,7 +3,8 @@ import { describe, expect, it, vi } from "vitest";
 import { CALENDAR_SCOPES, GOOGLE_SCOPES } from "@/server/calendar/google/client";
 import { completeGoogleOAuth, startGoogleOAuth } from "@/server/calendar/google/oauth";
 import { getCalendarConnections } from "@/server/calendar/connections";
-import { auditLog, calendars, connections } from "@/server/db/schema";
+import { eq } from "drizzle-orm";
+import { auditLog, calendars, connections, mailMessages, settings } from "@/server/db/schema";
 import list from "../fixtures/calendar/google-calendar-list.json";
 import { fakeGoogle, json } from "../helpers/fake-google";
 import { setupTestDb } from "./helpers";
@@ -84,5 +85,33 @@ describe("google oauth", () => {
     expect((await getCalendarConnections(h, { googleConfigured: true })).find((c) => c.id === "google_calendar")!.gmail).toBe("granted");
     expect(await run(CALENDAR_SCOPES.join(" "))).toMatchObject({ gmail: false });
     expect((await h.select().from(connections))[0]!.scopes).toEqual(CALENDAR_SCOPES);
+  });
+
+  it("reconnecting a different account wipes mail state and queues a mail sync; the same account keeps it (CR-S01)", async () => {
+    const h = t.handle();
+    const seed = async () => {
+      await h.delete(mailMessages);
+      await h.insert(mailMessages).values({ gmailId: "g-old", threadId: "t", receivedAt: new Date(), labelIds: ["INBOX"] });
+      const v = { historyId: "99", full: "done", email: "me@gmail.com", lastSyncAt: null, lastSyncError: null };
+      await h.insert(settings).values({ key: "mail.sync", value: v }).onConflictDoUpdate({ target: settings.key, set: { value: v } });
+    };
+    const run = async () => {
+      const { cookie, state } = begin();
+      const enqueue = vi.fn(async () => {});
+      await completeGoogleOAuth(h, { code: "c", state, error: null, cookie, fetch: fake(), key, enqueue });
+      return enqueue;
+    };
+    await seed();
+    const e1 = await run(); // same account (me@gmail.com): kept
+    expect(await h.select().from(mailMessages)).toHaveLength(1);
+    expect(e1).toHaveBeenCalledWith("mail.sync", {}, { singletonKey: "mail.sync" });
+    await h.update(connections).set({ login: "old@gmail.com" }).where(eq(connections.id, "google_calendar"));
+    await run(); // previous login differs: wiped
+    expect(await h.select().from(mailMessages)).toHaveLength(0);
+    expect(await h.select().from(settings).where(eq(settings.key, "mail.sync"))).toHaveLength(0);
+    await seed();
+    await h.update(settings).set({ value: { historyId: "99", full: "done", email: "other@gmail.com" } }).where(eq(settings.key, "mail.sync"));
+    await run(); // stored mailbox email differs: wiped
+    expect(await h.select().from(mailMessages)).toHaveLength(0);
   });
 });

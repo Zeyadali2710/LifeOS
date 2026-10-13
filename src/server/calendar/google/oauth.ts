@@ -1,12 +1,15 @@
 // Google connect flow (D-05): auth code + PKCE, state bound to an encrypted single-use cookie. Redirects use BETTER_AUTH_URL only.
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { eq } from "drizzle-orm";
 import { db, type DB } from "../../db/client";
+import { connections } from "../../db/schema";
 import { decrypt, encrypt } from "../../crypto";
 import { env } from "../../env";
 import { log } from "../../log";
 import { enqueue as realEnqueue, QUEUES, type Enqueue } from "../../queue";
 import { refreshCalendarList } from "../calendars";
-import { saveCalendarSecret } from "../connections";
+import { mailSyncState } from "../../mail/sync";
+import { resetMailState, saveCalendarSecret } from "../connections";
 import { CALENDAR_SCOPES, createGoogle, exchangeCode, GMAIL_COMPOSE, GMAIL_READ, googleAuthUrl } from "./client";
 import { createGoogleProvider } from "./provider";
 
@@ -56,10 +59,18 @@ export async function completeGoogleOAuth(
     const provider = createGoogleProvider({ google: createGoogle({ getToken: async () => t.accessToken, fetch: p.fetch }) });
     const remote = await provider.listCalendars();
     const account = remote.find((c) => c.kind === "primary")?.remoteId ?? "Google";
+    // A different Google account: the stored mail and historyId belong to the old mailbox (CR-S01). Full sync re-reads the owner email.
+    const [prev] = await h.select({ login: connections.login }).from(connections).where(eq(connections.id, "google_calendar"));
+    const mailEmail = (await mailSyncState(h)).email;
+    const differs = (a: string | null | undefined) => !!a && a.toLowerCase() !== account.toLowerCase();
+    if (differs(prev?.login) || (account.includes("@") && differs(mailEmail))) await resetMailState(h);
     await saveCalendarSecret(h, "google_calendar", { refreshToken: t.refreshToken, accessToken: t.accessToken, expiresAt: t.expiresAt }, { account, scopes: t.scopes }, { key: p.key, now });
     await refreshCalendarList(h, "google_calendar", remote, account);
-    await (p.enqueue ?? realEnqueue)(QUEUES.calendarSync, {}, { singletonKey: "calendar.sync" }).catch(() => undefined);
-    return { ok: true, calendars: remote.length, gmail: [GMAIL_READ, GMAIL_COMPOSE].every((s) => t.scopes.includes(s)) };
+    const enqueue = p.enqueue ?? realEnqueue;
+    await enqueue(QUEUES.calendarSync, {}, { singletonKey: "calendar.sync" }).catch(() => undefined);
+    const gmail = [GMAIL_READ, GMAIL_COMPOSE].every((s) => t.scopes.includes(s));
+    if (gmail) await enqueue(QUEUES.mailSync, {}, { singletonKey: "mail.sync" }).catch(() => undefined); // IN-S03
+    return { ok: true, calendars: remote.length, gmail };
   } catch (err) {
     log.error({ err: err instanceof Error ? err.message : "unknown" }, "google oauth failed"); // message is a fixed string, never a token
     return { ok: false, error: "failed" };
