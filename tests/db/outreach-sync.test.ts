@@ -207,6 +207,16 @@ describe("outreach sync", () => {
     expect(r!.why).toContain("project Zeta");
   });
 
+  it("a registration link shared in descriptions never merges distinct sessions (WR-S07)", async () => {
+    await addFeed();
+    const link = "DESCRIPTION:Register at https://tickets.example.com/conf?utm=x\r\n";
+    const body = cal(vevent("a", "Track A: Security", "20261020T080000Z", link), vevent("b", "Track B: AI", "20261020T080000Z", link));
+    await sync({ get: feed(body) }).run();
+    const rows = (await all()).filter((e) => !e.isMock);
+    expect(rows.map((e) => e.title).sort()).toEqual(["Track A: Security", "Track B: AI"]);
+    expect(rows.every((e) => e.canonicalUrl === null && e.url?.startsWith("https://tickets.example.com/conf"))).toBe(true);
+  });
+
   it("skips an event with an invalid date instead of failing the source (WR-S06)", async () => {
     const good = mockEvents("luma", NOW)[0]!;
     const bad = { ...good, remoteId: "bad", title: "Bad start" };

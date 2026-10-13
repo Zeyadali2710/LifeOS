@@ -57,7 +57,8 @@ export function parseFeed(text: string, now: Date, opts: { days?: number; cap?: 
     const v = meta.get(i.eventId)!;
     const prop = (n: string) => (v.getFirstPropertyValue(n) as string | null) || null;
     const desc = i.description ?? "";
-    const link = prop("url") ?? /https:\/\/[^\s<>"')]+/.exec(desc)?.[0] ?? null;
+    const own = prop("url");
+    const link = own ?? /https:\/\/[^\s<>"')]+/.exec(desc)?.[0] ?? null;
     const url = isSafeUrl(link) ? link : null;
     const geo = v.getFirstPropertyValue("geo") as number[] | null;
     const org = v.getFirstProperty("organizer")?.getParameter("cn") as string | undefined;
@@ -76,6 +77,7 @@ export function parseFeed(text: string, now: Date, opts: { days?: number; cap?: 
       organizer: org ?? null,
       priceText: null,
       url,
+      urlFromText: !own,
       description: capUtf8(htmlToText(desc), 4000).text,
       categories: cats.slice(0, 10),
     });

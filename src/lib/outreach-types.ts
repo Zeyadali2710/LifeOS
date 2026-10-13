@@ -59,6 +59,8 @@ export type RawEvent = {
   organizer: string | null;
   priceText: string | null;
   url: string | null;
+  /** The url was scraped from the description (not the event's own URL): shown, never a dedup key (WR-S07). */
+  urlFromText?: boolean;
   description: string;
   categories: string[];
 };

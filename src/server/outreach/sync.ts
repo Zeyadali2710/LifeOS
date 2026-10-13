@@ -44,7 +44,7 @@ export async function upsertEvents(
       }
       const sc = sydneyCheck(raw);
       if (opts.filter !== false && (!inWindow(raw, now) || !sc.keep)) continue; // owner imports (D-05) skip the filter
-      const canonicalUrl = canonUrl(raw.url);
+      const canonicalUrl = raw.urlFromText ? null : canonUrl(raw.url);
       const titleKey = canonTitle(raw.title);
       const fields = {
         title: raw.title,
@@ -83,7 +83,7 @@ export async function upsertEvents(
               canonicalUrl ? sql`(${outreachEvents.canonicalUrl} = ${canonicalUrl} or ${outreachEvents.titleKey} = ${titleKey})` : eq(outreachEvents.titleKey, titleKey),
             ),
           );
-        match = cands.find((c) => sameEvent({ url: c.url, title: c.title, startAt: c.startAt }, { url: raw.url, title: raw.title, startAt: raw.startAt }));
+        match = cands.find((c) => sameEvent({ url: c.canonicalUrl, title: c.title, startAt: c.startAt }, { url: canonicalUrl, title: raw.title, startAt: raw.startAt }));
       }
 
       if (match) {
