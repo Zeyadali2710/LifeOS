@@ -251,9 +251,14 @@ Plans:
   2. The owner (or the Socials agent, PREPARE tier) creates a draft from scratch or from a project/event/repo, gets per-platform variants with length/format checks, and places drafts on a content calendar (week/month) alongside existing calendar views.
   3. Publishing or scheduling a variant is an APPROVE-tier action with edit-before-approve, idempotent on retry, and honest when a provider can't publish (copy-to-clipboard/open-in-app fallback instead of pretending).
   4. Analytics per post/platform are synced where the API permits and shown on the Socials page; elsewhere the page says what isn't available. Page follows the Claude Design Socials file in the Glass system; e2e + VM DB tests cover providers (fixtures/mocks), drafts, calendar and the publish approval path.
-**Plans**: 2 plans
-- [ ] 07-01-PLAN.md — backend: schema, providers, actions, social agent, publish executor, analytics, TikTok OAuth
-- [ ] 07-02-PLAN.md — UI: Socials page, board, calendar, analytics, approval UI, Settings rows, e2e
+**Plans**: 7 plans in 6 waves
+- [ ] 07-01-PLAN.md — Schema, pure rules, providers, encrypted connections and fixtures
+- [ ] 07-02-PLAN.md — Owner drafts and queries, Social agent, atomic publish approval
+- [ ] 07-03-PLAN.md — Bound publish executor, analytics sync and TikTok OAuth
+- [ ] 07-04-PLAN.md — DB tests, integration docs and owner action gates
+- [ ] 07-05-PLAN.md — Socials shell, platform cards and honest status states
+- [ ] 07-06-PLAN.md — Board, post sheet, calendar and analytics views
+- [ ] 07-07-PLAN.md — Approval UI, Settings connections, palette and e2e spec
 
 ### Phase 8–11
 Goals per phase list above; a detail section (goal, requirements, success criteria) is written before each phase's discuss.
