@@ -19,6 +19,7 @@ import {
 } from "drizzle-orm/pg-core";
 import type { RouteEvent } from "../../lib/agent-types";
 import { EVENT_SOURCE_KINDS, IMPORTANCE, MAIL_CATEGORIES, STAGES } from "../../lib/outreach-types";
+import { PLATFORMS, VARIANT_STATUSES, type SocialMetrics } from "../../lib/social-types";
 
 const inList = (xs: readonly string[]) => sql.raw(xs.map((x) => `'${x}'`).join(","));
 
@@ -329,10 +330,85 @@ export const connections = pgTable("connections", {
   lastError: text(),
   repos: jsonb().$type<string[]>().notNull().default([]),
   scopes: jsonb().$type<string[]>().notNull().default([]), // granted Google scopes (D-21)
+  credentialGeneration: uuid(), // changes on owner replacement, not token refresh
   lastSyncAt: tstz(),
   lastSyncError: text(),
   ...timestamps,
 });
+
+// ── Phase 7: Socials ───────────────────────────────────────────────────────
+export const socialPosts = pgTable(
+  "social_posts",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    title: text().notNull(),
+    body: text().notNull().default(""),
+    sourceKind: text(),
+    sourceId: text(),
+    stage: text().notNull().default("idea"),
+    createdBy: text().notNull().default("owner"),
+    draftedFromContent: boolean().notNull().default(false),
+    ...timestamps,
+  },
+  (t) => [
+    check("social_posts_source_kind_chk", sql`${t.sourceKind} is null or ${t.sourceKind} in ('project','outreach_event','repo')`),
+    check("social_posts_stage_chk", sql`${t.stage} in ('idea','draft')`),
+    check("social_posts_created_by_chk", sql`${t.createdBy} in ('owner','agent')`),
+    check("social_posts_source_pair_chk", sql`(${t.sourceKind} is null) = (${t.sourceId} is null)`),
+    index().on(t.stage, t.updatedAt.desc()),
+  ],
+);
+
+export const socialVariants = pgTable(
+  "social_variants",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    postId: uuid().notNull().references(() => socialPosts.id, { onDelete: "cascade" }),
+    platform: text().notNull(),
+    text: text().notNull().default(""),
+    imageUrl: text(),
+    linkUrl: text(),
+    status: text().notNull().default("draft"),
+    scheduledAt: timestamp({ withTimezone: true }),
+    publishedAt: timestamp({ withTimezone: true }),
+    approvalId: uuid().references(() => approvals.id, { onDelete: "set null" }),
+    approvedTextHash: text(),
+    approvedProviderMode: text(),
+    approvedConnectionGeneration: uuid(),
+    remoteId: text(),
+    remoteUrl: text(),
+    containerId: text(),
+    isMock: boolean().notNull().default(false),
+    metrics: jsonb().$type<SocialMetrics>(),
+    metricsAt: timestamp({ withTimezone: true }),
+    lastError: text(),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("social_variants_post_platform_uniq").on(t.postId, t.platform),
+    index().on(t.status, t.scheduledAt),
+    check("social_variants_platform_chk", sql`${t.platform} in (${inList(PLATFORMS)})`),
+    check("social_variants_status_chk", sql`${t.status} in (${inList(VARIANT_STATUSES)})`),
+    check("social_variants_mode_chk", sql`${t.approvedProviderMode} is null or ${t.approvedProviderMode} in ('mock','real')`),
+  ],
+);
+
+export const socialAccountSnapshots = pgTable(
+  "social_account_snapshots",
+  {
+    platform: text().notNull(),
+    date: text().notNull(), // Sydney YYYY-MM-DD
+    followers: integer(),
+    posts: integer(),
+    extra: jsonb().$type<Record<string, unknown>>().notNull().default({}),
+    ...timestamps,
+  },
+  (t) => [
+    primaryKey({ columns: [t.platform, t.date] }),
+    check("social_snapshots_platform_chk", sql`${t.platform} in (${inList(PLATFORMS)})`),
+    check("social_snapshots_date_chk", sql`${t.date} ~ '^\\d{4}-\\d{2}-\\d{2}$'`),
+  ],
+);
 
 // ── Phase 3: GitHub sync ────────────────────────────────────────────────────
 export const githubRepos = pgTable("github_repos", {

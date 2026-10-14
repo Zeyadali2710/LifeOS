@@ -64,6 +64,13 @@
       "when": 1791847953616,
       "tag": "0008_outreach",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791991038580,
+      "tag": "0009_socials",
+      "breakpoints": true
     }
   ]
 }

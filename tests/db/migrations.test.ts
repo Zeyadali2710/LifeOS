@@ -78,6 +78,29 @@ describe("migrations", () => {
     }
   });
 
+  it("adds social tables and approval binding (0009)", async () => {
+    await runMigrations(testUrl);
+    await runMigrations(testUrl);
+    const client = new Client({ connectionString: testUrl });
+    await client.connect();
+    try {
+      const tables = await client.query<{ table_name: string }>(
+        "select table_name from information_schema.tables where table_name in ('social_posts','social_variants','social_account_snapshots')",
+      );
+      expect(tables.rows).toHaveLength(3);
+      const columns = await client.query(
+        "select 1 from information_schema.columns where (table_name, column_name) in (('connections','credential_generation'),('social_variants','approved_text_hash'),('social_variants','approved_provider_mode'),('social_variants','approved_connection_generation'))",
+      );
+      expect(columns.rows).toHaveLength(4);
+      const post = await client.query<{ id: string }>("insert into social_posts (title) values ('t') returning id");
+      await client.query("insert into social_variants (post_id, platform) values ($1, 'linkedin')", [post.rows[0]!.id]);
+      await expect(client.query("insert into social_variants (post_id, platform) values ($1, 'linkedin')", [post.rows[0]!.id])).rejects.toThrow(/social_variants_post_platform_uniq/);
+      await expect(client.query("insert into social_variants (post_id, platform) values ($1, 'unknown')", [post.rows[0]!.id])).rejects.toThrow(/social_variants_platform_chk/);
+    } finally {
+      await client.end();
+    }
+  });
+
   it("backfills saw_private", async () => {
     await runMigrations(testUrl);
     const client = new Client({ connectionString: testUrl });
