@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { analytics, calendarItems, getPost, listBoard, listSources, platformCards } from "@/server/socials/queries";
 import { syncNow } from "@/server/socials-actions";
@@ -10,6 +10,10 @@ import { Button } from "@/ui/button";
 import { Icon } from "@/ui/icon";
 import { PageHeader } from "@/ui/page-header";
 import { PlatformCard } from "./platform-card";
+import { ContentBoard } from "./content-board";
+import { PostSheet } from "./post-sheet";
+import { NewPostDialog } from "./new-post-dialog";
+import { dayKey } from "./model";
 
 export type SocialsData = {
   cards: Awaited<ReturnType<typeof platformCards>>;
@@ -28,8 +32,22 @@ export function SocialsView({ data }: { data: SocialsData | null }) {
   const { toast } = useShell();
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   const [syncing, setSyncing] = useState(false);
+  const missingPost = useRef<string | null>(null);
   const view = sp.get("view") === "calendar" ? "calendar" : sp.get("view") === "analytics" ? "analytics" : "overview";
   useLiveEvents("approval", () => router.refresh());
+  const navigate = (change: Record<string, string | null>) => {
+    const params = new URLSearchParams(sp.toString());
+    for (const [key, value] of Object.entries(change)) { if (value === null) params.delete(key); else params.set(key, value); }
+    router.push(params.size ? `/socials?${params}` : "/socials", { scroll: false });
+  };
+  const postId = sp.get("post");
+  useEffect(() => {
+    if (!data || !postId || data.post || missingPost.current === postId) return;
+    missingPost.current = postId; toast("That post doesn't exist anymore.", "error");
+    const params = new URLSearchParams(sp.toString()); params.delete("post");
+    router.replace(params.size ? `/socials?${params}` : "/socials", { scroll: false });
+  }, [data, postId, router, sp, toast]);
+  const defaultDate = sp.get("date") && /^\d{4}-\d{2}-\d{2}$/.test(sp.get("date")!) ? sp.get("date")! : data ? dayKey(data.now) : "";
   const setView = (value: typeof VIEWS[number]) => {
     const params = new URLSearchParams(sp.toString());
     if (value === "overview") params.delete("view"); else params.set("view", value);
@@ -59,10 +77,11 @@ export function SocialsView({ data }: { data: SocialsData | null }) {
         </div>
       </div>
       {!data ? <div role="alert" className="glass-card flex flex-col items-start gap-3 rounded-24 p-5 text-[13.5px] text-text-2">Couldn&apos;t load Socials.<Button variant="secondary" size="sm" onClick={() => router.refresh()}>Try again</Button></div> : <div role="tabpanel" id={`socials-panel-${view}`} aria-labelledby={`socials-tab-${view}`}>
-        {view === "overview" && <div className="grid grid-cols-1 gap-3 tab:grid-cols-2 min-[1100px]:grid-cols-4">{data.cards.map((card) => <PlatformCard key={card.platform} card={card} posts={data.board} now={data.now} />)}</div>}
-        {/* Plan 07-06 adds the calendar, analytics and content editing panels. */}
+        {view === "overview" && <><div className="grid grid-cols-1 gap-3 tab:grid-cols-2 min-[1100px]:grid-cols-4">{data.cards.map((card) => <PlatformCard key={card.platform} card={card} posts={data.board} now={data.now} />)}</div><ContentBoard posts={data.board} onOpen={(id) => navigate({ post: id })} onNew={(agent) => navigate({ new: "1", stage: "idea", mode: agent ? "agent" : null, post: null })} /></>}
         {view === "calendar" && <p className="text-[13.5px] text-text-3">Calendar view is being prepared.</p>}
         {view === "analytics" && <p className="text-[13.5px] text-text-3">Analytics view is being prepared.</p>}
+        {data.post && <PostSheet key={data.post.id} post={data.post} cards={data.cards} now={data.now} defaultDate={defaultDate} onClose={() => navigate({ post: null })} />}
+        {sp.get("new") === "1" && <NewPostDialog sources={data.sources} cards={data.cards} stage={sp.get("stage") === "idea" ? "idea" : "draft"} agent={sp.get("mode") === "agent"} defaultDate={defaultDate} source={sp.get("source")} sourceId={sp.get("sourceId")} onClose={() => navigate({ new: null, stage: null, mode: null, source: null, sourceId: null })} onCreated={(id, date) => navigate({ new: null, stage: null, mode: null, source: null, sourceId: null, post: id, date })} />}
       </div>}
     </div>
   );
