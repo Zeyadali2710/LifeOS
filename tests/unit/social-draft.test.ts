@@ -1,12 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { PgDialect } from "drizzle-orm/pg-core";
-import { socialTools } from "@/server/agents/tools/socials";
+import { saveDraft as tool } from "@/server/agents/tools/socials";
 import { socialPosts, socialVariants, toolCalls } from "@/server/db/schema";
 import type { DB } from "@/server/db/client";
 vi.mock("@/server/events", () => ({ notifyLive: vi.fn() }));
 
 const id = "11111111-1111-4111-8111-111111111111";
-const tool = socialTools["socials.save_draft"]!;
 describe("agent source provenance", () => {
   it("rejects a lost variant update race so the surrounding transaction rolls back", async () => {
     let predicate: { sql: string; params: unknown[] } | undefined;

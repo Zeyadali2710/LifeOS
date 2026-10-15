@@ -58,7 +58,7 @@ const get: Tool<{ id: string }, Record<string, unknown>> = {
 const draftInput = z.object({ postId: uuid.optional(), title: z.string().trim().min(1).max(200), body: z.string().max(10_000),
   sourceKind: z.enum(["project", "outreach_event", "repo"]).optional(), sourceId: z.string().max(100).optional(),
   variants: z.array(z.object({ platform: z.enum(PLATFORMS), text: z.string().max(10_000), imageUrl: nullableUrl, linkUrl: nullableUrl })).min(1).max(4) });
-const save: Tool<z.infer<typeof draftInput>, Record<string, unknown>> = {
+export const saveDraft: Tool<z.infer<typeof draftInput>, Record<string, unknown>> = {
   name: "socials.save_draft", label: "Saving social drafts", description: "Save LifeOS-local drafts only. Invalid variants are kept with visible format errors. Nothing is posted.",
   input: draftInput, output: out, tier: "PREPARE", sideEffect: false, private: true,
   async handler(i, ctx) {
@@ -125,4 +125,4 @@ export const publish: Tool<PublishInput, Record<string, unknown>> = {
   },
 };
 
-export const socialTools = Object.fromEntries([list, get, save, publish].map((tool) => [tool.name, tool]));
+export const socialTools = Object.fromEntries([list, get, saveDraft, publish].map((tool) => [tool.name, tool]));
