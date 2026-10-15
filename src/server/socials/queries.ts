@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, isNotNull, lt, or } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lt, or } from "drizzle-orm";
 import { boardColumn, PLATFORMS, type VariantStatus } from "@/lib/social-types";
 import type { DB } from "../db/client";
 import { githubRepos, outreachEvents, projects, socialAccountSnapshots, socialPosts, socialVariants } from "../db/schema";
@@ -55,7 +55,7 @@ export async function platformCards(h: DB) {
 export async function listSources(h: DB) {
   const [p, e, r] = await Promise.all([
     h.select({ id: projects.id, title: projects.name, description: projects.description }).from(projects).where(eq(projects.status, "active")),
-    h.select({ id: outreachEvents.id, title: outreachEvents.title, description: outreachEvents.description }).from(outreachEvents).where(isNotNull(outreachEvents.stage)),
+    h.select({ id: outreachEvents.id, title: outreachEvents.title, description: outreachEvents.description }).from(outreachEvents).where(inArray(outreachEvents.stage, ["SAVED", "ATTENDED"])),
     h.select({ id: githubRepos.id, title: githubRepos.fullName, description: githubRepos.description }).from(githubRepos).orderBy(desc(githubRepos.pushedAt)).limit(50),
   ]);
   return { projects: p, events: e, repos: r };
@@ -67,7 +67,7 @@ export async function buildStarter(h: DB, kind: "project" | "outreach_event" | "
     return row ? { title: row.name, body: row.description || row.context, sourceKind: kind, sourceId: id, draftedFromContent: true } : null;
   }
   if (kind === "outreach_event") {
-    const [row] = await h.select().from(outreachEvents).where(and(eq(outreachEvents.id, id), isNotNull(outreachEvents.stage)));
+    const [row] = await h.select().from(outreachEvents).where(and(eq(outreachEvents.id, id), inArray(outreachEvents.stage, ["SAVED", "ATTENDED"])));
     return row ? { title: row.title, body: row.description, sourceKind: kind, sourceId: id, draftedFromContent: true } : null;
   }
   const [row] = await h.select().from(githubRepos).where(eq(githubRepos.id, Number(id)));
