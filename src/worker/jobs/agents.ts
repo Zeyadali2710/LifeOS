@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 import { executeApproved, expireDue } from "../../server/agents/approvals";
 import { getLlm } from "../../server/agents/llm";
@@ -17,7 +17,17 @@ export async function handleResume(job: unknown): Promise<void> {
   const { runId, approvalId } = parsed.data;
   try {
     const h = db();
-    if (approvalId && (await executeApproved(h, approvalId)).status === "failed") return; // run keeps waiting; owner can Retry
+    const outcome = approvalId ? await executeApproved(h, approvalId) : null;
+    if (outcome?.status === "failed") return; // run keeps waiting; owner can Retry
+    const [run] = await h.select().from(agentRuns).where(eq(agentRuns.id, runId));
+    if (run?.agentId === "social" && run.model === "owner-action:socials.publish") {
+      if (outcome?.status === "executed") {
+        await h.update(agentRuns).set({ status: "completed", endedAt: new Date(), answer: "Publish scheduled." })
+          .where(and(eq(agentRuns.id, runId), inArray(agentRuns.status, ["running", "waiting_approval"])));
+        await notifyLive(h, "run", runId);
+      }
+      return;
+    }
     if (!getLlm()) {
       await h
         .update(agentRuns)

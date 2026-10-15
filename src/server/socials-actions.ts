@@ -7,7 +7,6 @@ import { socialPublishPayload } from "@/lib/approval-kinds";
 import { db } from "./db/client";
 import { agentRuns, approvals, auditLog, connections, socialPosts, socialVariants } from "./db/schema";
 import { callTool } from "./agents/gateway";
-import { MODELS } from "./agents/registry";
 import { TOOLS } from "./agents/tools";
 import { currentBinding } from "./agents/tools/socials";
 import { log } from "./log";
@@ -237,7 +236,7 @@ export async function requestPublish(variantId: string, publishAt?: string | nul
     if (checkVariant(target, v).errors.length) return invalid;
     const { provider } = await currentBinding(h, target);
     if (!provider.capabilities.publish) return denied;
-    const [runRow] = await h.insert(agentRuns).values({ agentId: "social", prompt: `owner publish request ${variantId}`, model: MODELS.sonnet, status: "running", startedAt: new Date() })
+    const [runRow] = await h.insert(agentRuns).values({ agentId: "social", prompt: `owner publish request ${variantId}`, model: "owner-action:socials.publish", status: "running", startedAt: new Date() })
       .returning({ id: agentRuns.id });
     const result = await callTool({ handle: h, runId: runRow!.id, agentId: "social", tools: TOOLS }, "socials.publish",
       { variantId, platform: target, text: v.text, imageUrl: v.imageUrl, linkUrl: v.linkUrl, publishAt: publishAt ?? null }, `owner:${variantId}`);
