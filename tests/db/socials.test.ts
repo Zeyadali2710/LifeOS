@@ -52,7 +52,7 @@ beforeEach(async () => {
   vi.stubGlobal("fetch", noNetwork);
   for (const table of [socialPosts, agentRuns, socialAccountSnapshots, connections, activityEvents, notifications, auditLog]) await h().delete(table);
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe("approved Social publishing", () => {
   it("uses a synthetic owner run, persists edited content and its hash, and publishes a mock once", async () => {
@@ -241,6 +241,8 @@ describe("connection, retry and analytics contracts", () => {
 
   it("upserts today's real snapshot, respects partial TikTok grants, and rotates tokens without changing the binding", async () => {
     const now = new Date("2026-10-15T02:00:00Z");
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(now);
     await saveTikTokApp(h(), "fixture_key", "fixture_secret");
     await saveTikTokTokens(h(), { accessToken: "fixture_access_1", refreshToken: "fixture_refresh_1", refreshExpiresAt: new Date("2027-10-15T00:00:00Z"),
       openId: "owner_1", scopes: ["user.info.basic", "user.info.stats"], expiresAt: new Date("2026-10-15T03:00:00Z") });
