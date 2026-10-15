@@ -121,8 +121,8 @@ export async function markPosted(id: string, remoteUrl?: string) {
   if (!p.success) return invalid;
   return run(async () => {
     const [v] = await db().select().from(socialVariants).where(eq(socialVariants.id, id));
-    if (!v || !["tiktok", "portfolio"].includes(v.platform) || !["draft", "failed"].includes(v.status)) return denied;
-    const host = v.platform === "tiktok" ? "tiktok.com" : null;
+    if (!v || !["tiktok", "portfolio", "linkedin"].includes(v.platform) || !["draft", "failed"].includes(v.status) || (v.platform === "linkedin" && v.status !== "failed")) return denied;
+    const host = v.platform === "tiktok" ? "tiktok.com" : v.platform === "linkedin" ? "linkedin.com" : null;
     const url = remoteUrl ? new URL(remoteUrl) : null;
     if (url && (url.protocol !== "https:" || !!url.username || !!url.password || (host && url.hostname !== host && !url.hostname.endsWith(`.${host}`)))) return invalid;
     const videoId = v.platform === "tiktok" && url ? url.pathname.match(/\/video\/(\d+)/)?.[1] : null;
@@ -161,9 +161,10 @@ export async function reschedule(id: string, at: string) {
   if (!p.success) return invalid;
   return run(async () => {
     const [row] = await db().update(socialVariants).set({ scheduledAt: new Date(at), updatedAt: new Date() })
-      .where(and(eq(socialVariants.id, id), eq(socialVariants.status, "scheduled"), isNotNull(socialVariants.approvedTextHash))).returning({ id: socialVariants.id });
-    if (!row) return denied;
-    await rescheduleSocialJob(id, new Date(at));
+      .where(and(eq(socialVariants.id, id), eq(socialVariants.status, "scheduled"), isNotNull(socialVariants.approvedTextHash), isNotNull(socialVariants.approvalId)))
+      .returning({ id: socialVariants.id, approvalId: socialVariants.approvalId });
+    if (!row?.approvalId) return denied;
+    await rescheduleSocialJob(id, row.approvalId, new Date(at));
     await aud("social.variant.reschedule", id);
     return { ok: true } as const;
   });

@@ -120,8 +120,8 @@ function instagram(connection: SocialConnection, f: Fetch): SocialProvider {
     const res = await request(f, `${INSTAGRAM}/me/media?fields=id,caption&limit=25`, { headers });
     const media = object(await res.json()).data;
     if (!Array.isArray(media)) return null;
-    const found = media.find((item) => object(item).caption === variant.text && typeof object(item).id === "string");
-    return found ? { state: "published", remoteId: String(object(found).id), containerId: variant.containerId } : null;
+    const matches = media.filter((item) => object(item).caption === variant.text && typeof object(item).id === "string");
+    return matches.length === 1 ? { state: "published", remoteId: String(object(matches[0]).id), containerId: variant.containerId } : null;
   }
   return {
     platform: "instagram", label: "Instagram", isMock: false, credentialGeneration: connection.credentialGeneration,

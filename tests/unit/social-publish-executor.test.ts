@@ -34,6 +34,7 @@ describe("social publish guard", () => {
   it("no-ops early jobs and duplicate completion; reviews ambiguous real retries", () => {
     expect(inspectPublish({ ...variant, scheduledAt: new Date("2026-10-16T00:00:00Z") }, approval, provider, now)).toBe("noop");
     expect(inspectPublish({ ...variant, status: "published", remoteId: "urn:li:share:1" }, approval, provider, now)).toBe("noop");
+    expect(inspectPublish({ ...variant, status: "publishing", updatedAt: now }, approval, provider, now)).toBe("noop");
     expect(inspectPublish({ ...variant, status: "publishing" }, approval, provider, now)).toBe("review");
     expect(inspectPublish({ ...variant, platform: "instagram", status: "publishing", containerId: "c1", text: "caption", imageUrl: "https://example.com/a.jpg", approvedTextHash: approvedHash({ platform: "instagram", text: "caption", imageUrl: "https://example.com/a.jpg", linkUrl: payload.linkUrl }) },
       { ...approval, payload: { ...payload, platform: "instagram", text: "caption", imageUrl: "https://example.com/a.jpg" } },

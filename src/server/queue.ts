@@ -39,6 +39,6 @@ export async function cancelSocialJob(variantId: string): Promise<void> {
   for (const job of jobs) await b.cancel(QUEUES.socialsPublish, job.id);
 }
 
-export async function rescheduleSocialJob(variantId: string, at: Date): Promise<void> {
-  await (await boss()).upsert(QUEUES.socialsPublish, { variantId }, { singletonKey: variantId, startAfter: at });
+export async function rescheduleSocialJob(variantId: string, approvalId: string, at: Date): Promise<void> {
+  await (await boss()).upsert(QUEUES.socialsPublish, { variantId, approvalId }, { singletonKey: variantId, startAfter: at });
 }

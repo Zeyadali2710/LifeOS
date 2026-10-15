@@ -102,7 +102,7 @@ export const publish: Tool<PublishInput, Record<string, unknown>> = {
     if (!v || v.status !== "scheduled" || v.approvalId !== ctx.approvalId) throw new ToolError("not_allowed", "Approval no longer matches this variant.");
     const { provider, providerMode, connectionGeneration } = await currentBinding(ctx.handle, i.platform);
     if (!provider.capabilities.publish || providerMode !== v.approvedProviderMode || connectionGeneration !== v.approvedConnectionGeneration || v.approvedTextHash !== approvedHash({ platform: i.platform, text: v.text, imageUrl: v.imageUrl, linkUrl: v.linkUrl })) throw new ToolError("not_allowed", "Connection or content changed. Request a new approval.");
-    await enqueue(QUEUES.socialsPublish, { variantId: v.id }, { singletonKey: v.id, startAfter: v.scheduledAt ?? ctx.now() });
+    await enqueue(QUEUES.socialsPublish, { variantId: v.id, approvalId: ctx.approvalId }, { singletonKey: v.id, startAfter: v.scheduledAt ?? ctx.now() });
     return { status: "scheduled", variantId: v.id };
   },
 };

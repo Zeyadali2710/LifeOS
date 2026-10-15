@@ -14,6 +14,7 @@ import { handleMailTriage } from "./jobs/mail-triage";
 import { handleOutreachSync } from "./jobs/outreach-sync";
 import { handleSweep } from "./jobs/sweep";
 import { handleTaskReminders } from "./jobs/task-reminders";
+import { publishVariant, runScheduled } from "@/server/socials/publish";
 
 const HEARTBEAT = "system.heartbeat";
 
@@ -42,6 +43,13 @@ async function main() {
   await boss.createQueue(QUEUES.eventsSync);
   await boss.createQueue(QUEUES.mailSync);
   await boss.createQueue(QUEUES.mailTriage);
+  await boss.createQueue(QUEUES.socialsPublish, { retryLimit: 3, retryBackoff: true });
+  await boss.work(QUEUES.socialsPublish, async (jobs) => {
+    for (const job of jobs) {
+      const data = job.data as { variantId?: string; approvalId?: string };
+      if (data.variantId && data.approvalId) await publishVariant(data.variantId, data.approvalId);
+    }
+  });
   await boss.schedule(QUEUES.mailSync, "*/5 * * * *", {}, { singletonKey: "mail.sync" });
   await boss.work(QUEUES.mailSync, async () => handleMailSync());
   await boss.work(QUEUES.mailTriage, async (jobs) => {
@@ -67,6 +75,7 @@ async function main() {
   await boss.send(QUEUES.calendarSync, {}, { singletonKey: "calendar.sync", startAfter: 10 }).catch(() => undefined);
   await boss.send(QUEUES.mailSync, {}, { singletonKey: "mail.sync", startAfter: 20 }).catch(() => undefined);
   await boss.send(QUEUES.eventsSync, {}, { singletonKey: "outreach.events.sync", startAfter: 30 }).catch(() => undefined);
+  await runScheduled();
 
   await emitActivity({ type: "system.worker_started", source: "system", title: "Worker started", detail: `v${process.env.LIFEOS_VERSION ?? "dev"}` });
   log.info("worker started");
