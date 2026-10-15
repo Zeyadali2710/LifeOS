@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { decide, executeApproved, expireDue } from "@/server/agents/approvals";
 import { callTool } from "@/server/agents/gateway";
+import { cancelRun } from "@/server/agents/runs";
 import { TOOLS } from "@/server/agents/tools";
 import { approvedHash } from "@/server/agents/tools/socials";
 import { decrypt } from "@/server/crypto";
@@ -56,6 +57,18 @@ beforeEach(async () => {
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe("approved Social publishing", () => {
+  it.each([false, true])("actual cancelRun releases only its pending/unclaimed social variant (approved=%s)", async (approved) => {
+    const v = await variant("linkedin");
+    const id = await pending(v.id);
+    if (approved) await approve(id);
+    expect(await cancelRun(h(), (await approvalRow(id)).runId)).toBe(true);
+    expect(await variantRow(v.id)).toMatchObject({ status: "draft", approvalId: null, approvedTextHash: null });
+    expect((await approvalRow(id)).status).toBe("cancelled");
+    const fresh = await pending(v.id);
+    expect(fresh).not.toBe(id);
+    await publishVariant(v.id, id, h());
+    expect(await variantRow(v.id)).toMatchObject({ status: "pending_approval", approvalId: fresh });
+  });
   it("uses a synthetic owner run, persists edited content and its hash, and publishes a mock once", async () => {
     const v = await variant("instagram");
     const id = await pending(v.id);

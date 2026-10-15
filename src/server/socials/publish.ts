@@ -64,17 +64,23 @@ export async function publishVariant(variantId: string, approvalId: string, h: D
   if (choice === "noop") return;
   if (choice === "fail") { await fail(h, v, STALE); return; }
   if (choice === "review") { await fail(h, v, v.platform === "linkedin" ? LINKEDIN_REVIEW : INSTAGRAM_REVIEW); return; }
-  if (choice === "claim") {
-    const [won] = await h.update(socialVariants).set({ status: "publishing", updatedAt: now })
-      .where(and(eq(socialVariants.id, variantId), eq(socialVariants.approvalId, approvalId), eq(socialVariants.status, "scheduled"), lte(socialVariants.scheduledAt, now)))
-      .returning({ id: socialVariants.id });
-    if (!won) return;
-  } else {
-    const [won] = await h.update(socialVariants).set({ updatedAt: now })
+  const claimed = await h.transaction(async (tx) => {
+    // Cancellation and claiming both lock the approval before touching its variant.
+    const [active] = await tx.select({ id: approvals.id }).from(approvals)
+      .where(and(eq(approvals.id, approvalId), inArray(approvals.status, ["approved", "executed"]))).for("update");
+    if (!active) return false;
+    if (choice === "claim") {
+      const [won] = await tx.update(socialVariants).set({ status: "publishing", updatedAt: now })
+        .where(and(eq(socialVariants.id, variantId), eq(socialVariants.approvalId, approvalId), eq(socialVariants.status, "scheduled"), lte(socialVariants.scheduledAt, now)))
+        .returning({ id: socialVariants.id });
+      return !!won;
+    }
+    const [won] = await tx.update(socialVariants).set({ updatedAt: now })
       .where(and(eq(socialVariants.id, variantId), eq(socialVariants.approvalId, approvalId), eq(socialVariants.status, "publishing"), lt(socialVariants.updatedAt, new Date(now.getTime() - PUBLISH_STALE_MS))))
       .returning({ id: socialVariants.id });
-    if (!won) return;
-  }
+    return !!won;
+  });
+  if (!claimed) return;
   await notifyLive(h, "socials", variantId);
   try {
     let result: PublishResult | null = v.remoteId ? { state: "published", remoteId: v.remoteId, remoteUrl: v.remoteUrl ?? undefined } : null;

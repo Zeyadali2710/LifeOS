@@ -1,6 +1,6 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db, type DB } from "../db/client";
-import { agentRuns, agents, approvals, settings, toolCalls } from "../db/schema";
+import { agentRuns, agents, approvals, settings, socialVariants, toolCalls } from "../db/schema";
 import { notifyLive } from "../events";
 import { getAgent, MODELS } from "./registry";
 
@@ -66,11 +66,22 @@ export async function cancelRun(handle: DB = db(), runId: string, now: Date = ne
       .where(and(eq(agentRuns.id, runId), eq(agentRuns.status, "waiting_approval")))
       .returning({ id: agentRuns.id });
     if (!won.length) return null;
-    const apprs = await tx
+    const candidates = await tx.select({ id: approvals.id }).from(approvals)
+      .where(and(eq(approvals.runId, runId), inArray(approvals.status, ["pending", "approved", "failed"]))).for("update");
+    const cancellable: string[] = [];
+    for (const a of candidates) {
+      const rows = await tx.select({ status: socialVariants.status }).from(socialVariants).where(eq(socialVariants.approvalId, a.id)).for("update");
+      if (!rows.some((v) => v.status === "publishing")) cancellable.push(a.id);
+    }
+    const apprs = cancellable.length ? await tx
       .update(approvals)
       .set({ status: "cancelled", decidedAt: now })
-      .where(and(eq(approvals.runId, runId), inArray(approvals.status, ["pending", "approved", "failed"])))
-      .returning({ id: approvals.id });
+      .where(inArray(approvals.id, cancellable))
+      .returning({ id: approvals.id }) : [];
+    const socials = apprs.length ? await tx.update(socialVariants).set({ status: "draft", approvalId: null, scheduledAt: null,
+      approvedTextHash: null, approvedProviderMode: null, approvedConnectionGeneration: null, updatedAt: now })
+      .where(and(inArray(socialVariants.approvalId, apprs.map((a) => a.id)), inArray(socialVariants.status, ["pending_approval", "scheduled"])))
+      .returning({ id: socialVariants.id }) : [];
     await tx.update(toolCalls).set({ status: "cancelled" }).where(and(eq(toolCalls.runId, runId), eq(toolCalls.status, "waiting_approval")));
     const parent = run.parentRunId
       ? await tx
@@ -79,12 +90,13 @@ export async function cancelRun(handle: DB = db(), runId: string, now: Date = ne
           .where(and(eq(agentRuns.id, run.parentRunId), eq(agentRuns.status, "waiting_approval")))
           .returning({ id: agentRuns.id })
       : [];
-    return { apprs, parent };
+    return { apprs, parent, socials };
   });
   if (!cancelled) return false;
   await notifyLive(handle, "run", runId);
   for (const a of cancelled.apprs) await notifyLive(handle, "approval", a.id);
   for (const p of cancelled.parent) await notifyLive(handle, "run", p.id);
+  for (const v of cancelled.socials) await notifyLive(handle, "socials", v.id);
   return true;
 }
 
