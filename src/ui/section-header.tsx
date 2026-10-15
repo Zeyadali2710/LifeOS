@@ -1,6 +1,7 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 
-export function SectionHeader({ id, label, meta, link }: { id: string; label: string; meta?: string; link?: { href: string; label: string } }) {
+export function SectionHeader({ id, label, meta, link, action }: { id: string; label: string; meta?: string; link?: { href: string; label: string }; action?: ReactNode }) {
   return (
     <div className="mb-3.5 flex items-center gap-3">
       <h2 id={id} className="text-[11px] leading-[1.3] font-medium tracking-[.14em] text-text-3 uppercase">
@@ -13,6 +14,7 @@ export function SectionHeader({ id, label, meta, link }: { id: string; label: st
           {link.label}
         </Link>
       )}
+      {action}
     </div>
   );
 }

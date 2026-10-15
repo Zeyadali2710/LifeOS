@@ -1,8 +1,8 @@
 import { and, desc, eq, gte, inArray, lt, or } from "drizzle-orm";
 import { boardColumn, PLATFORMS, type VariantStatus } from "@/lib/social-types";
 import type { DB } from "../db/client";
-import { githubRepos, outreachEvents, projects, socialAccountSnapshots, socialPosts, socialVariants } from "../db/schema";
-import { socialConnection, socialConnectionStatus } from "./connections";
+import { connections, githubRepos, outreachEvents, projects, socialAccountSnapshots, socialPosts, socialVariants } from "../db/schema";
+import { socialConnection } from "./connections";
 import { getProvider } from "./providers";
 
 export async function listBoard(h: DB) {
@@ -39,16 +39,21 @@ export async function analytics(h: DB) {
 }
 
 export async function platformCards(h: DB) {
-  const statuses = await socialConnectionStatus(h);
+  const statuses = await h.select({ id: connections.id, status: connections.status, last4: connections.last4,
+    login: connections.login, expiresAt: connections.expiresAt, scopes: connections.scopes,
+    lastSyncAt: connections.lastSyncAt, lastSyncError: connections.lastSyncError }).from(connections)
+    .where(inArray(connections.id, ["linkedin", "instagram", "tiktok"]));
   const variants = await h.select().from(socialVariants).where(inArray(socialVariants.status, ["published", "posted_manually"])).orderBy(desc(socialVariants.publishedAt));
   const snapshots = await h.select().from(socialAccountSnapshots).orderBy(desc(socialAccountSnapshots.date));
   return Promise.all(PLATFORMS.map(async (platform) => {
     const connection = platform === "portfolio" ? null : await socialConnection(h, platform);
     const provider = getProvider(platform, connection);
+    const hasFollowers = !provider.isMock && provider.capabilities.analytics && (platform !== "tiktok" || connection?.scopes?.includes("user.info.stats"));
     return { platform, label: provider.label, isMock: provider.isMock, capabilities: provider.capabilities,
-      connection: platform === "portfolio" ? null : statuses[platform],
-      followers: snapshots.find((s) => s.platform === platform)?.followers ?? null,
-      latest: variants.find((v) => v.platform === platform) ?? null };
+      connection: statuses.find((s) => s.id === platform) ?? null,
+      followers: hasFollowers ? snapshots.find((s) => s.platform === platform)?.followers ?? null : null,
+      history: hasFollowers ? snapshots.filter((s) => s.platform === platform).reverse() : [],
+      latest: variants.find((v) => v.platform === platform && v.isMock === provider.isMock) ?? null };
   }));
 }
 

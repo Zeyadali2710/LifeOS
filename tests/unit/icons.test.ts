@@ -6,10 +6,10 @@ import { ICONS } from "@/ui/icon-names";
 const files = (readdirSync("src", { recursive: true }) as string[]).filter((f) => /\.tsx?$/.test(f));
 
 describe("icon subset", () => {
-  it("is sorted, unique and has the 81 spec names", () => {
+  it("is sorted, unique and has the 84 spec names", () => {
     expect([...ICONS]).toEqual([...ICONS].sort());
     expect(new Set(ICONS).size).toBe(ICONS.length);
-    expect(ICONS.length).toBe(81);
+    expect(ICONS.length).toBe(84);
   });
 
   it("covers every icon literal used in src", () => {

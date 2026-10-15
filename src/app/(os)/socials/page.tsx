@@ -1,16 +1,45 @@
-import { DomainPage } from "@/shell/domain-page";
+import { SocialsView, type SocialsData } from "@/socials/socials-view";
+import { db } from "@/server/db/client";
+import { requireOwner } from "@/server/session";
+import { analytics, calendarItems, getPost, listBoard, listSources, platformCards } from "@/server/socials/queries";
+import { sydneyInstant, sydneyParts } from "@/server/time";
 
 export const metadata = { title: "Socials · LifeOS" };
+export const dynamic = "force-dynamic";
 
-export default function SocialsPage() {
-  return (
-    <DomainPage
-      eyebrowClass="text-pink"
-      title="Socials"
-      lead="Accounts, drafts and your content calendar."
-      icon="public"
-      emptyTitle="Socials isn't set up yet."
-      emptyBody="Accounts, drafts and your content calendar appear here once a social account is connected."
-    />
-  );
+export default async function SocialsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  await requireOwner();
+  const sp = await searchParams;
+  const now = new Date();
+  let data: SocialsData | null = null;
+  try {
+    const h = db();
+    const p = sydneyParts(now);
+    const anchor = typeof sp.d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.d) && Number.isFinite(Date.parse(sp.d)) ? sp.d.split("-").map(Number) : [p.year, p.month, p.day];
+    const [year, month, day] = anchor as [number, number, number];
+    const first = new Date(Date.UTC(year, month - 1, sp.cal === "week" ? day : 1));
+    if (sp.cal === "week") first.setUTCDate(first.getUTCDate() - (first.getUTCDay() + 6) % 7);
+    const from = sydneyInstant(first.getUTCFullYear(), first.getUTCMonth() + 1, first.getUTCDate(), 0);
+    const end = new Date(first);
+    if (sp.cal === "week") end.setUTCDate(end.getUTCDate() + 7); else end.setUTCMonth(end.getUTCMonth() + 1);
+    const to = sydneyInstant(end.getUTCFullYear(), end.getUTCMonth() + 1, end.getUTCDate(), 0);
+    const wantPost = typeof sp.post === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sp.post) ? sp.post : null;
+    const [cards, board, post, sources, calendar, stats] = await Promise.all([
+      platformCards(h), listBoard(h), wantPost ? getPost(h, wantPost) : null,
+      sp.new === "1" || sp.source ? listSources(h) : null,
+      sp.view === "calendar" ? calendarItems(h, from, to) : [],
+      sp.view === "analytics" ? analytics(h) : null,
+    ]);
+    const days = sp.range === "7D" ? 7 : sp.range === "90D" ? 90 : sp.range === "1Y" ? 365 : 30;
+    const since = new Date(now.getTime() - days * 86400000);
+    const rangeVariants = stats?.variants.filter((v) => v.publishedAt && v.publishedAt >= since) ?? [];
+    const totals: Record<string, number> = {};
+    for (const variant of rangeVariants) for (const [metric, value] of Object.entries(variant.metrics ?? {})) if (typeof value === "number") totals[metric] = (totals[metric] ?? 0) + value;
+    data = { cards, board, post, sources, calendar, analytics: stats ? { ...stats,
+      snapshots: stats.snapshots.filter((s) => s.date >= since.toISOString().slice(0, 10)),
+      totals, variants: rangeVariants } : null, now };
+  } catch (error) {
+    console.error("socials: load failed", error instanceof Error ? error.name : "unknown");
+  }
+  return <SocialsView data={data} />;
 }
