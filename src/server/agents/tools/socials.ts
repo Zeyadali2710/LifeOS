@@ -74,7 +74,8 @@ const save: Tool<z.infer<typeof draftInput>, Record<string, unknown>> = {
         const [existing] = await tx.select().from(socialVariants).where(and(eq(socialVariants.postId, postId!), eq(socialVariants.platform, v.platform)));
         if (existing && !["draft", "failed"].includes(existing.status)) throw new ToolError("not_allowed", "Cancel the schedule or finish review before editing this variant.");
         const content = { text: v.text, imageUrl: v.imageUrl ?? null, linkUrl: v.linkUrl ?? null };
-        if (existing) await tx.update(socialVariants).set({ ...content, status: "draft", updatedAt: ctx.now() }).where(eq(socialVariants.id, existing.id));
+        if (existing) await tx.update(socialVariants).set({ ...content, status: "draft", approvalId: null, scheduledAt: null,
+          approvedTextHash: null, approvedProviderMode: null, approvedConnectionGeneration: null, updatedAt: ctx.now() }).where(eq(socialVariants.id, existing.id));
         else await tx.insert(socialVariants).values({ postId: postId!, platform: v.platform, ...content });
         checks.push({ platform: v.platform, ...checkVariant(v.platform, v) });
       }

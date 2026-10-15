@@ -79,7 +79,8 @@ export async function saveVariant(raw: unknown) {
   const p = variantInput.safeParse(raw);
   if (!p.success) return invalid;
   return run(async () => {
-    const [row] = await db().update(socialVariants).set({ text: p.data.text, imageUrl: p.data.imageUrl ?? null, linkUrl: p.data.linkUrl ?? null, updatedAt: new Date() })
+    const [row] = await db().update(socialVariants).set({ text: p.data.text, imageUrl: p.data.imageUrl ?? null, linkUrl: p.data.linkUrl ?? null,
+      status: "draft", approvalId: null, scheduledAt: null, approvedTextHash: null, approvedProviderMode: null, approvedConnectionGeneration: null, updatedAt: new Date() })
       .where(and(eq(socialVariants.id, p.data.id), inArray(socialVariants.status, ["draft", "failed"]))).returning({ id: socialVariants.id });
     if (!row) return denied;
     await aud("social.variant.save", row.id);
