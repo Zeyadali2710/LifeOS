@@ -2,6 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import { getProvider, ProviderAuthError, UncertainPublishError } from "@/server/socials/providers";
 import { portfolioMarkdown } from "@/server/socials/markdown";
 import { socialFixture } from "../helpers/fake-socials";
+import { completeTikTokOAuth, tikTokAuthUrl, refreshSocialToken } from "@/server/socials/connections";
+import { decrypt, encrypt } from "@/server/crypto";
+import type { DB } from "@/server/db/client";
 
 describe("social providers", () => {
   it("keeps disconnected providers mock and manual platforms unpublishable", () => {
@@ -67,5 +70,27 @@ describe("social providers", () => {
     const f = vi.fn(async (...args: [RequestInfo | URL, RequestInit?]) => { void args; return new Response(null, { status: 401 }); });
     const p = getProvider("linkedin", { status: "connected", token: "secret", login: "urn:li:person:1", credentialGeneration: "generation" }, { fetch: f });
     await expect(p.publish?.({ text: "hi" }, "approval:1")).rejects.toBeInstanceOf(ProviderAuthError);
+  });
+
+  it("builds a web authorization URL without PKCE and rejects missing OAuth state", async () => {
+    const url = new URL(tikTokAuthUrl("client-key", "random-state", "https://lifeos.example"));
+    expect(url.origin + url.pathname).toBe("https://www.tiktok.com/v2/auth/authorize/");
+    expect(url.searchParams.get("scope")).toBe("user.info.basic,user.info.stats,video.list");
+    expect(url.searchParams.get("redirect_uri")).toBe("https://lifeos.example/api/connections/tiktok/callback");
+    expect(url.searchParams.has("code_challenge")).toBe(false);
+    expect(await completeTikTokOAuth({} as DB, { code: "code", state: "bad", cookie: null, base: "https://lifeos.example" })).toEqual({ ok: false, error: "state" });
+  });
+
+  it("stores both rotated TikTok tokens without rotating the approval generation", async () => {
+    const key = Buffer.alloc(32, 7);
+    const previous = { ciphertext: encrypt(JSON.stringify({ accessToken: "old-access", refreshToken: "old-refresh" }), key), credentialGeneration: "same-generation" };
+    let updated: Record<string, unknown> = {};
+    const h = {
+      select: () => ({ from: () => ({ where: async () => [previous] }) }),
+      update: () => ({ set: (value: Record<string, unknown>) => { updated = value; return { where: () => ({ returning: async () => [{ id: "tiktok" }] }) }; } }),
+    } as unknown as DB;
+    await refreshSocialToken(h, "tiktok", { accessToken: "new-access", refreshToken: "new-refresh", expiresAt: new Date("2026-10-16T00:00:00Z") }, key);
+    expect(JSON.parse(decrypt(updated.ciphertext as string, key))).toMatchObject({ accessToken: "new-access", refreshToken: "new-refresh" });
+    expect(updated.credentialGeneration).toBeUndefined();
   });
 });
