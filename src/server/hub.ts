@@ -11,7 +11,7 @@ export type Hub = { subscribe(fn: (e: HubEvent) => void): () => void; stop(): Pr
 const MIN_BACKOFF = 1000;
 const MAX_BACKOFF = 30_000;
 const DATA_KINDS: LiveKind[] = ["activity", "notification", "run", "approval"];
-const SIGNAL_KINDS: LiveKind[] = ["calendar", "task", "outreach"];
+const SIGNAL_KINDS: LiveKind[] = ["calendar", "task", "outreach", "socials"];
 
 // One dedicated LISTEN connection (never a Pool: LISTEN is per-session). Fans out to all subscribers.
 export function createHub(url: string, load: (p: { k: string; id: string }) => Promise<unknown>): Hub {

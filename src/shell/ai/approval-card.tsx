@@ -5,6 +5,7 @@ import type { ApprovalDTO } from "@/lib/agent-types";
 import { nothingText, payloadSchemaFor, type ApprovalKind } from "@/lib/approval-kinds";
 import { isSafeGithubUrl } from "@/lib/safe-url";
 import { approveAction, rejectAction } from "@/server/approval-actions";
+import { SocialApprovalShell } from "@/approvals/social-approval";
 import { issueOf, UnreadableApproval } from "@/approvals/approval-detail";
 import { eventOf, whenText } from "@/approvals/event-approval";
 import { mailOf, mailResolved, redirectNote } from "@/approvals/mail-approval";
@@ -122,7 +123,7 @@ export function ApprovalCard({ approval, onDecided }: { approval: ApprovalDTO; o
   const pjCounts = pj ? draftCounts(pj) : null;
   const pjMeta = pjCounts ? [pjCounts.milestones && `${pjCounts.milestones} milestones`, pjCounts.tasks && `${pjCounts.tasks} tasks`, pjCounts.links && `${pjCounts.links} links`].filter(Boolean).join(" · ") || "Project only" : "";
   const social = a.kind === "social_publish" ? (a.edited ?? a.original) as { platform: string; text: string; imageUrl: string | null; linkUrl: string | null; providerMode: string; publishAt: string | null } : null;
-  if (social && !payloadSchemaFor(a.tool).safeParse(social).success) return <UnreadableApproval />;
+  if (social && (!payloadSchemaFor(a.tool).safeParse(social).success || !payloadSchemaFor(a.tool).safeParse(a.original).success)) return <UnreadableApproval />;
   const ev = (a.edited ?? a.original) as { title?: unknown; calendarLabel?: unknown };
   const p = iss?.current ?? { repo: "", title: mp ? mp.subject : pj ? pjName : String(ev.title ?? ""), body: mp ? mp.body : pj && "name" in pj ? pj.description : "", labels: [] as string[] };
   const decide = async (kind: "approve" | "reject") => {
@@ -134,19 +135,7 @@ export function ApprovalCard({ approval, onDecided }: { approval: ApprovalDTO; o
     toast(kind === "approve" ? (social ? "Social post approved · queued" : iss ? `Issue created in ${p.repo}` : pj ? (a.kind === "project_update" ? "Project updated" : "Project created") : mp ? "Reply approved · sending" : "Calendar updated") : "Approval rejected");
     onDecided();
   };
-  if (social) return (
-    <div id={`approval-${a.runId}`} className="flex flex-col gap-2.5 rounded-14 border border-[rgba(255,159,10,.30)] bg-[rgba(255,159,10,.10)] p-3.5">
-      <p className="text-[13px] text-text-2">Social post to {social.platform}{social.providerMode === "mock" ? " · MOCK · nothing leaves LifeOS" : ""}</p>
-      <p className="text-[13px] break-words whitespace-pre-wrap">{social.text}</p>
-      {social.imageUrl && <p className="text-[11px] break-all text-text-3">Image: {social.imageUrl}</p>}
-      {social.linkUrl && <p className="text-[11px] break-all text-text-3">Link: {social.linkUrl}</p>}
-      {social.publishAt && <p className="text-[11px] text-text-3">Scheduled: {stamp(social.publishAt)}</p>}
-      {a.status === "pending" ? <div className="flex gap-2">
-        <Button variant="inverse" loading={busy === "approve"} disabled={busy !== null} onClick={() => void decide("approve")}>APPROVE</Button>
-        <Button variant="destructive" loading={busy === "reject"} disabled={busy !== null} onClick={() => void decide("reject")}>REJECT</Button>
-      </div> : <Resolved a={a} />}
-    </div>
-  );
+  if (social) return <SocialApprovalShell approval={a} onChange={(next) => { setLocal(next); onDecided(); }} />;
   return (
     <div id={`approval-${a.runId}`} className="flex flex-col gap-2.5 rounded-14 border border-[rgba(255,159,10,.30)] bg-[rgba(255,159,10,.10)] p-3.5">
       <div className="flex items-center gap-1.5 text-[10.5px] font-medium tracking-[.12em] text-amber">

@@ -3,7 +3,7 @@ import { sydneyYmd } from "@/lib/project-rules";
 import { decrypt } from "../crypto";
 import { db, type DB } from "../db/client";
 import { connections, socialAccountSnapshots, socialVariants } from "../db/schema";
-import { emitActivity } from "../events";
+import { emitActivity, notifyLive } from "../events";
 import { log } from "../log";
 import { refreshSocialToken, socialConnection, tikTokAppCredentials, markSocialAuthError } from "./connections";
 import { getProvider, ProviderAuthError } from "./providers";
@@ -98,4 +98,5 @@ export async function syncSocials(h: DB = db(), now = new Date(), f: typeof fetc
     }
   }
   await runScheduled(h, now);
+  await notifyLive(h, "socials", "sync");
 }

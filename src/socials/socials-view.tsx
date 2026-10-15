@@ -37,6 +37,7 @@ export function SocialsView({ data }: { data: SocialsData | null }) {
   const missingPost = useRef<string | null>(null);
   const view = sp.get("view") === "calendar" ? "calendar" : sp.get("view") === "analytics" ? "analytics" : "overview";
   useLiveEvents("approval", () => router.refresh());
+  useLiveEvents("socials", () => router.refresh());
   const navigate = (change: Record<string, string | null>) => {
     const params = new URLSearchParams(sp.toString());
     for (const [key, value] of Object.entries(change)) { if (value === null) params.delete(key); else params.set(key, value); }

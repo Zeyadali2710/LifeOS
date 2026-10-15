@@ -6,10 +6,18 @@ vi.mock("@/server/session", () => ({ requireOwner: async () => ({ user: { id: "o
 vi.mock("@/server/db/client", () => ({ db: () => state.handle }));
 vi.mock("@/server/log", () => ({ log: { error: state.logError } }));
 
-import { markPosted } from "@/server/socials-actions";
+import { markPosted, socialReviewFacts } from "@/server/socials-actions";
 
 describe("social owner action guards", () => {
   const id = "11111111-1111-4111-8111-111111111111";
+
+  it("projects current publish status, rejects unsafe external links and detects a removed real binding", async () => {
+    const payload = { variantId: id, platform: "linkedin", text: "Approved", imageUrl: null, linkUrl: null, publishAt: null, providerMode: "real", connectionGeneration: id };
+    const rows = [[{ tool: "socials.publish", originalPayload: payload, editedPayload: null }], [{ postId: id, approvalId: id, status: "published", scheduledAt: null, remoteUrl: "https://linkedin.com.evil.test/post", isMock: false, lastError: null, draftedFromContent: true }], []];
+    const chain = { from: () => chain, innerJoin: () => chain, where: async () => rows.shift() };
+    state.handle = { select: () => chain };
+    expect(await socialReviewFacts(id)).toMatchObject({ status: "published", remoteUrl: null, bindingMatches: false, destination: "Account binding changed · request a new approval" });
+  });
 
   it("does not mark a variant posted if it changed state after the read", async () => {
     let whereSql = "";

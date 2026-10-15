@@ -21,6 +21,7 @@ import { stamp } from "./approval-list";
 import { ProjectApprovalBody, projectOf, projectResolved, sameProject, toProjectDraft, validateProjectDraft, type ProjectDraft, type ProjectErrors, type ProjectPayload } from "./project-approval";
 import { MailApprovalBody, mailOf, mailResolved, sameMail, toMailDraft, validateMailDraft, type MailDraft, type MailDraftErrors } from "./mail-approval";
 import { EventApprovalBody, Fact, eventOf, eventResolved, sameEvent, toEventDraft, validateEventDraft, type EventDraft, type EventDraftErrors, type EventPayload } from "./event-approval";
+import { SocialApprovalShell, socialOf } from "./social-approval";
 
 export type WriteFacts = { connected: boolean; login: string | null; last4: string | null };
 
@@ -146,7 +147,7 @@ export function ApprovalDetail(props: DetailProps) {
   if (props.approval.kind === "mail_reply") {
     return payloadSchemaFor(props.approval.tool).safeParse(mailOf(props.approval)).success ? <MailApprovalShell {...props} /> : <UnreadableApproval />;
   }
-  if (props.approval.kind === "social_publish") return <UnreadableApproval />;
+  if (props.approval.kind === "social_publish") return payloadSchemaFor(props.approval.tool).safeParse(socialOf(props.approval)).success && payloadSchemaFor(props.approval.tool).safeParse(props.approval.original).success ? <SocialApprovalShell {...props} /> : <UnreadableApproval />;
   return <EventApprovalShell {...props} />;
 }
 

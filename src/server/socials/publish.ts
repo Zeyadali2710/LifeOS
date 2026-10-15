@@ -4,7 +4,7 @@ import { checkVariant, type SocialPlatform } from "@/lib/social-types";
 import { approvedHash, currentBinding } from "../agents/tools/socials";
 import { db, type DB } from "../db/client";
 import { approvals, socialVariants } from "../db/schema";
-import { emitActivity } from "../events";
+import { emitActivity, notifyLive } from "../events";
 import { log } from "../log";
 import { enqueue, QUEUES, type Enqueue } from "../queue";
 import { markSocialAuthError } from "./connections";
@@ -47,6 +47,7 @@ async function fail(h: DB, v: Variant, message: string, reconnect = false): Prom
     .where(and(eq(socialVariants.id, v.id), eq(socialVariants.approvalId, v.approvalId!), inArray(socialVariants.status, ["scheduled", "publishing"])))
     .returning({ id: socialVariants.id });
   if (!won) return;
+  await notifyLive(h, "socials", v.id);
   if (reconnect && (v.platform === "linkedin" || v.platform === "instagram")) await markSocialAuthError(h, v.platform);
   await emitActivity({ type: "social.publish_failed", source: "social", title: "Social post needs attention", detail: message, tone: "amber", payload: { variantId: v.id } },
     { category: "IMPORTANT", title: "Social post needs attention", body: message, actionUrl: "/socials" }, h);
@@ -74,6 +75,7 @@ export async function publishVariant(variantId: string, approvalId: string, h: D
       .returning({ id: socialVariants.id });
     if (!won) return;
   }
+  await notifyLive(h, "socials", variantId);
   try {
     let result: PublishResult | null = v.remoteId ? { state: "published", remoteId: v.remoteId, remoteUrl: v.remoteUrl ?? undefined } : null;
     if (!result) {
@@ -97,6 +99,7 @@ export async function publishVariant(variantId: string, approvalId: string, h: D
     const [published] = await h.update(socialVariants).set({ status: "published", publishedAt: new Date(), isMock: provider.isMock, lastError: null, updatedAt: new Date() })
       .where(and(eq(socialVariants.id, variantId), eq(socialVariants.approvalId, approvalId), eq(socialVariants.status, "publishing"), isNotNull(socialVariants.remoteId)))
       .returning({ id: socialVariants.id });
+    if (published) await notifyLive(h, "socials", variantId);
     if (published) await emitActivity({ type: "social.published", source: "social", title: `${provider.label} post published`, tone: "green", payload: { variantId } },
       { category: "FYI", title: `${provider.label} post published`, actionUrl: "/socials" }, h);
   } catch (err) {

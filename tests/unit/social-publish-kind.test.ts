@@ -74,6 +74,7 @@ describe("social publish approval", () => {
     let reads = 0;
     const writes: Record<string, unknown>[] = [];
     const fake = {
+      execute: async () => undefined,
       select: () => ({ from: () => ({ where: async () => (++reads % 2 === 1 ? [variant] : []) }) }),
       update: () => ({ set: (value: Record<string, unknown>) => { writes.push(value); return { where: () => ({ returning: async () => [{ id: base.variantId }] }) }; } }),
     } as unknown as DB;

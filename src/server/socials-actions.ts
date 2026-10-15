@@ -3,8 +3,9 @@
 import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 import { PLATFORMS, checkVariant } from "@/lib/social-types";
+import { socialPublishPayload } from "@/lib/approval-kinds";
 import { db } from "./db/client";
-import { agentRuns, approvals, auditLog, socialPosts, socialVariants } from "./db/schema";
+import { agentRuns, approvals, auditLog, connections, socialPosts, socialVariants } from "./db/schema";
 import { callTool } from "./agents/gateway";
 import { MODELS } from "./agents/registry";
 import { TOOLS } from "./agents/tools";
@@ -14,6 +15,29 @@ import { cancelSocialJob, enqueue, QUEUES, rescheduleSocialJob } from "./queue";
 import { requireOwner } from "./session";
 import { removeSocialConnection, saveSocialToken, saveTikTokApp, verifyInstagramConnection } from "./socials/connections";
 import { buildStarter } from "./socials/queries";
+import { notifyLive } from "./events";
+
+export async function socialReviewFacts(id: string) {
+  await requireOwner();
+  if (!z.uuid().safeParse(id).success) return null;
+  const h = db();
+  const [a] = await h.select().from(approvals).where(eq(approvals.id, id));
+  const parsed = socialPublishPayload.safeParse(a?.editedPayload ?? a?.originalPayload);
+  if (!a || a.tool !== "socials.publish" || !parsed.success) return null;
+  const p = parsed.data;
+  const [v] = await h.select({ postId: socialVariants.postId, status: socialVariants.status, approvalId: socialVariants.approvalId, scheduledAt: socialVariants.scheduledAt,
+    remoteUrl: socialVariants.remoteUrl, isMock: socialVariants.isMock, lastError: socialVariants.lastError, draftedFromContent: socialPosts.draftedFromContent })
+    .from(socialVariants).innerJoin(socialPosts, eq(socialPosts.id, socialVariants.postId)).where(eq(socialVariants.id, p.variantId));
+  if (!v) return null;
+  const [c] = await h.select({ login: connections.login, generation: connections.credentialGeneration, status: connections.status }).from(connections).where(eq(connections.id, p.platform));
+  const bindingMatches = p.providerMode === "mock" ? !c : c?.generation === p.connectionGeneration && c.status === "connected";
+  let remoteUrl: string | null = null;
+  try { const url = new URL(v.remoteUrl ?? ""); const host = p.platform === "linkedin" ? "linkedin.com" : "instagram.com";
+    if (!v.isMock && url.protocol === "https:" && !url.username && !url.password && (url.hostname === host || url.hostname.endsWith(`.${host}`))) remoteUrl = url.href;
+  } catch { /* no safe external link */ }
+  return { ...v, status: v.approvalId === id ? v.status : "inactive", scheduledAt: v.scheduledAt?.toISOString() ?? null, remoteUrl, bindingMatches,
+    destination: p.providerMode === "mock" ? "LifeOS fixture store" : bindingMatches ? c?.login ?? "Connected account" : "Account binding changed · request a new approval" };
+}
 
 const uuid = z.uuid();
 const platform = z.enum(PLATFORMS);
@@ -27,7 +51,10 @@ async function run<T>(fn: () => Promise<T>): Promise<T | { ok: false; error: "fa
   try { return await fn(); }
   catch { log.error("social action failed"); return { ok: false, error: "failed" }; }
 }
-const aud = (action: string, target: string, metadata: Record<string, unknown> = {}) => db().insert(auditLog).values({ actor: "owner", action, target, metadata });
+const aud = async (action: string, target: string, metadata: Record<string, unknown> = {}) => {
+  await db().insert(auditLog).values({ actor: "owner", action, target, metadata });
+  await notifyLive(db(), "socials", target);
+};
 
 export async function createPost(raw: unknown) {
   await requireOwner();

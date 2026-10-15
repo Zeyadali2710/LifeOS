@@ -5,6 +5,7 @@ import { socialPublishPayload } from "@/lib/approval-kinds";
 import { PLATFORMS, checkVariant, type SocialPlatform } from "@/lib/social-types";
 import type { DB } from "../../db/client";
 import { socialPosts, socialVariants } from "../../db/schema";
+import { notifyLive } from "../../events";
 import { enqueue, QUEUES } from "../../queue";
 import { socialConnection } from "../../socials/connections";
 import { getProvider } from "../../socials/providers";
@@ -39,6 +40,7 @@ export async function prepareApprovedSocial(h: DB, approvalId: string, input: Bo
     status: "scheduled", scheduledAt: input.publishAt ? new Date(input.publishAt) : now, updatedAt: now })
     .where(and(eq(socialVariants.id, input.variantId), eq(socialVariants.status, "pending_approval"), eq(socialVariants.approvalId, approvalId)))
     .returning({ id: socialVariants.id });
+  if (won) await notifyLive(h, "socials", input.variantId);
   return !!won;
 }
 
@@ -59,7 +61,7 @@ const save: Tool<z.infer<typeof draftInput>, Record<string, unknown>> = {
   input: draftInput, output: out, tier: "PREPARE", sideEffect: false, private: true,
   async handler(i, ctx) {
     if (new Set(i.variants.map((v) => v.platform)).size !== i.variants.length) throw new ToolError("invalid_input", "Only one variant per platform.");
-    return ctx.handle.transaction(async (tx) => {
+    const result = await ctx.handle.transaction(async (tx) => {
       let postId = i.postId;
       if (postId) {
         const [existing] = await tx.select({ id: socialPosts.id }).from(socialPosts).where(eq(socialPosts.id, postId));
@@ -81,6 +83,8 @@ const save: Tool<z.infer<typeof draftInput>, Record<string, unknown>> = {
       }
       return { postId, checks };
     });
+    await notifyLive(ctx.handle, "socials", result.postId!);
+    return result;
   },
 };
 
