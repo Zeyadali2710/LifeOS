@@ -85,7 +85,8 @@ export function ApprovalList({
       ) : (
         <div ref={listRef} role="listbox" aria-label={tab === "pending" ? "Pending approvals" : "Resolved approvals"} onKeyDown={onKey} className="glass-card flex flex-col gap-1 rounded-24 p-2">
           {items.map((a, n) => {
-            const p = (a.edited ?? a.original) as { title?: unknown; repo?: unknown; name?: unknown; subject?: unknown; platform?: unknown; text?: unknown; providerMode?: unknown; before?: { name?: unknown } };
+            const raw = a.edited ?? a.original;
+            const p = (raw && typeof raw === "object" ? raw : {}) as { title?: unknown; repo?: unknown; name?: unknown; subject?: unknown; platform?: unknown; text?: unknown; providerMode?: unknown; before?: { name?: unknown } };
             const social = a.kind === "social_publish";
             const proj = a.kind === "project_create" || a.kind === "project_update";
             const agent = getAgent(a.agentId);
@@ -116,7 +117,7 @@ export function ApprovalList({
                   </Badge>
                 </div>
                 <p className="text-[14px] leading-[1.4] break-words">
-                  {social ? `${String(p.platform)} · ${p.providerMode === "mock" ? "MOCK · " : ""}${String(p.text ?? "").slice(0, 100)}` : a.kind === "issue" ? `Create an issue in ${String(p.repo)}: ` : ""}&quot;{String(p.title ?? p.name ?? p.subject ?? p.before?.name ?? "")}&quot;
+                  {social ? `${String(p.platform)} Â· ${p.providerMode === "mock" ? "MOCK Â· " : ""}${String(p.text ?? "").slice(0, 100)}` : a.kind === "issue" ? `Create an issue in ${String(p.repo)}: ` : ""}&quot;{String(p.title ?? p.name ?? p.subject ?? p.before?.name ?? "")}&quot;
                 </p>
                 <div className="flex flex-wrap items-center gap-2 text-[11px] text-text-3">
                   <span>Requested {formatHM(new Date(a.createdAt))}</span>

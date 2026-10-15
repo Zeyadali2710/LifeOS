@@ -60,7 +60,7 @@ describe("social providers", () => {
   });
 
   it.each(["ERROR", "EXPIRED"])("stops retrying a terminal Instagram container: %s", async (status) => {
-    const f = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => Response.json({ status_code: status }));
+    const f = vi.fn<typeof fetch>(async () => Response.json({ status_code: status }));
     const p = getProvider("instagram", { status: "connected", token: "secret", login: "123", credentialGeneration: "generation" }, { fetch: f });
     await expect(p.publish?.({ text: "caption", imageUrl: "https://example.com/image.jpg", containerId: "container-1" }, "approval:1"))
       .rejects.toBeInstanceOf(SocialProviderError);
