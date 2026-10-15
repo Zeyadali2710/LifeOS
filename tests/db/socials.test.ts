@@ -175,11 +175,13 @@ describe("connection, retry and analytics contracts", () => {
     vi.stubGlobal("fetch", f);
     await connect("instagram", f);
     expect((await socialConnectionStatus(h())).instagram?.status).toBe("verification_pending");
-    expect(await confirmInstagramSmoke()).toEqual({ ok: true });
+    const oldGeneration = (await socialConnectionStatus(h())).instagram!.credentialGeneration!;
+    expect(await confirmInstagramSmoke(oldGeneration)).toEqual({ ok: true });
     expect((await socialConnectionStatus(h())).instagram?.status).toBe("connected");
     await connect("instagram", f);
     expect((await socialConnectionStatus(h())).instagram?.status).toBe("verification_pending");
-    expect(await confirmInstagramSmoke()).toEqual({ ok: true });
+    expect(await confirmInstagramSmoke(oldGeneration)).toEqual({ ok: false, error: "not_allowed" });
+    expect(await confirmInstagramSmoke((await socialConnectionStatus(h())).instagram!.credentialGeneration!)).toEqual({ ok: true });
     await syncSocials(h(), new Date(), f);
     expect((await socialConnectionStatus(h())).instagram?.status).toBe("error");
     expect((await h().select().from(connections).where(eq(connections.id, "instagram")))[0]!.lastError).toBe("RECONNECT");
@@ -199,7 +201,7 @@ describe("connection, retry and analytics contracts", () => {
     }) as typeof fetch;
     vi.stubGlobal("fetch", f);
     await connect("instagram", f);
-    expect(await confirmInstagramSmoke()).toEqual({ ok: true });
+    expect(await confirmInstagramSmoke((await socialConnectionStatus(h())).instagram!.credentialGeneration!)).toEqual({ ok: true });
     const v = await variant("instagram", "Caption");
     const id = await pending(v.id);
     await approve(id);

@@ -20,9 +20,9 @@ export function SocialConnections({ connections: c, redirectUri, result }: { con
   const [busy, setBusy] = useState(false);
   useLiveEvents("socials", () => router.refresh());
   async function confirm() {
-    if (!checked.every(Boolean)) return;
+    if (!checked.every(Boolean) || !c.instagram?.credentialGeneration) return;
     setBusy(true);
-    const r = await confirmInstagramSmoke().catch(() => ({ ok: false }));
+    const r = await confirmInstagramSmoke(c.instagram.credentialGeneration).catch(() => ({ ok: false }));
     setBusy(false);
     toast(r.ok ? "Instagram smoke test confirmed" : "Could not confirm verification. Try again.", r.ok ? "success" : "error");
     if (r.ok) router.refresh();

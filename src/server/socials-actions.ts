@@ -216,13 +216,11 @@ export async function disconnect(target: "linkedin" | "instagram" | "tiktok" | "
   if (!z.enum(["linkedin", "instagram", "tiktok", "tiktok_app"]).safeParse(target).success) return invalid;
   return run(async () => { await removeSocialConnection(db(), target); return { ok: true } as const; });
 }
-export async function confirmInstagramSmoke() {
+export async function confirmInstagramSmoke(generation: string) {
   await requireOwner();
+  if (!uuid.safeParse(generation).success) return invalid;
   return run(async () => {
-    const { socialConnectionStatus } = await import("./socials/connections");
-    const status = (await socialConnectionStatus(db())).instagram;
-    if (status?.status !== "verification_pending") return denied;
-    await verifyInstagramConnection(db());
+    if (!await verifyInstagramConnection(db(), generation)) return denied;
     return { ok: true } as const;
   });
 }

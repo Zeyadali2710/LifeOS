@@ -6,10 +6,23 @@ vi.mock("@/server/session", () => ({ requireOwner: async () => ({ user: { id: "o
 vi.mock("@/server/db/client", () => ({ db: () => state.handle }));
 vi.mock("@/server/log", () => ({ log: { error: state.logError } }));
 
-import { markPosted, socialReviewFacts } from "@/server/socials-actions";
+import { confirmInstagramSmoke, markPosted, socialReviewFacts } from "@/server/socials-actions";
 
 describe("social owner action guards", () => {
   const id = "11111111-1111-4111-8111-111111111111";
+
+  it("rejects a stale Instagram attestation atomically without auditing success", async () => {
+    let predicate: { sql: string; params: unknown[] } | undefined;
+    const insert = vi.fn();
+    state.handle = { insert, update: () => ({ set: () => ({ where: (condition: Parameters<PgDialect["sqlToQuery"]>[0]) => {
+      predicate = new PgDialect({ casing: "snake_case" }).sqlToQuery(condition);
+      return { returning: async () => [] };
+    } }) }) };
+    expect(await confirmInstagramSmoke(id)).toEqual({ ok: false, error: "not_allowed" });
+    expect(predicate!.sql).toContain('"credential_generation"');
+    expect(predicate!.params).toEqual(["instagram", id, "verification_pending"]);
+    expect(insert).not.toHaveBeenCalled();
+  });
 
   it("projects current publish status, rejects unsafe external links and detects a removed real binding", async () => {
     const payload = { variantId: id, platform: "linkedin", text: "Approved", imageUrl: null, linkUrl: null, publishAt: null, providerMode: "real", connectionGeneration: id };

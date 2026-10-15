@@ -169,9 +169,13 @@ export async function socialConnectionStatus(h: DB): Promise<Record<Exclude<Soci
   return Object.fromEntries(ids.map((id) => [id, rows.find((r) => r.id === id) ?? null])) as Record<(typeof ids)[number], (typeof rows)[number] | null>;
 }
 
-export async function verifyInstagramConnection(h: DB): Promise<void> {
-  await h.update(connections).set({ status: "connected", lastError: null, updatedAt: new Date() }).where(eq(connections.id, "instagram"));
+export async function verifyInstagramConnection(h: DB, generation: string): Promise<boolean> {
+  const [won] = await h.update(connections).set({ status: "connected", lastError: null, updatedAt: new Date() })
+    .where(and(eq(connections.id, "instagram"), eq(connections.credentialGeneration, generation), eq(connections.status, "verification_pending")))
+    .returning({ id: connections.id });
+  if (!won) return false;
   await audit(h, "connection.verify", "instagram");
+  return true;
 }
 
 export async function markSocialAuthError(h: DB, platform: Exclude<SocialPlatform, "portfolio">): Promise<void> {
