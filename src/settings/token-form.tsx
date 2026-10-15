@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { saveToken } from "@/server/socials-actions";
 import { saveEventKeyAction } from "@/server/outreach-actions";
 import { saveOpenRouterKeyAction, saveTokenAction } from "@/server/settings-actions";
 import { Button } from "@/ui/button";
@@ -30,6 +31,8 @@ const EVENT_ERRORS = (name: string): Record<string, string> => ({
 const EVENT_ERRORS_BY_ID = { eventbrite: EVENT_ERRORS("Eventbrite"), luma: EVENT_ERRORS("Luma") };
 
 const HELP = {
+  linkedin: "Paste an owner token with openid, profile and w_member_social. Stored encrypted; never shown again.",
+  instagram: "Paste an Instagram Login token. Real publishing stays disabled until the owner verifies scopes, a public-image publish and returned insights.",
   eventbrite: "Create a private token at eventbrite.com/platform/api-keys. LifeOS uses it only to read events.",
   luma: "Covers only the Luma Plus calendar the key was made on. For Sydney discovery, add Luma's iCal feed below.",
   openrouter:
@@ -45,12 +48,13 @@ export function TokenForm({
   onDone,
   onCancel,
 }: {
-  id: "github_read" | "github_write" | "openrouter" | "eventbrite" | "luma";
+  id: "github_read" | "github_write" | "openrouter" | "eventbrite" | "luma" | "linkedin" | "instagram";
   onDone: (r: { repos?: number }) => void;
   onCancel: () => void;
 }) {
   const or = id === "openrouter";
   const ev = id === "eventbrite" || id === "luma";
+  const social = id === "linkedin" || id === "instagram";
   const [token, setToken] = useState("");
   const [busy, setBusy] = useState(false);
   const [fieldError, setFieldError] = useState<string>();
@@ -65,16 +69,16 @@ export function TokenForm({
     setFieldError(undefined);
     setBusy(true);
     try {
-      const r = ev
+      const r = social ? await saveToken(id, value) : ev
         ? await saveEventKeyAction(id, value)
         : or
           ? await saveOpenRouterKeyAction(value)
           : await saveTokenAction(id as "github_read" | "github_write", value);
       if (r.ok) onDone({ repos: "repos" in r ? Number(r.repos) : undefined });
       else if (r.error === "empty") setFieldError(or || id === "luma" ? "Paste a key to continue." : "Paste a token to continue.");
-      else setError((ev ? EVENT_ERRORS_BY_ID[id] : or ? OR_ERRORS : ERRORS)[r.error] ?? ERRORS.failed);
+      else setError(social ? "Could not verify this token. Nothing was saved. Check the token and provider connection." : (ev ? EVENT_ERRORS_BY_ID[id] : or ? OR_ERRORS : ERRORS)[r.error] ?? ERRORS.failed);
     } catch {
-      setError((ev ? EVENT_ERRORS_BY_ID[id] : ERRORS).failed);
+      setError(social ? "Could not save the token. Try again." : (ev ? EVENT_ERRORS_BY_ID[id] : ERRORS).failed);
     } finally {
       setBusy(false);
     }
@@ -82,7 +86,7 @@ export function TokenForm({
 
   return (
     <form onSubmit={submit} className="flex animate-[lo-rise_.25s_ease-out] flex-col gap-3.5 rounded-14 border border-white/[.10] bg-white/[.03] p-4">
-      <Field label={id === "luma" ? "Luma API key" : ev ? "Eventbrite private token" : or ? "OpenRouter API key" : "Fine-grained personal access token"} helper={HELP[id]} error={fieldError}>
+      <Field label={social ? `${id === "linkedin" ? "LinkedIn" : "Instagram"} access token` : id === "luma" ? "Luma API key" : ev ? "Eventbrite private token" : or ? "OpenRouter API key" : "Fine-grained personal access token"} helper={HELP[id]} error={fieldError}>
         <Input
           type="password"
           autoComplete="off"

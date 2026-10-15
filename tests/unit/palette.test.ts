@@ -7,9 +7,9 @@ describe("buildPalette", () => {
     expect(groups.map((g) => g.label)).toEqual(["Commands", "Jump to"]);
     expect(noMatch).toBe(false);
     const cmds = groups[0]!.items;
-    expect(cmds.map((i) => i.label)).toEqual(["Open notifications", "Open approvals", "View agent activity", "New event", "New task", "New project", "Import event URL", "Ask LifeOS", "Sign out"]);
+    expect(cmds.map((i) => i.label)).toEqual(["Open notifications", "Open approvals", "View agent activity", "New event", "New task", "New project", "New post", "Import event URL", "Ask LifeOS", "Sign out"]);
     expect(cmds[1]!.hint).toBe("0 waiting");
-    expect(cmds[7]!.hint).toBe("Ctrl J");
+    expect(cmds[8]!.hint).toBe("Ctrl J");
     const jump = groups[1]!.items;
     expect(jump.map((i) => i.label)).toEqual(["Home", "Career", "Socials", "Outreach", "Organization", "Projects", "Knowledge", "Goals", "Agents", "Approvals", "Settings"]);
     expect(jump[0]!.hint).toBe("Alt 1");

@@ -11,6 +11,7 @@ import { env } from "@/server/env";
 import { getConnections } from "@/server/github/connections";
 import { eventKeyStatus } from "@/server/outreach/connections";
 import { listEventSources } from "@/server/outreach/sources";
+import { socialConnectionStatus } from "@/server/socials/connections";
 import { requireOwner } from "@/server/session";
 import { formatHM, tzLabel } from "@/server/time";
 import { ConnectionsSection } from "@/settings/connections-section";
@@ -24,9 +25,9 @@ export const dynamic = "force-dynamic";
 
 const GOOGLE_RESULTS = ["connected", "cancelled", "state", "scope", "failed", "not_configured"];
 
-export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ section?: string; google?: string; n?: string; gmail?: string }> }) {
+export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ section?: string; google?: string; n?: string; gmail?: string; tiktok?: string }> }) {
   await requireOwner();
-  const { section: raw, google: g, n, gmail } = await searchParams;
+  const { section: raw, google: g, n, gmail, tiktok } = await searchParams;
   const section = raw === "ai" || raw === "outreach" ? raw : "connections";
   const googleResult = g && GOOGLE_RESULTS.includes(g) ? { google: g, n: n && /^\d{1,4}$/.test(n) ? Number(n) : null, gmail: gmail === "1" ? true : gmail === "0" ? false : null } : null;
   const now = new Date();
@@ -66,6 +67,9 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         googleResult={googleResult}
         eventSources={eventSources}
         eventKeys={eventKeys}
+        socialConnections={await socialConnectionStatus(h)}
+        socialRedirectUri={`${env().BETTER_AUTH_URL.replace(/\/$/, "")}/api/connections/tiktok/callback`}
+        tiktokResult={tiktok && ["connected", "cancelled", "state", "scope", "failed", "not_configured"].includes(tiktok) ? tiktok : null}
       />
     );
   }

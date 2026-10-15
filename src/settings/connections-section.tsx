@@ -13,6 +13,7 @@ import { Icon } from "@/ui/icon";
 import type { EventSourceDTO } from "@/lib/outreach-types";
 import { CalendarConnectionRow } from "./calendar-connection-row";
 import { ConnectionRow, type RowStatus } from "./connection-row";
+import { SocialConnections, type SocialConnectionsData } from "./social-connections";
 import { OutreachConnections, type EventKeys } from "./outreach-connections";
 
 const SYNC_MS = 15 * 60_000;
@@ -34,6 +35,7 @@ export function ConnectionsSection({
   googleResult,
   eventSources,
   eventKeys,
+  socialConnections, socialRedirectUri, tiktokResult,
 }: {
   connections: ConnectionDTO[];
   privacy: Record<string, boolean>;
@@ -43,6 +45,7 @@ export function ConnectionsSection({
   googleResult: { google: string; n: number | null; gmail: boolean | null } | null;
   eventSources: EventSourceDTO[];
   eventKeys: EventKeys;
+  socialConnections: SocialConnectionsData; socialRedirectUri: string; tiktokResult: string | null;
 }) {
   const router = useRouter();
   const { toast } = useShell();
@@ -209,6 +212,7 @@ export function ConnectionsSection({
           <CalendarConnectionRow key={c.id} conn={c} notice={c.id === "google_calendar" ? googleNote : undefined} open={c.id === "google_calendar" && googleOpen} />
         ))}
         <OutreachConnections sources={eventSources} keys={eventKeys} />
+        <SocialConnections key={socialConnections.instagram?.credentialGeneration ?? "mock"} connections={socialConnections} redirectUri={socialRedirectUri} result={tiktokResult} />
       </div>
     </div>
   );

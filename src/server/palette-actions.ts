@@ -8,7 +8,7 @@ import { db } from "./db/client";
 import { addDaysYmd, sydneyYmd } from "./calendar/free-slots";
 import { listEvents, loadTasks } from "./calendar/queries";
 import { CATEGORY_LABEL, HEALTH_LABEL } from "@/lib/project-types";
-import { outreachEvents } from "./db/schema";
+import { outreachEvents, socialPosts } from "./db/schema";
 import { log } from "./log";
 import { searchProjects } from "./project-queries";
 import { requireOwner } from "./session";
@@ -29,7 +29,7 @@ export async function paletteSearchAction(raw: unknown): Promise<PaletteData> {
     const now = new Date();
     const today = sydneyYmd(now);
     // 7 back + 55 ahead = the 62-day listEvents cap, so nothing is silently clamped (IN-C03).
-    const [hits, open, found, outreach] = await Promise.all([
+    const [hits, open, found, outreach, posts] = await Promise.all([
       listEvents(db(), addDaysYmd(today, -7), addDaysYmd(today, 55), q),
       loadTasks(db(), "open", now),
       searchProjects(db(), q),
@@ -39,6 +39,7 @@ export async function paletteSearchAction(raw: unknown): Promise<PaletteData> {
         .where(and(isNull(outreachEvents.dismissedAt), ilike(outreachEvents.title, `%${escapeLike(q)}%`)))
         .orderBy(sql`${outreachEvents.stage} is null`, desc(outreachEvents.score))
         .limit(8),
+      db().select({ id: socialPosts.id, title: socialPosts.title }).from(socialPosts).where(ilike(socialPosts.title, `%${escapeLike(q)}%`)).orderBy(desc(socialPosts.updatedAt)).limit(4),
     ]);
     // Upcoming/ongoing first (soonest first), then past (most recent first), so last week can't crowd out next week.
     const nowIso = now.toISOString();
@@ -46,6 +47,7 @@ export async function paletteSearchAction(raw: unknown): Promise<PaletteData> {
     const past = hits.filter((e) => e.end < nowIso).reverse();
     const events = [...upcoming, ...past].slice(0, 4);
     return {
+      posts: posts.map((p) => ({ id: p.id, title: p.title, subtitle: "Social post", href: `/socials?post=${p.id}` })),
       projects: found.map((p) => ({
         id: p.id,
         title: p.name,

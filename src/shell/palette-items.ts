@@ -8,10 +8,10 @@ export type PaletteRun =
   | { type: "signout" };
 
 export type PaletteItem = { id: string; label: string; icon: IconName; hint?: string; run: PaletteRun };
-export type PaletteGroup = { label: "Ask LifeOS" | "Commands" | "Jump to" | "Events" | "Outreach events" | "Tasks" | "Projects"; items: PaletteItem[] };
+export type PaletteGroup = { label: "Ask LifeOS" | "Commands" | "Jump to" | "Events" | "Outreach events" | "Tasks" | "Projects" | "Posts"; items: PaletteItem[] };
 export type PaletteHit = { id: string; title: string; subtitle: string; href: string };
-export type PaletteData = { events: PaletteHit[]; outreach: PaletteHit[]; tasks: PaletteHit[]; projects: PaletteHit[] };
-export type PaletteScope = "all" | "events" | "outreach" | "tasks" | "projects";
+export type PaletteData = { events: PaletteHit[]; outreach: PaletteHit[]; tasks: PaletteHit[]; projects: PaletteHit[]; posts?: PaletteHit[] };
+export type PaletteScope = "all" | "events" | "outreach" | "tasks" | "projects" | "posts";
 
 const spaced = (s?: string) => s?.replace("+", " ");
 
@@ -23,6 +23,7 @@ export function buildPalette(query: string, opts: { approvalsWaiting?: number; d
     { id: "cmd-new-event", label: "New event", icon: "add", run: { type: "nav", href: "/organization?new=event" } },
     { id: "cmd-new-task", label: "New task", icon: "task_alt", run: { type: "nav", href: "/organization?new=task" } },
     { id: "cmd-new-project", label: "New project", icon: "add", run: { type: "nav", href: "/projects?new=project" } },
+    { id: "cmd-new-post", label: "New post", icon: "edit", run: { type: "nav", href: "/socials?new=1" } },
     { id: "cmd-import-event", label: "Import event URL", icon: "travel_explore", run: { type: "nav", href: "/outreach?import=1" } },
     { id: "cmd-ai", label: "Ask LifeOS", icon: "auto_awesome", hint: "Ctrl J", run: { type: "ai" } },
     { id: "cmd-signout", label: "Sign out", icon: "logout", run: { type: "signout" } },
@@ -47,7 +48,7 @@ export function buildPalette(query: string, opts: { approvalsWaiting?: number; d
   }
   const needle = q.toLowerCase();
   const pick = (items: PaletteItem[]) => items.filter((i) => i.label.toLowerCase().includes(needle)).slice(0, 4);
-  const hits = (label: "Events" | "Outreach events" | "Tasks" | "Projects", icon: IconName, list: PaletteHit[] = []): PaletteGroup => ({
+  const hits = (label: "Events" | "Outreach events" | "Tasks" | "Projects" | "Posts", icon: IconName, list: PaletteHit[] = []): PaletteGroup => ({
     label,
     items: list.slice(0, 4).map((h) => ({ id: `${label}-${h.id}`, label: h.title, icon, hint: h.subtitle, run: { type: "nav", href: h.href } })),
   });
@@ -58,6 +59,7 @@ export function buildPalette(query: string, opts: { approvalsWaiting?: number; d
     ...(scope === "all" || scope === "outreach" ? [hits("Outreach events", "travel_explore", opts.data?.outreach)] : []),
     ...(scope === "all" || scope === "tasks" ? [hits("Tasks", "task_alt", opts.data?.tasks)] : []),
     ...(scope === "all" || scope === "projects" ? [hits("Projects", "deployed_code", opts.data?.projects)] : []),
+    ...(scope === "all" || scope === "posts" ? [hits("Posts", "public", opts.data?.posts)] : []),
   ].filter((g) => g.items.length > 0);
   return {
     groups: [

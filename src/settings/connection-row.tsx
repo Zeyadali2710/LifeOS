@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { disconnect } from "@/server/socials-actions";
 import type { ReactNode } from "react";
 import { removeEventKeyAction } from "@/server/outreach-actions";
 import { removeTokenAction } from "@/server/settings-actions";
@@ -31,7 +32,7 @@ export function ConnectionRow({
   onChanged,
   children,
 }: {
-  id?: "github_read" | "github_write" | "openrouter" | "eventbrite" | "luma";
+  id?: "github_read" | "github_write" | "openrouter" | "eventbrite" | "luma" | "linkedin" | "instagram";
   title?: string;
   tile: string;
   name: string;
@@ -53,7 +54,7 @@ export function ConnectionRow({
   async function remove() {
     setConfirm(false);
     const ev = id === "eventbrite" || id === "luma";
-    const r = ev ? await removeEventKeyAction(id) : await removeTokenAction(id!);
+    const r = id === "linkedin" || id === "instagram" ? await disconnect(id) : ev ? await removeEventKeyAction(id) : await removeTokenAction(id!);
     if (r.ok) {
       setOpen(false);
       toast(title ? `${title} removed` : id === "eventbrite" ? "Eventbrite key removed" : id === "luma" ? "Luma key removed" : `${noun === "read" ? "GitHub read" : "Issues-write"} token removed`);
@@ -96,7 +97,7 @@ export function ConnectionRow({
             onCancel={() => setOpen(false)}
             onDone={(r) => {
               setOpen(false);
-              toast(id === "eventbrite" ? "Eventbrite connected" : id === "luma" ? "Luma connected" : id === "openrouter" ? "OpenRouter connected · free models on" : id === "github_read" ? `GitHub connected · ${r.repos} repositories` : `Issue creation enabled · ${r.repos} repositories`);
+              toast(id === "linkedin" ? "LinkedIn connected" : id === "instagram" ? "Instagram saved · verification pending" : id === "eventbrite" ? "Eventbrite connected" : id === "luma" ? "Luma connected" : id === "openrouter" ? "OpenRouter connected · free models on" : id === "github_read" ? `GitHub connected · ${r.repos} repositories` : `Issue creation enabled · ${r.repos} repositories`);
               onChanged?.("saved");
             }}
           />

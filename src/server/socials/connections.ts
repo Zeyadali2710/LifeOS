@@ -3,6 +3,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import type { SocialPlatform } from "@/lib/social-types";
 import { decrypt, encrypt } from "../crypto";
 import type { DB } from "../db/client";
+import { notifyLive } from "../events";
 import { auditLog, connections } from "../db/schema";
 
 export type SocialConnection = {
@@ -18,6 +19,7 @@ type Opts = { fetch?: typeof fetch; now?: Date; key?: Buffer };
 
 async function audit(h: DB, action: string, id: string, last4?: string) {
   await h.insert(auditLog).values({ actor: "owner", action, target: id, metadata: last4 ? { id, last4 } : { id } });
+  await notifyLive(h, "socials", id);
 }
 
 // Only these fixed validation URLs are ever called with a pasted token.
@@ -161,9 +163,9 @@ export async function socialConnection(h: DB, platform: Exclude<SocialPlatform, 
   return { status: row.status, token, login: row.login, scopes: row.scopes, expiresAt: row.expiresAt, credentialGeneration: row.credentialGeneration };
 }
 
-export async function socialConnectionStatus(h: DB): Promise<Record<Exclude<SocialPlatform, "portfolio"> | "tiktok_app", { status: string; last4: string; login: string | null; expiresAt: Date | null; credentialGeneration: string | null } | null>> {
+export async function socialConnectionStatus(h: DB): Promise<Record<Exclude<SocialPlatform, "portfolio"> | "tiktok_app", { status: string; last4: string; login: string | null; expiresAt: Date | null; credentialGeneration: string | null; scopes: string[]; lastSyncError: string | null } | null>> {
   const ids = ["linkedin", "instagram", "tiktok", "tiktok_app"] as const;
-  const rows = await h.select({ id: connections.id, status: connections.status, last4: connections.last4, login: connections.login, expiresAt: connections.expiresAt, credentialGeneration: connections.credentialGeneration }).from(connections).where(inArray(connections.id, [...ids]));
+  const rows = await h.select({ id: connections.id, status: connections.status, last4: connections.last4, login: connections.login, expiresAt: connections.expiresAt, credentialGeneration: connections.credentialGeneration, scopes: connections.scopes, lastSyncError: connections.lastSyncError }).from(connections).where(inArray(connections.id, [...ids]));
   return Object.fromEntries(ids.map((id) => [id, rows.find((r) => r.id === id) ?? null])) as Record<(typeof ids)[number], (typeof rows)[number] | null>;
 }
 

@@ -1,4 +1,6 @@
 import { randomBytes } from "node:crypto";
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import type { Page } from "@playwright/test";
 import { Client } from "pg";
 
@@ -7,6 +9,25 @@ export const E2E_OWNER = { email: "owner@lifeos.test", password: "e2e-password-1
 
 const admin = new URL(process.env.TEST_DATABASE_ADMIN_URL ?? "postgres://lifeos:lifeos@localhost:5433/postgres");
 export const E2E_DB_URL = Object.assign(new URL(admin), { pathname: "/lifeos_e2e" }).toString();
+
+export async function insertSocialSource(title: string) {
+  return withDb(async (c) => (await c.query("insert into projects (name, description) values ($1, 'A project source for a social post') returning id", [title])).rows[0].id as string);
+}
+export async function socialPostState(id: string) {
+  return withDb(async (c) => (await c.query("select platform, status, text, is_mock, remote_id, remote_url, last_error from social_variants where post_id = $1", [id])).rows as { platform: string; status: string; text: string; is_mock: boolean; remote_id: string | null; remote_url: string | null; last_error: string | null }[]);
+}
+export async function deleteSocialPost(id: string) {
+  await withDb(async (c) => {
+    await c.query("delete from agent_runs where id in (select a.run_id from approvals a join social_variants v on v.approval_id = a.id where v.post_id = $1)", [id]);
+    await c.query("delete from social_posts where id = $1", [id]);
+  });
+}
+export function runSocialMockExecutor(mode: "publish" | "removed-real", postId?: string): { postId: string; status: string; remoteId: string | null } {
+  const output = execFileSync(process.execPath, [fileURLToPath(new URL("../../node_modules/tsx/dist/cli.mjs", import.meta.url)), fileURLToPath(new URL("./social-executor.ts", import.meta.url)), mode, ...(postId ? [postId] : [])], {
+    encoding: "utf8", timeout: 30_000, env: { NODE_ENV: "test", PATH: process.env.PATH, SystemRoot: process.env.SystemRoot, TEMP: process.env.TEMP, TMP: process.env.TMP, DATABASE_URL: E2E_DB_URL },
+  });
+  return JSON.parse(output.trim().split("\n").at(-1)!);
+}
 
 async function withDb<T>(fn: (c: Client) => Promise<T>): Promise<T> {
   const c = new Client({ connectionString: E2E_DB_URL });
