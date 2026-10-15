@@ -1,12 +1,16 @@
 "use server";
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 import { PLATFORMS, checkVariant } from "@/lib/social-types";
 import { db } from "./db/client";
-import { approvals, auditLog, socialPosts, socialVariants } from "./db/schema";
+import { agentRuns, approvals, auditLog, socialPosts, socialVariants } from "./db/schema";
+import { callTool } from "./agents/gateway";
+import { MODELS } from "./agents/registry";
+import { TOOLS } from "./agents/tools";
+import { currentBinding } from "./agents/tools/socials";
 import { log } from "./log";
-import { enqueue, QUEUES } from "./queue";
+import { cancelSocialJob, enqueue, QUEUES, rescheduleSocialJob } from "./queue";
 import { requireOwner } from "./session";
 import { removeSocialConnection, saveSocialToken, saveTikTokApp, verifyInstagramConnection } from "./socials/connections";
 import { buildStarter } from "./socials/queries";
@@ -132,10 +136,17 @@ export async function cancelSchedule(id: string) {
   await requireOwner();
   if (!uuid.safeParse(id).success) return invalid;
   return run(async () => {
-    const [row] = await db().update(socialVariants).set({ status: "draft", scheduledAt: null, approvalId: null, approvedTextHash: null, approvedProviderMode: null, approvedConnectionGeneration: null, updatedAt: new Date() })
-      .where(and(eq(socialVariants.id, id), eq(socialVariants.status, "scheduled"))).returning({ id: socialVariants.id, approvalId: socialVariants.approvalId });
+    const row = await db().transaction(async (tx) => {
+      const [current] = await tx.select({ approvalId: socialVariants.approvalId }).from(socialVariants).where(and(eq(socialVariants.id, id), eq(socialVariants.status, "scheduled")));
+      if (!current) return null;
+      const [won] = await tx.update(socialVariants).set({ status: "draft", scheduledAt: null, approvalId: null, approvedTextHash: null, approvedProviderMode: null, approvedConnectionGeneration: null, updatedAt: new Date() })
+        .where(and(eq(socialVariants.id, id), eq(socialVariants.status, "scheduled"))).returning({ id: socialVariants.id });
+      if (!won) return null;
+      if (current.approvalId) await tx.update(approvals).set({ status: "cancelled" }).where(eq(approvals.id, current.approvalId));
+      return won;
+    });
     if (!row) return denied;
-    if (row.approvalId) await db().update(approvals).set({ status: "cancelled" }).where(eq(approvals.id, row.approvalId));
+    await cancelSocialJob(id).catch((err) => log.error({ err }, "social job cancel failed"));
     await aud("social.variant.cancel_schedule", id);
     return { ok: true } as const;
   });
@@ -147,9 +158,9 @@ export async function reschedule(id: string, at: string) {
   if (!p.success) return invalid;
   return run(async () => {
     const [row] = await db().update(socialVariants).set({ scheduledAt: new Date(at), updatedAt: new Date() })
-      .where(and(eq(socialVariants.id, id), eq(socialVariants.status, "scheduled"))).returning({ id: socialVariants.id });
+      .where(and(eq(socialVariants.id, id), eq(socialVariants.status, "scheduled"), isNotNull(socialVariants.approvedTextHash))).returning({ id: socialVariants.id });
     if (!row) return denied;
-    await enqueue(QUEUES.socialsPublish, { variantId: id }, { singletonKey: id });
+    await rescheduleSocialJob(id, new Date(at));
     await aud("social.variant.reschedule", id);
     return { ok: true } as const;
   });
@@ -182,5 +193,31 @@ export async function confirmInstagramSmoke() {
     if (status?.status !== "verification_pending") return denied;
     await verifyInstagramConnection(db());
     return { ok: true } as const;
+  });
+}
+
+export async function requestPublish(variantId: string, publishAt?: string | null) {
+  await requireOwner();
+  const p = z.object({ variantId: uuid, publishAt: z.iso.datetime({ offset: true }).nullable().optional() }).safeParse({ variantId, publishAt });
+  if (!p.success) return invalid;
+  return run(async () => {
+    const h = db();
+    const [v] = await h.select().from(socialVariants).where(eq(socialVariants.id, variantId));
+    if (!v || v.status !== "draft" || !["linkedin", "instagram"].includes(v.platform)) return denied;
+    const target = v.platform as "linkedin" | "instagram";
+    if (checkVariant(target, v).errors.length) return invalid;
+    const { provider } = await currentBinding(h, target);
+    if (!provider.capabilities.publish) return denied;
+    const [runRow] = await h.insert(agentRuns).values({ agentId: "social", prompt: `owner publish request ${variantId}`, model: MODELS.sonnet, status: "running", startedAt: new Date() })
+      .returning({ id: agentRuns.id });
+    const result = await callTool({ handle: h, runId: runRow!.id, agentId: "social", tools: TOOLS }, "socials.publish",
+      { variantId, platform: target, text: v.text, imageUrl: v.imageUrl, linkUrl: v.linkUrl, publishAt: publishAt ?? null }, `owner:${variantId}`);
+    if (result.status === "waiting_approval") {
+      await h.update(agentRuns).set({ status: "waiting_approval" }).where(eq(agentRuns.id, runRow!.id));
+      await aud("social.publish.request", variantId, { approvalId: result.approvalId });
+      return { ok: true, approvalId: result.approvalId } as const;
+    }
+    await h.update(agentRuns).set({ status: "failed", error: "Publish approval could not be prepared.", endedAt: new Date() }).where(eq(agentRuns.id, runRow!.id));
+    return denied;
   });
 }

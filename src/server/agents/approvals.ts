@@ -3,7 +3,7 @@ import type { ApprovalDTO } from "@/lib/agent-types";
 import { approvalKind, changedKeys, checkLocked, nothingText, payloadSchemaFor } from "@/lib/approval-kinds";
 import { ProviderError, providerLabel } from "../calendar/errors";
 import type { DB } from "../db/client";
-import { agentRuns, approvals, auditLog, calendarEvents, githubRepos, projects, toolCalls } from "../db/schema";
+import { agentRuns, approvals, auditLog, calendarEvents, githubRepos, projects, socialVariants, toolCalls } from "../db/schema";
 import { emitActivity, notifyLive } from "../events";
 import { GithubError } from "../github/client";
 import { log } from "../log";
@@ -13,6 +13,8 @@ import { redact, summarize } from "./redact";
 import { cancelRun } from "./runs";
 import { TOOLS } from "./tools";
 import { itemsChanged } from "./tools/projects";
+import { prepareApprovedSocial } from "./tools/socials";
+import { socialPublishPayload } from "@/lib/approval-kinds";
 import { ToolError, type Tool } from "./types";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- heterogeneous tool map
@@ -58,6 +60,12 @@ async function load(h: DB, id: string) {
   return (await h.select().from(approvals).where(eq(approvals.id, id)))[0] ?? null;
 }
 
+async function resetPendingSocial(h: DB, approvalId: string): Promise<void> {
+  await h.update(socialVariants).set({ status: "draft", approvalId: null, scheduledAt: null, approvedTextHash: null,
+    approvedProviderMode: null, approvedConnectionGeneration: null, updatedAt: new Date() })
+    .where(and(eq(socialVariants.approvalId, approvalId), eq(socialVariants.status, "pending_approval")));
+}
+
 export type DecideResult =
   | { ok: true; queued?: boolean }
   | { ok: false; reason: "not_pending" }
@@ -80,6 +88,7 @@ export async function decide(
       .where(and(eq(approvals.id, id), eq(approvals.status, "pending")))
       .returning();
     if (!won) return { ok: false, reason: "not_pending" };
+    if (approvalKind(won.tool) === "social_publish") await resetPendingSocial(h, id);
     await aud(h, "approval.reject", id, { approvalId: id, edited: false });
     await cancelRun(h, won.runId, now);
     await live(h, won);
@@ -94,11 +103,25 @@ export async function decide(
   const locked = checkLocked(approvalKind(cur.tool), orig, parsed.data);
   if (locked) return { ok: false, reason: "invalid", errors: locked };
 
-  const [won] = await h
-    .update(approvals)
-    .set({ status: "approved", decidedAt: now, ...(opts.edited ? { editedPayload: parsed.data } : {}) })
-    .where(and(eq(approvals.id, id), eq(approvals.status, "pending"), sql`${approvals.expiresAt} > ${now}`))
-    .returning();
+  let won: Row | undefined;
+  try {
+    const rows = approvalKind(cur.tool) === "social_publish"
+      ? await h.transaction(async (tx) => {
+        const rows = await tx.update(approvals).set({ status: "approved", decidedAt: now, ...(opts.edited ? { editedPayload: parsed.data } : {}) })
+          .where(and(eq(approvals.id, id), eq(approvals.status, "pending"), sql`${approvals.expiresAt} > ${now}`)).returning();
+        if (!rows.length) return [];
+        if (!await prepareApprovedSocial(tx as unknown as DB, id, socialPublishPayload.parse(parsed.data), now)) {
+          throw new ToolError("not_allowed", "The social connection or variant changed. Request a new approval.");
+        }
+        return rows;
+        })
+      : await h.update(approvals).set({ status: "approved", decidedAt: now, ...(opts.edited ? { editedPayload: parsed.data } : {}) })
+        .where(and(eq(approvals.id, id), eq(approvals.status, "pending"), sql`${approvals.expiresAt} > ${now}`)).returning();
+    won = rows[0];
+  } catch (err) {
+    if (err instanceof ToolError) return { ok: false, reason: "invalid", errors: { form: err.message } };
+    throw err;
+  }
   if (!won) return { ok: false, reason: "not_pending" };
   if (opts.edited) await aud(h, "approval.edit", id, editMeta(cur.tool, id, orig, parsed.data));
   await aud(h, "approval.approve", id, { approvalId: id, edited: Boolean(opts.edited) });
@@ -244,6 +267,7 @@ export async function expireDue(h: DB, now: Date = new Date(), opts: { enqueue?:
     .where(and(inArray(approvals.status, ["pending", "failed"]), lte(approvals.expiresAt, now)))
     .returning();
   for (const a of due) {
+    if (approvalKind(a.tool) === "social_publish") await resetPendingSocial(h, a.id);
     const [run] = await h
       .update(agentRuns)
       .set({ status: "expired", endedAt: now })
@@ -265,6 +289,8 @@ export async function expireDue(h: DB, now: Date = new Date(), opts: { enqueue?:
         body:
           kind === "mail_reply"
             ? `The reply "${titleOf(a)}" was not sent. Nothing ran after the request expired.`
+            : kind === "social_publish"
+            ? "The social publish request expired. Nothing was posted."
             : kind === "issue"
             ? `The issue "${titleOf(a)}" was not created. Nothing ran after the request expired.`
             : kind === "project_create" || kind === "project_update"

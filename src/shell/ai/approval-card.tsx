@@ -100,6 +100,7 @@ const EV: Record<ApprovalKind, { verb: string; ok: string }> = {
   project_create: { verb: "create a project", ok: "CREATE PROJECT" },
   project_update: { verb: "change a project", ok: "UPDATE PROJECT" },
   mail_reply: { verb: "reply to", ok: "SEND REPLY" },
+  social_publish: { verb: "publish to", ok: "PUBLISH" },
 };
 
 export function ApprovalCard({ approval, onDecided }: { approval: ApprovalDTO; onDecided: () => void }) {
@@ -120,6 +121,8 @@ export function ApprovalCard({ approval, onDecided }: { approval: ApprovalDTO; o
   const pjName = pj ? ("before" in pj ? pj.before.name : pj.name) : "";
   const pjCounts = pj ? draftCounts(pj) : null;
   const pjMeta = pjCounts ? [pjCounts.milestones && `${pjCounts.milestones} milestones`, pjCounts.tasks && `${pjCounts.tasks} tasks`, pjCounts.links && `${pjCounts.links} links`].filter(Boolean).join(" · ") || "Project only" : "";
+  const social = a.kind === "social_publish" ? (a.edited ?? a.original) as { platform: string; text: string; imageUrl: string | null; linkUrl: string | null; providerMode: string; publishAt: string | null } : null;
+  if (social && !payloadSchemaFor(a.tool).safeParse(social).success) return <UnreadableApproval />;
   const ev = (a.edited ?? a.original) as { title?: unknown; calendarLabel?: unknown };
   const p = iss?.current ?? { repo: "", title: mp ? mp.subject : pj ? pjName : String(ev.title ?? ""), body: mp ? mp.body : pj && "name" in pj ? pj.description : "", labels: [] as string[] };
   const decide = async (kind: "approve" | "reject") => {
@@ -128,9 +131,22 @@ export function ApprovalCard({ approval, onDecided }: { approval: ApprovalDTO; o
     setBusy(null);
     if (!r.ok) return toast("Couldn't record that decision. Try again.", "error");
     if (r.approval) setLocal(r.approval);
-    toast(kind === "approve" ? (iss ? `Issue created in ${p.repo}` : pj ? (a.kind === "project_update" ? "Project updated" : "Project created") : mp ? "Reply approved · sending" : "Calendar updated") : "Approval rejected");
+    toast(kind === "approve" ? (social ? "Social post approved · queued" : iss ? `Issue created in ${p.repo}` : pj ? (a.kind === "project_update" ? "Project updated" : "Project created") : mp ? "Reply approved · sending" : "Calendar updated") : "Approval rejected");
     onDecided();
   };
+  if (social) return (
+    <div id={`approval-${a.runId}`} className="flex flex-col gap-2.5 rounded-14 border border-[rgba(255,159,10,.30)] bg-[rgba(255,159,10,.10)] p-3.5">
+      <p className="text-[13px] text-text-2">Social post to {social.platform}{social.providerMode === "mock" ? " · MOCK · nothing leaves LifeOS" : ""}</p>
+      <p className="text-[13px] break-words whitespace-pre-wrap">{social.text}</p>
+      {social.imageUrl && <p className="text-[11px] break-all text-text-3">Image: {social.imageUrl}</p>}
+      {social.linkUrl && <p className="text-[11px] break-all text-text-3">Link: {social.linkUrl}</p>}
+      {social.publishAt && <p className="text-[11px] text-text-3">Scheduled: {stamp(social.publishAt)}</p>}
+      {a.status === "pending" ? <div className="flex gap-2">
+        <Button variant="inverse" loading={busy === "approve"} disabled={busy !== null} onClick={() => void decide("approve")}>APPROVE</Button>
+        <Button variant="destructive" loading={busy === "reject"} disabled={busy !== null} onClick={() => void decide("reject")}>REJECT</Button>
+      </div> : <Resolved a={a} />}
+    </div>
+  );
   return (
     <div id={`approval-${a.runId}`} className="flex flex-col gap-2.5 rounded-14 border border-[rgba(255,159,10,.30)] bg-[rgba(255,159,10,.10)] p-3.5">
       <div className="flex items-center gap-1.5 text-[10.5px] font-medium tracking-[.12em] text-amber">

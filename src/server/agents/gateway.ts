@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import type { ChatEvent } from "@/lib/agent-types";
 import type { DB } from "../db/client";
-import { agentRuns, approvals, permissions, toolCalls } from "../db/schema";
+import { agentRuns, approvals, permissions, socialVariants, toolCalls } from "../db/schema";
 import { emitActivity, notifyLive } from "../events";
 import { log } from "../log";
 import { approvalSummary } from "@/lib/approval-kinds";
@@ -142,7 +142,8 @@ export async function callTool(
       return reject(err instanceof ToolError ? err.message : "invalid input: the approval request could not be prepared");
     }
   }
-  const claimed = await h.transaction(async (tx) => {
+  let claimed: string | null;
+  try { claimed = await h.transaction(async (tx) => {
     const [row] = await tx
       .insert(toolCalls)
       .values(base(tier, needsApproval ? "waiting_approval" : "running", key, input))
@@ -165,9 +166,15 @@ export async function callTool(
         })
         .returning({ id: approvals.id });
       approvalId = ap!.id;
+      if (tool.name === "socials.publish") {
+        const [linked] = await tx.update(socialVariants).set({ status: "pending_approval", approvalId, updatedAt: now() })
+          .where(and(eq(socialVariants.id, input.variantId as string), eq(socialVariants.platform, input.platform as string), eq(socialVariants.status, "draft")))
+          .returning({ id: socialVariants.id });
+        if (!linked) throw new ToolError("not_allowed", "This variant already has a publish request.");
+      }
     }
     return row.id;
-  });
+  }); } catch (err) { return reject(err instanceof ToolError ? err.message : "Approval request failed."); }
 
   if (!claimed) {
     // Duplicate (idempotency key or run+toolUseId): answer from the stored row.

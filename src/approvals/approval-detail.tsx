@@ -146,6 +146,7 @@ export function ApprovalDetail(props: DetailProps) {
   if (props.approval.kind === "mail_reply") {
     return payloadSchemaFor(props.approval.tool).safeParse(mailOf(props.approval)).success ? <MailApprovalShell {...props} /> : <UnreadableApproval />;
   }
+  if (props.approval.kind === "social_publish") return <UnreadableApproval />;
   return <EventApprovalShell {...props} />;
 }
 
@@ -157,8 +158,9 @@ const EVENT_VERB: Record<ApprovalKind, string> = {
   project_create: "create a project",
   project_update: "change a project",
   mail_reply: "send an email reply",
+  social_publish: "publish a social post",
 };
-const EVENT_OK: Record<ApprovalKind, string> = { issue: "", event_create: "ADD TO CALENDAR", event_update: "UPDATE EVENT", event_delete: "DELETE EVENT", project_create: "CREATE PROJECT", project_update: "UPDATE PROJECT", mail_reply: "SEND REPLY" };
+const EVENT_OK: Record<ApprovalKind, string> = { issue: "", event_create: "ADD TO CALENDAR", event_update: "UPDATE EVENT", event_delete: "DELETE EVENT", project_create: "CREATE PROJECT", project_update: "UPDATE PROJECT", mail_reply: "SEND REPLY", social_publish: "PUBLISH" };
 
 // Event kinds: shared header, reason, expiry and decisions around EventApprovalBody.
 function EventApprovalShell({ approval: a, onChange }: DetailProps) {

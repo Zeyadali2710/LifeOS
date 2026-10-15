@@ -13,6 +13,7 @@ export function resolvePolicy(defaultTier: ToolTier, override: ToolTier | null |
 export const CONTENT_TOOLS = [
   "github.get_file", "github.list_tree", "github.get_pull_request", "github.list_issues", "github.list_pull_requests", "github.recent_commits",
   "outreach.list_events", "outreach.get_event", "mail.list", "mail.get_message", "mail.send_reply", // D-19, D-29: events and mail are third-party text too
+  "socials.get_post", "socials.list_posts", // posts may contain copied repo or event content
 ] as const;
 
 /** D-28: mail is always private. Once any of these ran in a run's content scope, no run in that scope may use a free model. */

@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, isNotNull } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, isNotNull, lt, or } from "drizzle-orm";
 import { boardColumn, PLATFORMS, type VariantStatus } from "@/lib/social-types";
 import type { DB } from "../db/client";
 import { githubRepos, outreachEvents, projects, socialAccountSnapshots, socialPosts, socialVariants } from "../db/schema";
@@ -21,7 +21,8 @@ export async function getPost(h: DB, id: string) {
 }
 
 export async function calendarItems(h: DB, from: Date, to: Date) {
-  const rows = await h.select().from(socialVariants).where(and(inArray(socialVariants.status, ["scheduled", "published", "posted_manually"]), gte(socialVariants.scheduledAt, from)));
+  const rows = await h.select().from(socialVariants).where(and(inArray(socialVariants.status, ["scheduled", "published", "posted_manually"]),
+    or(and(gte(socialVariants.scheduledAt, from), lt(socialVariants.scheduledAt, to)), and(gte(socialVariants.publishedAt, from), lt(socialVariants.publishedAt, to)))));
   return rows.filter((v) => {
     const at = v.publishedAt ?? v.scheduledAt;
     return at && at >= from && at < to;
