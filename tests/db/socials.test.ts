@@ -29,6 +29,13 @@ const h = () => t.handle();
 const image = "https://images.example.com/owner.jpg";
 const json = (body: object, status = 200, headers?: HeadersInit) => new Response(JSON.stringify(body), { status, headers });
 const noNetwork = async () => { throw new Error("Unexpected provider call in a DB test"); };
+async function waitForPostWaiters(observer: Client, count: number) {
+  for (let i = 0; i < 200; i++) {
+    const result = await observer.query<{ n: number }>("select count(*)::int n from pg_stat_activity where datname = current_database() and wait_event_type = 'Lock' and query like '%social_posts%for update%'");
+    if (result.rows[0]!.n >= count) return;
+  }
+  throw new Error("Expected parent row lock waiters");
+}
 const variantRow = async (id: string) => (await h().select().from(socialVariants).where(eq(socialVariants.id, id)))[0]!;
 const approvalRow = async (id: string) => (await h().select().from(approvals).where(eq(approvals.id, id)))[0]!;
 
@@ -63,22 +70,15 @@ describe("approved Social publishing", () => {
     const blocker = await t.pool().connect();
     const observer = new Client({ connectionString: t.url() });
     await observer.connect();
-    const waiters = async (count: number) => {
-      for (let i = 0; i < 200; i++) {
-        const result = await observer.query<{ n: number }>("select count(*)::int n from pg_stat_activity where datname = current_database() and wait_event_type = 'Lock' and query like '%social_posts%for update%'");
-        if (result.rows[0]!.n >= count) return;
-      }
-      throw new Error("Expected parent row lock waiters");
-    };
     let deleting: ReturnType<typeof deletePost> | undefined;
     let requesting: ReturnType<typeof requestPublish> | undefined;
     try {
       await blocker.query("begin");
       await blocker.query("select id from social_posts where id = $1 for update", [v.postId]);
       if (first === "delete") deleting = deletePost(v.postId); else requesting = requestPublish(v.id);
-      await waiters(1);
+      await waitForPostWaiters(observer, 1);
       if (first === "delete") requesting = requestPublish(v.id); else deleting = deletePost(v.postId);
-      await waiters(2);
+      await waitForPostWaiters(observer, 2);
       await blocker.query("commit");
       const [removed, requested] = await Promise.all([deleting!, requesting!]);
       expect([removed.ok, requested.ok]).toEqual(first === "delete" ? [true, false] : [false, true]);
@@ -93,12 +93,20 @@ describe("approved Social publishing", () => {
   it("rolls back agent post edits after a concurrent owner request wins the parent lock", async () => {
     const v = await variant("linkedin");
     const [run] = await h().insert(agentRuns).values({ agentId: "social", prompt: "draft", model: "fixture" }).returning();
-    // The committed owner request owns the variant before a queued agent edit reads it.
-    const approval = await pending(v.id);
-    await expect(saveDraft.handler({ postId: v.postId, title: "Overwrite", body: "Changed", variants: [{ platform: "linkedin", text: "Changed" }] },
-      { handle: h(), runId: run!.id, agentId: "social", toolUseId: "save", now: () => new Date() })).rejects.toThrow("before editing");
-    expect((await h().select().from(socialPosts).where(eq(socialPosts.id, v.postId)))[0]!.title).toBe("Test post");
-    expect(await variantRow(v.id)).toMatchObject({ status: "pending_approval", approvalId: approval, text: "Original text" });
+    const blocker = await t.pool().connect(); const observer = new Client({ connectionString: t.url() }); await observer.connect();
+    let requesting: ReturnType<typeof requestPublish> | undefined; let saving: Promise<unknown> | undefined;
+    try {
+      await blocker.query("begin"); await blocker.query("select id from social_posts where id = $1 for update", [v.postId]);
+      requesting = requestPublish(v.id); await waitForPostWaiters(observer, 1);
+      saving = saveDraft.handler({ postId: v.postId, title: "Overwrite", body: "Changed", variants: [{ platform: "linkedin", text: "Changed" }] },
+        { handle: h(), runId: run!.id, agentId: "social", toolUseId: "save", now: () => new Date() }).catch((err: unknown) => err);
+      await waitForPostWaiters(observer, 2); await blocker.query("commit");
+      expect((await requesting).ok).toBe(true); expect(await saving).toBeInstanceOf(Error);
+      expect((await h().select().from(socialPosts).where(eq(socialPosts.id, v.postId)))[0]!.title).toBe("Test post");
+      expect(await variantRow(v.id)).toMatchObject({ status: "pending_approval", text: "Original text" });
+    } finally {
+      await blocker.query("rollback"); blocker.release(); await observer.end(); await Promise.allSettled([requesting, saving]);
+    }
   });
   it.each([new Error("queue unavailable"), new DOMException("timed out", "TimeoutError")])("recovers durable approved enqueue failure: %s", async (failure) => {
     const v = await variant("linkedin");
