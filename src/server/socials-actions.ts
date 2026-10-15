@@ -25,7 +25,7 @@ const missing = { ok: false, error: "not_found" } as const;
 
 async function run<T>(fn: () => Promise<T>): Promise<T | { ok: false; error: "failed" }> {
   try { return await fn(); }
-  catch (err) { log.error({ err }, "social action failed"); return { ok: false, error: "failed" }; }
+  catch { log.error("social action failed"); return { ok: false, error: "failed" }; }
 }
 const aud = (action: string, target: string, metadata: Record<string, unknown> = {}) => db().insert(auditLog).values({ actor: "owner", action, target, metadata });
 
@@ -127,7 +127,9 @@ export async function markPosted(id: string, remoteUrl?: string) {
     if (url && (url.protocol !== "https:" || !!url.username || !!url.password || (host && url.hostname !== host && !url.hostname.endsWith(`.${host}`)))) return invalid;
     const videoId = v.platform === "tiktok" && url ? url.pathname.match(/\/video\/(\d+)/)?.[1] : null;
     if (v.platform === "tiktok" && url && !videoId) return invalid;
-    await db().update(socialVariants).set({ status: "posted_manually", remoteUrl: remoteUrl ?? null, remoteId: videoId, publishedAt: new Date(), isMock: false, updatedAt: new Date() }).where(eq(socialVariants.id, id));
+    const [posted] = await db().update(socialVariants).set({ status: "posted_manually", remoteUrl: remoteUrl ?? null, remoteId: videoId, publishedAt: new Date(), isMock: false, updatedAt: new Date() })
+      .where(and(eq(socialVariants.id, id), inArray(socialVariants.status, ["draft", "failed"]))).returning({ id: socialVariants.id });
+    if (!posted) return denied;
     await aud("social.variant.mark_posted", id, { platform: v.platform });
     return { ok: true } as const;
   });
