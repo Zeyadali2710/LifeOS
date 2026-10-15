@@ -1,15 +1,16 @@
 import { createHash } from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { z } from "zod";
 import { socialPublishPayload } from "@/lib/approval-kinds";
 import { PLATFORMS, checkVariant, type SocialPlatform } from "@/lib/social-types";
 import type { DB } from "../../db/client";
-import { socialPosts, socialVariants } from "../../db/schema";
+import { socialPosts, socialVariants, toolCalls } from "../../db/schema";
 import { notifyLive } from "../../events";
 import { enqueue, QUEUES } from "../../queue";
 import { socialConnection } from "../../socials/connections";
 import { getProvider } from "../../socials/providers";
-import { getPost, listBoard } from "../../socials/queries";
+import { buildStarter, getPost, listBoard } from "../../socials/queries";
+import { CONTENT_TOOLS, contentScope } from "../policy";
 import { ToolError, type Tool } from "../types";
 
 const out = z.record(z.string(), z.unknown());
@@ -55,20 +56,29 @@ const get: Tool<{ id: string }, Record<string, unknown>> = {
   async handler(i, ctx) { const post = await getPost(ctx.handle, i.id); if (!post) throw new ToolError("not_found", "Unknown post."); return { post }; },
 };
 const draftInput = z.object({ postId: uuid.optional(), title: z.string().trim().min(1).max(200), body: z.string().max(10_000),
+  sourceKind: z.enum(["project", "outreach_event", "repo"]).optional(), sourceId: z.string().max(100).optional(),
   variants: z.array(z.object({ platform: z.enum(PLATFORMS), text: z.string().max(10_000), imageUrl: nullableUrl, linkUrl: nullableUrl })).min(1).max(4) });
 const save: Tool<z.infer<typeof draftInput>, Record<string, unknown>> = {
   name: "socials.save_draft", label: "Saving social drafts", description: "Save LifeOS-local drafts only. Invalid variants are kept with visible format errors. Nothing is posted.",
   input: draftInput, output: out, tier: "PREPARE", sideEffect: false, private: true,
   async handler(i, ctx) {
     if (new Set(i.variants.map((v) => v.platform)).size !== i.variants.length) throw new ToolError("invalid_input", "Only one variant per platform.");
+    if (Boolean(i.sourceKind) !== Boolean(i.sourceId)) throw new ToolError("invalid_input", "Source kind and ID are required together.");
     const result = await ctx.handle.transaction(async (tx) => {
+      const source = i.sourceKind ? await buildStarter(tx, i.sourceKind, i.sourceId!) : null;
+      if (i.sourceKind && !source) throw new ToolError("not_found", "Unknown source.");
+      const [read] = await tx.select({ id: toolCalls.id }).from(toolCalls)
+        .where(and(inArray(toolCalls.tool, [...CONTENT_TOOLS]), eq(toolCalls.status, "done"), sql`${toolCalls.runId} in ${contentScope(ctx.runId)}`)).limit(1);
+      const tainted = !!source || !!read;
+      const sourceFields = source ? { sourceKind: i.sourceKind, sourceId: i.sourceId } : {};
       let postId = i.postId;
       if (postId) {
         const [existing] = await tx.select({ id: socialPosts.id }).from(socialPosts).where(eq(socialPosts.id, postId));
         if (!existing) throw new ToolError("not_found", "Unknown post.");
-        await tx.update(socialPosts).set({ title: i.title, body: i.body, updatedAt: ctx.now() }).where(eq(socialPosts.id, postId));
+        await tx.update(socialPosts).set({ title: i.title, body: i.body, ...sourceFields,
+          draftedFromContent: sql`${socialPosts.draftedFromContent} or ${tainted}`, updatedAt: ctx.now() }).where(eq(socialPosts.id, postId));
       } else {
-        const [made] = await tx.insert(socialPosts).values({ title: i.title, body: i.body, stage: "draft", createdBy: "agent" }).returning({ id: socialPosts.id });
+        const [made] = await tx.insert(socialPosts).values({ title: i.title, body: i.body, ...sourceFields, draftedFromContent: tainted, stage: "draft", createdBy: "agent" }).returning({ id: socialPosts.id });
         postId = made!.id;
       }
       const checks = [];

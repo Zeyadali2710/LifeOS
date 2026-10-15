@@ -6,7 +6,7 @@ import { TOOLS } from "@/server/agents/tools";
 import { approvedHash } from "@/server/agents/tools/socials";
 import { decrypt } from "@/server/crypto";
 import { activityEvents, agentRuns, approvals, auditLog, connections, notifications, socialAccountSnapshots, socialPosts, socialVariants } from "@/server/db/schema";
-import { cancelSchedule, confirmInstagramSmoke, requestPublish, reschedule } from "@/server/socials-actions";
+import { cancelSchedule, confirmInstagramSmoke, requestPublish, reschedule, socialReviewFacts } from "@/server/socials-actions";
 import { markSocialAuthError, removeSocialConnection, saveSocialToken, saveTikTokApp, saveTikTokTokens, socialConnectionStatus } from "@/server/socials/connections";
 import { getProvider } from "@/server/socials/providers";
 import { publishVariant } from "@/server/socials/publish";
@@ -99,6 +99,22 @@ describe("approved Social publishing", () => {
     await h().update(approvals).set({ expiresAt: new Date(0) }).where(eq(approvals.id, b));
     expect(await expireDue(h(), new Date(), { enqueue })).toBe(1);
     expect(await variantRow(second.id)).toMatchObject({ status: "draft", approvalId: null });
+  });
+
+  it("carries recorded content reads through new and existing drafts into approval facts", async () => {
+    const [run] = await h().insert(agentRuns).values({ agentId: "social", prompt: "draft", model: "fixture" }).returning();
+    const ctx = { handle: h(), runId: run!.id, agentId: "social", tools: TOOLS };
+    expect((await callTool(ctx, "socials.list_posts", {}, "read-source")).status).toBe("ok");
+    const blank = await variant("linkedin");
+    for (const postId of [undefined, blank.postId]) {
+      const result = await callTool(ctx, "socials.save_draft", { postId, title: "From content", body: "Body", variants: [{ platform: "linkedin", text: "Caption" }] }, `save-${postId ?? "new"}`);
+      expect(result.status).toBe("ok");
+      if (result.status !== "ok") throw new Error("save failed");
+      const savedId = (result.output as { postId: string }).postId;
+      const [v] = await h().select().from(socialVariants).where(eq(socialVariants.postId, savedId));
+      const approval = await pending(v!.id);
+      expect(await socialReviewFacts(approval)).toMatchObject({ draftedFromContent: true });
+    }
   });
 
   it("reschedules time only, then cancels and voids an old queued approval", async () => {
