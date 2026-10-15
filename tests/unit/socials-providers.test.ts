@@ -5,6 +5,7 @@ import { socialFixture } from "../helpers/fake-socials";
 import { completeTikTokOAuth, tikTokAuthUrl, refreshSocialToken } from "@/server/socials/connections";
 import { decrypt, encrypt } from "@/server/crypto";
 import type { DB } from "@/server/db/client";
+import { connections } from "@/server/db/schema";
 
 describe("social providers", () => {
   it("keeps disconnected providers mock and manual platforms unpublishable", () => {
@@ -42,6 +43,15 @@ describe("social providers", () => {
     expect(f.mock.calls.every((call) => (call[1] as RequestInit).method !== "POST")).toBe(true);
   });
 
+  it("will not adopt an Instagram media item if its caption is not unique", async () => {
+    const f = vi.fn(async (input: RequestInfo | URL) => Response.json(String(input).includes("/me/media")
+      ? { data: [{ id: "one", caption: "caption" }, { id: "two", caption: "caption" }] }
+      : { status_code: "PUBLISHED" }));
+    const p = getProvider("instagram", { status: "connected", token: "secret", login: "123", credentialGeneration: "generation" }, { fetch: f });
+    expect(await p.findPublished?.({ text: "caption", containerId: "container" })).toBeNull();
+    expect(f).toHaveBeenCalledTimes(2);
+  });
+
   it("stops on an ambiguous Instagram container response", async () => {
     const f = vi.fn(async () => { throw new Error("connection lost"); });
     const p = getProvider("instagram", { status: "connected", token: "secret", login: "123", credentialGeneration: "generation" }, { fetch: f });
@@ -63,6 +73,14 @@ describe("social providers", () => {
     expect(f.mock.calls[1]![0]).toContain("/v2/video/list/");
     expect((f.mock.calls[1]![1] as RequestInit).method).toBe("POST");
     expect(getProvider("tiktok", { status: "connected", token: "secret", scopes: ["user.info.basic"], credentialGeneration: "generation" }).capabilities.analytics).toBe(false);
+    const statsOnly = getProvider("tiktok", { status: "connected", token: "secret", scopes: ["user.info.basic", "user.info.stats"], credentialGeneration: "generation" }, { fetch: f });
+    f.mockClear();
+    expect((await statsOnly.sync?.())?.posts).toBeUndefined();
+    expect(f).toHaveBeenCalledOnce();
+    const videosOnly = getProvider("tiktok", { status: "connected", token: "secret", scopes: ["user.info.basic", "video.list"], credentialGeneration: "generation" }, { fetch: f });
+    f.mockClear();
+    expect((await videosOnly.sync?.())?.account).toBeUndefined();
+    expect((f.mock.calls[0]![1] as RequestInit).method).toBe("POST");
   });
 
   it("exports Portfolio markdown and maps auth errors to a fixed class", async () => {
@@ -89,8 +107,46 @@ describe("social providers", () => {
       select: () => ({ from: () => ({ where: async () => [previous] }) }),
       update: () => ({ set: (value: Record<string, unknown>) => { updated = value; return { where: () => ({ returning: async () => [{ id: "tiktok" }] }) }; } }),
     } as unknown as DB;
-    await refreshSocialToken(h, "tiktok", { accessToken: "new-access", refreshToken: "new-refresh", expiresAt: new Date("2026-10-16T00:00:00Z") }, key);
-    expect(JSON.parse(decrypt(updated.ciphertext as string, key))).toMatchObject({ accessToken: "new-access", refreshToken: "new-refresh" });
+    await refreshSocialToken(h, "tiktok", { accessToken: "new-access", refreshToken: "new-refresh", expiresAt: new Date("2026-10-16T00:00:00Z"), refreshExpiresAt: new Date("2027-10-16T00:00:00Z") }, key);
+    expect(JSON.parse(decrypt(updated.ciphertext as string, key))).toMatchObject({ accessToken: "new-access", refreshToken: "new-refresh", refreshExpiresAt: "2027-10-16T00:00:00.000Z" });
     expect(updated.credentialGeneration).toBeUndefined();
+    const changed = { ...h, update: () => ({ set: () => ({ where: () => ({ returning: async () => [] }) }) }) } as unknown as DB;
+    await expect(refreshSocialToken(changed, "tiktok", { accessToken: "late", expiresAt: new Date() }, key)).rejects.toThrow("Connection changed");
+  });
+
+  it("pages TikTok videos until the 90-day boundary", async () => {
+    const f = vi.fn(async () => Response.json(f.mock.calls.length === 1
+      ? { data: { videos: [{ id: "new", create_time: 1792000000, view_count: 4 }], has_more: true, cursor: 1 }, error: { code: "ok" } }
+      : { data: { videos: [{ id: "old", create_time: 1000000000, view_count: 9 }], has_more: true, cursor: 2 }, error: { code: "ok" } }));
+    const p = getProvider("tiktok", { status: "connected", token: "secret", scopes: ["user.info.basic", "video.list"], credentialGeneration: "generation" }, { fetch: f });
+    expect((await p.sync?.(new Date("2026-10-01T00:00:00Z")))?.posts).toEqual([{ remoteId: "new", metrics: { views: 4 } }]);
+    expect(f).toHaveBeenCalledTimes(2);
+  });
+
+  it("accepts only actually granted TikTok scopes from the token response", async () => {
+    const key = Buffer.alloc(32, 8);
+    const cookie = encrypt(JSON.stringify({ state: "state-1", at: "2026-10-15T00:00:00Z" }), key);
+    const app = { ciphertext: encrypt(JSON.stringify({ clientKey: "key", clientSecret: "secret" }), key) };
+    let saved: Record<string, unknown> | undefined;
+    const h = {
+      select: () => ({ from: () => ({ where: async () => [app] }) }),
+      insert: (table: unknown) => ({ values: (value: Record<string, unknown>) => {
+        if (table === connections) saved = value;
+        return { onConflictDoUpdate: async () => undefined };
+      } }),
+    } as unknown as DB;
+    const body = { access_token: "access", refresh_token: "refresh", open_id: "owner", expires_in: 86400, refresh_expires_in: 31536000, scope: "user.info.basic,video.list" };
+    const f = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      expect(String(init?.body)).not.toContain("code_verifier");
+      return Response.json(body);
+    });
+    const p = { code: "code", state: "state-1", cookie, base: "https://lifeos.example", fetch: f, now: new Date("2026-10-15T00:01:00Z"), key };
+    expect(await completeTikTokOAuth(h, p)).toEqual({ ok: true, scopes: ["user.info.basic", "video.list"] });
+    expect(saved?.scopes).toEqual(["user.info.basic", "video.list"]);
+    expect(JSON.parse(decrypt(saved?.ciphertext as string, key))).toMatchObject({ refreshToken: "refresh" });
+    body.scope = "video.list";
+    saved = undefined;
+    expect(await completeTikTokOAuth(h, p)).toEqual({ ok: false, error: "scope" });
+    expect(saved).toBeUndefined();
   });
 });

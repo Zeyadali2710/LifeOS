@@ -181,7 +181,7 @@ function tikTok(connection: SocialConnection, f: Fetch): SocialProvider {
   return {
     platform: "tiktok", label: "TikTok", isMock: false, credentialGeneration: connection.credentialGeneration,
     capabilities: { ...noPublish, analytics },
-    ...(analytics ? { async sync(): Promise<SyncResult> {
+    ...(analytics ? { async sync(since?: Date): Promise<SyncResult> {
       const out: SyncResult = {};
       if (scopes.has("user.info.stats")) {
         const res = await request(f, `${TIKTOK}/v2/user/info/?fields=follower_count,video_count,likes_count`, { headers });
@@ -192,14 +192,26 @@ function tikTok(connection: SocialConnection, f: Fetch): SocialProvider {
         if (typeof fields.video_count === "number") out.account.posts = fields.video_count;
       }
       if (scopes.has("video.list")) {
-        const res = await request(f, `${TIKTOK}/v2/video/list/?fields=id,view_count,like_count,comment_count,share_count`, {
-          method: "POST", headers, body: JSON.stringify({ max_count: 20 }),
-        });
-        const body = await tikTokBody(res);
-        const videos = object(body.data).videos;
-        out.posts = Array.isArray(videos) ? videos.filter((v) => typeof object(v).id === "string").map((v) => ({
-          remoteId: String(object(v).id), metrics: metrics(object(v), [["view_count", "views"], ["like_count", "likes"], ["comment_count", "comments"], ["share_count", "shares"]]),
-        })) : [];
+        out.posts = [];
+        let cursor: number | undefined;
+        const seen = new Set<number>();
+        for (;;) {
+          const res = await request(f, `${TIKTOK}/v2/video/list/?fields=id,create_time,view_count,like_count,comment_count,share_count`, {
+            method: "POST", headers, body: JSON.stringify({ max_count: 20, ...(cursor ? { cursor } : {}) }),
+          });
+          const data = object((await tikTokBody(res)).data);
+          const videos = Array.isArray(data.videos) ? data.videos : [];
+          for (const video of videos) {
+            const v = object(video);
+            if (typeof v.id !== "string" || (since && typeof v.create_time === "number" && v.create_time * 1000 < since.getTime())) continue;
+            out.posts.push({ remoteId: v.id, metrics: metrics(v, [["view_count", "views"], ["like_count", "likes"], ["comment_count", "comments"], ["share_count", "shares"]]) });
+          }
+          const next = data.cursor;
+          if (data.has_more !== true || typeof next !== "number" || seen.has(next) ||
+              (since && videos.some((v) => typeof object(v).create_time === "number" && Number(object(v).create_time) * 1000 < since.getTime()))) break;
+          seen.add(next);
+          cursor = next;
+        }
       }
       return out;
     } } : {}),

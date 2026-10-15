@@ -33,6 +33,7 @@ describe("social publish guard", () => {
 
   it("no-ops early jobs and duplicate completion; reviews ambiguous real retries", () => {
     expect(inspectPublish({ ...variant, scheduledAt: new Date("2026-10-16T00:00:00Z") }, approval, provider, now)).toBe("noop");
+    expect(inspectPublish({ ...variant, scheduledAt: null }, approval, provider, now)).toBe("fail");
     expect(inspectPublish({ ...variant, status: "published", remoteId: "urn:li:share:1" }, approval, provider, now)).toBe("noop");
     expect(inspectPublish({ ...variant, status: "publishing", updatedAt: now }, approval, provider, now)).toBe("noop");
     expect(inspectPublish({ ...variant, status: "publishing" }, approval, provider, now)).toBe("review");

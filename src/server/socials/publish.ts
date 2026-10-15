@@ -27,7 +27,7 @@ export function inspectPublish(v: Pick<Variant, "id" | "platform" | "status" | "
       provider.platform !== v.platform || (provider.isMock ? "mock" : "real") !== p.providerMode ||
       provider.credentialGeneration !== p.connectionGeneration || !provider.capabilities.publish ||
       checkVariant(p.platform, v).errors.length) return "fail";
-  if (v.status === "scheduled") return v.scheduledAt && v.scheduledAt > now ? "noop" : "claim";
+  if (v.status === "scheduled") return !v.scheduledAt ? "fail" : v.scheduledAt > now ? "noop" : "claim";
   if (v.remoteId) return "adopt";
   if (now.getTime() - v.updatedAt.getTime() < 2 * 60_000) return "noop";
   if (provider.isMock || (v.platform === "instagram" && v.containerId)) return "adopt";
@@ -80,7 +80,8 @@ export async function publishVariant(variantId: string, approvalId: string, h: D
       if (result.state === "container_pending") {
         await h.update(socialVariants).set({ containerId: result.containerId, updatedAt: new Date() })
           .where(and(eq(socialVariants.id, variantId), eq(socialVariants.approvalId, approvalId), eq(socialVariants.status, "publishing")));
-        // The next sweep reuses this container; it must never create a second one.
+        await enqueue(QUEUES.socialsPublish, { variantId, approvalId }, { startAfter: new Date(Date.now() + 2 * 60_000) }).catch(() => undefined);
+        // The next attempt reuses this container; the sweep covers an enqueue failure.
         return;
       }
       await h.update(socialVariants).set({ remoteId: result.remoteId, remoteUrl: result.remoteUrl ?? null,
