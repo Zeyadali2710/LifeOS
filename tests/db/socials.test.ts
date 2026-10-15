@@ -251,6 +251,19 @@ describe("approved Social publishing", () => {
 });
 
 describe("connection, retry and analytics contracts", () => {
+  it("starts account B history fresh while preserving a token replacement for account A", async () => {
+    const tokens = { accessToken: "access", refreshToken: "refresh", openId: "A", scopes: ["user.info.basic", "user.info.stats"], expiresAt: new Date("2030-01-01"), refreshExpiresAt: new Date("2031-01-01") };
+    await saveTikTokTokens(h(), tokens);
+    await h().insert(socialAccountSnapshots).values({ platform: "tiktok", date: "2026-10-14", followers: 100 });
+    await saveTikTokTokens(h(), { ...tokens, accessToken: "rotated" });
+    expect(await h().select().from(socialAccountSnapshots)).toHaveLength(1);
+    await saveTikTokTokens(h(), { ...tokens, openId: "B" });
+    expect(await h().select().from(socialAccountSnapshots)).toEqual([]);
+    await syncSocials(h(), new Date("2026-10-15T02:00:00Z"), async () => json({ error: { code: "ok" }, data: { user: { follower_count: 7 } } }));
+    expect(await h().select().from(socialAccountSnapshots)).toMatchObject([{ followers: 7, date: "2026-10-15" }]);
+    await removeSocialConnection(h(), "tiktok");
+    expect(await h().select().from(socialAccountSnapshots)).toEqual([]);
+  });
   it.each([200, 401])("ignores a deferred refresh response after account replacement (%s)", async (status) => {
     const now = new Date("2026-10-15T02:00:00Z");
     vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(now);

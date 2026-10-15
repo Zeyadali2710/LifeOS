@@ -4,7 +4,7 @@ import type { SocialPlatform } from "@/lib/social-types";
 import { decrypt, encrypt } from "../crypto";
 import type { DB } from "../db/client";
 import { notifyLive } from "../events";
-import { auditLog, connections } from "../db/schema";
+import { auditLog, connections, socialAccountSnapshots } from "../db/schema";
 
 export type SocialConnection = {
   status: string;
@@ -33,6 +33,16 @@ const VALIDATION_URL = {
   instagram: "https://graph.instagram.com/me?fields=user_id,username",
 } as const;
 
+async function saveAccountConnection(h: DB, platform: "linkedin" | "instagram" | "tiktok", row: Omit<typeof connections.$inferInsert, "id"> & { login: string }, now: Date) {
+  await h.transaction(async (tx) => {
+    const [old] = await tx.select({ login: connections.login }).from(connections).where(eq(connections.id, platform)).for("update");
+    const changed = !old || old.login !== row.login;
+    await tx.insert(connections).values({ id: platform, ...row }).onConflictDoUpdate({ target: connections.id,
+      set: { ...row, ...(changed ? { lastSyncAt: null, lastSyncError: null } : {}), updatedAt: now } });
+    if (changed) await tx.delete(socialAccountSnapshots).where(eq(socialAccountSnapshots.platform, platform));
+  });
+}
+
 export async function saveSocialToken(h: DB, platform: "linkedin" | "instagram", raw: string, opts: Opts = {}): Promise<SaveResult> {
   const token = raw.trim();
   if (!token || token.length > 4096) return { ok: false, error: "invalid" };
@@ -57,7 +67,7 @@ export async function saveSocialToken(h: DB, platform: "linkedin" | "instagram",
     status: platform === "instagram" ? "verification_pending" : "connected", lastError: null,
     credentialGeneration: randomUUID(), scopes: [] as string[], repos: [] as string[],
   };
-  await h.insert(connections).values({ id: platform, ...row }).onConflictDoUpdate({ target: connections.id, set: { ...row, updatedAt: now } });
+  await saveAccountConnection(h, platform, row, now);
   await audit(h, "connection.save", platform, row.last4);
   return { ok: true, login };
 }
@@ -89,7 +99,7 @@ export async function saveTikTokTokens(h: DB, tokens: { accessToken: string; ref
     last4: tokens.accessToken.slice(-4), login: tokens.openId, expiresAt: tokens.expiresAt,
     scopes: tokens.scopes, status: "connected", lastError: null, credentialGeneration: randomUUID(), repos: [] as string[],
   };
-  await h.insert(connections).values({ id: "tiktok", ...row }).onConflictDoUpdate({ target: connections.id, set: { ...row, updatedAt: opts.now ?? new Date() } });
+  await saveAccountConnection(h, "tiktok", row, opts.now ?? new Date());
   await audit(h, "connection.save", "tiktok", row.last4);
 }
 
@@ -195,6 +205,7 @@ export async function markSocialAuthError(h: DB, platform: Exclude<SocialPlatfor
 export async function removeSocialConnection(h: DB, id: Exclude<SocialPlatform, "portfolio"> | "tiktok_app"): Promise<void> {
   await h.transaction(async (tx) => {
     await tx.delete(connections).where(inArray(connections.id, id === "tiktok_app" ? [id, "tiktok"] : [id]));
+    await tx.delete(socialAccountSnapshots).where(eq(socialAccountSnapshots.platform, id === "tiktok_app" ? "tiktok" : id));
     await audit(tx, "connection.remove", id);
   });
 }

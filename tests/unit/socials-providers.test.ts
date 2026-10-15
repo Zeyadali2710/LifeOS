@@ -168,7 +168,9 @@ describe("social providers", () => {
     const app = { ciphertext: encrypt(JSON.stringify({ clientKey: "key", clientSecret: "secret" }), key) };
     let saved: Record<string, unknown> | undefined;
     const h = {
-      select: () => ({ from: () => ({ where: async () => [app] }) }),
+      select: () => ({ from: () => ({ where: () => Object.assign(Promise.resolve([app]), { for: async () => [] }) }) }),
+      transaction: async (fn: (handle: DB) => unknown) => fn(h),
+      delete: () => ({ where: async () => undefined }),
       insert: (table: unknown) => ({ values: (value: Record<string, unknown>) => {
         if (table === connections) saved = value;
         return { onConflictDoUpdate: async () => undefined };
