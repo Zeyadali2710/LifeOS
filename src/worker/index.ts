@@ -48,11 +48,13 @@ async function main() {
   await boss.createQueue(QUEUES.socialsSync);
   await boss.work(QUEUES.socialsPublish, async (jobs) => {
     for (const job of jobs) {
-      const data = job.data as { variantId?: string; approvalId?: string };
-      if (data.variantId && data.approvalId) await publishVariant(data.variantId, data.approvalId);
+      const data = job.data as { variantId?: string; approvalId?: string; sweep?: boolean };
+      if (data.sweep) await runScheduled();
+      else if (data.variantId && data.approvalId) await publishVariant(data.variantId, data.approvalId);
     }
   });
   await boss.schedule(QUEUES.socialsSync, "0 */6 * * *", {}, { singletonKey: "socials.sync" });
+  await boss.schedule(QUEUES.socialsPublish, "* * * * *", { sweep: true }, { singletonKey: "socials.publish.sweep" });
   await boss.work(QUEUES.socialsSync, async () => syncSocials());
   await boss.schedule(QUEUES.mailSync, "*/5 * * * *", {}, { singletonKey: "mail.sync" });
   await boss.work(QUEUES.mailSync, async () => handleMailSync());

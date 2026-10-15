@@ -168,7 +168,8 @@ function instagram(connection: SocialConnection, f: Fetch): SocialProvider {
           if (found) return found;
           throw new UncertainPublishError();
         }
-        if (status !== "FINISHED") return { state: "container_pending", containerId };
+        if (status === "IN_PROGRESS" || status === "PENDING") return { state: "container_pending", containerId };
+        if (status !== "FINISHED") throw new SocialProviderError();
         let res: Response;
         try {
           res = await request(f, `${INSTAGRAM}/${encodeURIComponent(connection.login!)}/media_publish`, {

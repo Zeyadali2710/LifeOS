@@ -6,7 +6,7 @@ import { db, type DB } from "../db/client";
 import { approvals, socialVariants } from "../db/schema";
 import { emitActivity } from "../events";
 import { log } from "../log";
-import { enqueue, QUEUES } from "../queue";
+import { enqueue, QUEUES, type Enqueue } from "../queue";
 import { markSocialAuthError } from "./connections";
 import { ProviderAuthError, UncertainPublishError, type PublishResult, type SocialProvider } from "./providers";
 
@@ -14,6 +14,7 @@ type Variant = typeof socialVariants.$inferSelect;
 type Bound = Pick<SocialProvider, "platform" | "isMock" | "credentialGeneration" | "capabilities">;
 type Approval = { id: string; status: string; payload: unknown } | null;
 export type PublishDecision = "claim" | "adopt" | "review" | "fail" | "noop";
+const PUBLISH_STALE_MS = 2 * 60_000;
 
 export function inspectPublish(v: Pick<Variant, "id" | "platform" | "status" | "approvalId" | "text" | "imageUrl" | "linkUrl" | "approvedTextHash" | "approvedProviderMode" | "approvedConnectionGeneration" | "remoteId" | "containerId" | "scheduledAt" | "updatedAt">,
   approval: Approval, provider: Bound, now: Date): PublishDecision {
@@ -29,7 +30,7 @@ export function inspectPublish(v: Pick<Variant, "id" | "platform" | "status" | "
       checkVariant(p.platform, v).errors.length) return "fail";
   if (v.status === "scheduled") return !v.scheduledAt ? "fail" : v.scheduledAt > now ? "noop" : "claim";
   if (v.remoteId) return "adopt";
-  if (now.getTime() - v.updatedAt.getTime() < 2 * 60_000) return "noop";
+  if (now.getTime() - v.updatedAt.getTime() < PUBLISH_STALE_MS) return "noop";
   if (provider.isMock || (v.platform === "instagram" && v.containerId)) return "adopt";
   return "review";
 }
@@ -37,6 +38,9 @@ export function inspectPublish(v: Pick<Variant, "id" | "platform" | "status" | "
 const STALE = "Connection or approved content changed. Request a new approval.";
 const LINKEDIN_REVIEW = "LinkedIn may have posted this. Check your profile, then Mark as posted or Retry.";
 const INSTAGRAM_REVIEW = "Instagram may have posted this. Check Instagram before retrying.";
+export async function queueContainerContinuation(variantId: string, approvalId: string, persistedAt: Date, send: Enqueue = enqueue): Promise<void> {
+  await send(QUEUES.socialsPublish, { variantId, approvalId }, { startAfter: new Date(persistedAt.getTime() + PUBLISH_STALE_MS + 5_000) });
+}
 
 async function fail(h: DB, v: Variant, message: string, reconnect = false): Promise<void> {
   const [won] = await h.update(socialVariants).set({ status: "failed", lastError: message, updatedAt: new Date() })
@@ -66,7 +70,7 @@ export async function publishVariant(variantId: string, approvalId: string, h: D
     if (!won) return;
   } else {
     const [won] = await h.update(socialVariants).set({ updatedAt: now })
-      .where(and(eq(socialVariants.id, variantId), eq(socialVariants.approvalId, approvalId), eq(socialVariants.status, "publishing"), lt(socialVariants.updatedAt, new Date(now.getTime() - 2 * 60_000))))
+      .where(and(eq(socialVariants.id, variantId), eq(socialVariants.approvalId, approvalId), eq(socialVariants.status, "publishing"), lt(socialVariants.updatedAt, new Date(now.getTime() - PUBLISH_STALE_MS))))
       .returning({ id: socialVariants.id });
     if (!won) return;
   }
@@ -78,9 +82,11 @@ export async function publishVariant(variantId: string, approvalId: string, h: D
       if (choice === "adopt" && provider.findPublished) result = await provider.findPublished(input);
       if (!result) result = await provider.publish(input, `approval:${approvalId}`);
       if (result.state === "container_pending") {
-        await h.update(socialVariants).set({ containerId: result.containerId, updatedAt: new Date() })
-          .where(and(eq(socialVariants.id, variantId), eq(socialVariants.approvalId, approvalId), eq(socialVariants.status, "publishing")));
-        await enqueue(QUEUES.socialsPublish, { variantId, approvalId }, { startAfter: new Date(Date.now() + 2 * 60_000) }).catch(() => undefined);
+        const persistedAt = new Date();
+        const [saved] = await h.update(socialVariants).set({ containerId: result.containerId, updatedAt: persistedAt })
+          .where(and(eq(socialVariants.id, variantId), eq(socialVariants.approvalId, approvalId), eq(socialVariants.status, "publishing")))
+          .returning({ id: socialVariants.id });
+        if (saved) await queueContainerContinuation(variantId, approvalId, persistedAt).catch(() => undefined);
         // The next attempt reuses this container; the sweep covers an enqueue failure.
         return;
       }
@@ -106,7 +112,7 @@ export async function publishVariant(variantId: string, approvalId: string, h: D
 export async function runScheduled(h: DB = db(), now = new Date()): Promise<number> {
   const rows = await h.select({ id: socialVariants.id, approvalId: socialVariants.approvalId }).from(socialVariants)
     .where(or(and(eq(socialVariants.status, "scheduled"), lte(socialVariants.scheduledAt, now)),
-      and(eq(socialVariants.status, "publishing"), lte(socialVariants.updatedAt, new Date(now.getTime() - 2 * 60_000)))));
+      and(eq(socialVariants.status, "publishing"), lte(socialVariants.updatedAt, new Date(now.getTime() - PUBLISH_STALE_MS)))));
   let queued = 0;
   for (const row of rows) {
     if (!row.approvalId) continue;

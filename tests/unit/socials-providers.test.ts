@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { getProvider, ProviderAuthError, UncertainPublishError } from "@/server/socials/providers";
+import { getProvider, ProviderAuthError, SocialProviderError, UncertainPublishError } from "@/server/socials/providers";
 import { portfolioMarkdown } from "@/server/socials/markdown";
 import { socialFixture } from "../helpers/fake-socials";
 import { completeTikTokOAuth, tikTokAuthUrl, refreshSocialToken } from "@/server/socials/connections";
@@ -41,6 +41,31 @@ describe("social providers", () => {
     const p = getProvider("instagram", { status: "connected", token: "secret", login: "123", credentialGeneration: "generation" }, { fetch: f });
     expect(await p.findPublished?.({ text: "caption", imageUrl: "https://example.com/image.jpg", containerId: "container" })).toBeNull();
     expect(f.mock.calls.every((call) => (call[1] as RequestInit).method !== "POST")).toBe(true);
+  });
+
+  it("reuses a stored Instagram container when publishing becomes possible", async () => {
+    const f = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.endsWith("/media") && init?.method === "POST") return Response.json({ id: "container-1" });
+      if (url.includes("container-1?")) return Response.json({ status_code: "FINISHED" });
+      if (url.endsWith("/media_publish")) return Response.json({ id: "media-1" });
+      throw new Error(`Unexpected request: ${url}`);
+    });
+    const p = getProvider("instagram", { status: "connected", token: "secret", login: "123", credentialGeneration: "generation" }, { fetch: f });
+    const first = await p.publish?.({ text: "caption", imageUrl: "https://example.com/image.jpg" }, "approval:1");
+    expect(first).toEqual({ state: "container_pending", containerId: "container-1" });
+    expect(await p.publish?.({ text: "caption", imageUrl: "https://example.com/image.jpg", containerId: "container-1" }, "approval:1"))
+      .toEqual({ state: "published", remoteId: "media-1", containerId: "container-1" });
+    expect(f.mock.calls.filter(([url, init]) => String(url).endsWith("/media") && init?.method === "POST")).toHaveLength(1);
+  });
+
+  it.each(["ERROR", "EXPIRED"])("stops retrying a terminal Instagram container: %s", async (status) => {
+    const f = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) => Response.json({ status_code: status }));
+    const p = getProvider("instagram", { status: "connected", token: "secret", login: "123", credentialGeneration: "generation" }, { fetch: f });
+    await expect(p.publish?.({ text: "caption", imageUrl: "https://example.com/image.jpg", containerId: "container-1" }, "approval:1"))
+      .rejects.toBeInstanceOf(SocialProviderError);
+    expect(f).toHaveBeenCalledOnce();
+    expect((f.mock.calls[0]![1] as RequestInit).method).toBeUndefined();
   });
 
   it("will not adopt an Instagram media item if its caption is not unique", async () => {

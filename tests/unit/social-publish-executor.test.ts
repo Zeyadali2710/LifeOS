@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { approvedHash } from "@/server/agents/tools/socials";
-import { inspectPublish } from "@/server/socials/publish";
+import { inspectPublish, queueContainerContinuation } from "@/server/socials/publish";
+import { QUEUES } from "@/server/queue";
 
 const payload = {
   variantId: "11111111-1111-4111-8111-111111111111", platform: "linkedin" as const,
@@ -20,6 +21,14 @@ const approval = { id: variant.approvalId, status: "executed", payload };
 const now = new Date("2026-10-15T01:00:00Z");
 
 describe("social publish guard", () => {
+  it("queues the same approval after the container claim becomes stale", async () => {
+    const send = vi.fn(async () => undefined);
+    const persistedAt = new Date("2026-10-15T00:00:00Z");
+    await queueContainerContinuation("variant-1", "approval-1", persistedAt, send);
+    expect(send).toHaveBeenCalledOnce();
+    expect(send).toHaveBeenCalledWith(QUEUES.socialsPublish, { variantId: "variant-1", approvalId: "approval-1" },
+      { startAfter: new Date("2026-10-15T00:02:05Z") });
+  });
   it("accepts only the exact approved payload and binding", () => {
     expect(inspectPublish(variant, approval, provider, now)).toBe("claim");
     for (const edit of [{ text: "changed" }, { imageUrl: "https://example.com/a.jpg" }, { linkUrl: "https://example.com/new" }])
