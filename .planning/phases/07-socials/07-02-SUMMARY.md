@@ -30,6 +30,7 @@ Owner actions and the Social agent can prepare platform drafts. Publish requests
 - `a6de67f` Task 2 RED: failing approval contract tests.
 - `8467611` Task 2 GREEN: Social agent, approval lifecycle, queue scheduling and tests.
 - `35f179a` Task 2 safety fix: clear prior approval binding when a failed variant is redrafted.
+- `ca3e1a7` Task 1 correction: offer only saved or attended events as starters.
 
 ## Verification
 
@@ -47,6 +48,7 @@ Owner actions and the Social agent can prepare platform drafts. Publish requests
 - Rule 2: added pg-boss `startAfter`, reschedule and cancel helpers to `src/server/queue.ts`; scheduling otherwise runs immediately or keeps an old delayed job.
 - Rule 1: corrected calendar read filtering for manually posted variants and kept rescheduling conditional on an approved snapshot.
 - Rule 1: a redraft after a failed publish now clears the old approval ID, schedule and binding so the next request starts from a clean draft.
+- Rule 1: starter queries now match D-13's saved or attended event scope.
 
 ## Known stubs and next checks
 
