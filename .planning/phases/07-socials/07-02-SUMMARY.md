@@ -31,12 +31,14 @@ Owner actions and the Social agent can prepare platform drafts. Publish requests
 - `8467611` Task 2 GREEN: Social agent, approval lifecycle, queue scheduling and tests.
 - `35f179a` Task 2 safety fix: clear prior approval binding when a failed variant is redrafted.
 - `ca3e1a7` Task 1 correction: offer only saved or attended events as starters.
+- `e032179` Task 1 safety fix: conditional manual-post transition and secret-safe action logging.
 
 ## Verification
 
 - `npx tsc --noEmit`: passed.
 - Focused ESLint over changed source and tests: passed without warnings.
 - Focused approval, agent contract and social publish tests: 38 passed.
+- Focused manual-post race and approval tests after review fix: 13 passed; typecheck and focused ESLint passed.
 - Full unit suite: 483 passed across 53 files.
 - `npm run build`: passed after Windows sandbox path escalation. The sandboxed attempt stopped on a path-canonicalization permission error before compilation.
 - Full Vitest attempt: 483 unit tests passed; 441 DB cases skipped and 55 DB suites failed setup because local PostgreSQL port 5433 is inaccessible (`EACCES`). VM DB verification remains the owner action in Plan 04.
@@ -49,6 +51,7 @@ Owner actions and the Social agent can prepare platform drafts. Publish requests
 - Rule 1: corrected calendar read filtering for manually posted variants and kept rescheduling conditional on an approved snapshot.
 - Rule 1: a redraft after a failed publish now clears the old approval ID, schedule and binding so the next request starts from a clean draft.
 - Rule 1: starter queries now match D-13's saved or attended event scope.
+- Rule 1: `markPosted` now checks draft/failed state in the update itself and denies a lost race; owner action logs omit raw error objects that could contain pasted tokens.
 
 ## Known stubs and next checks
 
