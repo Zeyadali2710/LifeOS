@@ -11,7 +11,7 @@ describe("agent source provenance", () => {
     let predicate: { sql: string; params: unknown[] } | undefined;
     const stamp = new Date("2026-10-15T00:00:00Z");
     const tx = {
-      select: () => ({ from: (table: unknown) => ({ where: () => table === toolCalls ? { limit: async () => [] } : Promise.resolve(table === socialPosts ? [{ id }] : [{ id, status: "draft", approvalId: null, updatedAt: stamp }]) }) }),
+      select: () => ({ from: (table: unknown) => ({ where: () => table === toolCalls ? { limit: async () => [] } : table === socialPosts ? { for: async () => [{ id }] } : Promise.resolve([{ id, status: "draft", approvalId: null, updatedAt: stamp }]) }) }),
       update: (table: unknown) => ({ set: () => ({ where: (condition: Parameters<PgDialect["sqlToQuery"]>[0]) => {
         if (table === socialVariants) predicate = new PgDialect({ casing: "snake_case" }).sqlToQuery(condition);
         return table === socialVariants ? { returning: async () => [] } : Promise.resolve();
@@ -39,7 +39,7 @@ describe("agent source provenance", () => {
   it("preserves existing taint when the current run has no content read", async () => {
     let saved: Record<string, unknown> = {};
     const tx = {
-      select: () => ({ from: (table: unknown) => ({ where: () => table === toolCalls ? { limit: async () => [] } : Promise.resolve(table === socialPosts ? [{ id }] : []) }) }),
+      select: () => ({ from: (table: unknown) => ({ where: () => table === toolCalls ? { limit: async () => [] } : table === socialPosts ? { for: async () => [{ id }] } : Promise.resolve([]) }) }),
       update: () => ({ set: (value: Record<string, unknown>) => { saved = value; return { where: async () => undefined }; } }),
       insert: () => ({ values: async () => undefined }),
     };

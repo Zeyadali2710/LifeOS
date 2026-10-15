@@ -1,13 +1,14 @@
 import { eq } from "drizzle-orm";
+import { Client } from "pg";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { decide, executeApproved, expireDue } from "@/server/agents/approvals";
 import { callTool } from "@/server/agents/gateway";
 import { cancelRun } from "@/server/agents/runs";
 import { TOOLS } from "@/server/agents/tools";
-import { approvedHash } from "@/server/agents/tools/socials";
+import { approvedHash, saveDraft } from "@/server/agents/tools/socials";
 import { decrypt } from "@/server/crypto";
 import { activityEvents, agentRuns, approvals, auditLog, connections, notifications, socialAccountSnapshots, socialPosts, socialVariants } from "@/server/db/schema";
-import { cancelSchedule, confirmInstagramSmoke, requestPublish, reschedule, socialReviewFacts } from "@/server/socials-actions";
+import { cancelSchedule, confirmInstagramSmoke, deletePost, requestPublish, reschedule, socialReviewFacts } from "@/server/socials-actions";
 import { markSocialAuthError, removeSocialConnection, saveSocialToken, saveTikTokApp, saveTikTokTokens, socialConnectionStatus } from "@/server/socials/connections";
 import { getProvider } from "@/server/socials/providers";
 import { publishVariant, runScheduled } from "@/server/socials/publish";
@@ -57,6 +58,48 @@ beforeEach(async () => {
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe("approved Social publishing", () => {
+  it.each(["delete", "request"])("serializes deletion against publication when %s locks first", async (first) => {
+    const v = await variant("linkedin");
+    const blocker = await t.pool().connect();
+    const observer = new Client({ connectionString: t.url() });
+    await observer.connect();
+    const waiters = async (count: number) => {
+      for (let i = 0; i < 200; i++) {
+        const result = await observer.query<{ n: number }>("select count(*)::int n from pg_stat_activity where datname = current_database() and wait_event_type = 'Lock' and query like '%social_posts%for update%'");
+        if (result.rows[0]!.n >= count) return;
+      }
+      throw new Error("Expected parent row lock waiters");
+    };
+    let deleting: ReturnType<typeof deletePost> | undefined;
+    let requesting: ReturnType<typeof requestPublish> | undefined;
+    try {
+      await blocker.query("begin");
+      await blocker.query("select id from social_posts where id = $1 for update", [v.postId]);
+      if (first === "delete") deleting = deletePost(v.postId); else requesting = requestPublish(v.id);
+      await waiters(1);
+      if (first === "delete") requesting = requestPublish(v.id); else deleting = deletePost(v.postId);
+      await waiters(2);
+      await blocker.query("commit");
+      const [removed, requested] = await Promise.all([deleting!, requesting!]);
+      expect([removed.ok, requested.ok]).toEqual(first === "delete" ? [true, false] : [false, true]);
+      if (first === "request") expect(await variantRow(v.id)).toMatchObject({ status: "pending_approval" });
+      else expect(await h().select().from(socialVariants).where(eq(socialVariants.id, v.id))).toEqual([]);
+    } finally {
+      await blocker.query("rollback"); blocker.release(); await observer.end();
+      await Promise.allSettled([deleting, requesting]);
+    }
+  });
+
+  it("rolls back agent post edits after a concurrent owner request wins the parent lock", async () => {
+    const v = await variant("linkedin");
+    const [run] = await h().insert(agentRuns).values({ agentId: "social", prompt: "draft", model: "fixture" }).returning();
+    // The committed owner request owns the variant before a queued agent edit reads it.
+    const approval = await pending(v.id);
+    await expect(saveDraft.handler({ postId: v.postId, title: "Overwrite", body: "Changed", variants: [{ platform: "linkedin", text: "Changed" }] },
+      { handle: h(), runId: run!.id, agentId: "social", toolUseId: "save", now: () => new Date() })).rejects.toThrow("before editing");
+    expect((await h().select().from(socialPosts).where(eq(socialPosts.id, v.postId)))[0]!.title).toBe("Test post");
+    expect(await variantRow(v.id)).toMatchObject({ status: "pending_approval", approvalId: approval, text: "Original text" });
+  });
   it.each([new Error("queue unavailable"), new DOMException("timed out", "TimeoutError")])("recovers durable approved enqueue failure: %s", async (failure) => {
     const v = await variant("linkedin");
     const id = await pending(v.id);

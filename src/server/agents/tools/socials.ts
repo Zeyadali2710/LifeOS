@@ -73,7 +73,7 @@ export const saveDraft: Tool<z.infer<typeof draftInput>, Record<string, unknown>
       const sourceFields = source ? { sourceKind: i.sourceKind, sourceId: i.sourceId } : {};
       let postId = i.postId;
       if (postId) {
-        const [existing] = await tx.select({ id: socialPosts.id }).from(socialPosts).where(eq(socialPosts.id, postId));
+        const [existing] = await tx.select({ id: socialPosts.id }).from(socialPosts).where(eq(socialPosts.id, postId)).for("update");
         if (!existing) throw new ToolError("not_found", "Unknown post.");
         await tx.update(socialPosts).set({ title: i.title, body: i.body, ...sourceFields,
           draftedFromContent: sql`${socialPosts.draftedFromContent} or ${tainted}`, updatedAt: ctx.now() }).where(eq(socialPosts.id, postId));

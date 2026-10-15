@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import type { ChatEvent } from "@/lib/agent-types";
 import type { DB } from "../db/client";
-import { agentRuns, approvals, permissions, socialVariants, toolCalls } from "../db/schema";
+import { agentRuns, approvals, permissions, socialPosts, socialVariants, toolCalls } from "../db/schema";
 import { emitActivity, notifyLive } from "../events";
 import { log } from "../log";
 import { approvalSummary } from "@/lib/approval-kinds";
@@ -144,6 +144,13 @@ export async function callTool(
   }
   let claimed: string | null;
   try { claimed = await h.transaction(async (tx) => {
+    if (tool.name === "socials.publish") {
+      const [variant] = await tx.select({ postId: socialVariants.postId }).from(socialVariants).where(eq(socialVariants.id, input.variantId as string));
+      if (!variant) throw new ToolError("not_allowed", "This variant no longer exists.");
+      // Social mutations lock parent then variant, so deletion cannot pass a stale publication guard.
+      const [post] = await tx.select({ id: socialPosts.id }).from(socialPosts).where(eq(socialPosts.id, variant.postId)).for("update");
+      if (!post) throw new ToolError("not_allowed", "This post no longer exists.");
+    }
     const [row] = await tx
       .insert(toolCalls)
       .values(base(tier, needsApproval ? "waiting_approval" : "running", key, input))

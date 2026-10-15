@@ -87,14 +87,17 @@ export async function togglePlatform(postId: string, target: string, enabled: bo
   if (!p.success) return invalid;
   return run(async () => {
     const h = db();
-    if (enabled) {
-      const [post] = await h.select().from(socialPosts).where(eq(socialPosts.id, p.data.postId));
+    const result = await h.transaction(async (tx) => {
+      const [post] = await tx.select().from(socialPosts).where(eq(socialPosts.id, p.data.postId)).for("update");
       if (!post) return missing;
-      await h.insert(socialVariants).values({ postId, platform: target, text: post.body }).onConflictDoNothing();
-    } else {
-      const [row] = await h.delete(socialVariants).where(and(eq(socialVariants.postId, postId), eq(socialVariants.platform, target), inArray(socialVariants.status, ["draft", "failed", "posted_manually"]))).returning({ id: socialVariants.id });
-      if (!row) return denied;
-    }
+      if (enabled) await tx.insert(socialVariants).values({ postId, platform: target, text: post.body }).onConflictDoNothing();
+      else {
+        const [row] = await tx.delete(socialVariants).where(and(eq(socialVariants.postId, postId), eq(socialVariants.platform, target), inArray(socialVariants.status, ["draft", "failed", "posted_manually"]))).returning({ id: socialVariants.id });
+        if (!row) return denied;
+      }
+      return { ok: true } as const;
+    });
+    if (!result.ok) return result;
     await aud("social.platform.toggle", postId, { platform: target, enabled });
     return { ok: true } as const;
   });
@@ -132,10 +135,15 @@ export async function deletePost(id: string) {
   if (!uuid.safeParse(id).success) return invalid;
   return run(async () => {
     const h = db();
-    const [blocked] = await h.select({ id: socialVariants.id }).from(socialVariants).where(and(eq(socialVariants.postId, id), inArray(socialVariants.status, ["pending_approval", "scheduled", "publishing"])));
-    if (blocked) return denied;
-    const [row] = await h.delete(socialPosts).where(eq(socialPosts.id, id)).returning({ id: socialPosts.id });
-    if (!row) return missing;
+    const result = await h.transaction(async (tx) => {
+      const [post] = await tx.select({ id: socialPosts.id }).from(socialPosts).where(eq(socialPosts.id, id)).for("update");
+      if (!post) return missing;
+      const variants = await tx.select({ status: socialVariants.status }).from(socialVariants).where(eq(socialVariants.postId, id)).for("update");
+      if (variants.some((v) => ["pending_approval", "scheduled", "publishing"].includes(v.status))) return denied;
+      await tx.delete(socialPosts).where(eq(socialPosts.id, id));
+      return { ok: true } as const;
+    });
+    if (!result.ok) return result;
     await aud("social.post.delete", id);
     return { ok: true } as const;
   });
