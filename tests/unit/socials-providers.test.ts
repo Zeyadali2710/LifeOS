@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { getProvider, ProviderAuthError } from "@/server/socials/providers";
+import { getProvider, ProviderAuthError, UncertainPublishError } from "@/server/socials/providers";
 import { portfolioMarkdown } from "@/server/socials/markdown";
+import { socialFixture } from "../helpers/fake-socials";
 
 describe("social providers", () => {
   it("keeps disconnected providers mock and manual platforms unpublishable", () => {
@@ -17,7 +18,7 @@ describe("social providers", () => {
   });
 
   it("posts LinkedIn little text with a plain link and current headers", async () => {
-    const f = vi.fn(async () => new Response(null, { status: 201, headers: { "x-restli-id": "urn:li:share:123" } }));
+    const f = vi.fn(async (...args: [RequestInfo | URL, RequestInit?]) => { void args; return new Response(null, { status: 201, headers: { "x-restli-id": String((socialFixture("linkedinPost") as { id: string }).id) } }); });
     const p = getProvider("linkedin", { status: "connected", token: "secret", login: "urn:li:person:456", credentialGeneration: "generation" }, { fetch: f });
     expect(await p.publish?.({ text: "Hello #world *today*", linkUrl: "https://example.com" }, "approval:1")).toMatchObject({ remoteId: "urn:li:share:123" });
     expect(f).toHaveBeenCalledOnce();
@@ -32,16 +33,25 @@ describe("social providers", () => {
   });
 
   it("does not create another Instagram container on retry", async () => {
-    const f = vi.fn(async () => new Response(JSON.stringify({ status_code: "IN_PROGRESS" }), { status: 200 }));
+    const f = vi.fn(async (...args: [RequestInfo | URL, RequestInit?]) => { void args; return new Response(JSON.stringify(socialFixture("instagramContainer")), { status: 200 }); });
     const p = getProvider("instagram", { status: "connected", token: "secret", login: "123", credentialGeneration: "generation" }, { fetch: f });
     expect(await p.findPublished?.({ text: "caption", imageUrl: "https://example.com/image.jpg", containerId: "container" })).toBeNull();
     expect(f.mock.calls.every((call) => (call[1] as RequestInit).method !== "POST")).toBe(true);
   });
 
+  it("stops on an ambiguous Instagram container response", async () => {
+    const f = vi.fn(async () => { throw new Error("connection lost"); });
+    const p = getProvider("instagram", { status: "connected", token: "secret", login: "123", credentialGeneration: "generation" }, { fetch: f });
+    await expect(p.publish?.({ text: "caption", imageUrl: "https://example.com/image.jpg" }, "approval:1")).rejects.toBeInstanceOf(UncertainPublishError);
+    expect(f).toHaveBeenCalledOnce();
+  });
+
   it("uses granted TikTok scopes and POST video.list without filling absent metrics", async () => {
-    const f = vi.fn(async (url: string) => new Response(JSON.stringify(url.includes("user/info")
-      ? { data: { user: { follower_count: 10 } }, error: { code: "ok" } }
-      : { data: { videos: [{ id: "123", view_count: 0 }] }, error: { code: "ok" } }), { status: 200 }));
+    const f = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      void init;
+      return new Response(JSON.stringify(String(input).includes("user/info")
+        ? socialFixture("tikTokUser") : socialFixture("tikTokVideos")), { status: 200 });
+    });
     const p = getProvider("tiktok", { status: "connected", token: "secret", login: "owner", scopes: ["user.info.basic", "user.info.stats", "video.list"], credentialGeneration: "generation" }, { fetch: f });
     expect(p.capabilities.analytics).toBe(true);
     const result = await p.sync?.();
@@ -54,7 +64,7 @@ describe("social providers", () => {
 
   it("exports Portfolio markdown and maps auth errors to a fixed class", async () => {
     expect(portfolioMarkdown({ title: "Title", text: "Body", date: "2026-10-15", imageUrl: "https://example.com/a.jpg" })).toContain("Body");
-    const f = vi.fn(async () => new Response(null, { status: 401 }));
+    const f = vi.fn(async (...args: [RequestInfo | URL, RequestInit?]) => { void args; return new Response(null, { status: 401 }); });
     const p = getProvider("linkedin", { status: "connected", token: "secret", login: "urn:li:person:1", credentialGeneration: "generation" }, { fetch: f });
     await expect(p.publish?.({ text: "hi" }, "approval:1")).rejects.toBeInstanceOf(ProviderAuthError);
   });
