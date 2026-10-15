@@ -183,6 +183,8 @@ export async function markSocialAuthError(h: DB, platform: Exclude<SocialPlatfor
 }
 
 export async function removeSocialConnection(h: DB, id: Exclude<SocialPlatform, "portfolio"> | "tiktok_app"): Promise<void> {
-  await h.delete(connections).where(eq(connections.id, id));
-  await audit(h, "connection.remove", id);
+  await h.transaction(async (tx) => {
+    await tx.delete(connections).where(inArray(connections.id, id === "tiktok_app" ? [id, "tiktok"] : [id]));
+    await audit(tx, "connection.remove", id);
+  });
 }

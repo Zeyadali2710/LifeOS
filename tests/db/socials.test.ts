@@ -7,7 +7,8 @@ import { approvedHash } from "@/server/agents/tools/socials";
 import { decrypt } from "@/server/crypto";
 import { activityEvents, agentRuns, approvals, auditLog, connections, notifications, socialAccountSnapshots, socialPosts, socialVariants } from "@/server/db/schema";
 import { cancelSchedule, confirmInstagramSmoke, requestPublish, reschedule } from "@/server/socials-actions";
-import { markSocialAuthError, saveSocialToken, saveTikTokApp, saveTikTokTokens, socialConnectionStatus } from "@/server/socials/connections";
+import { markSocialAuthError, removeSocialConnection, saveSocialToken, saveTikTokApp, saveTikTokTokens, socialConnectionStatus } from "@/server/socials/connections";
+import { getProvider } from "@/server/socials/providers";
 import { publishVariant } from "@/server/socials/publish";
 import { syncSocials } from "@/server/socials/sync";
 import { setupTestDb } from "./helpers";
@@ -167,6 +168,17 @@ describe("approved Social publishing", () => {
 });
 
 describe("connection, retry and analytics contracts", () => {
+  it("disconnects the dependent TikTok account when removing app credentials", async () => {
+    await saveTikTokApp(h(), "fixture_key", "fixture_secret");
+    await saveTikTokTokens(h(), { accessToken: "access", refreshToken: "refresh", openId: "owner", scopes: ["user.info.basic", "user.info.stats"], expiresAt: new Date("2030-01-01"), refreshExpiresAt: new Date("2031-01-01") });
+    await removeSocialConnection(h(), "tiktok_app");
+    const status = await socialConnectionStatus(h());
+    expect(status.tiktok).toBeNull(); expect(status.tiktok_app).toBeNull();
+    expect(getProvider("tiktok", null).isMock).toBe(true);
+    const f = vi.fn(noNetwork);
+    await syncSocials(h(), new Date(), f);
+    expect(f).not.toHaveBeenCalled();
+  });
   it("requires owner confirmation for Instagram and resets it on token replacement or 401", async () => {
     const f = vi.fn(async (input: RequestInfo | URL) => {
       if (String(input).startsWith("https://graph.instagram.com/me?fields=user_id")) return json({ user_id: "owner_1", username: "owner" });
