@@ -52,6 +52,20 @@ describe("social providers", () => {
     expect(f).toHaveBeenCalledTimes(2);
   });
 
+  it("checks later Instagram media pages before adopting a caption", async () => {
+    const f = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (!url.includes("/me/media")) return Response.json({ status_code: "PUBLISHED" });
+      return Response.json(url.includes("after=page-2")
+        ? { data: [{ id: "two", caption: "caption" }] }
+        : { data: [{ id: "one", caption: "caption" }], paging: { next: "present", cursors: { after: "page-2" } } });
+    });
+    const p = getProvider("instagram", { status: "connected", token: "secret", login: "123", credentialGeneration: "generation" }, { fetch: f });
+    expect(await p.findPublished?.({ text: "caption", containerId: "container" })).toBeNull();
+    expect(f).toHaveBeenCalledTimes(3);
+    expect(String(f.mock.calls[2]![0])).toContain("after=page-2");
+  });
+
   it("stops on an ambiguous Instagram container response", async () => {
     const f = vi.fn(async () => { throw new Error("connection lost"); });
     const p = getProvider("instagram", { status: "connected", token: "secret", login: "123", credentialGeneration: "generation" }, { fetch: f });

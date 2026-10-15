@@ -17,7 +17,7 @@ key-decisions:
   - Instagram media adoption requires a unique caption match; inconclusive results require owner review.
   - TikTok granted scopes come from the token response, and rotated tokens are stored atomically without changing credential generation.
 requirements-completed: [SOC-01, SOC-02, SOC-03]
-duration: 11 min
+duration: 13 min
 completed: 2026-10-15
 ---
 
@@ -31,11 +31,12 @@ Approved LinkedIn and Instagram variants now pass a persisted payload and creden
 - `ff9c136` Task 1 GREEN: bound publish execution, idempotent retry handling and startup sweep.
 - `2fd45ff` Task 2 RED: failing TikTok OAuth and token rotation tests.
 - `6404d09` Task 2 GREEN: TikTok OAuth, analytics sync, refresh and worker scheduling.
+- `7c0007c` safety follow-up: scan all returned Instagram media pages before adopting a caption match.
 
 ## Verification
 
-- Focused publish, approval and provider tests: 25 passed across three files.
-- Full unit suite: 492 passed across 55 files.
+- Focused publish, approval and provider tests: 26 passed across three files.
+- Full unit suite: 493 passed across 55 files.
 - `npx tsc --noEmit`: passed.
 - Focused ESLint over changed source and tests: passed without warnings.
 - `npm run lint`: passed with 19 pre-existing warnings outside this plan.
@@ -49,17 +50,18 @@ Approved LinkedIn and Instagram variants now pass a persisted payload and creden
 
 1. **[Rule 2 - Safety] Bind queue jobs to their approval.** The existing enqueue and reschedule paths carried only the variant ID, so an old delayed job could publish a replacement approval. The queue payload, reschedule helper and caller now include the approval ID. Files: `src/server/agents/tools/socials.ts`, `src/server/queue.ts`, `src/server/socials-actions.ts`. Commit: `ff9c136`.
 2. **[Rule 1 - Bug] Allow owner resolution of ambiguous LinkedIn posts.** The planned failure message offered Mark as posted, but that action rejected LinkedIn. Failed LinkedIn variants can now be marked after owner review, with LinkedIn URL host validation. File: `src/server/socials-actions.ts`. Commit: `ff9c136`.
-3. **[Rule 2 - Safety] Reject ambiguous Instagram media matching.** Adoption now requires exactly one matching caption instead of taking the first result. File: `src/server/socials/providers.ts`. Commit: `ff9c136`.
+3. **[Rule 2 - Safety] Reject ambiguous Instagram media matching.** Adoption requires one matching caption across all returned media pages; an incomplete scan or a duplicate stops for owner review. File: `src/server/socials/providers.ts`. Commits: `ff9c136`, `7c0007c`.
 4. **[Rule 2 - Safety] Guard token refresh against owner replacement.** Refresh writes compare the previous ciphertext and preserve credential generation, so a racing owner reconnection is not overwritten. File: `src/server/socials/connections.ts`. Commit: `6404d09`.
 
 ## Known stubs and owner checks
 
 - Instagram per-image insights remain unavailable in `src/server/socials/providers.ts` until the owner supplies a real image insight response and confirms token provenance, expiry and refresh behavior (D-03). The real provider remains locked while `verification_pending`; connected account totals use only returned fields.
+- Instagram adoption scans up to 5,000 media items. A larger account remains in owner review rather than risking a false match.
 - TikTok start and callback routes are ready, while the Settings Connect control is assigned to Plan 07-07.
 - Owner VM migration 0009, DB/e2e checks, deployment, developer-app setup, token entry and live provider smoke tests remain D-03 owner actions. No migration, external post, live provider call, deployment or push occurred.
 
 ## Self-Check: PASSED
 
 - All five created source/test files exist.
-- All four task commit hashes resolve in Git.
+- All five task and follow-up commit hashes resolve in Git.
 - Focused tests, typecheck, lint and both production builds passed as reported above.

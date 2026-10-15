@@ -117,11 +117,30 @@ function instagram(connection: SocialConnection, f: Fetch): SocialProvider {
     if (!variant.containerId) return null;
     const status = await containerStatus(variant.containerId);
     if (status !== "PUBLISHED") return null;
-    const res = await request(f, `${INSTAGRAM}/me/media?fields=id,caption&limit=25`, { headers });
-    const media = object(await res.json()).data;
-    if (!Array.isArray(media)) return null;
-    const matches = media.filter((item) => object(item).caption === variant.text && typeof object(item).id === "string");
-    return matches.length === 1 ? { state: "published", remoteId: String(object(matches[0]).id), containerId: variant.containerId } : null;
+    let after: string | undefined;
+    let match: string | null = null;
+    const seen = new Set<string>();
+    for (let page = 0; page < 50; page++) {
+      const url = new URL(`${INSTAGRAM}/me/media`);
+      url.search = new URLSearchParams({ fields: "id,caption", limit: "100", ...(after ? { after } : {}) }).toString();
+      const res = await request(f, url.toString(), { headers });
+      const body = object(await res.json());
+      if (!Array.isArray(body.data)) return null;
+      for (const item of body.data) {
+        const v = object(item);
+        if (v.caption !== variant.text || typeof v.id !== "string") continue;
+        if (match) return null;
+        match = v.id;
+      }
+      const paging = object(body.paging);
+      const next = object(paging.cursors).after;
+      if (!paging.next) return match ? { state: "published", remoteId: match, containerId: variant.containerId } : null;
+      if (typeof next !== "string" || !next || seen.has(next)) return null;
+      seen.add(next);
+      after = next;
+    }
+    // shortcut: scan at most 5,000 media; larger accounts need owner review before adoption.
+    return null;
   }
   return {
     platform: "instagram", label: "Instagram", isMock: false, credentialGeneration: connection.credentialGeneration,
