@@ -29,6 +29,7 @@ Owner actions and the Social agent can prepare platform drafts. Publish requests
 - `580f17a` Task 1: owner draft actions and read models.
 - `a6de67f` Task 2 RED: failing approval contract tests.
 - `8467611` Task 2 GREEN: Social agent, approval lifecycle, queue scheduling and tests.
+- `35f179a` Task 2 safety fix: clear prior approval binding when a failed variant is redrafted.
 
 ## Verification
 
@@ -45,6 +46,7 @@ Owner actions and the Social agent can prepare platform drafts. Publish requests
 - Rule 3: added minimal Social entries to existing approval UI maps for typecheck and a truthful AI approval card. The full edit sheet remains assigned to Plan 07-07.
 - Rule 2: added pg-boss `startAfter`, reschedule and cancel helpers to `src/server/queue.ts`; scheduling otherwise runs immediately or keeps an old delayed job.
 - Rule 1: corrected calendar read filtering for manually posted variants and kept rescheduling conditional on an approved snapshot.
+- Rule 1: a redraft after a failed publish now clears the old approval ID, schedule and binding so the next request starts from a clean draft.
 
 ## Known stubs and next checks
 
