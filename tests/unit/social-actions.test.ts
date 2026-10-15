@@ -57,7 +57,7 @@ describe("social owner action guards", () => {
   it("rejects a stale Instagram attestation atomically without auditing success", async () => {
     let predicate: { sql: string; params: unknown[] } | undefined;
     const insert = vi.fn();
-    state.handle = { insert, update: () => ({ set: () => ({ where: (condition: Parameters<PgDialect["sqlToQuery"]>[0]) => {
+    state.handle = { insert, transaction: async (fn: (h: unknown) => unknown) => fn(state.handle), update: () => ({ set: () => ({ where: (condition: Parameters<PgDialect["sqlToQuery"]>[0]) => {
       predicate = new PgDialect({ casing: "snake_case" }).sqlToQuery(condition);
       return { returning: async () => [] };
     } }) }) };

@@ -189,12 +189,15 @@ export async function socialConnectionStatus(h: DB): Promise<Record<Exclude<Soci
 }
 
 export async function verifyInstagramConnection(h: DB, generation: string): Promise<boolean> {
-  const [won] = await h.update(connections).set({ status: "connected", lastError: null, updatedAt: new Date() })
-    .where(and(eq(connections.id, "instagram"), eq(connections.credentialGeneration, generation), eq(connections.status, "verification_pending")))
-    .returning({ id: connections.id });
-  if (!won) return false;
-  await audit(h, "connection.verify", "instagram");
-  return true;
+  return h.transaction(async (tx) => {
+    const [won] = await tx.update(connections).set({ status: "connected", lastError: null, updatedAt: new Date() })
+      .where(and(eq(connections.id, "instagram"), eq(connections.credentialGeneration, generation), eq(connections.status, "verification_pending")))
+      .returning({ id: connections.id });
+    if (!won) return false;
+    await tx.insert(auditLog).values({ actor: "owner", action: "connection.verify", target: "instagram", metadata: { id: "instagram", credentialGeneration: generation } });
+    await notifyLive(tx, "socials", "instagram");
+    return true;
+  });
 }
 
 export async function markSocialAuthError(h: DB, platform: Exclude<SocialPlatform, "portfolio">, expected: { credentialGeneration: string | null; ciphertext?: string }): Promise<boolean> {
