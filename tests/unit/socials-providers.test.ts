@@ -146,11 +146,11 @@ describe("social providers", () => {
       select: () => ({ from: () => ({ where: async () => [previous] }) }),
       update: () => ({ set: (value: Record<string, unknown>) => { updated = value; return { where: () => ({ returning: async () => [{ id: "tiktok" }] }) }; } }),
     } as unknown as DB;
-    await refreshSocialToken(h, "tiktok", { accessToken: "new-access", refreshToken: "new-refresh", expiresAt: new Date("2026-10-16T00:00:00Z"), refreshExpiresAt: new Date("2027-10-16T00:00:00Z") }, key);
+    await refreshSocialToken(h, "tiktok", previous, { accessToken: "new-access", refreshToken: "new-refresh", expiresAt: new Date("2026-10-16T00:00:00Z"), refreshExpiresAt: new Date("2027-10-16T00:00:00Z") }, key);
     expect(JSON.parse(decrypt(updated.ciphertext as string, key))).toMatchObject({ accessToken: "new-access", refreshToken: "new-refresh", refreshExpiresAt: "2027-10-16T00:00:00.000Z" });
     expect(updated.credentialGeneration).toBeUndefined();
     const changed = { ...h, update: () => ({ set: () => ({ where: () => ({ returning: async () => [] }) }) }) } as unknown as DB;
-    await expect(refreshSocialToken(changed, "tiktok", { accessToken: "late", expiresAt: new Date() }, key)).rejects.toThrow("Connection changed");
+    await expect(refreshSocialToken(changed, "tiktok", previous, { accessToken: "late", expiresAt: new Date() }, key)).rejects.toThrow("Connection changed");
   });
 
   it("pages TikTok videos until the 90-day boundary", async () => {

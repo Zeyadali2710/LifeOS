@@ -48,7 +48,7 @@ async function fail(h: DB, v: Variant, message: string, reconnect = false): Prom
     .returning({ id: socialVariants.id });
   if (!won) return;
   await notifyLive(h, "socials", v.id);
-  if (reconnect && (v.platform === "linkedin" || v.platform === "instagram")) await markSocialAuthError(h, v.platform);
+  if (reconnect && (v.platform === "linkedin" || v.platform === "instagram")) await markSocialAuthError(h, v.platform, { credentialGeneration: v.approvedConnectionGeneration });
   await emitActivity({ type: "social.publish_failed", source: "social", title: "Social post needs attention", detail: message, tone: "amber", payload: { variantId: v.id } },
     { category: "IMPORTANT", title: "Social post needs attention", body: message, actionUrl: "/socials" }, h);
 }

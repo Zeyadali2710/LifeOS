@@ -1,5 +1,5 @@
 import { randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import type { SocialPlatform } from "@/lib/social-types";
 import { decrypt, encrypt } from "../crypto";
 import type { DB } from "../db/client";
@@ -16,6 +16,11 @@ export type SocialConnection = {
 };
 type SaveResult = { ok: true; login: string } | { ok: false; error: "invalid" | "rejected" | "unreachable" };
 type Opts = { fetch?: typeof fetch; now?: Date; key?: Buffer };
+export type ConnectionSnapshot = Pick<typeof connections.$inferSelect, "ciphertext" | "credentialGeneration">;
+export function connectionMatches(platform: string, expected: { credentialGeneration: string | null; ciphertext?: string }) {
+  return and(eq(connections.id, platform), sql`${connections.credentialGeneration} is not distinct from ${expected.credentialGeneration}`,
+    expected.ciphertext === undefined ? undefined : eq(connections.ciphertext, expected.ciphertext));
+}
 
 async function audit(h: DB, action: string, id: string, last4?: string) {
   await h.insert(auditLog).values({ actor: "owner", action, target: id, metadata: last4 ? { id, last4 } : { id } });
@@ -89,16 +94,16 @@ export async function saveTikTokTokens(h: DB, tokens: { accessToken: string; ref
 }
 
 // Provider refreshes keep the logical credential binding; the owner reconnect path above rotates it.
-export async function refreshSocialToken(h: DB, platform: "instagram" | "tiktok", value: { accessToken: string; refreshToken?: string; refreshExpiresAt?: Date; expiresAt: Date; scopes?: string[] }, key?: Buffer): Promise<void> {
-  const [row] = await h.select().from(connections).where(eq(connections.id, platform));
-  if (!row) throw new Error("Connection is missing.");
-  const old = platform === "tiktok" ? JSON.parse(decrypt(row.ciphertext, key)) as { refreshToken: string; refreshExpiresAt?: string } : null;
+export async function refreshSocialToken(h: DB, platform: "instagram" | "tiktok", expected: ConnectionSnapshot, value: { accessToken: string; refreshToken?: string; refreshExpiresAt?: Date; expiresAt: Date; scopes?: string[] }, key?: Buffer): Promise<ConnectionSnapshot> {
+  const old = platform === "tiktok" ? JSON.parse(decrypt(expected.ciphertext, key)) as { refreshToken: string; refreshExpiresAt?: string } : null;
   const plaintext = platform === "tiktok" ? JSON.stringify({ accessToken: value.accessToken, refreshToken: value.refreshToken ?? old!.refreshToken,
     refreshExpiresAt: value.refreshExpiresAt?.toISOString() ?? old!.refreshExpiresAt }) : value.accessToken;
-  const [won] = await h.update(connections).set({ ciphertext: encrypt(plaintext, key), last4: value.accessToken.slice(-4), expiresAt: value.expiresAt,
+  const ciphertext = encrypt(plaintext, key);
+  const [won] = await h.update(connections).set({ ciphertext, last4: value.accessToken.slice(-4), expiresAt: value.expiresAt,
     ...(value.scopes ? { scopes: value.scopes } : {}), updatedAt: new Date() })
-    .where(and(eq(connections.id, platform), eq(connections.ciphertext, row.ciphertext))).returning({ id: connections.id });
+    .where(connectionMatches(platform, expected)).returning({ id: connections.id });
   if (!won) throw new Error("Connection changed during refresh.");
+  return { ciphertext, credentialGeneration: expected.credentialGeneration };
 }
 
 export const TIKTOK_COOKIE = "lifeos_tiktok_oauth";
@@ -158,6 +163,10 @@ export async function completeTikTokOAuth(h: DB, p: { code: string | null; state
 export async function socialConnection(h: DB, platform: Exclude<SocialPlatform, "portfolio">, key?: Buffer): Promise<SocialConnection | null> {
   const [row] = await h.select().from(connections).where(eq(connections.id, platform));
   if (!row) return null;
+  return decodeSocialConnection(platform, row, key);
+}
+
+export function decodeSocialConnection(platform: Exclude<SocialPlatform, "portfolio">, row: Pick<typeof connections.$inferSelect, "ciphertext" | "status" | "login" | "scopes" | "expiresAt" | "credentialGeneration">, key?: Buffer): SocialConnection {
   const raw = decrypt(row.ciphertext, key);
   const token = platform === "tiktok" ? (JSON.parse(raw) as { accessToken: string }).accessToken : raw;
   return { status: row.status, token, login: row.login, scopes: row.scopes, expiresAt: row.expiresAt, credentialGeneration: row.credentialGeneration };
@@ -178,8 +187,9 @@ export async function verifyInstagramConnection(h: DB, generation: string): Prom
   return true;
 }
 
-export async function markSocialAuthError(h: DB, platform: Exclude<SocialPlatform, "portfolio">): Promise<void> {
-  await h.update(connections).set({ status: "error", lastError: "RECONNECT", updatedAt: new Date() }).where(eq(connections.id, platform));
+export async function markSocialAuthError(h: DB, platform: Exclude<SocialPlatform, "portfolio">, expected: { credentialGeneration: string | null; ciphertext?: string }): Promise<boolean> {
+  const rows = await h.update(connections).set({ status: "error", lastError: "RECONNECT", updatedAt: new Date() }).where(connectionMatches(platform, expected)).returning({ id: connections.id });
+  return rows.length > 0;
 }
 
 export async function removeSocialConnection(h: DB, id: Exclude<SocialPlatform, "portfolio"> | "tiktok_app"): Promise<void> {

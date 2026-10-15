@@ -5,16 +5,15 @@ import { db, type DB } from "../db/client";
 import { connections, socialAccountSnapshots, socialVariants } from "../db/schema";
 import { emitActivity, notifyLive } from "../events";
 import { log } from "../log";
-import { refreshSocialToken, socialConnection, tikTokAppCredentials, markSocialAuthError } from "./connections";
+import { connectionMatches, decodeSocialConnection, refreshSocialToken, tikTokAppCredentials, markSocialAuthError, type ConnectionSnapshot } from "./connections";
 import { getProvider, ProviderAuthError } from "./providers";
 import { runScheduled } from "./publish";
 
 const TIKTOK_TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/";
 const DAY = 86_400_000;
 
-async function refreshTikTok(h: DB, now: Date, f: typeof fetch): Promise<void> {
-  const [row] = await h.select().from(connections).where(eq(connections.id, "tiktok"));
-  if (!row || row.status !== "connected" || !row.expiresAt || row.expiresAt > new Date(now.getTime() + 2 * 60 * 60_000)) return;
+async function refreshTikTok(h: DB, row: typeof connections.$inferSelect, now: Date, f: typeof fetch): Promise<ConnectionSnapshot> {
+  if (row.status !== "connected" || !row.expiresAt || row.expiresAt > new Date(now.getTime() + 2 * 60 * 60_000)) return row;
   const app = await tikTokAppCredentials(h);
   if (!app) throw new Error("TikTok app credentials missing.");
   const saved = JSON.parse(decrypt(row.ciphertext)) as { refreshToken?: string; refreshExpiresAt?: string };
@@ -30,13 +29,12 @@ async function refreshTikTok(h: DB, now: Date, f: typeof fetch): Promise<void> {
       typeof body.access_token !== "string" || typeof body.refresh_token !== "string" ||
       typeof body.expires_in !== "number" || !Number.isFinite(body.expires_in) || body.expires_in <= 0 ||
       typeof body.refresh_expires_in !== "number" || !Number.isFinite(body.refresh_expires_in) || body.refresh_expires_in <= 0) throw new Error("TikTok refresh response invalid.");
-  await refreshSocialToken(h, "tiktok", { accessToken: body.access_token, refreshToken: body.refresh_token,
+  return refreshSocialToken(h, "tiktok", row, { accessToken: body.access_token, refreshToken: body.refresh_token,
     expiresAt: new Date(now.getTime() + body.expires_in * 1000), refreshExpiresAt: new Date(now.getTime() + body.refresh_expires_in * 1000), scopes });
 }
 
-async function refreshInstagram(h: DB, now: Date, f: typeof fetch): Promise<void> {
-  const [row] = await h.select().from(connections).where(eq(connections.id, "instagram"));
-  if (!row || row.status !== "connected" || now.getTime() - row.updatedAt.getTime() < 7 * DAY) return;
+async function refreshInstagram(h: DB, row: typeof connections.$inferSelect, now: Date, f: typeof fetch): Promise<ConnectionSnapshot> {
+  if (row.status !== "connected" || now.getTime() - row.updatedAt.getTime() < 7 * DAY) return row;
   const url = new URL("https://graph.instagram.com/refresh_access_token");
   url.search = new URLSearchParams({ grant_type: "ig_refresh_token", access_token: decrypt(row.ciphertext) }).toString();
   const res = await f(url.toString(), { signal: AbortSignal.timeout(15_000) });
@@ -44,18 +42,19 @@ async function refreshInstagram(h: DB, now: Date, f: typeof fetch): Promise<void
   if (!res.ok) throw new Error("Instagram refresh failed.");
   const body = await res.json() as Record<string, unknown>;
   if (typeof body.access_token !== "string" || typeof body.expires_in !== "number" || !Number.isFinite(body.expires_in) || body.expires_in <= 0) throw new Error("Instagram refresh response invalid.");
-  await refreshSocialToken(h, "instagram", { accessToken: body.access_token, expiresAt: new Date(now.getTime() + body.expires_in * 1000) });
+  return refreshSocialToken(h, "instagram", row, { accessToken: body.access_token, expiresAt: new Date(now.getTime() + body.expires_in * 1000) });
 }
 
 async function linkedInExpiry(h: DB, now: Date): Promise<void> {
   const [row] = await h.select().from(connections).where(eq(connections.id, "linkedin"));
   if (!row?.expiresAt || row.status !== "connected") return;
   if (row.expiresAt <= now) {
-    await markSocialAuthError(h, "linkedin");
+    if (!await markSocialAuthError(h, "linkedin", row)) return;
     await emitActivity({ type: "social.connection_expired", source: "social", title: "LinkedIn needs reconnecting", tone: "amber" },
       { category: "IMPORTANT", title: "LinkedIn needs reconnecting", actionUrl: "/settings?section=connections" }, h);
   } else if (row.expiresAt.getTime() - now.getTime() <= 7 * DAY && row.lastError !== "EXPIRES_SOON") {
-    await h.update(connections).set({ lastError: "EXPIRES_SOON" }).where(eq(connections.id, "linkedin"));
+    const won = await h.update(connections).set({ lastError: "EXPIRES_SOON" }).where(connectionMatches("linkedin", row)).returning({ id: connections.id });
+    if (!won.length) return;
     await emitActivity({ type: "social.connection_expiring", source: "social", title: "LinkedIn token expires soon", tone: "amber" },
       { category: "IMPORTANT", title: "LinkedIn token expires soon", actionUrl: "/settings?section=connections" }, h);
   }
@@ -64,36 +63,43 @@ async function linkedInExpiry(h: DB, now: Date): Promise<void> {
 export async function syncSocials(h: DB = db(), now = new Date(), f: typeof fetch = fetch): Promise<void> {
   await linkedInExpiry(h, now);
   for (const platform of ["instagram", "tiktok"] as const) {
-    const [row] = await h.select().from(connections).where(eq(connections.id, platform));
+    let [row] = await h.select().from(connections).where(eq(connections.id, platform));
     if (!row || row.status !== "connected") continue;
     try {
-      if (platform === "tiktok") await refreshTikTok(h, now, f);
-      else await refreshInstagram(h, now, f);
-      const connection = await socialConnection(h, platform);
+      const refreshed = platform === "tiktok" ? await refreshTikTok(h, row, now, f) : await refreshInstagram(h, row, now, f);
+      // Use the row produced by our own CAS, never a replacement read after the remote refresh.
+      const [current] = await h.select().from(connections).where(connectionMatches(platform, refreshed));
+      if (!current) continue;
+      row = current;
+      const connection = decodeSocialConnection(platform, row);
       const provider = getProvider(platform, connection, { fetch: f });
       if (!provider.capabilities.analytics || !provider.sync) {
         if (connection?.expiresAt && connection.expiresAt <= now) throw new ProviderAuthError();
         continue;
       }
       const result = await provider.sync(new Date(now.getTime() - 90 * DAY));
-      if (result.account) await h.insert(socialAccountSnapshots).values({ platform, date: sydneyYmd(now),
+      await h.transaction(async (tx) => {
+      const [active] = await tx.select({ id: connections.id }).from(connections).where(connectionMatches(platform, row!)).for("update");
+      if (!active) return;
+      if (result.account) await tx.insert(socialAccountSnapshots).values({ platform, date: sydneyYmd(now),
         followers: result.account.followers ?? null, posts: result.account.posts ?? null })
         .onConflictDoUpdate({ target: [socialAccountSnapshots.platform, socialAccountSnapshots.date],
           set: { followers: result.account.followers ?? null, posts: result.account.posts ?? null, updatedAt: now } });
       const posts = new Map((result.posts ?? []).map((p) => [p.remoteId, p.metrics]));
       if (posts.size) {
-        const variants = await h.select({ id: socialVariants.id, remoteId: socialVariants.remoteId }).from(socialVariants)
+        const variants = await tx.select({ id: socialVariants.id, remoteId: socialVariants.remoteId }).from(socialVariants)
           .where(and(eq(socialVariants.platform, platform), inArray(socialVariants.status, ["published", "posted_manually"]),
             eq(socialVariants.isMock, false), gte(socialVariants.publishedAt, new Date(now.getTime() - 90 * DAY))));
         for (const v of variants) {
           const metrics = v.remoteId ? posts.get(v.remoteId) : undefined;
-          if (metrics) await h.update(socialVariants).set({ metrics, metricsAt: now, updatedAt: now }).where(eq(socialVariants.id, v.id));
+          if (metrics) await tx.update(socialVariants).set({ metrics, metricsAt: now, updatedAt: now }).where(eq(socialVariants.id, v.id));
         }
       }
-      await h.update(connections).set({ lastSyncAt: now, lastSyncError: null }).where(eq(connections.id, platform));
+      await tx.update(connections).set({ lastSyncAt: now, lastSyncError: null }).where(connectionMatches(platform, row!));
+      });
     } catch (err) {
-      if (err instanceof ProviderAuthError) await markSocialAuthError(h, platform);
-      await h.update(connections).set({ lastSyncAt: now, lastSyncError: err instanceof ProviderAuthError ? "RECONNECT" : "Social sync failed. Retry later." }).where(eq(connections.id, platform));
+      if (err instanceof ProviderAuthError) await markSocialAuthError(h, platform, row);
+      await h.update(connections).set({ lastSyncAt: now, lastSyncError: err instanceof ProviderAuthError ? "RECONNECT" : "Social sync failed. Retry later." }).where(connectionMatches(platform, row));
       log.warn({ platform, error: err instanceof Error ? err.name : "unknown" }, "social sync failed");
     }
   }

@@ -234,7 +234,7 @@ describe("approved Social publishing", () => {
     await publishVariant(real.id, realApproval, h(), new Date(Date.now() + 1000));
     expect(await variantRow(real.id)).toMatchObject({ status: "failed", remoteId: null });
     expect(f).toHaveBeenCalledTimes(2); // validation only; no LinkedIn POST
-    await markSocialAuthError(h(), "linkedin");
+    await markSocialAuthError(h(), "linkedin", { credentialGeneration: (await socialConnectionStatus(h())).linkedin!.credentialGeneration });
     expect(await requestPublish((await variant("linkedin", "Unavailable")).id)).toEqual({ ok: false, error: "not_allowed" });
   });
 
@@ -243,7 +243,7 @@ describe("approved Social publishing", () => {
     await connect("linkedin", f);
     const v = await variant("linkedin");
     const id = await pending(v.id);
-    await markSocialAuthError(h(), "linkedin");
+    await markSocialAuthError(h(), "linkedin", { credentialGeneration: (await socialConnectionStatus(h())).linkedin!.credentialGeneration });
     expect(await decide(h(), id, "approve", { enqueue })).toMatchObject({ ok: false, reason: "invalid" });
     expect((await approvalRow(id)).status).toBe("pending");
     expect(await variantRow(v.id)).toMatchObject({ status: "pending_approval", remoteId: null });
@@ -251,6 +251,25 @@ describe("approved Social publishing", () => {
 });
 
 describe("connection, retry and analytics contracts", () => {
+  it.each([200, 401])("ignores a deferred refresh response after account replacement (%s)", async (status) => {
+    const now = new Date("2026-10-15T02:00:00Z");
+    vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(now);
+    await saveTikTokApp(h(), "key", "secret");
+    const tokens = { accessToken: "A", refreshToken: "refresh-A", openId: "A", scopes: ["user.info.basic", "user.info.stats"], expiresAt: new Date("2026-10-15T03:00:00Z"), refreshExpiresAt: new Date("2030-01-01") };
+    await saveTikTokTokens(h(), tokens);
+    let signal!: () => void; const started = new Promise<void>((r) => { signal = r; });
+    let finish!: (value: Response) => void; const response = new Promise<Response>((r) => { finish = r; });
+    const f = vi.fn(async () => { signal(); return response; }) as typeof fetch;
+    const syncing = syncSocials(h(), now, f);
+    await started;
+    await saveTikTokTokens(h(), { ...tokens, openId: "B", accessToken: "replacement-B" });
+    const [replacement] = await h().select().from(connections).where(eq(connections.id, "tiktok"));
+    finish(status === 401 ? json({}, status) : json({ access_token: "late-A", refresh_token: "late-refresh-A", open_id: "A", scope: "user.info.basic,user.info.stats", expires_in: 86400, refresh_expires_in: 31536000 }));
+    await syncing;
+    const [after] = await h().select().from(connections).where(eq(connections.id, "tiktok"));
+    expect(after).toMatchObject({ ciphertext: replacement!.ciphertext, credentialGeneration: replacement!.credentialGeneration, login: "B", status: "connected", lastSyncError: null });
+    expect(await h().select().from(socialAccountSnapshots)).toHaveLength(0);
+  });
   it("disconnects the dependent TikTok account when removing app credentials", async () => {
     await saveTikTokApp(h(), "fixture_key", "fixture_secret");
     await saveTikTokTokens(h(), { accessToken: "access", refreshToken: "refresh", openId: "owner", scopes: ["user.info.basic", "user.info.stats"], expiresAt: new Date("2030-01-01"), refreshExpiresAt: new Date("2031-01-01") });
