@@ -1,6 +1,6 @@
 # Integrations
 
-Status: designed; GitHub shipped in Phase 3 (below).
+Status: provider contracts and shipped integrations are described below. Socials live behavior still needs the owner checks in `.planning/OWNER-ACTIONS.md`.
 
 ## Capability providers
 Application code depends on capability interfaces, never on vendor SDKs.
@@ -20,14 +20,31 @@ Each provider:
 - has `isMock: boolean`. Mock providers are real classes with realistic data and are badged **MOCK** in the UI. They are never presented as live.
 
 ## Known API realities (verify again at each phase)
-- **LinkedIn**: posting needs an approved app (Share on LinkedIn / Community Management API); analytics restricted.
-- **Instagram**: Graph API requires a Business/Creator account linked to a Facebook Page.
-- **TikTok**: Content Posting API requires app audit; unaudited apps post privately only.
+- **LinkedIn**: self-serve Share on LinkedIn can create member text posts with `w_member_social`; member analytics remain unavailable here.
+- **Instagram**: this integration uses Instagram Login for a Professional account, without a Facebook Page. Live token and image insight behavior still needs owner verification.
+- **TikTok**: Login Kit and Display API provide analytics when granted; publishing remains manual. Public Content Posting needs an audit and video handling.
 - **Meetup**: GraphQL API requires a Pro subscription.
 - **Apple Calendar**: CalDAV with an app-specific password; no official REST API.
 
 ## Least-privilege scopes
 Documented per provider when implemented. Default to read-only scopes; write scopes added only for APPROVE-tier features the owner enables.
+
+## Socials (Phase 7)
+
+Social drafts and variants are local. Every LinkedIn or Instagram publish, including a scheduled one, requires an editable owner approval. Scheduling is a LifeOS worker job, with no provider-side schedule. A disconnected provider uses a labelled MOCK; mock publications have no external URL and mock metrics never enter real totals. Credentials are entered and rotated only in Settings → Connections, encrypted at rest; no Socials credential belongs in `.env`.
+
+| Provider | Auth | Publish | Schedule | Analytics | Media / limitation |
+|---|---|---|---|---|---|
+| LinkedIn | Owner-pasted OAuth token with `openid profile w_member_social` | Text and optional plain URL | LifeOS-side | None for personal profile | No image upload or promised rich link preview |
+| Instagram | Owner-pasted Instagram Login token; Professional account | One public HTTPS image URL and caption, after owner verification | LifeOS-side | Returned account fields; per-image insights await live evidence | No Facebook Page; `verification_pending` disables real publish/analytics |
+| TikTok | Web Login Kit OAuth; requested `user.info.basic,user.info.stats,video.list` | Manual copy/open/mark as posted | None | Account/video fields only for scopes actually granted | Video upload and posting deferred |
+| Portfolio | No connection | Markdown copy/download, then manual mark as posted | None | None | Optional image URL in Markdown |
+
+LinkedIn uses `/rest/posts` with `Linkedin-Version: 202609` and `X-Restli-Protocol-Version: 2.0.0`. The client escapes reserved characters for LinkedIn's little-text format; an optional link is appended to commentary as plain text. The 3,000-code-point check is a conservative LifeOS limit, not a verified current Posts API ceiling. The owner must smoke-test one real text post and link before accepting that path.
+
+TikTok's **web** authorization code flow uses an unpredictable state and the configured HTTPS callback; the documented web flow does not use PKCE. The returned grant can omit `user.info.stats` or `video.list`, so LifeOS stores actual scopes and disables missing analytics. A 401/403 marks a connection RECONNECT. Refresh rotates encrypted access/refresh tokens without changing an approval's credential generation.
+
+Instagram stays `verification_pending` after a token is pasted. The owner must confirm token provenance, granted `instagram_business_*` scopes, expiry/refresh, a successful public-image container/publish, and the actual per-image insights response before confirming the real connection in Settings. Exact image insight metric names and the token lifetime are not assumed. Only fields actually returned are shown; missing metrics are unavailable, not zero. Container adoption requires one unique caption match across a complete media scan; an inconclusive result stops for owner review.
 
 ## GitHub (Phase 3)
 Two fine-grained personal access tokens, added in Settings -> Connections. They are encrypted at rest (AES-256-GCM, key from `LIFEOS_MASTER_KEY`). Only the last four characters, login, expiry and repository list are shown; tokens are never logged or sent to the browser.

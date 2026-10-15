@@ -72,12 +72,34 @@ Things only the owner can do (VM, deploy, UAT, credentials). Autonomous runs app
 - [ ] **Eventbrite organizer probe (A1, from 06-07):** after entering the private token and organizer ids, check the source row: either organizer events list, or it shows the "doesn't allow listing / only your own events" message. Report which.
 - [ ] **Luma API path check (A2, from 06-07):** verify the list-events path against https://docs.luma.com/reference before relying on a Luma key (constant `LUMA_LIST` in `src/server/outreach/providers.ts`); report whether events list with your key.
 
-## Phase 7 — Socials (after the Phase 7 deploy; runs on labelled MOCKs until then — paste every credential ONLY in Settings → Connections)
+## Phase 7 — Socials owner checkpoints (D-03)
 
-- [ ] **LinkedIn:** linkedin.com/developers → Create app (needs an associated Company Page; create a minimal one if needed) → Products: add "Sign In with LinkedIn using OpenID Connect" + "Share on LinkedIn" (self-serve) → Auth → OAuth 2.0 tools → Token generator: tick `openid`, `profile`, `w_member_social` → copy token → Settings → Connections → LinkedIn. Repeat ~every 60 days (LifeOS reminds you 7 days before). Optional: check whether "Member Post Analytics" can be added.
-- [ ] **Instagram:** switch the account to Professional (Creator) → developers.facebook.com → Create app (Business) → add "Instagram" product → App roles → Instagram testers: add yourself, accept in Instagram → Settings → Apps and websites → Tester invites → "API setup with Instagram login" → Generate access token with `instagram_business_basic`, `instagram_business_content_publish`, `instagram_business_manage_insights` → Settings → Connections → Instagram. Stay in Development mode (no App Review). Published images must already be at a public https URL.
-- [ ] **TikTok (analytics only):** developers.tiktok.com → Create app → Login Kit + Display API scopes `user.info.basic`, `user.info.stats`, `video.list` → Sandbox, add your account as target user → redirect URI `https://<your tailscale serve host>/api/connections/tiktok/callback` → copy Client key + secret into Settings → Connections → TikTok app → Connect.
-- [ ] **Review auto-decisions** in `.planning/phases/07-socials/07-DISCUSSION-LOG.md` (24 decisions — e.g. TikTok publish is manual (unaudited apps post private only), LinkedIn analytics off (API closed), Portfolio = copy/download Markdown + Mark as posted, scheduling done by LifeOS not the platforms).
+These steps wait until all Phase 7 plans, review and local checks are ready. The fixture/mock implementation can be reviewed before provider setup. Keep every token and app secret in **Settings → Connections** only; never paste one into a document, chat, log, command, test fixture or `.env`.
+
+- [ ] **[BLOCKING] Deploy and apply migration `0009_socials` on the homelab VM.** After the reviewed commits are available to the VM, run from the repository checkout:
+  ```bash
+  cd ~/lifeos
+  git pull
+  lc up -d --build
+  lc logs migrate | tail -20
+  ```
+  Confirm the migrate service exited successfully and `0009_socials` applied before using `/socials`; web and worker depend on the migrate service. Record the migration result and deployed commit ID here, without credentials. Do not run a separate migration against the production database.
+- [ ] **[BLOCKING] Run the VM database contract suite against the separate throwaway test Postgres.** The script starts the `lifeos-test` database and creates/drops only `lifeos_test_*` databases; it must not point at production:
+  ```bash
+  cd ~/lifeos
+  bash scripts/vm-db-test.sh tests/db/migrations.test.ts tests/db/socials.test.ts tests/db/approvals.test.ts
+  ```
+  Record passed/failed test counts and any failing test names here. Social provider calls in this suite use fakes; no real post or token is used.
+- [ ] **[BLOCKING] Run Phase 7 Playwright and owner UAT on the VM after Plan 07-07 lands.** The Playwright config starts its own test app/database with mock providers:
+  ```bash
+  cd ~/lifeos
+  npm run e2e -- tests/e2e/socials.spec.ts
+  ```
+  On the deployed tailnet HTTPS page, create a post from a project, fix a variant format error, edit an approval, schedule then cancel/reschedule, check the calendar and published board, and try TikTok Copy/Open/Mark as posted plus Portfolio Markdown export. Verify MOCK badges and that mock metrics do not appear in real totals. Record pass/issue for each flow, browser layout, and the deployed commit ID here. Any failure is a Phase 7 gap, not acceptance.
+- [ ] **LinkedIn app, consent and live smoke.** In linkedin.com/developers, create or select the owner app and associated Company Page; enable "Sign In with LinkedIn using OpenID Connect" and "Share on LinkedIn". Generate a token for `openid`, `profile`, `w_member_social` and paste it in Settings → Connections → LinkedIn. Confirm the page shows the connected account. With a harmless owner-approved post, inspect LinkedIn's real result on API version `202609`: reserved little-text characters render as written, and an optional URL appears as plain text without assuming a rich preview. Record the result and remote post URL here, never the token. Personal-profile analytics stay unavailable unless a separate approved product and scope exist.
+- [ ] **TikTok Sandbox and granted-scope smoke.** In developers.tiktok.com, enable Login Kit and Display API, request `user.info.basic`, `user.info.stats`, `video.list`, add the owner as a Sandbox target user, and register the exact callback `https://<your tailscale serve host>/api/connections/tiktok/callback`. Paste the client key and secret in Settings → Connections → TikTok app, then use Connect and consent in the owner browser. Confirm which scopes were actually granted: account stats require `user.info.stats`, video metrics require `video.list`; missing fields must show unavailable. Check a public video linked by Mark as posted. Record granted scope names and pass/issue only, never tokens or raw responses. Web OAuth uses state and no PKCE.
+- [ ] **Instagram Login live capability gate.** Use a Professional owner account and the Instagram API with Instagram Login in the Meta app; complete the owner tester invite and required product/scope setup. In the app dashboard, confirm where the owner token was generated, which `instagram_business_*` scopes were granted, its actual expiry and refresh behavior. Paste only in Settings → Connections → Instagram; it must remain `verification_pending`. Using Meta's owner developer tools outside LifeOS, supply an owner-controlled public HTTPS image URL reachable by Meta, make one image container/publish smoke, and inspect the actual per-image insights response to identify available metric names. Record provenance, granted scope names, expiry/refresh findings, publish result and metric names here without token or raw payload. Only then use the Settings confirmation control; if any part is inconclusive, leave real publish/analytics disabled and use the MOCK path.
+- [ ] **Review auto-decisions** in `.planning/phases/07-socials/07-DISCUSSION-LOG.md` (including manual TikTok posting, unavailable LinkedIn personal analytics, Portfolio Markdown export and LifeOS-side scheduling).
 
 ### Phase 6 — extra UAT checks from the review-fix pass
 - [ ] During the real-reply UAT, also check the double-send guards against real Gmail (06 WR-S02): approve a reply, and if a retry ever shows, confirm only one message is in the thread.
