@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 import { boardColumn, checkVariant, expiryState } from "@/lib/social-types";
 
 describe("social rules", () => {
+  it.each(["http://example.com/a", "mailto:owner@example.com", "javascript:alert(1)", "https://user:pass@example.com/a"])("rejects invalid publish/export URL %s", (url) => {
+    expect(checkVariant("linkedin", { text: "body", linkUrl: url }).errors).toContain("LinkedIn link must be HTTPS without credentials.");
+    expect(checkVariant("portfolio", { title: "Post", text: "body", imageUrl: url }).errors).toContain("Portfolio image URL must be public HTTPS.");
+  });
   it("counts code points and applies platform checks", () => {
     expect(checkVariant("linkedin", { text: "😀".repeat(3000) }).errors).toEqual([]);
     expect(checkVariant("linkedin", { text: "😀".repeat(3001) }).errors).toHaveLength(1);

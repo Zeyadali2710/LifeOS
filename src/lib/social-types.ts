@@ -15,6 +15,11 @@ export const LIMITS = {
 
 export type VariantInput = { text: string; title?: string | null; imageUrl?: string | null; linkUrl?: string | null };
 
+export function isHttpsUrl(value: string): boolean {
+  try { const url = new URL(value); return url.protocol === "https:" && !url.username && !url.password; }
+  catch { return false; }
+}
+
 export function isPublicHttpsImageUrl(value: string): boolean {
   try {
     const url = new URL(value);
@@ -35,6 +40,7 @@ export function checkVariant(platform: SocialPlatform, variant: VariantInput): {
   const mentions = variant.text.match(/(^|\s)@[\p{L}\p{N}_.]+/gu)?.length ?? 0;
   if (!variant.text.trim()) errors.push("Text is required.");
   if (platform === "linkedin") {
+    if (variant.linkUrl && !isHttpsUrl(variant.linkUrl)) errors.push("LinkedIn link must be HTTPS without credentials.");
     if (length > LIMITS.linkedin.text) errors.push("LinkedIn text exceeds 3,000 characters.");
     if (hashtags > LIMITS.linkedin.hashtagsWarning) warnings.push("More than five hashtags may reduce readability.");
   } else if (platform === "instagram") {
@@ -44,8 +50,9 @@ export function checkVariant(platform: SocialPlatform, variant: VariantInput): {
     if (!variant.imageUrl || !isPublicHttpsImageUrl(variant.imageUrl)) errors.push("A public HTTPS image URL is required.");
   } else if (platform === "tiktok") {
     if (length > LIMITS.tiktok.textWarning) warnings.push("TikTok caption exceeds 2,200 characters; review before posting manually.");
-  } else if (!variant.title?.trim()) {
-    errors.push("Portfolio title is required.");
+  } else {
+    if (!variant.title?.trim()) errors.push("Portfolio title is required.");
+    if (variant.imageUrl && !isPublicHttpsImageUrl(variant.imageUrl)) errors.push("Portfolio image URL must be public HTTPS.");
   }
   return { errors, warnings };
 }

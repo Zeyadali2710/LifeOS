@@ -18,6 +18,11 @@ const variant = { id: "variant", postId: "post", platform: "instagram", text: "<
 const panel = (patch: Partial<Variant> = {}, account: Card = card) => renderToStaticMarkup(createElement(VariantPanel, { variant: { ...variant, ...patch }, title: "Post", card: account, now, defaultDate: "2026-10-15", parentDirty: false, onDirty: () => {} }));
 
 describe("Socials owner UI rules", () => {
+  it("shows the Portfolio image error before export", () => {
+    const html = panel({ platform: "portfolio", status: "draft", imageUrl: "http://images.example.com/photo.jpg" }, { ...card, platform: "portfolio", isMock: false, capabilities: { ...card.capabilities, publish: false } });
+    expect(html).toContain("Portfolio image URL must be public HTTPS.");
+    expect(html).not.toContain("Ready to post");
+  });
   it("derives board columns from approvals and schedules before owner stage", () => {
     expect(boardColumn("idea", ["scheduled", "pending_approval"])).toBe("Review");
     expect(boardColumn("draft", ["published", "posted_manually"])).toBe("Published");

@@ -1,4 +1,4 @@
-import { isPublicHttpsImageUrl, type SocialCapabilities, type SocialMetrics, type SocialPlatform } from "@/lib/social-types";
+import { isHttpsUrl, isPublicHttpsImageUrl, type SocialCapabilities, type SocialMetrics, type SocialPlatform } from "@/lib/social-types";
 import type { SocialConnection } from "./connections";
 
 export type PublishVariant = { text: string; imageUrl?: string | null; linkUrl?: string | null; containerId?: string | null };
@@ -88,7 +88,7 @@ function linkedIn(connection: SocialConnection, f: Fetch): SocialProvider {
     capabilities: { draft: true, publish: ready, schedule: ready, analytics: false },
     ...(ready ? { async publish(variant: PublishVariant): Promise<PublishResult> {
       const link = variant.linkUrl?.trim();
-      if (link) { const url = new URL(link); if (url.protocol !== "https:") throw new SocialProviderError(); }
+      if (link && !isHttpsUrl(link)) throw new SocialProviderError();
       const commentary = escapeLittleText(variant.text) + (link ? `\n${link}` : "");
       const payload = { author: connection.login, commentary, visibility: "PUBLIC", distribution: { feedDistribution: "MAIN_FEED" }, lifecycleState: "PUBLISHED" };
       let res: Response;
