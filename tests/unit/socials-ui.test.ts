@@ -10,7 +10,7 @@ import type { Card, Variant } from "@/socials/model";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
 vi.mock("@/shell/shell-provider", () => ({ useShell: () => ({ toast: vi.fn() }) }));
-vi.mock("@/server/socials-actions", () => ({ cancelSchedule: vi.fn(), requestPublish: vi.fn(), saveVariant: vi.fn(), markPosted: vi.fn(), reschedule: vi.fn() }));
+vi.mock("@/server/socials-actions", () => ({ cancelSchedule: vi.fn(), requestPublish: vi.fn(), retryVariant: vi.fn(), saveVariant: vi.fn(), markPosted: vi.fn(), reschedule: vi.fn() }));
 
 const now = new Date("2026-10-15T00:00:00Z");
 const card = { platform: "instagram", label: "Instagram", isMock: true, capabilities: { publish: true, schedule: true, analytics: true, draft: true }, connection: null, followers: null, history: [], latest: null } satisfies Card;

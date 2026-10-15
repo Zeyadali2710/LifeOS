@@ -8,7 +8,7 @@ import { TOOLS } from "@/server/agents/tools";
 import { approvedHash, saveDraft } from "@/server/agents/tools/socials";
 import { decrypt } from "@/server/crypto";
 import { activityEvents, agentRuns, approvals, auditLog, connections, notifications, socialAccountSnapshots, socialPosts, socialVariants } from "@/server/db/schema";
-import { cancelSchedule, confirmInstagramSmoke, deletePost, requestPublish, reschedule, socialReviewFacts } from "@/server/socials-actions";
+import { cancelSchedule, confirmInstagramSmoke, deletePost, requestPublish, reschedule, retryVariant, saveVariant, socialReviewFacts } from "@/server/socials-actions";
 import { markSocialAuthError, removeSocialConnection, saveSocialToken, saveTikTokApp, saveTikTokTokens, socialConnectionStatus } from "@/server/socials/connections";
 import { getProvider } from "@/server/socials/providers";
 import { publishVariant, runScheduled } from "@/server/socials/publish";
@@ -251,6 +251,44 @@ describe("approved Social publishing", () => {
 });
 
 describe("connection, retry and analytics contracts", () => {
+  it("publishes newly approved Instagram content through a fresh container after a terminal attempt", async () => {
+    const created: URLSearchParams[] = []; const published: string[] = [];
+    const f = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      if (url.includes("fields=user_id,username")) return json({ user_id: "owner" });
+      if (url.endsWith("/media") && init?.method === "POST") { created.push(new URLSearchParams(String(init.body))); return json({ id: `container-${created.length}` }); }
+      if (url.includes("fields=status_code")) return json({ status_code: url.includes("container-1?") ? "ERROR" : "FINISHED" });
+      if (url.endsWith("/media_publish")) { published.push(String(init?.body)); return json({ id: "new-remote" }); }
+      throw new Error("Unexpected fake request");
+    }) as typeof fetch;
+    vi.stubGlobal("fetch", f);
+    await connect("instagram", f);
+    expect(await confirmInstagramSmoke((await socialConnectionStatus(h())).instagram!.credentialGeneration!)).toEqual({ ok: true });
+    const v = await variant("instagram", "Old caption"); const first = await pending(v.id); await approve(first);
+    await publishVariant(v.id, first, h());
+    await publishVariant(v.id, first, h(), new Date(Date.now() + 3 * 60_000));
+    expect(await variantRow(v.id)).toMatchObject({ status: "failed", containerId: "container-1" });
+    expect(await saveVariant({ id: v.id, text: "New draft", imageUrl: image })).toMatchObject({ ok: true });
+    expect(await variantRow(v.id)).toMatchObject({ containerId: null, remoteId: null, approvalId: null });
+    const second = await pending(v.id);
+    const original = (await approvalRow(second)).originalPayload as Record<string, unknown>;
+    await approve(second, { ...original, text: "New approved caption", imageUrl: "https://images.example.com/new.jpg" });
+    await publishVariant(v.id, second, h());
+    await publishVariant(v.id, second, h(), new Date(Date.now() + 3 * 60_000));
+    expect(created.map((body) => [body.get("caption"), body.get("image_url")])).toEqual([["Old caption", image], ["New approved caption", "https://images.example.com/new.jpg"]]);
+    expect(published).toEqual(["creation_id=container-2"]);
+    expect(await variantRow(v.id)).toMatchObject({ status: "published", remoteId: "new-remote" });
+  });
+
+  it("reconciles a stored remote ID without creating a new approval", async () => {
+    const v = await variant("instagram"); const id = await pending(v.id); await approve(id);
+    await h().update(socialVariants).set({ status: "failed", remoteId: "old-remote" }).where(eq(socialVariants.id, v.id));
+    const failed = await variantRow(v.id);
+    expect(await saveVariant({ id: v.id, text: "Different content", imageUrl: image })).toEqual({ ok: false, error: "not_allowed" });
+    expect(await retryVariant(v.id, failed.updatedAt.toISOString(), false)).toEqual({ ok: true, published: true });
+    expect(await variantRow(v.id)).toMatchObject({ status: "published", approvalId: id, remoteId: "old-remote", text: v.text });
+    expect(await requestPublish(v.id)).toEqual({ ok: false, error: "not_allowed" });
+  });
   it("starts account B history fresh while preserving a token replacement for account A", async () => {
     const tokens = { accessToken: "access", refreshToken: "refresh", openId: "A", scopes: ["user.info.basic", "user.info.stats"], expiresAt: new Date("2030-01-01"), refreshExpiresAt: new Date("2031-01-01") };
     await saveTikTokTokens(h(), tokens);

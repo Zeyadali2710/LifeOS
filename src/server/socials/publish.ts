@@ -8,7 +8,8 @@ import { emitActivity, notifyLive } from "../events";
 import { log } from "../log";
 import { enqueue, QUEUES, type Enqueue } from "../queue";
 import { markSocialAuthError } from "./connections";
-import { ProviderAuthError, UncertainPublishError, type PublishResult, type SocialProvider } from "./providers";
+import { ProviderAuthError, TerminalContainerError, UncertainPublishError, type PublishResult, type SocialProvider } from "./providers";
+import { TERMINAL_CONTAINER_ERROR } from "./drafts";
 
 type Variant = typeof socialVariants.$inferSelect;
 type Bound = Pick<SocialProvider, "platform" | "isMock" | "credentialGeneration" | "capabilities">;
@@ -109,7 +110,8 @@ export async function publishVariant(variantId: string, approvalId: string, h: D
     if (published) await emitActivity({ type: "social.published", source: "social", title: `${provider.label} post published`, tone: "green", payload: { variantId } },
       { category: "FYI", title: `${provider.label} post published`, actionUrl: "/socials" }, h);
   } catch (err) {
-    if (err instanceof ProviderAuthError) await fail(h, v, "RECONNECT", true);
+    if (err instanceof TerminalContainerError) await fail(h, v, TERMINAL_CONTAINER_ERROR);
+    else if (err instanceof ProviderAuthError) await fail(h, v, "RECONNECT", true);
     else if (err instanceof UncertainPublishError) await fail(h, v, v.platform === "linkedin" ? LINKEDIN_REVIEW : INSTAGRAM_REVIEW);
     else {
       log.warn({ variantId, error: err instanceof Error ? err.name : "unknown" }, "social publish failed");

@@ -17,6 +17,7 @@ export interface SocialProvider {
 
 export class ProviderAuthError extends Error { constructor() { super("RECONNECT"); } }
 export class SocialProviderError extends Error { constructor() { super("The social service is unavailable."); } }
+export class TerminalContainerError extends SocialProviderError {}
 export class UncertainPublishError extends Error { constructor() { super("Publication may have succeeded. Check the platform before retrying."); } }
 type Fetch = typeof fetch;
 type Deps = { fetch?: Fetch };
@@ -116,6 +117,7 @@ function instagram(connection: SocialConnection, f: Fetch): SocialProvider {
   async function findPublished(variant: PublishVariant): Promise<PublishResult | null> {
     if (!variant.containerId) return null;
     const status = await containerStatus(variant.containerId);
+    if (status === "ERROR" || status === "EXPIRED") throw new TerminalContainerError();
     if (status !== "PUBLISHED") return null;
     let after: string | undefined;
     let match: string | null = null;
@@ -169,6 +171,7 @@ function instagram(connection: SocialConnection, f: Fetch): SocialProvider {
           throw new UncertainPublishError();
         }
         if (status === "IN_PROGRESS" || status === "PENDING") return { state: "container_pending", containerId };
+        if (status === "ERROR" || status === "EXPIRED") throw new TerminalContainerError();
         if (status !== "FINISHED") throw new SocialProviderError();
         let res: Response;
         try {

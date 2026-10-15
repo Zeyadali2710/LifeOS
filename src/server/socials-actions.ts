@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { PLATFORMS, checkVariant } from "@/lib/social-types";
 import { socialPublishPayload } from "@/lib/approval-kinds";
@@ -14,6 +14,8 @@ import { cancelSocialJob, enqueue, QUEUES, rescheduleSocialJob } from "./queue";
 import { requireOwner } from "./session";
 import { removeSocialConnection, saveSocialToken, saveTikTokApp, verifyInstagramConnection } from "./socials/connections";
 import { buildStarter } from "./socials/queries";
+import { canRedraftVariant, clearedPublication } from "./socials/drafts";
+import { TerminalContainerError, type PublishResult } from "./socials/providers";
 import { notifyLive } from "./events";
 
 export async function socialReviewFacts(id: string) {
@@ -108,13 +110,53 @@ export async function saveVariant(raw: unknown) {
   const p = variantInput.safeParse(raw);
   if (!p.success) return invalid;
   return run(async () => {
+    const [v] = await db().select().from(socialVariants).where(eq(socialVariants.id, p.data.id));
+    if (!v || !["draft", "failed"].includes(v.status) || !canRedraftVariant(v)) return denied;
     const [row] = await db().update(socialVariants).set({ text: p.data.text, imageUrl: p.data.imageUrl ?? null, linkUrl: p.data.linkUrl ?? null,
-      status: "draft", approvalId: null, scheduledAt: null, approvedTextHash: null, approvedProviderMode: null, approvedConnectionGeneration: null, updatedAt: new Date() })
-      .where(and(eq(socialVariants.id, p.data.id), inArray(socialVariants.status, ["draft", "failed"]))).returning({ id: socialVariants.id });
+      ...clearedPublication, status: "draft", updatedAt: new Date() })
+      .where(and(eq(socialVariants.id, p.data.id), eq(socialVariants.status, v.status), sql`${socialVariants.approvalId} is not distinct from ${v.approvalId}`,
+        sql`date_trunc('milliseconds', ${socialVariants.updatedAt}) = ${v.updatedAt}`)).returning({ id: socialVariants.id });
     if (!row) return denied;
     await aud("social.variant.save", row.id);
-    const [variant] = await db().select({ platform: socialVariants.platform }).from(socialVariants).where(eq(socialVariants.id, row.id));
-    return { ok: true, checks: checkVariant(variant!.platform as typeof PLATFORMS[number], p.data) } as const;
+    return { ok: true, checks: checkVariant(v.platform as typeof PLATFORMS[number], p.data) } as const;
+  });
+}
+
+export async function retryVariant(id: string, expectedUpdatedAt: string, acknowledgeNoPost: boolean) {
+  await requireOwner();
+  if (!z.object({ id: uuid, expectedUpdatedAt: z.iso.datetime(), acknowledgeNoPost: z.boolean() }).safeParse({ id, expectedUpdatedAt, acknowledgeNoPost }).success) return invalid;
+  return run(async () => {
+    const h = db();
+    const [v] = await h.select().from(socialVariants).where(eq(socialVariants.id, id));
+    if (!v || v.status !== "failed" || v.updatedAt.toISOString() !== expectedUpdatedAt) return denied;
+    let published: Extract<PublishResult, { state: "published" }> | null = v.remoteId ? { state: "published", remoteId: v.remoteId, remoteUrl: v.remoteUrl ?? undefined } : null;
+    let resolved = canRedraftVariant(v);
+    if (!published && v.platform === "instagram" && v.containerId) {
+      const { provider, providerMode, connectionGeneration } = await currentBinding(h, "instagram");
+      if (providerMode === v.approvedProviderMode && connectionGeneration === v.approvedConnectionGeneration && provider.findPublished) {
+        try { const found = await provider.findPublished(v); published = found?.state === "published" ? found : null; }
+        catch (err) { if (err instanceof TerminalContainerError) resolved = true; }
+      }
+    }
+    if (!published && !resolved && !acknowledgeNoPost) return denied;
+    const reconciled = published;
+    const won = await h.transaction(async (tx) => {
+      const [row] = await tx.update(socialVariants).set(reconciled
+        ? { status: "published", remoteId: reconciled.remoteId, remoteUrl: reconciled.remoteUrl ?? v.remoteUrl,
+          publishedAt: v.publishedAt ?? new Date(), isMock: v.approvedProviderMode === "mock", lastError: null, updatedAt: new Date() }
+        : { ...clearedPublication, status: "draft", updatedAt: new Date() })
+        .where(and(eq(socialVariants.id, id), eq(socialVariants.status, "failed"), sql`${socialVariants.approvalId} is not distinct from ${v.approvalId}`,
+          sql`date_trunc('milliseconds', ${socialVariants.updatedAt}) = ${v.updatedAt}`)).returning({ id: socialVariants.id });
+      if (row) {
+        await tx.insert(auditLog).values({ actor: "owner", action: "social.variant.retry_review", target: id, metadata: {
+          previousApprovalId: v.approvalId, previousContainerId: v.containerId, previousRemoteId: v.remoteId,
+          previousConnectionGeneration: v.approvedConnectionGeneration, acknowledgeNoPost, reconciled: !!reconciled } });
+        await notifyLive(tx, "socials", id);
+      }
+      return row;
+    });
+    if (!won) return denied;
+    return { ok: true, published: !!published } as const;
   });
 }
 
@@ -175,9 +217,10 @@ export async function cancelSchedule(id: string) {
   return run(async () => {
     const row = await db().transaction(async (tx) => {
       const [current] = await tx.select({ approvalId: socialVariants.approvalId }).from(socialVariants).where(and(eq(socialVariants.id, id), eq(socialVariants.status, "scheduled")));
-      if (!current) return null;
+      if (!current?.approvalId) return null;
+      await tx.select({ id: approvals.id }).from(approvals).where(eq(approvals.id, current.approvalId)).for("update");
       const [won] = await tx.update(socialVariants).set({ status: "draft", scheduledAt: null, approvalId: null, approvedTextHash: null, approvedProviderMode: null, approvedConnectionGeneration: null, updatedAt: new Date() })
-        .where(and(eq(socialVariants.id, id), eq(socialVariants.status, "scheduled"))).returning({ id: socialVariants.id });
+        .where(and(eq(socialVariants.id, id), eq(socialVariants.status, "scheduled"), eq(socialVariants.approvalId, current.approvalId))).returning({ id: socialVariants.id });
       if (!won) return null;
       if (current.approvalId) await tx.update(approvals).set({ status: "cancelled" }).where(eq(approvals.id, current.approvalId));
       return won;
@@ -239,7 +282,7 @@ export async function requestPublish(variantId: string, publishAt?: string | nul
   return run(async () => {
     const h = db();
     const [v] = await h.select().from(socialVariants).where(eq(socialVariants.id, variantId));
-    if (!v || v.status !== "draft" || !["linkedin", "instagram"].includes(v.platform)) return denied;
+    if (!v || v.status !== "draft" || !canRedraftVariant(v) || !["linkedin", "instagram"].includes(v.platform)) return denied;
     const target = v.platform as "linkedin" | "instagram";
     if (checkVariant(target, v).errors.length) return invalid;
     const { provider } = await currentBinding(h, target);

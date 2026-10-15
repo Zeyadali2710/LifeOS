@@ -5,11 +5,54 @@ const state = vi.hoisted(() => ({ handle: null as unknown, logError: vi.fn() }))
 vi.mock("@/server/session", () => ({ requireOwner: async () => ({ user: { id: "owner" } }) }));
 vi.mock("@/server/db/client", () => ({ db: () => state.handle }));
 vi.mock("@/server/log", () => ({ log: { error: state.logError } }));
+vi.mock("@/server/events", () => ({ notifyLive: vi.fn() }));
 
-import { confirmInstagramSmoke, markPosted, socialReviewFacts } from "@/server/socials-actions";
+import { confirmInstagramSmoke, markPosted, retryVariant, saveVariant, socialReviewFacts } from "@/server/socials-actions";
+import { TERMINAL_CONTAINER_ERROR } from "@/server/socials/drafts";
 
 describe("social owner action guards", () => {
   const id = "11111111-1111-4111-8111-111111111111";
+
+  it("clears every resolved prior publication field on an owner redraft", async () => {
+    const v = { id, platform: "instagram", status: "failed", remoteId: null, containerId: "old", approvedTextHash: "hash", approvalId: id, lastError: TERMINAL_CONTAINER_ERROR, updatedAt: new Date() };
+    let changed: Record<string, unknown> = {};
+    state.handle = {
+      select: () => ({ from: () => ({ where: async () => [v] }) }),
+      update: () => ({ set: (value: Record<string, unknown>) => { changed = value; return { where: () => ({ returning: async () => [{ id }] }) }; } }),
+      insert: () => ({ values: async () => undefined }),
+      transaction: async (fn: (handle: unknown) => unknown) => fn(state.handle),
+    };
+    expect(await saveVariant({ id, text: "New caption", imageUrl: "https://example.com/new.jpg" })).toMatchObject({ ok: true });
+    expect(changed).toMatchObject({ text: "New caption", containerId: null, remoteId: null, remoteUrl: null, publishedAt: null, metrics: null, isMock: false, approvalId: null });
+  });
+
+  it.each([false, true])("requires explicit owner acknowledgement before discarding an uncertain attempt (%s)", async (acknowledged) => {
+    const updatedAt = new Date();
+    let changed: Record<string, unknown> | null = null;
+    state.handle = {
+      select: () => ({ from: () => ({ where: async () => [{ id, platform: "linkedin", status: "failed", remoteId: null, containerId: null, approvedTextHash: "hash", approvalId: id, lastError: "may have posted", updatedAt }] }) }),
+      update: () => ({ set: (value: Record<string, unknown>) => { changed = value; return { where: () => ({ returning: async () => [{ id }] }) }; } }),
+      insert: () => ({ values: async () => undefined }),
+      transaction: async (fn: (handle: unknown) => unknown) => fn(state.handle),
+    };
+    const result = await retryVariant(id, updatedAt.toISOString(), acknowledged);
+    expect(result.ok).toBe(acknowledged);
+    if (acknowledged) expect(changed).toMatchObject({ status: "draft", approvedTextHash: null });
+    else expect(changed).toBeNull();
+  });
+
+  it("reconciles a stored remote ID as published without redrafting it", async () => {
+    const updatedAt = new Date(); let changed: Record<string, unknown> = {};
+    state.handle = {
+      select: () => ({ from: () => ({ where: async () => [{ id, platform: "instagram", status: "failed", remoteId: "published-old", containerId: "container-old", approvalId: id, approvedProviderMode: "real", updatedAt }] }) }),
+      update: () => ({ set: (value: Record<string, unknown>) => { changed = value; return { where: () => ({ returning: async () => [{ id }] }) }; } }),
+      insert: () => ({ values: async () => undefined }),
+      transaction: async (fn: (handle: unknown) => unknown) => fn(state.handle),
+    };
+    expect(await retryVariant(id, updatedAt.toISOString(), false)).toEqual({ ok: true, published: true });
+    expect(changed).toMatchObject({ status: "published", remoteId: "published-old" });
+    expect(changed).not.toHaveProperty("text"); expect(changed).not.toHaveProperty("containerId");
+  });
 
   it("rejects a stale Instagram attestation atomically without auditing success", async () => {
     let predicate: { sql: string; params: unknown[] } | undefined;

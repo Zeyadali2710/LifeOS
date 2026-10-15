@@ -3,10 +3,28 @@ import { PgDialect } from "drizzle-orm/pg-core";
 import { saveDraft as tool } from "@/server/agents/tools/socials";
 import { socialPosts, socialVariants, toolCalls } from "@/server/db/schema";
 import type { DB } from "@/server/db/client";
+import { TERMINAL_CONTAINER_ERROR } from "@/server/socials/drafts";
 vi.mock("@/server/events", () => ({ notifyLive: vi.fn() }));
 
 const id = "11111111-1111-4111-8111-111111111111";
 describe("agent source provenance", () => {
+  it.each([false, true])("redrafts only resolved failed containers (resolved=%s)", async (resolved) => {
+    let changed: Record<string, unknown> | null = null;
+    const existing = { id, status: "failed", remoteId: null, containerId: "old", approvedTextHash: "hash", approvalId: id, lastError: resolved ? TERMINAL_CONTAINER_ERROR : "may have posted", updatedAt: new Date() };
+    const tx = {
+      select: () => ({ from: (table: unknown) => ({ where: () => table === toolCalls ? { limit: async () => [] } : table === socialPosts ? { for: async () => [{ id }] } : Promise.resolve([existing]) }) }),
+      update: (table: unknown) => ({ set: (value: Record<string, unknown>) => ({ where: () => {
+        if (table !== socialVariants) return Promise.resolve();
+        changed = value; return { returning: async () => [{ id }] };
+      } }) }),
+    };
+    const h = { transaction: async (fn: (tx: unknown) => unknown) => fn(tx) } as unknown as DB;
+    const saving = tool.handler(tool.input.parse({ postId: id, title: "Post", body: "Body", variants: [{ platform: "instagram", text: "New caption", imageUrl: "https://example.com/new.jpg" }] }), { handle: h, runId: id, agentId: "social", toolUseId: "save", now: () => new Date() });
+    if (resolved) {
+      await saving;
+      expect(changed).toMatchObject({ containerId: null, remoteId: null, approvedTextHash: null, approvalId: null, text: "New caption" });
+    } else { await expect(saving).rejects.toThrow("owner must reconcile"); expect(changed).toBeNull(); }
+  });
   it("rejects a lost variant update race so the surrounding transaction rolls back", async () => {
     let predicate: { sql: string; params: unknown[] } | undefined;
     const stamp = new Date("2026-10-15T00:00:00Z");

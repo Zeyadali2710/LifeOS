@@ -9,6 +9,7 @@ import { notifyLive } from "../../events";
 import { enqueue, QUEUES } from "../../queue";
 import { socialConnection } from "../../socials/connections";
 import { getProvider } from "../../socials/providers";
+import { canRedraftVariant, clearedPublication } from "../../socials/drafts";
 import { buildStarter, getPost, listBoard } from "../../socials/queries";
 import { CONTENT_TOOLS, contentScope } from "../policy";
 import { ToolError, type Tool } from "../types";
@@ -33,6 +34,7 @@ export function approvedHash(input: Pick<BoundPublish, "platform" | "text" | "im
 export async function prepareApprovedSocial(h: DB, approvalId: string, input: BoundPublish, now: Date): Promise<boolean> {
   const [variant] = await h.select().from(socialVariants).where(eq(socialVariants.id, input.variantId));
   if (!variant || variant.platform !== input.platform || variant.status !== "pending_approval" || variant.approvalId !== approvalId) return false;
+  if (variant.remoteId || variant.containerId) return false;
   const { provider, providerMode, connectionGeneration } = await currentBinding(h, input.platform);
   if (!provider.capabilities.publish || providerMode !== input.providerMode || connectionGeneration !== input.connectionGeneration) return false;
   if (checkVariant(input.platform, input).errors.length) return false;
@@ -85,11 +87,11 @@ export const saveDraft: Tool<z.infer<typeof draftInput>, Record<string, unknown>
       for (const v of i.variants) {
         const [existing] = await tx.select().from(socialVariants).where(and(eq(socialVariants.postId, postId!), eq(socialVariants.platform, v.platform)));
         if (existing && !["draft", "failed"].includes(existing.status)) throw new ToolError("not_allowed", "Cancel the schedule or finish review before editing this variant.");
+        if (existing && !canRedraftVariant(existing)) throw new ToolError("not_allowed", "The owner must reconcile the previous publish attempt before retrying.");
         const content = { text: v.text, imageUrl: v.imageUrl ?? null, linkUrl: v.linkUrl ?? null };
         if (existing) {
-          const [won] = await tx.update(socialVariants).set({ ...content, status: "draft", approvalId: null, scheduledAt: null,
-            approvedTextHash: null, approvedProviderMode: null, approvedConnectionGeneration: null, updatedAt: ctx.now() })
-            .where(and(eq(socialVariants.id, existing.id), eq(socialVariants.status, existing.status), eq(socialVariants.updatedAt, existing.updatedAt),
+          const [won] = await tx.update(socialVariants).set({ ...content, ...clearedPublication, status: "draft", updatedAt: ctx.now() })
+            .where(and(eq(socialVariants.id, existing.id), eq(socialVariants.status, existing.status), sql`date_trunc('milliseconds', ${socialVariants.updatedAt}) = ${existing.updatedAt}`,
               sql`${socialVariants.approvalId} is not distinct from ${existing.approvalId}`)).returning({ id: socialVariants.id });
           if (!won) throw new ToolError("not_allowed", "This variant changed. Reload before editing.");
         } else await tx.insert(socialVariants).values({ postId: postId!, platform: v.platform, ...content });
@@ -108,6 +110,7 @@ export const publish: Tool<PublishInput, Record<string, unknown>> = {
   async resolve(i, ctx) {
     const [v] = await ctx.handle.select().from(socialVariants).where(eq(socialVariants.id, i.variantId));
     if (!v || v.platform !== i.platform || v.status !== "draft") throw new ToolError("not_allowed", "This variant is not a draft.");
+    if (!canRedraftVariant(v)) throw new ToolError("not_allowed", "The owner must reconcile the previous publish attempt before retrying.");
     if (checkVariant(i.platform, i).errors.length) throw new ToolError("invalid_input", "Fix the variant format before publishing.");
     const { provider, providerMode, connectionGeneration } = await currentBinding(ctx.handle, i.platform);
     if (!provider.capabilities.publish) throw new ToolError("not_allowed", "Publishing is unavailable for this connection.");
