@@ -4,6 +4,8 @@ import { describe, expect, it, vi } from "vitest";
 import { boardColumn } from "@/lib/social-types";
 import { canPublish, editableVariant, safePostUrl, calendarDays, dayKey, scheduleInstant, followerTotal, metricValue } from "@/socials/model";
 import { VariantPanel } from "@/socials/variant-panel";
+import { PostsTable } from "@/socials/posts-table";
+import { FollowersChart } from "@/socials/followers-chart";
 import type { Card, Variant } from "@/socials/model";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
@@ -64,5 +66,14 @@ describe("Socials owner UI rules", () => {
     expect(html).not.toContain("Publish now");
     expect(html).not.toContain(">Schedule<");
     expect(html).toContain("unavailable until the owner verifies");
+  });
+  it("renders only returned metric columns while preserving zero and missing cells", () => {
+    const html = renderToStaticMarkup(createElement(PostsTable, { variants: [{ ...variant, status: "published", metrics: { views: 0 } }, { ...variant, id: "other", metrics: null, isMock: true }], posts: [], onOpen: () => {} }));
+    expect(html).toContain(">views</th>");
+    expect(html).not.toContain(">reach</th>");
+    expect(html).toContain(">0</td>");
+    expect(html).toContain("not provided");
+    expect(html).toContain(">MOCK<");
+    expect(renderToStaticMarkup(createElement(FollowersChart, { cards: [card] }))).toContain("No follower history yet");
   });
 });

@@ -13,6 +13,8 @@ import { PlatformCard } from "./platform-card";
 import { ContentBoard } from "./content-board";
 import { PostSheet } from "./post-sheet";
 import { NewPostDialog } from "./new-post-dialog";
+import { ContentCalendar } from "./content-calendar";
+import { AnalyticsView } from "./analytics-view";
 import { dayKey } from "./model";
 
 export type SocialsData = {
@@ -78,8 +80,8 @@ export function SocialsView({ data }: { data: SocialsData | null }) {
       </div>
       {!data ? <div role="alert" className="glass-card flex flex-col items-start gap-3 rounded-24 p-5 text-[13.5px] text-text-2">Couldn&apos;t load Socials.<Button variant="secondary" size="sm" onClick={() => router.refresh()}>Try again</Button></div> : <div role="tabpanel" id={`socials-panel-${view}`} aria-labelledby={`socials-tab-${view}`}>
         {view === "overview" && <><div className="grid grid-cols-1 gap-3 tab:grid-cols-2 min-[1100px]:grid-cols-4">{data.cards.map((card) => <PlatformCard key={card.platform} card={card} posts={data.board} now={data.now} />)}</div><ContentBoard posts={data.board} onOpen={(id) => navigate({ post: id })} onNew={(agent) => navigate({ new: "1", stage: "idea", mode: agent ? "agent" : null, post: null })} /></>}
-        {view === "calendar" && <p className="text-[13.5px] text-text-3">Calendar view is being prepared.</p>}
-        {view === "analytics" && <p className="text-[13.5px] text-text-3">Analytics view is being prepared.</p>}
+        {view === "calendar" && <ContentCalendar data={data} onOpen={(id) => navigate({ post: id })} onNew={(day) => navigate({ new: "1", stage: "draft", date: day, mode: null, post: null })} />}
+        {view === "analytics" && <AnalyticsView data={data} onOpen={(id) => navigate({ post: id })} />}
         {data.post && <PostSheet key={data.post.id} post={data.post} cards={data.cards} now={data.now} defaultDate={defaultDate} onClose={() => navigate({ post: null })} />}
         {sp.get("new") === "1" && <NewPostDialog sources={data.sources} cards={data.cards} stage={sp.get("stage") === "idea" ? "idea" : "draft"} agent={sp.get("mode") === "agent"} defaultDate={defaultDate} source={sp.get("source")} sourceId={sp.get("sourceId")} onClose={() => navigate({ new: null, stage: null, mode: null, source: null, sourceId: null })} onCreated={(id, date) => navigate({ new: null, stage: null, mode: null, source: null, sourceId: null, post: id, date })} />}
       </div>}

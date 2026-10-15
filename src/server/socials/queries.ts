@@ -21,7 +21,7 @@ export async function getPost(h: DB, id: string) {
 }
 
 export async function calendarItems(h: DB, from: Date, to: Date) {
-  const rows = await h.select().from(socialVariants).where(and(inArray(socialVariants.status, ["scheduled", "published", "posted_manually"]),
+  const rows = await h.select().from(socialVariants).where(and(inArray(socialVariants.status, ["scheduled", "publishing", "published", "posted_manually"]),
     or(and(gte(socialVariants.scheduledAt, from), lt(socialVariants.scheduledAt, to)), and(gte(socialVariants.publishedAt, from), lt(socialVariants.publishedAt, to)))));
   return rows.filter((v) => {
     const at = v.publishedAt ?? v.scheduledAt;
