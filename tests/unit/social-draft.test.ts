@@ -8,6 +8,21 @@ vi.mock("@/server/events", () => ({ notifyLive: vi.fn() }));
 const id = "11111111-1111-4111-8111-111111111111";
 const tool = socialTools["socials.save_draft"]!;
 describe("agent source provenance", () => {
+  it("rejects a lost variant update race so the surrounding transaction rolls back", async () => {
+    let predicate: { sql: string; params: unknown[] } | undefined;
+    const stamp = new Date("2026-10-15T00:00:00Z");
+    const tx = {
+      select: () => ({ from: (table: unknown) => ({ where: () => table === toolCalls ? { limit: async () => [] } : Promise.resolve(table === socialPosts ? [{ id }] : [{ id, status: "draft", approvalId: null, updatedAt: stamp }]) }) }),
+      update: (table: unknown) => ({ set: () => ({ where: (condition: Parameters<PgDialect["sqlToQuery"]>[0]) => {
+        if (table === socialVariants) predicate = new PgDialect({ casing: "snake_case" }).sqlToQuery(condition);
+        return table === socialVariants ? { returning: async () => [] } : Promise.resolve();
+      } }) }),
+    };
+    const h = { transaction: async (fn: (tx: unknown) => unknown) => fn(tx) } as unknown as DB;
+    await expect(tool.handler(tool.input.parse({ postId: id, title: "Post", body: "Body", variants: [{ platform: "linkedin", text: "Changed" }] }), { handle: h, runId: id, agentId: "social", toolUseId: "save", now: () => stamp })).rejects.toThrow("changed");
+    expect(predicate!.sql).toContain('"status"'); expect(predicate!.sql).toContain('"updated_at"');
+    expect(predicate!.sql).toContain("is not distinct from"); expect(predicate!.params).toContain("draft");
+  });
   it.each([false, true])("derives new draft taint from recorded content reads (%s)", async (read) => {
     let saved: Record<string, unknown> = {};
     const tx = {
