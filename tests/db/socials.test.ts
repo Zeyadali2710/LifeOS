@@ -10,7 +10,7 @@ import { activityEvents, agentRuns, approvals, auditLog, connections, notificati
 import { cancelSchedule, confirmInstagramSmoke, requestPublish, reschedule, socialReviewFacts } from "@/server/socials-actions";
 import { markSocialAuthError, removeSocialConnection, saveSocialToken, saveTikTokApp, saveTikTokTokens, socialConnectionStatus } from "@/server/socials/connections";
 import { getProvider } from "@/server/socials/providers";
-import { publishVariant } from "@/server/socials/publish";
+import { publishVariant, runScheduled } from "@/server/socials/publish";
 import { syncSocials } from "@/server/socials/sync";
 import { setupTestDb } from "./helpers";
 
@@ -57,6 +57,17 @@ beforeEach(async () => {
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
 describe("approved Social publishing", () => {
+  it.each([new Error("queue unavailable"), new DOMException("timed out", "TimeoutError")])("recovers durable approved enqueue failure: %s", async (failure) => {
+    const v = await variant("linkedin");
+    const id = await pending(v.id);
+    await approve(id);
+    enqueue.mockRejectedValueOnce(failure);
+    expect(await executeApproved(h(), id)).toMatchObject({ status: "executed" });
+    expect((await approvalRow(id)).status).toBe("executed");
+    expect(await runScheduled(h(), new Date(Date.now() + 1000))).toBe(1);
+    await publishVariant(v.id, id, h(), new Date(Date.now() + 1000));
+    expect(await variantRow(v.id)).toMatchObject({ status: "published", isMock: true });
+  });
   it.each([false, true])("actual cancelRun releases only its pending/unclaimed social variant (approved=%s)", async (approved) => {
     const v = await variant("linkedin");
     const id = await pending(v.id);

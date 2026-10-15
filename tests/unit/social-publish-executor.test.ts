@@ -38,6 +38,7 @@ describe("social publish guard", () => {
     expect(inspectPublish(variant, approval, { ...provider, credentialGeneration: "new" }, now)).toBe("fail");
     expect(inspectPublish(variant, approval, { ...provider, capabilities: { ...provider.capabilities, publish: false } }, now)).toBe("fail");
     expect(inspectPublish({ ...variant, approvalId: "other" }, approval, provider, now)).toBe("noop");
+    for (const status of ["failed", "rejected", "cancelled", "expired"]) expect(inspectPublish(variant, { ...approval, status }, provider, now)).toBe("noop");
   });
 
   it("no-ops early jobs and duplicate completion; reviews ambiguous real retries", () => {
