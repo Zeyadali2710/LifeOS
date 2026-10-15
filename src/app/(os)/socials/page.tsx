@@ -2,7 +2,7 @@ import { SocialsView, type SocialsData } from "@/socials/socials-view";
 import { db } from "@/server/db/client";
 import { requireOwner } from "@/server/session";
 import { analytics, calendarItems, getPost, listBoard, listSources, platformCards } from "@/server/socials/queries";
-import { sydneyInstant, sydneyParts } from "@/server/time";
+import { calendarRange, dayKey } from "@/socials/model";
 
 export const metadata = { title: "Socials · LifeOS" };
 export const dynamic = "force-dynamic";
@@ -14,15 +14,8 @@ export default async function SocialsPage({ searchParams }: { searchParams: Prom
   let data: SocialsData | null = null;
   try {
     const h = db();
-    const p = sydneyParts(now);
-    const anchor = typeof sp.d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.d) && Number.isFinite(Date.parse(sp.d)) ? sp.d.split("-").map(Number) : [p.year, p.month, p.day];
-    const [year, month, day] = anchor as [number, number, number];
-    const first = new Date(Date.UTC(year, month - 1, sp.cal === "week" ? day : 1));
-    if (sp.cal === "week") first.setUTCDate(first.getUTCDate() - (first.getUTCDay() + 6) % 7);
-    const from = sydneyInstant(first.getUTCFullYear(), first.getUTCMonth() + 1, first.getUTCDate(), 0);
-    const end = new Date(first);
-    if (sp.cal === "week") end.setUTCDate(end.getUTCDate() + 7); else end.setUTCMonth(end.getUTCMonth() + 1);
-    const to = sydneyInstant(end.getUTCFullYear(), end.getUTCMonth() + 1, end.getUTCDate(), 0);
+    const anchor = typeof sp.d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.d) && Number.isFinite(Date.parse(sp.d)) ? sp.d : dayKey(now);
+    const { from, to } = calendarRange(anchor, sp.cal === "week" ? "week" : "month");
     const wantPost = typeof sp.post === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sp.post) ? sp.post : null;
     const [cards, board, post, sources, calendar, stats] = await Promise.all([
       platformCards(h), listBoard(h), wantPost ? getPost(h, wantPost) : null,

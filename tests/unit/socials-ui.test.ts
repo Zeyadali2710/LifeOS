@@ -2,7 +2,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { boardColumn } from "@/lib/social-types";
-import { canPublish, editableVariant, safePostUrl, calendarDays, dayKey, scheduleInstant, followerTotal, metricValue } from "@/socials/model";
+import { canPublish, editableVariant, safePostUrl, calendarDays, calendarRange, dayKey, scheduleInstant, followerTotal, metricValue } from "@/socials/model";
 import { VariantPanel } from "@/socials/variant-panel";
 import { PostsTable } from "@/socials/posts-table";
 import { FollowersChart } from "@/socials/followers-chart";
@@ -41,6 +41,13 @@ describe("Socials owner UI rules", () => {
     expect(dayKey(new Date("2026-10-14T14:00:00Z"))).toBe("2026-10-15");
     expect(calendarDays("2026-10-15", "week")).toEqual(["2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15", "2026-10-16", "2026-10-17", "2026-10-18"]);
     expect(calendarDays("2026-10-15", "month")).toHaveLength(35);
+    const { from, to } = calendarRange("2026-10-15", "month");
+    expect(dayKey(from)).toBe("2026-09-28");
+    expect(dayKey(to)).toBe("2026-11-02");
+    for (const day of ["2026-09-28", "2026-11-01"]) {
+      const post = scheduleInstant(day, "23:59")!;
+      expect(post >= from && post < to).toBe(true);
+    }
     expect(scheduleInstant("2026-10-15", "10:00")?.toISOString()).toBe("2026-10-14T23:00:00.000Z");
     expect(scheduleInstant("2026-10-04", "02:30")).toBeNull();
     expect(scheduleInstant("2026-02-30", "10:00")).toBeNull();

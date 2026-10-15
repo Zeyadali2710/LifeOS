@@ -33,6 +33,10 @@ export function calendarDays(anchor: string, mode: "week" | "month") {
   d.setUTCDate(d.getUTCDate() - pad);
   return Array.from({ length: count }, (_, i) => shiftDay(d.toISOString().slice(0, 10), i));
 }
+export function calendarRange(anchor: string, mode: "week" | "month") {
+  const days = calendarDays(anchor, mode);
+  return { from: scheduleInstant(days[0]!, "00:00")!, to: scheduleInstant(shiftDay(days.at(-1)!, 1), "00:00")! };
+}
 export function scheduleInstant(day: string, time: string): Date | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || !/^\d{2}:\d{2}$/.test(time)) return null;
   const [y, m, d] = day.split("-").map(Number) as [number, number, number];
