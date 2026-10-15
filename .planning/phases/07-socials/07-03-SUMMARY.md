@@ -31,7 +31,7 @@ Approved LinkedIn and Instagram variants now pass a persisted payload and creden
 - `ff9c136` Task 1 GREEN: bound publish execution, idempotent retry handling and startup sweep.
 - `2fd45ff` Task 2 RED: failing TikTok OAuth and token rotation tests.
 - `6404d09` Task 2 GREEN: TikTok OAuth, analytics sync, refresh and worker scheduling.
-- `7c0007c` safety follow-up: scan all returned Instagram media pages before adopting a caption match.
+- `1748da0` safety follow-up: scan all returned Instagram media pages before adopting a caption match.
 
 ## Verification
 
@@ -50,7 +50,7 @@ Approved LinkedIn and Instagram variants now pass a persisted payload and creden
 
 1. **[Rule 2 - Safety] Bind queue jobs to their approval.** The existing enqueue and reschedule paths carried only the variant ID, so an old delayed job could publish a replacement approval. The queue payload, reschedule helper and caller now include the approval ID. Files: `src/server/agents/tools/socials.ts`, `src/server/queue.ts`, `src/server/socials-actions.ts`. Commit: `ff9c136`.
 2. **[Rule 1 - Bug] Allow owner resolution of ambiguous LinkedIn posts.** The planned failure message offered Mark as posted, but that action rejected LinkedIn. Failed LinkedIn variants can now be marked after owner review, with LinkedIn URL host validation. File: `src/server/socials-actions.ts`. Commit: `ff9c136`.
-3. **[Rule 2 - Safety] Reject ambiguous Instagram media matching.** Adoption requires one matching caption across all returned media pages; an incomplete scan or a duplicate stops for owner review. File: `src/server/socials/providers.ts`. Commits: `ff9c136`, `7c0007c`.
+3. **[Rule 2 - Safety] Reject ambiguous Instagram media matching.** Adoption requires one matching caption across all returned media pages; an incomplete scan or a duplicate stops for owner review. File: `src/server/socials/providers.ts`. Commits: `ff9c136`, `1748da0`.
 4. **[Rule 2 - Safety] Guard token refresh against owner replacement.** Refresh writes compare the previous ciphertext and preserve credential generation, so a racing owner reconnection is not overwritten. File: `src/server/socials/connections.ts`. Commit: `6404d09`.
 
 ## Known stubs and owner checks
