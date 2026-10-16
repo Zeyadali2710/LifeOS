@@ -11,10 +11,10 @@ describe("buildPalette", () => {
     expect(cmds[1]!.hint).toBe("0 waiting");
     expect(cmds[8]!.hint).toBe("Ctrl J");
     const jump = groups[1]!.items;
-    expect(jump.map((i) => i.label)).toEqual(["Home", "Career", "Socials", "Outreach", "Organization", "Projects", "Knowledge", "Goals", "Agents", "Approvals", "Settings"]);
+    expect(jump.map((i) => i.label)).toEqual(["Home", "Career", "Socials", "Outreach", "Organization", "Projects", "Knowledge", "Goals", "Agents", "Finances", "Approvals", "Settings"]);
     expect(jump[0]!.hint).toBe("Alt 1");
     expect(jump[8]!.hint).toBe("Alt 9");
-    expect(jump[10]!.hint).toBe("Ctrl ,");
+    expect(jump.find((i) => i.label === "Settings")!.hint).toBe("Ctrl ,");
   });
 
   it("approvals hint carries the live count", () => {

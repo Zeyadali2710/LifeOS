@@ -1,6 +1,6 @@
 ---
 milestone: v1.0
-status: locally_verified_pending_deployment
+status: finances_locally_verified_pending_deployment
 last_updated: 2026-10-16
 workflow: direct feature development (owner requested; GSD discontinued)
 ---
@@ -12,7 +12,7 @@ workflow: direct feature development (owner requested; GSD discontinued)
 See: .planning/PROJECT.md (updated 2026-10-07)
 
 **Core value:** Know what matters, what needs attention, and what to do next — in one place.
-**Current focus:** Year-to-date social post history imports; Phase 8 not started.
+**Current focus:** Phase 7.1 Finances: CSV imports, categorisation, monthly charts and budgets. Phase 8 Knowledge + Goals remains unstarted.
 
 ## Current Position
 
@@ -20,7 +20,8 @@ Phase 7: all seven implementation plans completed and review findings fixed.
 LinkedIn, Instagram and TikTok connected by the owner. Latest account-ID display fix committed and pushed (dc2ef11).
 
 Completed locally (owner requested 2026-10-16): Instagram post insights and multiple Gmail accounts. Implementation is in commit 6954eec; final verification regressions and this checkpoint are follow-up changes.
-Next phase: Knowledge + Goals (Phase 8), not scoped or started.
+The owner confirmed the deployed Socials page looks good and said the recent changes were pushed. Phase 7 is closed on that acceptance; no new live publishing/scheduling results are claimed.
+The owner requested Finances next, inserted as Phase 7.1 so the remaining roadmap numbering stays stable. Implementation is locally verified in the current working tree; production migration and first real import are pending.
 
 The owner discontinued GSD on 2026-10-16. Work proceeds directly per requested feature, with relevant tests and existing application security/approval requirements preserved.
 
@@ -61,7 +62,7 @@ The owner discontinued GSD on 2026-10-16. Work proceeds directly per requested f
 ## Session Continuity
 
 Last session: 2026-10-16
-Stopped at: Historical post import implemented and locally verified. Next: deploy including migration 0011, choose Socials → Sync now, and verify existing Instagram/TikTok posts in Published and YTD analytics. Multiple Gmail accounts still require the previously documented owner live check.
+Stopped at: Finances implementation locally verified. Next: review the changes, then commit/push before homelab deployment with migration 0012 and owner acceptance of the first CSV import. Socials page accepted by the owner. Multiple Gmail accounts still require the previously documented owner live check.
 Resume file: None
 
 ## Social post history follow-up (2026-10-16)
@@ -69,3 +70,14 @@ Resume file: None
 The owner reported existing posts were missing. Root cause: sync only updated already-known LifeOS variants and used a 90-day cutoff. Sync now imports the current Sydney calendar year of available Instagram posts and public TikTok videos, retaining original dates, captions/titles and links. Migration 0011 adds account-bound import identity and uniqueness. Existing approved LifeOS text is preserved, repeat syncs reuse rows, and imported source text is tainted/read-only. Missing Instagram insights does not prevent importing history; invalid tokens still require reconnect. Analytics defaults to YTD. LinkedIn prior personal posts remain unavailable with the current self-serve permissions (restricted r_member_social required).
 
 Verification: 553 unit tests (66 files) and 35 Socials/migration DB tests (2 files) passed; focused lint, typecheck and worker build passed. The final production build also passed. No live provider calls or homelab deployment performed. Prior uncommitted verification/checkpoint edits were preserved.
+
+## Finances checkpoint (2026-10-16)
+
+- Owner requested direct implementation based on the private Finances.xlsx workbook; workbook read only and left unchanged. Source and fixtures contain no private transactions or workbook keyword mappings.
+- Owner decisions: transfers count as income/spending; monthly category budgets carry forward with monthly overrides. Saved monthly overrides become the limit for later months until changed; clearing an override restores the prior limit.
+- New owner-only `/finances` page, shared navigation, CSV preview/confirmation, atomic deduplicated imports, possible-match review, per-account history, remembered keyword categories and rules CSV upload, monthly charts, transaction filters/review, all-account budgets, confirmed import removal.
+- Additive migration `0012_finances` adds categories, rules, imports, transactions and budgets. No dependency, credential, agent permission or infrastructure changes. No financial data sent to an external AI provider.
+- Read-only in-memory CSV conversion of the workbook parsed all 2,086 transactions and 272 rules. Historical export requires Month displayed as `yyyy-mm` so the CSV retains its year. No real records imported into a database.
+- Final unit suite: 562 tests passed across 67 files, including finance and navigation. Focused finance and migration DB tests: 15 passed. Production build and 4 desktop/mobile browser tests passed, including populated chart assertions and screenshot inspection. Typecheck passed; full lint has 0 errors and 19 pre-existing warnings.
+- Verification recovery: Playwright clears `test-results` at startup, so do not run Vitest using that directory for TEMP/TMP concurrently with Playwright. The interrupted unit run was rerun separately; navigation expectation updated for the new Finances entry.
+- Deployment and first owner import remain pending. See `docs/finances.md` for formats, duplicate limits, reporting semantics and homelab commands. Changes are local and uncommitted; `.codex/` remains ignored.

@@ -19,7 +19,8 @@ Development now follows direct, owner-requested feature work (GSD discontinued o
  (completed 2026-10-13)
 - [x] **Phase 5.1: Project agent writes + repo contents** (INSERTED) - Agent creates/updates projects via approval; reads repo files (completed 2026-10-13)
 - [x] **Phase 6: Outreach** - Sydney event discovery, pipeline, email intelligence, drafting (completed 2026-10-13)
-- [x] **Phase 7: Socials** - Implementation complete; live publishing/scheduling acceptance pending. Instagram post insights and current-year history imports implemented and locally verified.
+- [x] **Phase 7: Socials** - Closed 2026-10-16 after owner confirmed the deployed page and pushed the recent changes. Live publishing/scheduling remains a separate operational check.
+- [ ] **Phase 7.1: Finances** (INSERTED) - CSV imports, deduplication, automatic categories, monthly graphs and carried category budgets. Locally verified; deployment and owner acceptance pending.
 - [ ] **Phase 8: Knowledge + Goals** - Notes/docs/retrieval, goal hierarchy
 - [ ] **Phase 9: Automation + Daily intelligence** - Automation engine, briefings
 - [ ] **Phase 10: Hardening** - Security review, restore-tested backups, observability, performance
@@ -262,7 +263,16 @@ Plans:
 - [x] 07-06-PLAN.md — Board, post sheet, calendar and analytics views
 - [x] 07-07-PLAN.md — Approval UI, Settings connections, palette and e2e spec
 
-Follow-ups (2026-10-16): Instagram post-level insights implemented; multiple Gmail accounts implemented for Outreach with separate tokens, sync history and account-bound approved replies. Migration 0010 preserves existing mail. Verified with 108 affected database tests; live homelab acceptance remains pending. Subsequent history fix imports existing Instagram/public TikTok posts from January 1, defaults analytics to YTD, and requires migration 0011; verified with 553 unit tests and 35 Socials/migration DB tests.
+Follow-ups (2026-10-16): Instagram post-level insights implemented; multiple Gmail accounts implemented for Outreach with separate tokens, sync history and account-bound approved replies. Migration 0010 preserves existing mail. Verified with 108 affected database tests; multiple-account Gmail acceptance remains pending. Subsequent history fix imports existing Instagram/public TikTok posts from January 1, defaults analytics to YTD, and requires migration 0011; verified with 553 unit tests and 35 Socials/migration DB tests. The owner subsequently confirmed the Socials page looks good, pushed the recent changes and requested closure of this phase. Live publishing/scheduling was not separately verified in this session.
+
+### Phase 7.1: Finances (INSERTED)
+
+**Goal:** Replace the owner's manual transaction workbook with an owner-only finance dashboard, based on its categories and monthly summaries.
+**Workflow:** Direct feature development requested by the owner; no GSD execution or router.
+**Scope:** CSV preview and explicit confirmation, per-account deduplication, review of ambiguous matches, local keyword categorisation and remembered corrections, transaction search/filtering, monthly income/spending charts, category breakdowns, monthly category budgets carried forward with overrides, and removable import batches.
+**Decisions:** Transfers in/out count as income/spending. All figures are AUD integer cents. Budgets cover all imported accounts; a saved monthly limit carries into later months until changed. Savings/investments show net contributions, not account valuation. No private transactions or workbook keyword mappings in source control, fixtures or external AI calls.
+**Database:** Additive migration `0012_finances`; production deployment and the owner's first import remain pending.
+**Reference:** `docs/finances.md` describes supported CSV formats, import checks and deployment.
 
 ### Phase 8: Knowledge + Goals
 Not started. Notes, documents and bookmarks with keyword and semantic retrieval (KNW-01); vision → goals → objectives → projects → tasks with progress and neglect detection (GOL-01). Specific increments will be agreed directly with the owner.
@@ -291,5 +301,6 @@ Not started; scope per phase list above.
 | 5. Career + Projects | 12/12 | Complete | 2026-10-13 |
 | 5.1 Project agent writes | 8/8 | Complete (owner VM UAT pending) | 2026-10-13 |
 | 6. Outreach | 19/19 | Complete (owner VM UAT pending) | 2026-10-13 |
-| 7. Socials | 7/7 | Implementation and follow-ups locally verified; owner live UAT pending | Local implementation 2026-10-16 |
+| 7. Socials | 7/7 | Owner accepted deployed page; closed. Live publishing remains an operational check. | 2026-10-16 |
+| 7.1 Finances | Direct feature | Locally verified; deployment and owner acceptance pending | - |
 | 8–11 | - | Not started | - |

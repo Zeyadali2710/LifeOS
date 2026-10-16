@@ -12,6 +12,7 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "knowledge", label: "Knowledge", href: "/knowledge", icon: "library_books", shortcut: "Alt+7" },
   { key: "goals", label: "Goals", href: "/goals", icon: "flag", shortcut: "Alt+8" },
   { key: "agents", label: "Agents", href: "/agents", icon: "memory", shortcut: "Alt+9" },
+  { key: "finances", label: "Finances", href: "/finances", icon: "account_balance" },
 ];
 
 export const SECONDARY_ITEMS: NavItem[] = [
@@ -22,7 +23,7 @@ export const SECONDARY_ITEMS: NavItem[] = [
 const byKey = (...keys: string[]) =>
   keys.map((k) => [...NAV_ITEMS, ...SECONDARY_ITEMS].find((n) => n.key === k)!);
 
-export const PRIMARY_ITEMS: NavItem[] = byKey("home", "career", "socials", "outreach", "organization", "projects", "agents", "approvals");
+export const PRIMARY_ITEMS: NavItem[] = byKey("home", "career", "socials", "outreach", "organization", "finances", "projects", "agents", "approvals");
 export const MORE_ITEMS: NavItem[] = byKey("knowledge", "goals", "settings");
 
 export function isCurrent(pathname: string, href: string) {

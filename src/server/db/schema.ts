@@ -337,6 +337,33 @@ export const connections = pgTable("connections", {
 });
 
 // ── Phase 7: Socials ───────────────────────────────────────────────────────
+// Private, owner-only imported finances. Money is stored as integer AUD cents.
+export const financeCategories = pgTable("finance_categories", {
+  name: text().primaryKey(), group: text().notNull(), kind: text().notNull(), ...timestamps,
+}, (t) => [check("finance_category_kind_chk", sql`${t.kind} in ('income','expense','savings','investment','transfer')`)]);
+
+export const financeRules = pgTable("finance_rules", {
+  keyword: text().primaryKey(), category: text().notNull().references(() => financeCategories.name), ...timestamps,
+});
+
+export const financeImports = pgTable("finance_imports", {
+  id: uuid().primaryKey().defaultRandom(), account: text().notNull(), fileName: text().notNull(), fileHash: text().notNull(),
+  imported: integer().notNull(), skipped: integer().notNull(), createdAt: tstz().notNull().defaultNow(),
+}, (t) => [uniqueIndex("finance_import_file_uniq").on(t.account, t.fileHash)]);
+
+export const financeTransactions = pgTable("finance_transactions", {
+  id: uuid().primaryKey().defaultRandom(), importId: uuid().notNull().references(() => financeImports.id, { onDelete: "cascade" }),
+  account: text().notNull(), date: text().notNull(), precision: text().notNull(), amount: integer().notNull(),
+  description: text().notNull(), balance: integer(), externalId: text(), fingerprint: text().notNull(),
+  category: text().references(() => financeCategories.name), categorySource: text().notNull(), ...timestamps,
+}, (t) => [uniqueIndex("finance_transaction_fingerprint_uniq").on(t.account, t.fingerprint), index().on(t.date), index().on(t.category),
+  check("finance_precision_chk", sql`${t.precision} in ('day','month')`),
+  check("finance_source_chk", sql`${t.categorySource} in ('csv','rule','manual','unclassified')`)]);
+
+export const financeBudgets = pgTable("finance_budgets", {
+  category: text().notNull().references(() => financeCategories.name), month: text().notNull(), cents: integer().notNull(), ...timestamps,
+}, (t) => [primaryKey({ columns: [t.category, t.month] }), check("finance_budget_cents_chk", sql`${t.cents} >= 0`)]);
+
 export const socialPosts = pgTable(
   "social_posts",
   {

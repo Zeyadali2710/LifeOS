@@ -41,6 +41,6 @@ describe("matchShortcut", () => {
 
 describe("nav", () => {
   it("9 items with Alt+1..9", () => {
-    expect(NAV_ITEMS.map((n) => n.shortcut)).toEqual(Array.from({ length: 9 }, (_, i) => `Alt+${i + 1}`));
+    expect(NAV_ITEMS.filter((n) => n.shortcut).map((n) => n.shortcut)).toEqual(Array.from({ length: 9 }, (_, i) => `Alt+${i + 1}`));
   });
 });
