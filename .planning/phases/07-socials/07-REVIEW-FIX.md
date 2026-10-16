@@ -160,3 +160,49 @@ Next checkpoint: targeted reviewer validation and GSD phase verification, follow
 _Fixed: 2026-10-15T23:54:01Z_
 _Fixer: Codex (gsd-code-fixer)_
 _Iteration: 1_
+
+## Iteration 2: Targeted WR-08 follow-up
+
+**Fixed at:** 2026-10-16T00:04:04Z
+**Source review:** `.planning/phases/07-socials/07-REVIEW-RECHECK.md`, committed at `ef67a3d`.
+**Scope:** WR-08 only (CR-02 residual); 1 finding in scope, 1 fixed, 0 skipped; status `all_fixed` for this iteration. The iteration 1 history above is preserved.
+**Source checkpoint:** `0301ad5` on `gsd-reviewfix/07-20261016-r2`.
+
+### WR-08: Delayed publish authentication failure can disable a freshly refreshed token
+
+**Status:** fixed: requires human verification
+**Files modified:** `src/server/socials/publish.ts`, `tests/unit/social-publish-auth.test.ts` (new).
+**Commit:** `0301ad5` — `fix(07): WR-08 bind publish auth failures to original token snapshot`.
+**Applied fix:** The publish executor reads the connection once, constructs the provider from that exact row through the existing decoder/provider functions, and retains its original ciphertext plus credential generation in a local server-only snapshot. A delayed ProviderAuthError passes that original snapshot to the existing connection comparison. No expected ciphertext is reread after the remote request. An unchanged credential still enters error/RECONNECT; a successfully refreshed same-generation credential does not match the old ciphertext and remains connected. The variant retains its own failed state. Approval payloads, client props, events and logging receive no snapshot fields.
+
+**Regression evidence:** Four focused, network-free tests use the real publish executor, real provider fixture request handling, real refresh helper and real generated connection predicates against a small in-memory DB handle:
+
+- Defer an Instagram publish 401, successfully refresh A to B under the same generation, then release A's response: B's ciphertext and connected state remain intact.
+- Repeat with a delayed 403: same result.
+- Without intervening refresh, both 401 and 403 mark the unchanged connection error/RECONNECT.
+- The fixture predicate supports generation-only comparisons as well as ciphertext comparisons, so omitting ciphertext would reproduce the stale error update. Tests also assert a single connection read and no token/ciphertext leakage in emitted activity output.
+
+**Checks performed:**
+
+- Focused publish-auth/executor/refresh suite: **3 files, 10 tests passed** with stable existing TMP/TEMP and one worker.
+- After the final fixture predicate/clock refinement, publish-auth alone: **4 tests passed**.
+- Full `tsc --noEmit`: **passed**. The subsequent fixture refinement changed only a boolean predicate and froze the test clock; its focused run passed.
+- ESLint on both changed files: **passed, no warnings/errors**.
+- Existing worker build arguments: **passed** for worker/migration/owner-script bundles. No bundled script was run against a DB.
+- Modified source reread and `git diff --check`: **passed**.
+
+**Not run in iteration 2:** full unit suite, default Next production build, DB/VM/concurrency execution, browser/UAT, real queue delivery/restarts, migrations/deployment, OAuth or live provider calls. The orchestrator will run the normal default Next build on main after fast-forward. No worktree Next build, junction, fallback build or dependency installation was attempted in this iteration. Prior iteration/main verification evidence remains attributed above; no new acceptance claim is made here.
+
+**Handoff:** Source is committed through `0301ad5`. This appended report is intentionally uncommitted for the parent orchestrator to capture. The isolated worktree is `C:/Users/footb/Desktop/LifeOS/.claude/worktrees/gsd-reviewfix-07-20261016-r2`; main source was not edited. Leave the worktree, temporary branch and recovery sentinel intact until the orchestrator captures the report, fast-forwards main, removes the worktree, deletes the merged branch, and removes the sentinel. Preserve the branch on divergence. Review artifacts, schema/migrations, STATE, ROADMAP and configuration gates are unchanged by this targeted fix.
+
+_Fixed: 2026-10-16T00:04:04Z_
+_Fixer: Codex (gsd-code-fixer)_
+_Iteration: 2_
+
+## Orchestrator verification after iteration 2
+
+- Main was fast-forwarded through `0301ad5`; the appended report was captured after verifying that its existing history was unchanged.
+- The clean temporary worktree and fully merged branch were removed, followed by the recovery sentinel.
+- Full main-checkout unit suite: **66 files, 548 tests passed**, with stable TMP/TEMP and one worker.
+- Normal `npm run build`: **passed**, including TypeScript and all route generation, with the scoped Windows filesystem permission already required by this repository.
+- DB/browser/queue/live checks remain owner actions. Next checkpoint is final targeted review of WR-08 and phase verification; no acceptance or phase transition is claimed.
