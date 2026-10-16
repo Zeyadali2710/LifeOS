@@ -1,14 +1,14 @@
 import { and, eq, inArray, isNotNull, lte, lt, or } from "drizzle-orm";
 import { socialPublishPayload } from "@/lib/approval-kinds";
 import { checkVariant, type SocialPlatform } from "@/lib/social-types";
-import { approvedHash, currentBinding } from "../agents/tools/socials";
+import { approvedHash } from "../agents/tools/socials";
 import { db, type DB } from "../db/client";
-import { approvals, socialVariants } from "../db/schema";
+import { approvals, connections, socialVariants } from "../db/schema";
 import { emitActivity, notifyLive } from "../events";
 import { log } from "../log";
 import { enqueue, QUEUES, type Enqueue } from "../queue";
-import { markSocialAuthError } from "./connections";
-import { ProviderAuthError, TerminalContainerError, UncertainPublishError, type PublishResult, type SocialProvider } from "./providers";
+import { decodeSocialConnection, markSocialAuthError, type ConnectionSnapshot } from "./connections";
+import { getProvider, ProviderAuthError, TerminalContainerError, UncertainPublishError, type PublishResult, type SocialProvider } from "./providers";
 import { TERMINAL_CONTAINER_ERROR } from "./drafts";
 
 type Variant = typeof socialVariants.$inferSelect;
@@ -43,13 +43,13 @@ export async function queueContainerContinuation(variantId: string, approvalId: 
   await send(QUEUES.socialsPublish, { variantId, approvalId }, { startAfter: new Date(persistedAt.getTime() + PUBLISH_STALE_MS + 5_000) });
 }
 
-async function fail(h: DB, v: Variant, message: string, reconnect = false): Promise<void> {
+async function fail(h: DB, v: Variant, message: string, authSnapshot?: ConnectionSnapshot): Promise<void> {
   const [won] = await h.update(socialVariants).set({ status: "failed", lastError: message, updatedAt: new Date() })
     .where(and(eq(socialVariants.id, v.id), eq(socialVariants.approvalId, v.approvalId!), inArray(socialVariants.status, ["scheduled", "publishing"])))
     .returning({ id: socialVariants.id });
   if (!won) return;
   await notifyLive(h, "socials", v.id);
-  if (reconnect && (v.platform === "linkedin" || v.platform === "instagram")) await markSocialAuthError(h, v.platform, { credentialGeneration: v.approvedConnectionGeneration });
+  if (authSnapshot && (v.platform === "linkedin" || v.platform === "instagram")) await markSocialAuthError(h, v.platform, authSnapshot);
   await emitActivity({ type: "social.publish_failed", source: "social", title: "Social post needs attention", detail: message, tone: "amber", payload: { variantId: v.id } },
     { category: "IMPORTANT", title: "Social post needs attention", body: message, actionUrl: "/socials" }, h);
 }
@@ -59,7 +59,13 @@ export async function publishVariant(variantId: string, approvalId: string, h: D
   if (!v || v.approvalId !== approvalId || !["scheduled", "publishing"].includes(v.status)) return;
   const [a] = await h.select().from(approvals).where(eq(approvals.id, approvalId));
   let provider: SocialProvider;
-  try { provider = (await currentBinding(h, v.platform as SocialPlatform)).provider; }
+  let authSnapshot: ConnectionSnapshot | undefined;
+  try {
+    const platform = v.platform as SocialPlatform;
+    const [connection] = platform === "portfolio" ? [] : await h.select().from(connections).where(eq(connections.id, platform));
+    provider = getProvider(platform, connection && platform !== "portfolio" ? decodeSocialConnection(platform, connection) : null);
+    if (connection) authSnapshot = { ciphertext: connection.ciphertext, credentialGeneration: connection.credentialGeneration };
+  }
   catch { await fail(h, v, STALE); return; }
   const choice = inspectPublish(v, a ? { id: a.id, status: a.status, payload: a.editedPayload ?? a.originalPayload } : null, provider, now);
   if (choice === "noop") return;
@@ -111,7 +117,7 @@ export async function publishVariant(variantId: string, approvalId: string, h: D
       { category: "FYI", title: `${provider.label} post published`, actionUrl: "/socials" }, h);
   } catch (err) {
     if (err instanceof TerminalContainerError) await fail(h, v, TERMINAL_CONTAINER_ERROR);
-    else if (err instanceof ProviderAuthError) await fail(h, v, "RECONNECT", true);
+    else if (err instanceof ProviderAuthError) await fail(h, v, "RECONNECT", authSnapshot);
     else if (err instanceof UncertainPublishError) await fail(h, v, v.platform === "linkedin" ? LINKEDIN_REVIEW : INSTAGRAM_REVIEW);
     else {
       log.warn({ variantId, error: err instanceof Error ? err.name : "unknown" }, "social publish failed");
