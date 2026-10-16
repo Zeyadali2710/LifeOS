@@ -81,3 +81,7 @@ Verification: 553 unit tests (66 files) and 35 Socials/migration DB tests (2 fil
 - Final unit suite: 562 tests passed across 67 files, including finance and navigation. Focused finance and migration DB tests: 15 passed. Production build and 4 desktop/mobile browser tests passed, including populated chart assertions and screenshot inspection. Typecheck passed; full lint has 0 errors and 19 pre-existing warnings.
 - Verification recovery: Playwright clears `test-results` at startup, so do not run Vitest using that directory for TEMP/TMP concurrently with Playwright. The interrupted unit run was rerun separately; navigation expectation updated for the new Finances entry.
 - Deployment and first owner import remain pending. See `docs/finances.md` for formats, duplicate limits, reporting semantics and homelab commands. Changes are local and uncommitted; `.codex/` remains ignored.
+
+### Bank CSV timestamp compatibility follow-up (2026-10-16)
+
+The owner's current bank export uses `Transaction Date` with ISO timestamps and timezone offsets. The shared date parser now accepts that format and preserves the calendar date written in the export, preventing UTC conversion from shifting a transaction's day/month. Invalid dates, clock values and timezone offsets still fail validation. All 2,242 rows in the attached CSV passed read-only parsing and the upload size limit; no records were imported. Ten focused finance unit tests passed, including timestamp regression and month-boundary checks. Production deployment remains an owner step.

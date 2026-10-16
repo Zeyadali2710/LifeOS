@@ -24,14 +24,20 @@ export function csvRows(input: string): string[][] {
 }
 
 export function financeDate(text: string, monthOnly = false): string {
-  const s = text.trim(); let y: number, m: number, d: number;
+  let s = text.trim(); let y: number, m: number, d: number;
+  const timestamp = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d+)?(?:Z|([+-])(\d{2}):(\d{2}))$/.exec(s);
+  if (timestamp) {
+    if (Number(timestamp[2]) > 23 || Number(timestamp[3]) > 59 || Number(timestamp[4]) > 59 || Number(timestamp[6] ?? 0) > 23 || Number(timestamp[7] ?? 0) > 59) throw new Error("Invalid timestamp.");
+    // Keep the bank's calendar date; converting to UTC can change the reporting month.
+    s = timestamp[1]!;
+  }
   const iso = /^(\d{4})-(\d{2})(?:-(\d{2}))?(?: 00:00:00)?$/.exec(s);
   const aus = /^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/.exec(s);
   const named = /^(\d{1,2})[- ]([A-Za-z]{3})[- ](\d{4})$/.exec(s);
   if (iso) { y = Number(iso[1]); m = Number(iso[2]); d = Number(iso[3] ?? 1); }
   else if (aus) { y = Number(aus[3]); m = Number(aus[2]); d = Number(aus[1]); }
   else if (named) { y = Number(named[3]); m = "jan feb mar apr may jun jul aug sep oct nov dec".split(" ").indexOf(named[2]!.toLowerCase()) + 1; d = Number(named[1]); }
-  else throw new Error(monthOnly ? "Month must include its year. In Excel, format Month as yyyy-mm before exporting." : "Date must be DD/MM/YYYY or YYYY-MM-DD.");
+  else throw new Error(monthOnly ? "Month must include its year. In Excel, format Month as yyyy-mm before exporting." : "Date must be DD/MM/YYYY, YYYY-MM-DD, DD-Mon-YYYY or an ISO timestamp with a timezone.");
   const date = new Date(Date.UTC(y, m - 1, d));
   if (y < 2000 || y > 2100 || date.getUTCFullYear() !== y || date.getUTCMonth() !== m - 1 || date.getUTCDate() !== d) throw new Error("Invalid calendar date.");
   return `${y}-${String(m).padStart(2, "0")}-${monthOnly ? "01" : String(d).padStart(2, "0")}`;

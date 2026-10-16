@@ -29,6 +29,15 @@ describe("finance CSV and money", () => {
     expect(() => parseFinanceCsv('Date,Amount,Description\n01/02/2026,nope,Shop')).toThrow(/Row 2/);
     expect(() => parseFinanceCsv('Date,Amount,Description\n01/02/2026,-1,')).toThrow(/description/);
   });
+  it("supports bank ISO timestamps while preserving the bank's written calendar date", () => {
+    expect(parseFinanceCsv('"Transaction Date","Description","Amount","Balance"\n"2026-10-16T05:34:09.070+11:00","Example merchant","-30","100.50"')).toMatchObject({
+      rows: [{ date: "2026-10-16", precision: "day", amount: -3000, balance: 10050 }],
+    });
+    expect(financeDate("2026-11-01T00:05:00+11:00")).toBe("2026-11-01");
+    expect(financeDate("2026-10-31T23:55:00-07:00")).toBe("2026-10-31");
+    expect(financeDate("2026-10-16T05:34:09Z")).toBe("2026-10-16");
+    for (const bad of ["2026-02-30T05:34:09+11:00", "2026-10-16T25:34:09+11:00", "2026-10-16T05:60:09Z", "2026-10-16T05:34:60Z", "2026-10-16T05:34:09+11:99", "2026-10-16T05:34:09+25:00", "2026-10-16Tgarbage"]) expect(() => financeDate(bad)).toThrow();
+  });
   it("reads keyword/category exports even with the workbook's extra helper column", () => {
     expect(parseFinanceCsv('Keyword,Category,,\nTest market,Groceries,,Work')).toEqual({ kind: "rules", rules: [{ keyword: "Test market", category: "Groceries" }] });
   });
