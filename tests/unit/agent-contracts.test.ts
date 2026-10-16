@@ -10,10 +10,10 @@ describe("registry", () => {
     expect(AGENTS.map((a) => a.id)).toEqual([
       "orchestrator", "home", "career", "social", "outreach", "organization", "projects", "knowledge", "goals", "finance", "agentops",
     ]);
-    expect(AGENTS.filter((a) => a.live).map((a) => a.id)).toEqual(["orchestrator", "social", "outreach", "organization", "projects", "finance"]);
+    expect(AGENTS.filter((a) => a.live).map((a) => a.id)).toEqual(["orchestrator", "social", "outreach", "organization", "projects", "knowledge", "finance"]);
     expect(Object.fromEntries(AGENTS.map((a) => [a.id, a.arrival]))).toMatchObject({
       home: "Phase 9", career: "Phase 5", social: null, outreach: null, organization: null,
-      knowledge: "Phase 8", goals: "Phase 8", finance: null, agentops: null,
+      knowledge: null, goals: "Phase 8", finance: null, agentops: null,
     });
   });
   it("uses the decided default models", () => {

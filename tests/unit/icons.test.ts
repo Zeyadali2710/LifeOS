@@ -6,14 +6,14 @@ import { ICONS } from "@/ui/icon-names";
 const files = (readdirSync("src", { recursive: true }) as string[]).filter((f) => /\.tsx?$/.test(f));
 
 describe("icon subset", () => {
-  it("is sorted, unique and has the 84 spec names", () => {
+  it("is sorted, unique and has the 93 spec names", () => {
     expect([...ICONS]).toEqual([...ICONS].sort());
     expect(new Set(ICONS).size).toBe(ICONS.length);
-    expect(ICONS.length).toBe(84);
+    expect(ICONS.length).toBe(93);
   });
 
   it("covers every icon literal used in src", () => {
-    const re = /(?:<Icon[^>]*?\bname=|\bicon=|\bicon:\s*)["']([a-z_]+)["']/g;
+    const re = /(?:<Icon[^>]*?\bname=|\bicon=|\bicon:\s*)["']([a-z0-9_]+)["']/g;
     const used = new Set<string>();
     for (const f of files) for (const m of readFileSync(join("src", f), "utf8").matchAll(re)) used.add(m[1]!);
     expect([...used].filter((n) => !(ICONS as readonly string[]).includes(n))).toEqual([]);

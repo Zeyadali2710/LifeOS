@@ -7,7 +7,7 @@ const ROUTES = [
   ["/outreach", "Outreach"],
   ["/organization", /^(Your calendar, in one place\.|Nothing scheduled\.|You're free .+\.|Your schedule is full .+\.)$/],
   ["/projects", "Projects"],
-  ["/knowledge", "Knowledge"],
+  ["/knowledge", "Everything you've read, written and saved."],
   ["/goals", "Goals"],
   ["/agents", "Your autonomous workforce."],
   ["/approvals", /decisions? (is|are) waiting|caught up/],

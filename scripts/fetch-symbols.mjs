@@ -3,7 +3,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 
 const src = readFileSync("src/ui/icon-names.ts", "utf8");
-const names = [...src.matchAll(/"([a-z_]+)"/g)].map((m) => m[1]).sort();
+const names = [...src.matchAll(/"([a-z0-9_]+)"/g)].map((m) => m[1]).sort();
 const cssUrl =
   "https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300,0..1,0" +
   `&icon_names=${names.join(",")}&display=block`;

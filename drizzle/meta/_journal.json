@@ -92,6 +92,13 @@
       "when": 1792134140577,
       "tag": "0012_finances",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792165938157,
+      "tag": "0013_knowledge_goals",
+      "breakpoints": true
     }
   ]
 }

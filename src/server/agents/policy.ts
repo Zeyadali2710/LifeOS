@@ -15,11 +15,16 @@ export const CONTENT_TOOLS = [
   "outreach.list_events", "outreach.get_event", "mail.list", "mail.get_message", "mail.send_reply", // D-19, D-29: events and mail are third-party text too
   "socials.get_post", "socials.list_posts", // posts may contain copied repo or event content
   "finance.overview", "finance.list_merchants", "finance.list_transactions", "finance.update",
+  "knowledge.search", "knowledge.get", // saved notes can quote third-party text
 ] as const;
 
 /** D-28: mail is always private. Once any of these ran in a run's content scope, no run in that scope may use a free model. */
 export const MAIL_TOOLS = ["mail.list", "mail.get_message", "mail.send_reply"] as const;
 export const FINANCE_TOOLS = ["finance.overview", "finance.list_merchants", "finance.list_transactions", "finance.update"] as const;
+export const KNOWLEDGE_TOOLS = ["knowledge.search", "knowledge.get"] as const;
+/** Agents whose own data is always private: their runs never use a free model, whatever the private-data opt-in says. */
+export const HARD_PRIVATE_AGENTS: readonly string[] = ["finance", "knowledge"];
+const HARD_PRIVATE_TOOLS = [...MAIL_TOOLS, ...FINANCE_TOOLS, ...KNOWLEDGE_TOOLS];
 
 /**
  * Run ids whose content reads count for `runId`: its orchestrator tree (self, parent, siblings, children), the run it
@@ -45,13 +50,13 @@ export function withContentFloor(tier: ToolTier, sideEffect: boolean, sawContent
   return sideEffect && sawContent && (tier === "READ" || tier === "PREPARE" || tier === "EXECUTE") ? "APPROVE" : tier;
 }
 
-/** Mail and financial data always stay off free models, including sibling/retry/thread history. */
+/** Mail, financial and knowledge data always stay off free models, including sibling/retry/thread history. */
 export async function hardPrivateInScope(h: DB, runId: string | null): Promise<boolean> {
   if (!runId) return false;
   const [hit] = await h
     .select({ id: toolCalls.id })
     .from(toolCalls)
-    .where(sql`${inArray(toolCalls.tool, [...MAIL_TOOLS, ...FINANCE_TOOLS])} and ${toolCalls.runId} in ${contentScope(runId)}`)
+    .where(sql`${inArray(toolCalls.tool, HARD_PRIVATE_TOOLS)} and ${toolCalls.runId} in ${contentScope(runId)}`)
     .limit(1);
   return Boolean(hit);
 }

@@ -277,7 +277,34 @@ Follow-ups (2026-10-16): Instagram post-level insights implemented; multiple Gma
 **Agent increment (2026-10-16):** Owner requested orchestrator access to Finance. Live Finance agent reads transaction history and proposes category/rule replacements, bulk recategorisation, individual corrections and budget changes through one HIGH_RISK approval. Complete merchant coverage and server snapshots protect bulk edits; existing transaction amounts/dates and carried budget history are preserved. Paid models only, including subsequent delegated/private context; owner deployment and live acceptance remain pending.
 
 ### Phase 8: Knowledge + Goals
-Not started. Notes, documents and bookmarks with keyword and semantic retrieval (KNW-01); vision → goals → objectives → projects → tasks with progress and neglect detection (GOL-01). Specific increments will be agreed directly with the owner.
+**Goal:** KNW-01 and GOL-01. Design source: `design/glass/Glass Knowledge.dc.html`, `Glass Goals.dc.html` (layout only; content is placeholder). Plan written 2026-10-17 by Claude (autonomous run, owner asleep); decisions below are auto-decisions for owner review.
+
+**A. Knowledge**
+1. Migration `0013_knowledge`: `knowledge_items` (kind note|document|bookmark|idea|research, title, body, url, tags text[], source manual|upload|agent, optional `project_id` set-null, `viewed_at`, generated weighted `tsvector` + GIN, nullable `embedding vector(1536)` + `embedded_hash`). Requires `create extension if not exists vector` (image is pgvector/pgvector:pg17).
+2. Server: owner-only CRUD actions, `.md`/`.txt` document upload (≤ 500 KB, text only, no PDF parsing), bookmark URL via existing `isSafeUrl` (no server-side fetch), keyword search (`websearch_to_tsquery` + prefix fallback, ranked), section/tag filters and counts, recently viewed.
+3. Semantic search: **off by default**, owner opt-in setting `knowledge.semantic`, uses the existing encrypted OpenRouter key and `openai/text-embedding-3-small` via OpenRouter embeddings. A worker job embeds changed items in batches; query embedding at search time; cosine `<=>` ranking. When off or no key, the Semantic mode shows an honest disabled state. Item text only leaves LifeOS when the owner opts in.
+4. UI `/knowledge` per design: search with Keyword/Semantic, tags, sections with counts, recently viewed, results, detail article with linked project, create/edit dialog, delete confirm, mobile stacking.
+5. Knowledge agent live (Sonnet, private tools): `knowledge.search`, `knowledge.get` (READ, private, untrusted content), `knowledge.save_note` (APPROVE, new approval kind `knowledge_note`, editable title/body/tags before approval, idempotent by approval id). Orchestrator delegates.
+
+**B. Goals**
+6. Migration `0014_goals`: `goals` (title, color, target_date, status active|done|archived, sort), `objectives` (goal cascade, title, target_date, optional manual progress 0–100, sort), `objective_projects` link table (cascade both). Vision in `settings` key `goals.vision`.
+7. Read model: objective progress = manual value if set, else completed/total tasks of linked projects; goal progress = mean of objectives. Momentum = linked tasks completed in last 14 days vs the 14 before (rising/steady/slowing). Neglect = active objective with no linked task completion or project update for 21 days. Horizons: objectives by target date (this week / month / year / long term).
+8. UI `/goals` per design: editable vision, horizon tabs + target cards, 4-column goal → objective → project → task tree (task tick reuses the existing task completion action), CRUD dialogs, project link picker, neglect badges, header sentence from real momentum.
+9. Goals agent live, read-only `goals.overview` (private) so the orchestrator can answer progress questions. Agent goal writes deferred.
+
+**After Codex plan critique (2026-10-17):**
+- Knowledge agent is paid-only and hard-private like Finance (no free model even with the private opt-in); retrieved items are untrusted data. The page says Ask Knowledge sends retrieved notes to Anthropic.
+- `knowledge.save_note` and the `knowledge_note` approval kind are **deferred**; Phase 8 agents are read-only.
+- One objective per project (`objective_projects.project_id` is the primary key) so tasks are never double counted. Unlinked projects appear only in the link picker.
+- Progress: objective with no tasks and no manual value = "no tasks yet" and is excluded from the goal mean; archived projects excluded; a manual value stays fixed until cleared. Neglect = active objective under an active goal whose last activity (linked task created/completed, or the objective's own creation/edit) is over 21 days old.
+- Task ticks go through the existing task completion service (dependency checks kept); blocked tasks show as blocked.
+- Embedding: a scheduled job embeds items whose content hash differs from `embedded_hash`, so edits re-index and deletes need nothing; failures are logged and retried next run; the page shows "N of M indexed". Semantic results honour section/tag filters.
+- Limits: title 200, body 200k chars, ≤12 tags × 40 chars, URL 2000, query 200; upload must be valid UTF-8. Prefix tsquery is built only from `[\p{L}\p{N}]+` tokens.
+- Prod DB role is the image's bootstrap superuser, so `create extension vector` works in the migration.
+
+**Risks:** pgvector extension on the existing prod volume (migration must create it); embedding cost/latency (batch, hash-skip); FTS language config (use `simple` for names/tech terms); keeping finance/mail privacy taint semantics (knowledge content is private).
+
+**Done when:** full gate green, Codex + Claude phase review fixed, docs (`docs/knowledge-goals.md`, agents/permissions) updated, owner VM steps in OWNER-ACTIONS.
 
 ### Phase 9–11
 Not started; scope per phase list above.

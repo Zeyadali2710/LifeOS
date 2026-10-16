@@ -9,7 +9,7 @@ import { log } from "../log";
 import { enqueue as realEnqueue, QUEUES, type Enqueue } from "../queue";
 import { routeSteps, toApprovalDTO, toRunDTO, toStepDTO } from "./dto";
 import { callTool } from "./gateway";
-import { hardPrivateInScope } from "./policy";
+import { HARD_PRIVATE_AGENTS, hardPrivateInScope } from "./policy";
 import { getLlm } from "./llm";
 import { addRunUsage } from "./usage";
 import { FreeModelError } from "./openrouter";
@@ -61,7 +61,7 @@ export async function createRun(
   const agent = getAgent(p.agentId)!;
   const cfg = await agentConfig(h, p.agentId);
   const at = (p.now ?? (() => new Date()))();
-  const hardPrivate = p.agentId === "finance" || await hardPrivateInScope(h, p.parentRunId ?? p.privacyAnchor ?? null);
+  const hardPrivate = HARD_PRIVATE_AGENTS.includes(p.agentId) || await hardPrivateInScope(h, p.parentRunId ?? p.privacyAnchor ?? null);
   const { model, mode, reason, blocked } = resolveModel({
     agentId: p.agentId,
     pref: cfg.pref,
@@ -280,7 +280,7 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
       // every turn: the opt-in may have been switched off since createRun (e.g. during an approval wait).
       if (
         isFree(curModel) &&
-        ((agent.id === "finance" || await hardPrivateInScope(h, run0.parentRunId ?? run0.id)) ||
+        ((HARD_PRIVATE_AGENTS.includes(agent.id) || await hardPrivateInScope(h, run0.parentRunId ?? run0.id)) ||
           (!(await getFreePrivateOk(h)) &&
             (tainted ||
               (await privateInTree(h, run0.parentRunId ?? run0.id)) ||

@@ -16,6 +16,7 @@ import { handleSweep } from "./jobs/sweep";
 import { handleTaskReminders } from "./jobs/task-reminders";
 import { publishVariant, runScheduled } from "@/server/socials/publish";
 import { syncSocials } from "@/server/socials/sync";
+import { embedPending } from "@/server/knowledge";
 
 const HEARTBEAT = "system.heartbeat";
 
@@ -46,6 +47,7 @@ async function main() {
   await boss.createQueue(QUEUES.mailTriage);
   await boss.createQueue(QUEUES.socialsPublish, { retryLimit: 3, retryBackoff: true });
   await boss.createQueue(QUEUES.socialsSync);
+  await boss.createQueue(QUEUES.knowledgeEmbed);
   await boss.work(QUEUES.socialsPublish, async (jobs) => {
     for (const job of jobs) {
       const data = job.data as { variantId?: string; approvalId?: string; sweep?: boolean };
@@ -56,6 +58,8 @@ async function main() {
   await boss.schedule(QUEUES.socialsSync, "0 */6 * * *", {}, { singletonKey: "socials.sync" });
   await boss.schedule(QUEUES.socialsPublish, "* * * * *", { sweep: true }, { singletonKey: "socials.publish.sweep" });
   await boss.work(QUEUES.socialsSync, async () => syncSocials());
+  await boss.schedule(QUEUES.knowledgeEmbed, "*/10 * * * *", {}, { singletonKey: "knowledge.embed" });
+  await boss.work(QUEUES.knowledgeEmbed, async () => { await embedPending(db()); });
   await boss.schedule(QUEUES.mailSync, "*/5 * * * *", {}, { singletonKey: "mail.sync" });
   await boss.work(QUEUES.mailSync, async () => handleMailSync());
   await boss.work(QUEUES.mailTriage, async (jobs) => {

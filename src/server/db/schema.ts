@@ -16,10 +16,12 @@ import {
   timestamp,
   uniqueIndex,
   uuid,
+  vector,
 } from "drizzle-orm/pg-core";
 import type { RouteEvent } from "../../lib/agent-types";
 import { EVENT_SOURCE_KINDS, IMPORTANCE, MAIL_CATEGORIES, STAGES } from "../../lib/outreach-types";
 import { PLATFORMS, VARIANT_STATUSES, type SocialMetrics } from "../../lib/social-types";
+import { KNOWLEDGE_KINDS } from "../../lib/knowledge";
 
 const inList = (xs: readonly string[]) => sql.raw(xs.map((x) => `'${x}'`).join(","));
 
@@ -813,4 +815,79 @@ export const mailMessages = pgTable(
     check("mail_messages_category_chk", sql`${t.category} is null or ${t.category} in (${inList(MAIL_CATEGORIES)})`),
     check("mail_messages_importance_chk", sql`${t.importance} is null or ${t.importance} in (${inList(IMPORTANCE)})`),
   ],
+);
+
+// ── Phase 8: knowledge + goals ──────────────────────────────────────────────
+
+// Keyword search runs against this expression; the GIN index below must match it exactly.
+export const knowledgeSearchText = sql`to_tsvector('simple', "title" || ' ' || "body")`;
+
+export const knowledgeItems = pgTable(
+  "knowledge_items",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    kind: text().notNull(),
+    title: text().notNull(),
+    body: text().notNull().default(""),
+    url: text(),
+    tags: text().array().notNull().default(sql`'{}'::text[]`),
+    source: text().notNull().default("manual"),
+    projectId: uuid().references(() => projects.id, { onDelete: "set null" }),
+    viewedAt: tstz(),
+    embedding: vector({ dimensions: 1536 }),
+    embeddedHash: text(),
+    ...timestamps,
+  },
+  (t) => [
+    index("knowledge_items_search_idx").using("gin", knowledgeSearchText),
+    index().on(t.kind, t.updatedAt),
+    index().on(t.viewedAt),
+    index("knowledge_items_tags_idx").using("gin", t.tags),
+    check("knowledge_items_kind_chk", sql`${t.kind} in (${inList(KNOWLEDGE_KINDS)})`),
+    check("knowledge_items_source_chk", sql`${t.source} in ('manual','upload','agent')`),
+  ],
+);
+
+export const goals = pgTable(
+  "goals",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    title: text().notNull(),
+    color: text().notNull().default("#0a84ff"),
+    targetDate: text(), // Sydney "YYYY-MM-DD"
+    status: text().notNull().default("active"),
+    sortOrder: integer().notNull().default(0),
+    ...timestamps,
+  },
+  (t) => [check("goals_status_chk", sql`${t.status} in ('active','done','archived')`)],
+);
+
+export const objectives = pgTable(
+  "objectives",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    goalId: uuid().notNull().references(() => goals.id, { onDelete: "cascade" }),
+    title: text().notNull(),
+    targetDate: text(),
+    status: text().notNull().default("active"),
+    progress: integer(), // manual override 0–100; null = derived from linked project tasks
+    sortOrder: integer().notNull().default(0),
+    ...timestamps,
+  },
+  (t) => [
+    index().on(t.goalId, t.sortOrder),
+    check("objectives_status_chk", sql`${t.status} in ('active','done')`),
+    check("objectives_progress_chk", sql`${t.progress} is null or ${t.progress} between 0 and 100`),
+  ],
+);
+
+// One objective per project, so a project's tasks are never counted twice.
+export const objectiveProjects = pgTable(
+  "objective_projects",
+  {
+    projectId: uuid().primaryKey().references(() => projects.id, { onDelete: "cascade" }),
+    objectiveId: uuid().notNull().references(() => objectives.id, { onDelete: "cascade" }),
+    createdAt: tstz().notNull().defaultNow(),
+  },
+  (t) => [index().on(t.objectiveId)],
 );
