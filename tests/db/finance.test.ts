@@ -64,6 +64,17 @@ describe("finance import and account isolation", () => {
 });
 
 describe("finance budgets, edits and owner guard", () => {
+  it("filters overview history by account and range while budgets stay in their selected month", async () => {
+    await importFinance(t.handle(), 'Date,Amount,Description,Category\n01/12/2025,1000,Pay,Work\n01/01/2026,-100,Save,Savings\n01/02/2026,-20,Market,Groceries\n01/03/2026,-30,Future,Groceries', "main", "history.csv", false);
+    await importFinance(t.handle(), 'Date,Amount,Description,Category\n01/02/2026,-80,Other market,Groceries', "other", "other.csv", false);
+    const opts = { month: "2026-02", account: "main", category: "", search: "", page: 0 };
+    const s = await loadFinance(t.handle(), { ...opts, range: "3m" });
+    expect(s.summary).toMatchObject({ from: "2025-12", to: "2026-02", income: 100000, spending: 2000, cashflow: 88000, count: 3 });
+    expect(s.summary.monthly.at(-1)).toMatchObject({ cumulativeSavings: 10000, cumulativeCashflow: 88000 });
+    expect(s.transactions).toHaveLength(1);
+    expect(s.budgets.find(b => b.category === "Groceries")?.actual).toBe(10000);
+    expect((await loadFinance(t.handle(), { ...opts, range: "all" })).summary).toMatchObject({ count: 4, spending: 5000, to: "2026-03" });
+  });
   it("carries monthly budgets, includes all accounts, and never treats an empty month as complete data", async () => {
     await importFinance(t.handle(), csv, "main", "a.csv", false);
     await importFinance(t.handle(), csv, "other", "a.csv", false);

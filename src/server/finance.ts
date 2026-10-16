@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import { and, desc, eq, gte, ilike, isNull, lt, sql } from "drizzle-orm";
-import { classify, DEFAULT_FINANCE_CATEGORIES, DEFAULT_FINANCE_RULES, effectiveBudgets, normalise, summariseFinance, type FinanceCategory, type FinanceKind, type ParsedTransaction } from "@/lib/finance";
+import { classify, DEFAULT_FINANCE_CATEGORIES, DEFAULT_FINANCE_RULES, effectiveBudgets, financeOverview, normalise, summariseFinance, type FinanceCategory, type FinanceKind, type FinanceRange, type ParsedTransaction } from "@/lib/finance";
 import { parseFinanceCsv } from "@/lib/finance-csv";
 import type { DB } from "./db/client";
 import { auditLog, financeBudgets, financeCategories, financeImports, financeRules, financeTransactions } from "./db/schema";
@@ -114,7 +114,7 @@ export async function importFinance(h: DB, text: string, account: string, fileNa
   });
 }
 
-export async function loadFinance(h: DB, opts: { month: string; account: string; category: string; search: string; page: number }) {
+export async function loadFinance(h: DB, opts: { month: string; account: string; category: string; search: string; page: number; range?: FinanceRange }) {
   await ensureFinance(h);
   const account = opts.account ? eq(financeTransactions.account, opts.account) : undefined;
   const escapeLike = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);
@@ -128,14 +128,14 @@ export async function loadFinance(h: DB, opts: { month: string; account: string;
     h.select().from(financeTransactions).where(filtered).orderBy(desc(financeTransactions.date), desc(financeTransactions.createdAt), financeTransactions.id).limit(50).offset(opts.page * 50),
     h.select({ count: sql<number>`count(*)::int` }).from(financeTransactions).where(filtered),
     h.select({ date: financeTransactions.date, amount: financeTransactions.amount, category: financeTransactions.category }).from(financeTransactions)
-      .where(and(account, gte(financeTransactions.date, `${opts.month.slice(0, 4)}-01-01`), lt(financeTransactions.date, `${Number(opts.month.slice(0, 4)) + 1}-01-01`))),
+      .where(account),
     h.select().from(financeBudgets).where(sql`${financeBudgets.month} <= ${opts.month}`),
     h.select().from(financeImports).where(opts.account ? eq(financeImports.account, opts.account) : undefined).orderBy(desc(financeImports.createdAt)).limit(8),
     h.select({ date: financeTransactions.date, amount: financeTransactions.amount, category: financeTransactions.category }).from(financeTransactions)
       .where(and(gte(financeTransactions.date, `${opts.month}-01`), lt(financeTransactions.date, nextMonth(opts.month)))),
   ]);
   const categories = categoryRows.map((c): FinanceCategory => ({ name: c.name, group: c.group, kind: c.kind as FinanceKind }));
-  const summary = summariseFinance(records, categories, opts.month);
+  const summary = financeOverview(records, categories, opts.month, opts.range);
   const budgetSummary = summariseFinance(budgetRecords, categories, opts.month);
   const effective = effectiveBudgets(budgets, opts.month);
   return { categories, rules: rules.map(({ keyword, category }) => ({ keyword, category })), accounts: accounts.map((a) => a.account),

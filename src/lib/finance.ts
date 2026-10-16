@@ -54,9 +54,18 @@ export const DEFAULT_FINANCE_RULES: FinanceRule[] = [
 ].map(([keyword, category]) => ({ keyword: keyword!, category: category! }));
 
 export type FinanceRecord = { date: string; amount: number; category: string | null };
-export function summariseFinance(records: FinanceRecord[], categories: FinanceCategory[], month: string) {
+export const FINANCE_RANGES = ["month", "all", "3m", "6m", "1yr"] as const;
+export type FinanceRange = typeof FINANCE_RANGES[number];
+export function shiftFinanceMonth(month: string, offset: number) {
+  const [year, number] = month.split("-").map(Number);
+  const index = year! * 12 + number! - 1 + offset;
+  return `${Math.floor(index / 12)}-${String((index % 12 + 12) % 12 + 1).padStart(2, "0")}`;
+}
+export function summariseFinance(records: FinanceRecord[], categories: FinanceCategory[], month: string, window?: { from: string; to: string }) {
   const byName = new Map(categories.map((c) => [c.name, c]));
-  const monthly = Array.from({ length: 12 }, (_, i) => ({ month: `${month.slice(0, 4)}-${String(i + 1).padStart(2, "0")}`, income: 0, spending: 0, cashflow: 0, count: 0 }));
+  const start = window?.from ?? `${month.slice(0, 4)}-01`, end = window?.to ?? `${month.slice(0, 4)}-12`;
+  const monthly: { month: string; income: number; spending: number; cashflow: number; savings: number; count: number }[] = [];
+  for (let m = start; m <= end; m = shiftFinanceMonth(m, 1)) monthly.push({ month: m, income: 0, spending: 0, cashflow: 0, savings: 0, count: 0 });
   const spending = new Map<string, number>();
   let income = 0, expense = 0, cashflow = 0, savings = 0, investment = 0, unclassified = 0, count = 0;
   for (const row of records) {
@@ -66,8 +75,9 @@ export function summariseFinance(records: FinanceRecord[], categories: FinanceCa
     const inc = kind === "income" ? row.amount : 0;
     const out = kind === "expense" ? -row.amount : 0;
     const period = monthly.find((m) => m.month === row.date.slice(0, 7));
-    if (period) { period.income += inc; period.spending += out; period.cashflow += row.amount; period.count++; }
-    if (row.date.slice(0, 7) !== month) continue;
+    if (period) { period.income += inc; period.spending += out; period.cashflow += row.amount; period.savings += kind === "savings" ? -row.amount : 0; period.count++; }
+    const rowMonth = row.date.slice(0, 7);
+    if (window ? rowMonth < window.from || rowMonth > window.to : rowMonth !== month) continue;
     count++; income += inc; expense += out; cashflow += row.amount;
     if (kind === "savings") savings -= row.amount;
     if (kind === "investment") investment -= row.amount;
@@ -76,6 +86,21 @@ export function summariseFinance(records: FinanceRecord[], categories: FinanceCa
   }
   return { income, spending: expense, cashflow, savings, investment, unclassified, count, monthly,
     categories: [...spending].map(([name, amount]) => ({ name, amount, group: byName.get(name)?.group ?? "Needs review" })).sort((a, b) => b.amount - a.amount) };
+}
+
+export function financeOverview(records: FinanceRecord[], categories: FinanceCategory[], month: string, range: FinanceRange = "month") {
+  const months = records.map(r => r.date.slice(0, 7)).sort();
+  const from = range === "all" ? months[0] ?? month : shiftFinanceMonth(month, -(range === "3m" ? 2 : range === "6m" ? 5 : range === "1yr" ? 11 : 0));
+  const to = range === "all" ? months.at(-1) ?? month : month;
+  const summary = summariseFinance(records, categories, month, { from, to });
+  let cashflow = 0, savings = 0;
+  const monthly = summary.monthly.map(m => {
+    cashflow += m.cashflow; savings += m.savings;
+    return { ...m, cumulativeCashflow: cashflow, cumulativeSavings: savings };
+  });
+  const known = new Set(categories.map(c => c.name));
+  const reviewMonth = records.filter(r => r.date.slice(0, 7) >= from && r.date.slice(0, 7) <= to && (!r.category || !known.has(r.category))).map(r => r.date.slice(0, 7)).sort().at(-1) ?? month;
+  return { ...summary, monthly, from, to, reviewMonth };
 }
 
 export function effectiveBudgets(rows: { category: string; month: string; cents: number }[], month: string) {

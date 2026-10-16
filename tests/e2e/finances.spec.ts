@@ -1,12 +1,76 @@
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
-import { seedHeartbeat, signIn } from "./owner";
+import { E2E_DB_URL, seedHeartbeat, signIn } from "./owner";
+import { createDb } from "@/server/db/client";
+import { importFinance } from "@/server/finance";
+import { eq } from "drizzle-orm";
+import { financeImports } from "@/server/db/schema";
 
 test.beforeAll(seedHeartbeat);
+const chartAccounts: string[] = [];
+test.afterEach(async () => {
+  if (!chartAccounts.length) return;
+  const conn = createDb(E2E_DB_URL);
+  try { for (const account of chartAccounts.splice(0)) await conn.db.delete(financeImports).where(eq(financeImports.account, account)); }
+  finally { await conn.pool.end(); }
+});
 
 test("finances requires sign-in", async ({ page }) => {
   await page.goto("/finances");
   await expect(page).toHaveURL(/\/login/);
+});
+
+test("overview ranges, three trend charts, point values and spending category toggles", async ({ page }, info) => {
+  const account = `charts-${randomUUID().slice(0, 8)}`;
+  chartAccounts.push(account);
+  const conn = createDb(E2E_DB_URL);
+  try {
+    await importFinance(conn.db, 'Date,Amount,Description,Category\n2024-11-01,500,Old pay,Work\n2025-10-01,100,Earlier pay,Work\n2026-01-01,2000,Pay,Work\n2026-03-01,-100,Market,Groceries\n2026-05-01,-50,Home,Rent\n2026-08-01,1000,Pay,Work\n2026-08-02,-200,Save,Savings\n2026-08-03,-100,Market,Groceries\n2026-09-01,-50,Dinner,Delivery\n2026-10-01,50,Savings withdrawal,Savings\n2026-10-02,-20,Market,Groceries', account, 'charts.csv', false);
+  } finally { await conn.pool.end(); }
+  await signIn(page);
+  await page.goto(`/finances?month=2026-10&range=3m&account=${account}`);
+  const range = page.getByRole("group", { name: "Overview time range", exact: true });
+  await expect(range.getByRole("button", { name: "3m", exact: true })).toHaveAttribute("aria-pressed", "true");
+  const savings = page.getByRole("region", { name: "Cumulative savings", exact: true });
+  const net = page.getByRole("region", { name: "Net cash flow by month", exact: true });
+  const cumulative = page.getByRole("region", { name: "Cumulative cash flow", exact: true });
+  const spending = page.getByRole("region", { name: "Where the money went", exact: true });
+  await expect(savings.getByRole("paragraph").filter({ hasText: /^\$150\.00$/ })).toBeVisible();
+  await expect(cumulative.getByRole("paragraph").filter({ hasText: /^\$680\.00$/ })).toBeVisible();
+  if (info.project.name === "desktop") {
+    const boxes = await Promise.all([savings, net, cumulative].map(p => p.boundingBox()));
+    expect(new Set(boxes.map(b => Math.round(b!.y))).size).toBe(1);
+  }
+  const netPoint = net.getByRole("button", { name: "Oct 26: Net cash flow by month $30.00", exact: true });
+  if (info.project.name === "desktop") await netPoint.hover(); else await netPoint.tap();
+  await expect(net.getByRole("tooltip")).toContainText("$30.00");
+  await savings.getByRole("button", { name: "Oct 26: Cumulative savings $150.00", exact: true }).focus();
+  await expect(savings.getByRole("tooltip")).toContainText("$150.00");
+  await cumulative.getByRole("button", { name: "Sept 26: Cumulative cash flow $650.00", exact: true }).focus();
+  await expect(cumulative.getByRole("tooltip")).toContainText("$650.00");
+  const income = page.getByRole("region", { name: "Income and spending", exact: true });
+  const august = income.getByRole("button", { name: /Aug 26: income/ });
+  if (info.project.name === "desktop") await august.hover(); else await august.tap();
+  await expect(income.getByRole("tooltip")).toContainText("Income: $1,000.00");
+  await spending.getByRole("button", { name: "Groceries: $120.00", exact: true }).focus();
+  await expect(spending.getByRole("tooltip")).toContainText("$120.00");
+  await spending.getByRole("checkbox", { name: "Include Groceries", exact: true }).uncheck();
+  await expect(spending.getByRole("checkbox", { name: "Include Delivery", exact: true })).toBeChecked();
+  await expect(spending.getByRole("group", { name: "Spending by category chart" })).toContainText("$50.00");
+  await expect(spending.getByRole("button", { name: "Groceries: $120.00", exact: true })).toHaveCount(0);
+  await spending.getByRole("button", { name: "Hide all", exact: true }).click();
+  await expect(spending.getByRole("group", { name: "Spending by category chart" })).toContainText("$0.00");
+  await spending.getByRole("button", { name: "Show all", exact: true }).click();
+  await expect(spending.getByRole("group", { name: "Spending by category chart" })).toContainText("$170.00");
+  for (const [label, months] of [["6m", 6], ["1yr", 12], ["All time", 24]] as const) {
+    await range.getByRole("button", { name: label, exact: true }).click();
+    await expect(range.getByRole("button", { name: label, exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(income.getByRole("button")).toHaveCount(months);
+  }
+  await range.getByRole("button", { name: "3m", exact: true }).click();
+  await expect(income.getByRole("button")).toHaveCount(3);
+  await savings.scrollIntoViewIfNeeded();
+  await page.screenshot({ path: `test-results/finance-trends-${info.project.name}.png` });
 });
 
 test("CSV preview, repeat import, remembered category and carried monthly budget", async ({ page }, info) => {

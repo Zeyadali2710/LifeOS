@@ -1,7 +1,7 @@
 ---
 milestone: v1.0
 status: finances_locally_verified_pending_deployment
-last_updated: 2026-10-16
+last_updated: 2026-10-17
 workflow: direct feature development (owner requested; GSD discontinued)
 ---
 
@@ -12,7 +12,7 @@ workflow: direct feature development (owner requested; GSD discontinued)
 See: .planning/PROJECT.md (updated 2026-10-07)
 
 **Core value:** Know what matters, what needs attention, and what to do next — in one place.
-**Current focus:** Phase 7.1 Finances: Finance agent integration for orchestrator delegation, approved category reorganisation and budgets. Phase 8 Knowledge + Goals remains unstarted.
+**Current focus:** Phase 7.1 Finances: overview ranges, Savings/cash-flow trend charts, hover values and interactive category pie. Phase 8 Knowledge + Goals remains unstarted.
 
 ## Current Position
 
@@ -95,3 +95,13 @@ Full reorganisations require every current merchant page to have been read in th
 Verified: 563 unit tests; 64 affected Finance/routing/calendar privacy/project-approval DB tests, plus the final 11-test Finance agent suite including injected-write rollback, the permission floor and budget-only changes preserving transaction categories; original 9 Finance import/budget DB tests also passed. Four Finance agent desktop/mobile browser tests passed after correcting selectors, alongside the four existing finance browser tests. Browser tests use seeded data; LLM delegation tests use scripted models. Typecheck and focused lint passed; full lint has 0 errors and 19 existing warnings. Final production and worker builds passed.
 
 Current changes are uncommitted. Existing work preserved; `.codex/` remains local/ignored. No homelab deploy, real financial reorganisation or paid model call performed. The agent requires no migration beyond the existing finance schema and no new credentials. User-facing setup and privacy notes are in `docs/finances.md`, agent/permission contracts in `docs/agents.md` and `docs/permissions.md`.
+
+### Finance overview charts (2026-10-17)
+
+Owner requested All time / 3m / 6m / 1yr overview options, three adjacent trend charts and point-hover values, then category toggles in Where the money went. Added those options alongside Month; rolling ranges end in the selected month, while All time uses the complete imported history for the selected account. Totals and all overview charts share the range; transaction lists and all-account budgets stay monthly.
+
+Owner clarified cumulative savings means transactions categorised as Savings, not income-minus-spending. Savings treatment contributions accumulate net of withdrawals. Cumulative Savings and cumulative cash flow start at zero at the selected range boundary; they do not estimate bank balances. Monthly net cash flow includes all imported movements. Missing months remain no-data for monthly flow and carry recorded cumulative totals with an explicit note.
+
+New charts are horizontal on desktop and stack on phones. All five charts support hover, focus and touch values, plus exact-value tables/lists. The pie now lists individual categories with checked/unchecked controls, recomputed slices/selected total, and Show all/Hide all. Display filtering does not change financial records or other overview totals; net credits stay in the figures/legend without negative slices.
+
+Verification: 12 focused finance unit tests, 10 finance DB tests and all 6 desktop/mobile finance browser tests passed; typecheck, focused lint, production build and worker bundle passed. Browser checks cover all range options, desktop horizontal layout, hover/focus/touch values, individual pie filters, Show all/Hide all, existing imports and carried budgets. Browser fixture cleanup isolates range data from all-account budget tests. No new migration, dependency, credential or production changes. Current overview edits are uncommitted; see `docs/finances.md` for range and chart semantics.

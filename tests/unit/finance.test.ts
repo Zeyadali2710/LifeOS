@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { classify, DEFAULT_FINANCE_CATEGORIES, effectiveBudgets, money, summariseFinance } from "@/lib/finance";
+import { classify, DEFAULT_FINANCE_CATEGORIES, effectiveBudgets, financeOverview, money, shiftFinanceMonth, summariseFinance } from "@/lib/finance";
 import { csvRows, financeDate, parseFinanceCsv } from "@/lib/finance-csv";
 
 describe("finance CSV and money", () => {
@@ -71,5 +71,32 @@ describe("finance categories and budgets", () => {
     expect(effectiveBudgets(rows, "2026-02").get("Groceries")).toEqual({ cents: 10000, month: "2026-01" });
     expect(effectiveBudgets(rows, "2026-04").get("Groceries")).toEqual({ cents: 0, month: "2026-03" });
     expect(effectiveBudgets(rows, "2025-12").size).toBe(0);
+  });
+  it("anchors rolling ranges to the selected month and lets all time include every imported year", () => {
+    const rows = [{ date: "2024-11-01", amount: 10000, category: "Work" }, { date: "2026-01-01", amount: -2000, category: "Groceries" }, { date: "2026-03-01", amount: 5000, category: "Work" }];
+    for (const [range, from, size] of [["3m", "2025-12", 3], ["6m", "2025-09", 6], ["1yr", "2025-03", 12]] as const) {
+      const s = financeOverview(rows, DEFAULT_FINANCE_CATEGORIES, "2026-02", range);
+      expect(s).toMatchObject({ from, to: "2026-02", spending: 2000, income: 0, count: 1 });
+      expect(s.monthly).toHaveLength(size);
+    }
+    expect(financeOverview(rows, DEFAULT_FINANCE_CATEGORIES, "2026-02", "all")).toMatchObject({ from: "2024-11", to: "2026-03", income: 15000, spending: 2000, cashflow: 13000, count: 3 });
+    expect(shiftFinanceMonth("2026-01", -2)).toBe("2025-11");
+    expect(shiftFinanceMonth("2025-12", 1)).toBe("2026-01");
+  });
+  it("accumulates only Savings contributions, subtracts withdrawals and resets at the range boundary", () => {
+    const rows = [
+      { date: "2025-12-01", amount: -50000, category: "Savings" },
+      { date: "2026-01-01", amount: 100000, category: "Work" },
+      { date: "2026-01-02", amount: -20000, category: "Savings" },
+      { date: "2026-01-03", amount: -10000, category: "Investment" },
+      { date: "2026-03-01", amount: 5000, category: "Savings" },
+      { date: "2026-03-02", amount: -1000, category: "Groceries" },
+    ];
+    const s = financeOverview(rows, DEFAULT_FINANCE_CATEGORIES, "2026-03", "3m");
+    expect(s.monthly.map(m => [m.month, m.count, m.cashflow, m.cumulativeSavings, m.cumulativeCashflow])).toEqual([
+      ["2026-01", 3, 70000, 20000, 70000], ["2026-02", 0, 0, 20000, 70000], ["2026-03", 2, 4000, 15000, 74000],
+    ]);
+    expect(financeOverview(rows, DEFAULT_FINANCE_CATEGORIES, "2026-03").monthly[0]).toMatchObject({ cumulativeSavings: -5000, cumulativeCashflow: 4000 });
+    expect(financeOverview([], DEFAULT_FINANCE_CATEGORIES, "2026-03", "all")).toMatchObject({ count: 0, from: "2026-03", to: "2026-03", monthly: [{ count: 0, cumulativeSavings: 0, cumulativeCashflow: 0 }] });
   });
 });

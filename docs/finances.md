@@ -22,7 +22,11 @@ The default category groups follow the workbook. CSV categories take precedence 
 
 Transfers in count as income and transfers out as spending, as requested. Refunds assigned to expense categories offset that category; the Refunds income category follows the workbook's treatment. Savings and investments appear separately as net contributions. Net cash flow includes all imported inflows and outflows. Unknown categories still count by amount direction and are flagged for review. These are transaction reports, not bank balance or net-worth estimates. Missing months show no data.
 
-Overview charts show the selected year's monthly income/spending and selected month's category groups. The month-by-month table provides exact figures. Account filtering applies to the overview and transaction list.
+Overview offers Month, All time, 3m, 6m and 1yr. Rolling ranges include the selected ending month; All time uses the earliest through latest imported month for the selected account. Overview totals, income/spending and category breakdowns use that range. Transactions and budgets retain their selected-month scope.
+
+Three trend charts show cumulative Savings contributions, monthly net cash flow, and cumulative cash flow side by side on desktop (stacked on phones). Savings uses only categories with Savings treatment, with withdrawals reducing contributions; it excludes investments and income-minus-spending. Both cumulative charts start at zero at the selected range boundary and represent imported movements, not account balances. Months without imports show missing data in the monthly cash-flow chart; cumulative recorded totals carry forward with a no-import note.
+
+Hover, focus or tap chart points/slices to see exact AUD values. Tables/lists provide the same values without pointer interaction. In Where the money went, check/uncheck individual categories to update the pie and selected total; Show all/Hide all controls are provided. These display filters do not change transactions or the other overview totals, and reset when the account or range changes. Refunds offset their categories; net-credit categories remain in the selected total and legend without negative pie slices.
 
 ## Budgets
 
