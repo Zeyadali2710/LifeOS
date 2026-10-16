@@ -1,10 +1,13 @@
 import { z } from "zod";
+import { googleConnectionId } from "./google-accounts";
 
 // Single source for mail reply approval payloads (agent approvals + owner editor). Client-safe.
 const addr = z.object({ name: z.string().max(200), address: z.email().max(320) });
 
 export const mailReplyPayload = z.object({
   messageId: z.uuid(),
+  connectionId: googleConnectionId.optional(),
+  mailbox: z.email().max(320).optional(),
   threadId: z.string().min(1).max(200),
   to: z.array(addr).min(1).max(20),
   cc: z.array(addr).max(20),

@@ -15,6 +15,8 @@ import { CalendarConnectionRow } from "./calendar-connection-row";
 import { ConnectionRow, type RowStatus } from "./connection-row";
 import { SocialConnections, type SocialConnectionsData } from "./social-connections";
 import { OutreachConnections, type EventKeys } from "./outreach-connections";
+import type { mailAccounts as loadMailAccounts } from "@/server/mail/accounts";
+import { MailAccounts } from "./mail-accounts";
 
 const SYNC_MS = 15 * 60_000;
 const expiry = (iso: string | null) =>
@@ -22,7 +24,7 @@ const expiry = (iso: string | null) =>
 const mono = "font-mono";
 const GOOGLE_NOTES: Record<string, string> = {
   cancelled: "Google sign-in was cancelled. Nothing was saved.",
-  scope: "Google didn't grant calendar access. Connect again and allow calendar access.",
+  scope: "Google didn't grant the required access. Reconnect your calendar account from Google Calendar, or add an email account and allow Gmail.",
   not_configured: "Google sign-in isn't set up on the server yet.",
 };
 
@@ -32,6 +34,7 @@ export function ConnectionsSection({
   anthropic,
   freePrivateOk,
   calendarConnections,
+  mailAccounts = [],
   googleResult,
   eventSources,
   eventKeys,
@@ -42,6 +45,7 @@ export function ConnectionsSection({
   anthropic: boolean;
   freePrivateOk: boolean;
   calendarConnections: CalendarConnectionDTO[];
+  mailAccounts?: Awaited<ReturnType<typeof loadMailAccounts>>;
   googleResult: { google: string; n: number | null; gmail: boolean | null } | null;
   eventSources: EventSourceDTO[];
   eventKeys: EventKeys;
@@ -59,7 +63,7 @@ export function ConnectionsSection({
   // Announce the OAuth return once, then drop the params from the URL.
   useEffect(() => {
     if (!googleResult) return;
-    if (g === "connected") toast(googleResult.gmail === null ? `Google Calendar connected · ${googleResult.n ?? 0} calendars` : `Google reconnected · Gmail ${googleResult.gmail ? "allowed" : "not allowed"}`);
+    if (g === "connected") toast(googleResult.gmail === null ? `Google Calendar connected · ${googleResult.n ?? 0} calendars` : `Google connected · Gmail replies ${googleResult.gmail ? "allowed" : "not allowed"}`);
     else if (!GOOGLE_NOTES[g ?? ""]) toast("Couldn't save that. Try again.", "error");
     router.replace("/settings?section=connections");
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -211,6 +215,7 @@ export function ConnectionsSection({
         {calendarConnections.map((c) => (
           <CalendarConnectionRow key={c.id} conn={c} notice={c.id === "google_calendar" ? googleNote : undefined} open={c.id === "google_calendar" && googleOpen} />
         ))}
+        <MailAccounts accounts={mailAccounts} configured={calendarConnections.some((c) => c.id === "google_calendar" && c.configured)} />
         <OutreachConnections sources={eventSources} keys={eventKeys} />
         <SocialConnections key={socialConnections.instagram?.credentialGeneration ?? "mock"} connections={socialConnections} redirectUri={socialRedirectUri} result={tiktokResult} />
       </div>

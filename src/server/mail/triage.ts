@@ -165,16 +165,20 @@ export async function runTriage(opts: TriageOpts = {}): Promise<{ triaged: numbe
   const llm = rest.length ? (opts.llm ?? getLlm()) : null;
   if (rest.length && !llm) log.warn("mail triage skipped: no AI key");
   if (llm) {
-    const [conn] = await h.select({ s: connections.scopes }).from(connections).where(eq(connections.id, "google_calendar"));
-    const gmail = conn && gmailAllowed(conn.s, "read") ? createGmail({ getToken: googleTokenSource(h, { fetch: opts.fetch, now: () => now, key: opts.key }), fetch: opts.fetch }) : null;
-    for (let i = 0; i < rest.length; i += BATCH) {
-      const chunk = rest.slice(i, i + BATCH);
-      const r = await triageBatch(h, chunk, { llm, gmail, now });
-      if (r === "paused") {
-        paused = true;
-        break;
+    for (const connectionId of new Set(rest.map((r) => r.connectionId))) {
+      const [conn] = await h.select({ s: connections.scopes }).from(connections).where(eq(connections.id, connectionId));
+      const gmail = conn && gmailAllowed(conn.s, "read") ? createGmail({ getToken: googleTokenSource(h, { connectionId, fetch: opts.fetch, now: () => now, key: opts.key }), fetch: opts.fetch }) : null;
+      const accountRows = rest.filter((r) => r.connectionId === connectionId);
+      for (let i = 0; i < accountRows.length; i += BATCH) {
+        const chunk = accountRows.slice(i, i + BATCH);
+        const r = await triageBatch(h, chunk, { llm, gmail, now });
+        if (r === "paused") {
+          paused = true;
+          break;
+        }
+        if (r === "ok") triaged += chunk.length;
       }
-      if (r === "ok") triaged += chunk.length;
+      if (paused) break;
     }
   }
   if (bulk.length) await notifyLive(h, "outreach", "mail");

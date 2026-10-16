@@ -2,6 +2,8 @@
 
 import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
+import { googleConnectionId } from "@/lib/google-accounts";
+import { removeCalendarConnection } from "./calendar/connections";
 import { mailReplyPayload } from "@/lib/mail-payload";
 import { cancelRun } from "./agents/runs";
 import { capStatus } from "./agents/spend";
@@ -62,6 +64,7 @@ export async function getMailBodyAction(id: string) {
     const [row] = await h
       .select({
         gmailId: mailMessages.gmailId,
+        connectionId: mailMessages.connectionId,
         threadId: mailMessages.threadId,
       })
       .from(mailMessages)
@@ -70,10 +73,10 @@ export async function getMailBodyAction(id: string) {
     const [conn] = await h
       .select({ s: connections.scopes })
       .from(connections)
-      .where(eq(connections.id, "google_calendar"));
+      .where(eq(connections.id, row.connectionId));
     if (!conn || !gmailAllowed(conn.s, "read"))
       return { ok: false, error: "not_connected" } as const;
-    const m = await createGmail({ getToken: googleTokenSource(h) }).getFull(
+    const m = await createGmail({ getToken: googleTokenSource(h, { connectionId: row.connectionId }) }).getFull(
       row.gmailId,
     );
     const b = bodyText((m.payload ?? {}) as GmailPayload);
@@ -211,6 +214,17 @@ export async function syncMailNowAction() {
   });
 }
 
+export async function disconnectMailAccountAction(id: string) {
+  await requireOwner();
+  const parsed = googleConnectionId.safeParse(id);
+  if (!parsed.success || parsed.data === "google_calendar") return INVALID;
+  return run(async () => {
+    await removeCalendarConnection(db(), parsed.data);
+    await notifyLive(db(), "outreach", "mail");
+    return { ok: true } as const;
+  });
+}
+
 /** D-31: create a real Gmail draft, then claim pending -> rejected; a lost claim deletes the draft again. */
 export async function saveReplyToDraftsAction(approvalId: string) {
   await requireOwner();
@@ -241,7 +255,7 @@ export async function saveReplyToDraftsAction(approvalId: string) {
       .where(and(eq(approvals.id, p.data), eq(approvals.status, "pending")))
       .returning({ id: approvals.id, runId: approvals.runId });
     if (!won) {
-      await createGmail({ getToken: googleTokenSource(h) })
+      await createGmail({ getToken: googleTokenSource(h, { connectionId: payload.data.connectionId }) })
         .deleteDraft(draftId)
         .catch((err) => log.error({ err }, "orphan draft delete failed"));
       return { ok: false, error: "not_pending" } as const;

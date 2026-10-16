@@ -24,6 +24,19 @@ const begin = (now = new Date()) => {
 };
 
 describe("google oauth", () => {
+  it("adds a Gmail-only account without requiring calendar scopes or replacing calendar access", async () => {
+    const h = t.handle();
+    await h.delete(connections);
+    const start = startGoogleOAuth({ key, mailOnly: true }) as { url: string; cookie: string };
+    const f = fakeGoogle({ "POST /token": tokens(GMAIL_READ), "GET /gmail/v1/users/me/profile": json({ emailAddress: "second@example.test", historyId: "1" }) });
+    const result = await completeGoogleOAuth(h, { code: "c", state: new URL(start.url).searchParams.get("state"), cookie: start.cookie, error: null, key, fetch: f, enqueue: async () => {} });
+    expect(result).toEqual({ ok: true, calendars: 0, gmail: false });
+    const [row] = await h.select().from(connections);
+    expect(row!.id).toMatch(/^google_mail:[a-f0-9]{64}$/);
+    expect(row!.login).toBe("second@example.test");
+    expect(f.calls.some((c) => c.url.includes("calendarList"))).toBe(false);
+    await h.delete(connections);
+  });
   it("start builds a url bound to BETTER_AUTH_URL", () => {
     const s = startGoogleOAuth({ key }) as { url: string };
     expect(new URL(s.url).searchParams.get("redirect_uri")).toBe("https://lifeos.example.ts.net/api/connections/google/callback");
@@ -90,7 +103,7 @@ describe("google oauth", () => {
     expect((await getCalendarConnections(h, { googleConfigured: true })).find((c) => c.id === "google_calendar")!.gmail).toBe("read_only");
   });
 
-  it("reconnecting a different account wipes mail state and queues a mail sync; the same account keeps it (CR-S01)", async () => {
+  it("adding a different account preserves the original mailbox and sync state", async () => {
     const h = t.handle();
     const seed = async () => {
       await h.delete(mailMessages);
@@ -109,12 +122,13 @@ describe("google oauth", () => {
     expect(await h.select().from(mailMessages)).toHaveLength(1);
     expect(e1).toHaveBeenCalledWith("mail.sync", {}, { singletonKey: "mail.sync" });
     await h.update(connections).set({ login: "old@gmail.com" }).where(eq(connections.id, "google_calendar"));
-    await run(); // previous login differs: wiped
-    expect(await h.select().from(mailMessages)).toHaveLength(0);
-    expect(await h.select().from(settings).where(eq(settings.key, "mail.sync"))).toHaveLength(0);
-    await seed();
-    await h.update(settings).set({ value: { historyId: "99", full: "done", email: "other@gmail.com" } }).where(eq(settings.key, "mail.sync"));
-    await run(); // stored mailbox email differs: wiped
-    expect(await h.select().from(mailMessages)).toHaveLength(0);
+    await run();
+    expect(await h.select().from(mailMessages)).toHaveLength(1);
+    expect(await h.select().from(settings).where(eq(settings.key, "mail.sync"))).toHaveLength(1);
+    const rows = await h.select().from(connections);
+    expect(rows.find((r) => r.id === "google_calendar")?.login).toBe("old@gmail.com");
+    expect(rows.filter((r) => r.id.startsWith("google_mail:"))).toHaveLength(1);
+    await run(); // reconnecting the same additional account reuses its connection
+    expect(await h.select().from(connections)).toHaveLength(2);
   });
 });

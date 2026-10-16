@@ -40,7 +40,7 @@ describe("mailStatus", () => {
     await conn();
     await mail();
     await h().insert(settings).values([{ key: MAIL_SYNC_KEY, value: { full: "done", lastSyncAt: "2026-10-13T00:00:00Z", lastSyncError: "boom" } }, { key: TRIAGE_PAUSED_KEY, value: true }]);
-    expect(await mailStatus(h())).toEqual({ state: "ok", lastSyncAt: "2026-10-13T00:00:00Z", lastSyncError: "boom", triagePaused: true });
+    expect(await mailStatus(h())).toEqual({ state: "ok", lastSyncAt: "2026-10-13T00:00:00Z", lastSyncError: "Gmail: boom", triagePaused: true });
   });
 });
 

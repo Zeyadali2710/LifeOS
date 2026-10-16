@@ -751,7 +751,8 @@ export const mailMessages = pgTable(
   "mail_messages",
   {
     id: uuid().primaryKey().defaultRandom(),
-    gmailId: text().notNull().unique(),
+    connectionId: text().notNull().default("google_calendar"),
+    gmailId: text().notNull(),
     threadId: text().notNull(),
     fromName: text().notNull().default(""),
     fromAddress: text().notNull().default(""),
@@ -776,6 +777,7 @@ export const mailMessages = pgTable(
     ...timestamps,
   },
   (t) => [
+    uniqueIndex("mail_messages_account_gmail_idx").on(t.connectionId, t.gmailId),
     index().on(t.receivedAt),
     index().on(t.threadId),
     index().on(t.category),

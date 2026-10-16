@@ -1,5 +1,6 @@
 // Gmail metadata sync (D-22, D-23): resumable full backfill, then history-based incremental. Bodies are never fetched or stored.
 import { and, eq, gte, inArray, lt, notInArray, sql } from "drizzle-orm";
+import { isGoogleConnection, mailSyncKey } from "@/lib/google-accounts";
 import { GMAIL_COMPOSE, GMAIL_READ, googleTokenSource } from "../calendar/google/client";
 import { markCalendarError } from "../calendar/connections";
 import { ProviderError } from "../calendar/errors";
@@ -19,12 +20,15 @@ const DAY = 86_400_000;
 export type MailSyncState = { historyId: string | null; full: "pending" | "done"; email: string | null; lastSyncAt: string | null; lastSyncError: string | null };
 const EMPTY: MailSyncState = { historyId: null, full: "pending", email: null, lastSyncAt: null, lastSyncError: null };
 
-export async function mailSyncState(h: DB = db()): Promise<MailSyncState> {
-  const [r] = await h.select({ v: settings.value }).from(settings).where(eq(settings.key, MAIL_SYNC_KEY));
+export async function mailSyncState(h: DB = db(), connectionId = "google_calendar"): Promise<MailSyncState> {
+  const [r] = await h.select({ v: settings.value }).from(settings).where(eq(settings.key, mailSyncKey(connectionId)));
   return { ...EMPTY, ...((r?.v as Partial<MailSyncState> | undefined) ?? {}) };
 }
-async function save(h: DB, s: MailSyncState): Promise<void> {
-  await h.insert(settings).values({ key: MAIL_SYNC_KEY, value: s }).onConflictDoUpdate({ target: settings.key, set: { value: s, updatedAt: new Date() } });
+async function save(h: DB, s: MailSyncState, connectionId: string): Promise<void> {
+  await h.transaction(async (tx) => {
+    const [active] = await tx.select({ id: connections.id }).from(connections).where(eq(connections.id, connectionId)).for("share");
+    if (active) await tx.insert(settings).values({ key: mailSyncKey(connectionId), value: s }).onConflictDoUpdate({ target: settings.key, set: { value: s, updatedAt: new Date() } });
+  });
 }
 
 export type MailSyncResult = { skipped: "no_scope" } | { error: "scope" | "auth" | "rate_limit" | "other" } | { ok: true; added: number; changed: boolean };
@@ -32,19 +36,22 @@ export type MailSyncResult = { skipped: "no_scope" } | { error: "scope" | "auth"
 type Opts = { handle?: DB; fetch?: typeof fetch; now?: () => Date; key?: Buffer; enqueue?: Enqueue };
 
 export function createMailSync(opts: Opts = {}) {
-  async function run(): Promise<MailSyncResult> {
+  async function run(connectionId = "google_calendar"): Promise<MailSyncResult> {
     const h = opts.handle ?? db();
     const now = (opts.now ?? (() => new Date()))();
-    let state = await mailSyncState(h).catch(() => EMPTY);
+    if (!isGoogleConnection(connectionId)) return { skipped: "no_scope" };
+    const account = eq(mailMessages.connectionId, connectionId);
+    const saveState = (s: MailSyncState) => save(h, s, connectionId);
+    let state = await mailSyncState(h, connectionId).catch(() => EMPTY);
     const fail = async (error: string, kind: "scope" | "auth" | "rate_limit" | "other") => {
       state = { ...state, lastSyncAt: now.toISOString(), lastSyncError: error };
-      await save(h, state).catch(() => undefined);
+      await saveState(state).catch(() => undefined);
       return { error: kind } as const;
     };
     try {
-      const [conn] = await h.select().from(connections).where(eq(connections.id, "google_calendar"));
+      const [conn] = await h.select().from(connections).where(eq(connections.id, connectionId));
       if (!conn || !gmailAllowed(conn.scopes, "read")) return { skipped: "no_scope" };
-      const gmail = createGmail({ getToken: googleTokenSource(h, { fetch: opts.fetch, now: () => now, key: opts.key }), fetch: opts.fetch });
+      const gmail = createGmail({ getToken: googleTokenSource(h, { connectionId, fetch: opts.fetch, now: () => now, key: opts.key }), fetch: opts.fetch });
 
       let added = 0;
       let changed = false;
@@ -66,11 +73,14 @@ export function createMailSync(opts: Opts = {}) {
           bulk: !!headerOf(hs, "List-Unsubscribe") || labels.includes("CATEGORY_PROMOTIONS") || labels.includes("CATEGORY_SOCIAL"),
         };
         // Metadata columns only: triage and local state (flagged, archived, summary...) survive a re-sync (T-06-38).
-        await h.insert(mailMessages).values({ gmailId: m.id, ...row }).onConflictDoUpdate({ target: mailMessages.gmailId, set: { ...row, updatedAt: now } });
+        await h.transaction(async (tx) => {
+          const [active] = await tx.select({ id: connections.id }).from(connections).where(eq(connections.id, connectionId)).for("share");
+          if (active) await tx.insert(mailMessages).values({ connectionId, gmailId: m.id, ...row }).onConflictDoUpdate({ target: [mailMessages.connectionId, mailMessages.gmailId], set: { ...row, updatedAt: now } });
+        });
       }
       /** Fetches metadata for ids not stored yet (max `budget`); a message deleted meanwhile is skipped. Returns how many were stored. */
       async function fetchNew(ids: string[], budget: number): Promise<{ stored: number; left: number }> {
-        const have = new Set(ids.length ? (await h.select({ g: mailMessages.gmailId }).from(mailMessages).where(inArray(mailMessages.gmailId, ids))).map((r) => r.g) : []);
+        const have = new Set(ids.length ? (await h.select({ g: mailMessages.gmailId }).from(mailMessages).where(and(account, inArray(mailMessages.gmailId, ids)))).map((r) => r.g) : []);
         const todo = ids.filter((i) => !have.has(i));
         let stored = 0;
         for (const id of todo.slice(0, budget)) {
@@ -89,7 +99,7 @@ export function createMailSync(opts: Opts = {}) {
           // Saved before listing so mail arriving during the backfill is caught by the first incremental run.
           const p = await gmail.profile();
           state = { ...state, historyId: p.historyId, email: p.emailAddress };
-          await save(h, state);
+          await saveState(state);
         }
         const l = await gmail.listMessages({ q: "newer_than:30d", labelIds: ["INBOX"], maxResults: 100, maxPages: 5 });
         const listed = l.ids.map((x) => x.id);
@@ -100,13 +110,13 @@ export function createMailSync(opts: Opts = {}) {
           const gone = await h
             .update(mailMessages)
             .set({ labelIds: sql`array_remove(${mailMessages.labelIds}, 'INBOX')`, updatedAt: now })
-            .where(and(inWindow, has, listed.length ? notInArray(mailMessages.gmailId, listed) : undefined))
+            .where(and(account, inWindow, has, listed.length ? notInArray(mailMessages.gmailId, listed) : undefined))
             .returning({ id: mailMessages.id });
           const back = listed.length
             ? await h
                 .update(mailMessages)
                 .set({ labelIds: sql`array_append(${mailMessages.labelIds}, 'INBOX')`, updatedAt: now })
-                .where(and(inArray(mailMessages.gmailId, listed), sql`not (${has})`))
+                .where(and(account, inArray(mailMessages.gmailId, listed), sql`not (${has})`))
                 .returning({ id: mailMessages.id })
             : [];
           changed ||= gone.length + back.length > 0;
@@ -115,7 +125,7 @@ export function createMailSync(opts: Opts = {}) {
         added += r.stored;
         changed ||= r.stored > 0;
         state = { ...state, full: r.left > 0 ? "pending" : "done" };
-        await save(h, state);
+        await saveState(state);
       }
 
       async function incremental(): Promise<void> {
@@ -135,18 +145,18 @@ export function createMailSync(opts: Opts = {}) {
         for (const item of r.history) {
           for (const [list, add] of [[item.labelsAdded, true], [item.labelsRemoved, false]] as const) {
             for (const ev of list ?? []) {
-              const [cur] = await h.select({ l: mailMessages.labelIds }).from(mailMessages).where(eq(mailMessages.gmailId, ev.message.id));
+              const [cur] = await h.select({ l: mailMessages.labelIds }).from(mailMessages).where(and(account, eq(mailMessages.gmailId, ev.message.id)));
               if (!cur) continue;
               const ch = ev.labelIds ?? [];
               const next = add ? [...new Set([...cur.l, ...ch])] : cur.l.filter((x) => !ch.includes(x));
-              await h.update(mailMessages).set({ labelIds: next, updatedAt: now }).where(eq(mailMessages.gmailId, ev.message.id));
+              await h.update(mailMessages).set({ labelIds: next, updatedAt: now }).where(and(account, eq(mailMessages.gmailId, ev.message.id)));
               changed = true;
             }
           }
         }
         // Too many adds this run: keep the old historyId so the next run replays (upserts are idempotent).
         state = { ...state, historyId: f.left > 0 ? state.historyId : r.historyId };
-        await save(h, state);
+        await saveState(state);
       }
 
       if (state.historyId && state.full === "done") {
@@ -160,22 +170,22 @@ export function createMailSync(opts: Opts = {}) {
       } else await full();
 
       const old = new Date(+now - 90 * DAY);
-      await h.delete(mailMessages).where(and(lt(mailMessages.receivedAt, old), sql`not ('INBOX' = any(${mailMessages.labelIds}))`));
+      await h.delete(mailMessages).where(and(account, lt(mailMessages.receivedAt, old), sql`not ('INBOX' = any(${mailMessages.labelIds}))`));
 
       state = { ...state, lastSyncAt: now.toISOString(), lastSyncError: null };
-      await save(h, state);
+      await saveState(state);
       if (added > 0) await (opts.enqueue ?? realEnqueue)(QUEUES.mailTriage, {}, { singletonKey: "mail.triage" }).catch((err) => log.error({ err }, "mail triage enqueue failed"));
       if (changed) await notifyLive(h, "outreach", "mail");
       return { ok: true, added, changed };
     } catch (e) {
       if (e instanceof ProviderError) {
         if (e.kind === "scope") {
-          const [conn] = await h.select({ s: connections.scopes }).from(connections).where(eq(connections.id, "google_calendar"));
-          if (conn) await h.update(connections).set({ scopes: conn.s.filter((x) => x !== GMAIL_READ && x !== GMAIL_COMPOSE) }).where(eq(connections.id, "google_calendar"));
+          const [conn] = await h.select({ s: connections.scopes }).from(connections).where(eq(connections.id, connectionId));
+          if (conn) await h.update(connections).set({ scopes: conn.s.filter((x) => x !== GMAIL_READ && x !== GMAIL_COMPOSE) }).where(eq(connections.id, connectionId));
           return fail("Gmail access was removed. Reconnect Google.", "scope");
         }
         if (e.kind === "auth") {
-          await markCalendarError(h, "google_calendar", "Access was rejected.").catch(() => undefined);
+          await markCalendarError(h, connectionId, "Access was rejected.").catch(() => undefined);
           return fail("Access was rejected. Reconnect Google.", "auth");
         }
         if (e.kind === "rate_limit") return fail("Gmail rate limit reached.", "rate_limit");
@@ -185,4 +195,13 @@ export function createMailSync(opts: Opts = {}) {
     }
   }
   return { run };
+}
+
+export async function syncMailAccounts(opts: Opts = {}): Promise<MailSyncResult[]> {
+  const h = opts.handle ?? db();
+  const rows = await h.select({ id: connections.id }).from(connections);
+  const sync = createMailSync(opts);
+  const results: MailSyncResult[] = [];
+  for (const { id } of rows) if (isGoogleConnection(id)) results.push(await sync.run(id));
+  return results;
 }

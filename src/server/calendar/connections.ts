@@ -1,4 +1,5 @@
-import { eq, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm";
+import { isGoogleConnection, mailSyncKey } from "@/lib/google-accounts";
 import { toCalendarDTO, type CalendarConnectionDTO, type CalendarConnectionId } from "../../lib/calendar-types";
 import { decrypt, encrypt } from "../crypto";
 import { db, type DB } from "../db/client";
@@ -22,7 +23,7 @@ export const hasGmail = (scopes: string[], which: "read" | "compose") => scopes.
 /** Create or rotate: overwrites the single row in place, resets status and clears lastError (D-05). */
 export async function saveCalendarSecret(
   h: DB = db(),
-  id: CalendarConnectionId,
+  id: string,
   secret: Record<string, unknown>,
   meta: { account: string; scopes?: string[] },
   opts: { key?: Buffer; now?: Date } = {},
@@ -34,18 +35,18 @@ export async function saveCalendarSecret(
 }
 
 /** Only providers call this. */
-export async function readCalendarSecret<T = Record<string, unknown>>(h: DB = db(), id: CalendarConnectionId, key?: Buffer): Promise<T | null> {
+export async function readCalendarSecret<T = Record<string, unknown>>(h: DB = db(), id: string, key?: Buffer): Promise<T | null> {
   const [r] = await h.select({ c: connections.ciphertext }).from(connections).where(eq(connections.id, id));
   return r ? (JSON.parse(decrypt(r.c, key)) as T) : null;
 }
 
 /** Token refresh: ciphertext only, no status change, no audit. */
-export async function updateCalendarSecret(h: DB = db(), id: CalendarConnectionId, secret: Record<string, unknown>, key?: Buffer): Promise<void> {
+export async function updateCalendarSecret(h: DB = db(), id: string, secret: Record<string, unknown>, key?: Buffer): Promise<void> {
   await h.update(connections).set({ ciphertext: encrypt(JSON.stringify(secret), key), updatedAt: new Date() }).where(eq(connections.id, id));
 }
 
 /** message must be a fixed string (e.g. "Access was rejected."), never provider output. */
-export async function markCalendarError(h: DB = db(), id: CalendarConnectionId, message: string): Promise<void> {
+export async function markCalendarError(h: DB = db(), id: string, message: string): Promise<void> {
   await h.update(connections).set({ status: "error", lastError: message, updatedAt: new Date() }).where(eq(connections.id, id));
 }
 
@@ -56,9 +57,9 @@ export async function recordCalendarSync(h: DB = db(), id: CalendarConnectionId,
 const GOOGLE_REVOKE_URL = "https://oauth2.googleapis.com/revoke";
 
 /** Best effort: never blocks or fails the disconnect, never logs the token (IN-A02). */
-async function revokeGoogle(h: DB, opts: { fetch?: typeof fetch; key?: Buffer }) {
+async function revokeGoogle(h: DB, id: string, opts: { fetch?: typeof fetch; key?: Buffer }) {
   try {
-    const s = await readCalendarSecret<{ refreshToken?: string }>(h, "google_calendar", opts.key);
+    const s = await readCalendarSecret<{ refreshToken?: string }>(h, id, opts.key);
     if (!s?.refreshToken) return;
     const res = await (opts.fetch ?? globalThis.fetch)(GOOGLE_REVOKE_URL, {
       method: "POST",
@@ -73,18 +74,20 @@ async function revokeGoogle(h: DB, opts: { fetch?: typeof fetch; key?: Buffer })
 }
 
 /** Drops the local Gmail copy and sync state (CR-S01). tasks.mail_message_id is ON DELETE SET NULL. */
-export async function resetMailState(h: DB): Promise<void> {
-  await h.delete(mailMessages);
-  await h.delete(settings).where(inArray(settings.key, ["mail.sync", "mail.triage_paused"]));
+export async function resetMailState(h: DB, id = "google_calendar"): Promise<void> {
+  await h.delete(mailMessages).where(eq(mailMessages.connectionId, id));
+  await h.delete(settings).where(eq(settings.key, mailSyncKey(id)));
 }
 
 /** Cascades to calendars and their events. Google's refresh token is revoked first (best effort); local mail is wiped. */
-export async function removeCalendarConnection(h: DB = db(), id: CalendarConnectionId, opts: { fetch?: typeof fetch; key?: Buffer } = {}): Promise<void> {
-  if (id === "google_calendar") {
-    await revokeGoogle(h, opts);
-    await resetMailState(h);
+export async function removeCalendarConnection(h: DB = db(), id: string, opts: { fetch?: typeof fetch; key?: Buffer } = {}): Promise<void> {
+  if (isGoogleConnection(id)) {
+    await revokeGoogle(h, id, opts);
   }
-  await h.delete(connections).where(eq(connections.id, id));
+  await h.transaction(async (tx) => {
+    await tx.delete(connections).where(eq(connections.id, id));
+    if (isGoogleConnection(id)) await resetMailState(tx as unknown as DB, id);
+  });
   await aud(h, "connection.remove", id, { id });
 }
 

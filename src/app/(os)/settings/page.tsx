@@ -13,6 +13,7 @@ import { eventKeyStatus } from "@/server/outreach/connections";
 import { listEventSources } from "@/server/outreach/sources";
 import { socialConnectionStatus } from "@/server/socials/connections";
 import { requireOwner } from "@/server/session";
+import { mailAccounts } from "@/server/mail/accounts";
 import { formatHM, tzLabel } from "@/server/time";
 import { ConnectionsSection } from "@/settings/connections-section";
 import { OutreachSection } from "@/settings/outreach-section";
@@ -65,6 +66,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         freePrivateOk={await getFreePrivateOk(h)}
         calendarConnections={await getCalendarConnections(h, { googleConfigured: Boolean(env().GOOGLE_CLIENT_ID && env().GOOGLE_CLIENT_SECRET) })}
         googleResult={googleResult}
+        mailAccounts={await mailAccounts(h)}
         eventSources={eventSources}
         eventKeys={eventKeys}
         socialConnections={await socialConnectionStatus(h)}

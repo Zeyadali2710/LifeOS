@@ -8,8 +8,8 @@ import { env } from "../../env";
 import { log } from "../../log";
 import { enqueue as realEnqueue, QUEUES, type Enqueue } from "../../queue";
 import { refreshCalendarList } from "../calendars";
-import { mailSyncState } from "../../mail/sync";
-import { resetMailState, saveCalendarSecret } from "../connections";
+import { createGmail } from "../../mail/client";
+import { saveCalendarSecret } from "../connections";
 import { CALENDAR_SCOPES, createGoogle, exchangeCode, GMAIL_COMPOSE, GMAIL_READ, googleAuthUrl } from "./client";
 import { createGoogleProvider } from "./provider";
 
@@ -18,15 +18,15 @@ const TTL_MS = 10 * 60_000;
 const b64 = () => randomBytes(32).toString("base64url");
 const redirectUri = () => `${env().BETTER_AUTH_URL}/api/connections/google/callback`;
 
-export function startGoogleOAuth({ now = new Date(), key }: { now?: Date; key?: Buffer } = {}): { url: string; cookie: string } | { error: "not_configured" } {
+export function startGoogleOAuth({ now = new Date(), key, mailOnly = false }: { now?: Date; key?: Buffer; mailOnly?: boolean } = {}): { url: string; cookie: string } | { error: "not_configured" } {
   const e = env();
   if (!e.GOOGLE_CLIENT_ID || !e.GOOGLE_CLIENT_SECRET) return { error: "not_configured" };
   const state = b64();
   const verifier = b64();
   const challenge = createHash("sha256").update(verifier).digest("base64url");
   return {
-    url: googleAuthUrl({ clientId: e.GOOGLE_CLIENT_ID, redirectUri: redirectUri(), state, challenge }),
-    cookie: encrypt(JSON.stringify({ state, verifier, at: now.toISOString() }), key),
+    url: googleAuthUrl({ clientId: e.GOOGLE_CLIENT_ID, redirectUri: redirectUri(), state, challenge, mailOnly }),
+    cookie: encrypt(JSON.stringify({ state, verifier, at: now.toISOString(), mailOnly }), key),
   };
 }
 
@@ -43,7 +43,7 @@ export async function completeGoogleOAuth(
   p: { code: string | null; state: string | null; error: string | null; cookie: string | null; fetch?: typeof fetch; now?: Date; key?: Buffer; enqueue?: Enqueue },
 ): Promise<OAuthResult> {
   const now = p.now ?? new Date();
-  let saved: { state: string; verifier: string; at: string };
+  let saved: { state: string; verifier: string; at: string; mailOnly?: boolean };
   try {
     saved = JSON.parse(decrypt(p.cookie ?? "", p.key));
   } catch {
@@ -55,22 +55,27 @@ export async function completeGoogleOAuth(
   if (!p.code || !e.GOOGLE_CLIENT_ID || !e.GOOGLE_CLIENT_SECRET) return { ok: false, error: "failed" };
   try {
     const t = await exchangeCode({ code: p.code, verifier: saved.verifier, redirectUri: redirectUri(), clientId: e.GOOGLE_CLIENT_ID, clientSecret: e.GOOGLE_CLIENT_SECRET, fetch: p.fetch, now });
-    if (!CALENDAR_SCOPES.every((s) => t.scopes.includes(s))) return { ok: false, error: "scope" };
+    const gmail = [GMAIL_READ, GMAIL_COMPOSE].every((s) => t.scopes.includes(s));
+    if (saved.mailOnly ? !t.scopes.includes(GMAIL_READ) : !CALENDAR_SCOPES.every((s) => t.scopes.includes(s))) return { ok: false, error: "scope" };
     const provider = createGoogleProvider({ google: createGoogle({ getToken: async () => t.accessToken, fetch: p.fetch }) });
-    const remote = await provider.listCalendars();
-    const account = remote.find((c) => c.kind === "primary")?.remoteId ?? "Google";
-    // A different Google account: the stored mail and historyId belong to the old mailbox (CR-S01). Full sync re-reads the owner email.
+    const remote = saved.mailOnly ? [] : await provider.listCalendars();
+    const account = saved.mailOnly
+      ? (await createGmail({ getToken: async () => t.accessToken, fetch: p.fetch }).profile()).emailAddress.toLowerCase()
+      : remote.find((c) => c.kind === "primary")?.remoteId;
+    if (!account || !account.includes("@")) return { ok: false, error: "failed" };
     const [prev] = await h.select({ login: connections.login }).from(connections).where(eq(connections.id, "google_calendar"));
-    const mailEmail = (await mailSyncState(h)).email;
-    const differs = (a: string | null | undefined) => !!a && a.toLowerCase() !== account.toLowerCase();
-    if (differs(prev?.login) || (account.includes("@") && differs(mailEmail))) await resetMailState(h);
-    await saveCalendarSecret(h, "google_calendar", { refreshToken: t.refreshToken, accessToken: t.accessToken, expiresAt: t.expiresAt }, { account, scopes: t.scopes }, { key: p.key, now });
-    await refreshCalendarList(h, "google_calendar", remote, account);
+    // Keep the existing calendar account. Additional accounts get independent Gmail credentials and history.
+    const primary = prev?.login?.toLowerCase() === account.toLowerCase() || (!saved.mailOnly && !prev);
+    const id = primary ? "google_calendar" : `google_mail:${createHash("sha256").update(account.toLowerCase()).digest("hex")}`;
+    if (!primary && !t.scopes.includes(GMAIL_READ)) return { ok: false, error: "scope" };
+    // A mail-only reconnect of the calendar account must retain its calendar grant.
+    if (primary && saved.mailOnly && !CALENDAR_SCOPES.every((s) => t.scopes.includes(s))) return { ok: false, error: "scope" };
+    await saveCalendarSecret(h, id, { refreshToken: t.refreshToken, accessToken: t.accessToken, expiresAt: t.expiresAt }, { account, scopes: t.scopes }, { key: p.key, now });
+    if (primary && remote.length) await refreshCalendarList(h, "google_calendar", remote, account);
     const enqueue = p.enqueue ?? realEnqueue;
     await enqueue(QUEUES.calendarSync, {}, { singletonKey: "calendar.sync" }).catch(() => undefined);
-    const gmail = [GMAIL_READ, GMAIL_COMPOSE].every((s) => t.scopes.includes(s));
-    if (gmail) await enqueue(QUEUES.mailSync, {}, { singletonKey: "mail.sync" }).catch(() => undefined); // IN-S03
-    return { ok: true, calendars: remote.length, gmail };
+    if (t.scopes.includes(GMAIL_READ)) await enqueue(QUEUES.mailSync, {}, { singletonKey: "mail.sync" }).catch(() => undefined); // IN-S03
+    return { ok: true, calendars: primary ? remote.length : 0, gmail };
   } catch (err) {
     log.error({ err: err instanceof Error ? err.message : "unknown" }, "google oauth failed"); // message is a fixed string, never a token
     return { ok: false, error: "failed" };

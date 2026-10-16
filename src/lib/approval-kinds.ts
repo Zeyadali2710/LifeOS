@@ -49,7 +49,7 @@ export const LOCKED: Record<ApprovalKind, string[]> = {
   event_delete: Object.keys(eventDeletePayload.shape),
   project_create: ["sources"],
   project_update: ["projectId", "before", "sources"],
-  mail_reply: ["messageId", "threadId", "to", "cc", "inReplyTo", "references", "originalSubject", "from"],
+  mail_reply: ["messageId", "connectionId", "mailbox", "threadId", "to", "cc", "inReplyTo", "references", "originalSubject", "from"],
   social_publish: ["variantId", "platform", "providerMode", "connectionGeneration"],
 };
 

@@ -52,6 +52,7 @@ export function EmailCard({
           <span className="shrink-0 text-[12.5px] text-text-3">{mailTime(m.receivedAt, now)}</span>
         </span>
         <span className="truncate text-[13.5px] text-text">{m.subject || "(no subject)"}</span>
+        {m.mailbox && <span className="truncate text-[11.5px] text-text-3">{m.mailbox}</span>}
         {triaged && m.summary ? (
           <span className="line-clamp-2 text-[12.5px] text-text-2">{m.summary}</span>
         ) : (

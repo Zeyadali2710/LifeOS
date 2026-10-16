@@ -28,16 +28,16 @@ const MSG: Record<string, string> = {
 };
 const fail = (kind: ProviderErrorKind, status: number, retry?: number) => new ProviderError("google", kind, status, MSG[kind] ?? MSG.client!, retry);
 
-export function googleAuthUrl(p: { clientId: string; redirectUri: string; state: string; challenge: string }): string {
+export function googleAuthUrl(p: { clientId: string; redirectUri: string; state: string; challenge: string; mailOnly?: boolean }): string {
   const u = new URL(AUTH_URL);
   u.search = new URLSearchParams({
     client_id: p.clientId,
     redirect_uri: p.redirectUri,
     response_type: "code",
-    scope: GOOGLE_SCOPES.join(" "),
+    scope: (p.mailOnly ? [GMAIL_READ, GMAIL_COMPOSE] : GOOGLE_SCOPES).join(" "),
     access_type: "offline",
     include_granted_scopes: "true",
-    prompt: "consent",
+    prompt: "consent select_account",
     state: p.state,
     code_challenge: p.challenge,
     code_challenge_method: "S256",
@@ -139,16 +139,17 @@ export function createGoogle({ getToken, fetch = globalThis.fetch, timeoutMs = 1
 type Secret = { refreshToken: string; accessToken: string; expiresAt: string };
 
 /** Returns a valid access token, refreshing (and persisting) once when < 60 s remain. */
-export function googleTokenSource(h: DB = db(), o: { fetch?: typeof fetch; now?: () => Date; key?: Buffer } = {}): () => Promise<string> {
+export function googleTokenSource(h: DB = db(), o: { fetch?: typeof fetch; now?: () => Date; key?: Buffer; connectionId?: string } = {}): () => Promise<string> {
   return async () => {
-    const s = await readCalendarSecret<Secret>(h, "google_calendar", o.key);
+    const id = o.connectionId ?? "google_calendar";
+    const s = await readCalendarSecret<Secret>(h, id, o.key);
     if (!s) throw new ProviderError("google", "auth", 401, "Google Calendar isn't connected.");
     const now = o.now?.() ?? new Date();
     if (s.accessToken && Date.parse(s.expiresAt) - now.getTime() > 60_000) return s.accessToken;
     const e = env();
     if (!e.GOOGLE_CLIENT_ID || !e.GOOGLE_CLIENT_SECRET) throw new ProviderError("google", "auth", 401, "Google Calendar isn't connected.");
     const t = await refreshAccessToken({ refreshToken: s.refreshToken, clientId: e.GOOGLE_CLIENT_ID, clientSecret: e.GOOGLE_CLIENT_SECRET, fetch: o.fetch, now });
-    await updateCalendarSecret(h, "google_calendar", { ...s, ...t }, o.key);
+    await updateCalendarSecret(h, id, { ...s, ...t }, o.key);
     return t.accessToken;
   };
 }

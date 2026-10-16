@@ -184,13 +184,43 @@ function instagram(connection: SocialConnection, f: Fetch): SocialProvider {
         if (typeof remoteId !== "string" || !remoteId) throw new UncertainPublishError();
         return { state: "published", remoteId, containerId };
       },
-      async sync(): Promise<SyncResult> {
+      async sync(since?: Date): Promise<SyncResult> {
         const res = await request(f, `${INSTAGRAM}/me?fields=followers_count,media_count`, { headers });
         const body = object(await res.json());
         const account: NonNullable<SyncResult["account"]> = {};
         if (typeof body.followers_count === "number") account.followers = body.followers_count;
         if (typeof body.media_count === "number") account.posts = body.media_count;
-        return { account, posts: [] }; // media metric names require owner smoke evidence
+        const posts: NonNullable<SyncResult["posts"]> = [];
+        let after: string | undefined;
+        const seen = new Set<string>();
+        for (let page = 0; page < 50; page++) {
+          const url = new URL(`${INSTAGRAM}/me/media`);
+          url.search = new URLSearchParams({ fields: "id,timestamp,media_product_type", limit: "100", ...(after ? { after } : {}) }).toString();
+          const body = object(await (await request(f, url.toString(), { headers })).json());
+          if (!Array.isArray(body.data)) throw new SocialProviderError();
+          let older = false;
+          for (const item of body.data) {
+            const media = object(item);
+            if (since && typeof media.timestamp === "string" && Date.parse(media.timestamp) < since.getTime()) { older = true; continue; }
+            if (typeof media.id !== "string" || media.media_product_type === "STORY") continue;
+            const insight = object(await (await request(f, `${INSTAGRAM}/${encodeURIComponent(media.id)}/insights?metric=views,reach,likes,comments,saved,shares`, { headers })).json());
+            if (!Array.isArray(insight.data)) throw new SocialProviderError();
+            const values: Record<string, unknown> = {};
+            for (const entry of insight.data) {
+              const metric = object(entry);
+              if (typeof metric.name !== "string") continue;
+              values[metric.name] = Array.isArray(metric.values) ? object(metric.values[0]).value : object(metric.total_value).value;
+            }
+            posts.push({ remoteId: media.id, metrics: metrics(values, [["views", "views"], ["reach", "reach"], ["likes", "likes"], ["comments", "comments"], ["saved", "saves"], ["shares", "shares"]]) });
+          }
+          const paging = object(body.paging);
+          if (older || !paging.next) return { account, posts };
+          const next = object(paging.cursors).after;
+          if (typeof next !== "string" || !next || seen.has(next)) throw new SocialProviderError();
+          seen.add(next);
+          after = next;
+        }
+        throw new SocialProviderError(); // Never report a capped scan as a successful complete sync.
       },
     } : {}),
   };

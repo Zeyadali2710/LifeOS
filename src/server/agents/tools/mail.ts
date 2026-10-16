@@ -2,6 +2,7 @@
 // (hard mail taint in policy.mailInScope). Bodies are fetched live and never stored.
 import { and, desc, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import { z } from "zod";
+import { isGoogleConnection } from "@/lib/google-accounts";
 import { mailReplyPayload, type MailReplyPayload } from "@/lib/mail-payload";
 import { IMPORTANCE, MAIL_CATEGORIES } from "@/lib/outreach-types";
 import { ProviderError } from "../../calendar/errors";
@@ -9,7 +10,6 @@ import { googleTokenSource } from "../../calendar/google/client";
 import { connections, mailMessages } from "../../db/schema";
 import { createGmail, gmailAllowed } from "../../mail/client";
 import { sendReply } from "../../mail/send";
-import { mailSyncState } from "../../mail/sync";
 import { bodyText, headerOf, parseAddrList, type GmailPayload } from "../../mail/text";
 import { ToolError, type Tool } from "../types";
 
@@ -100,12 +100,12 @@ const getMessage: Tool<{ id: string }, z.infer<typeof msgOut>> = {
   sideEffect: false,
   private: true,
   async handler(i, ctx) {
-    const [row] = await ctx.handle.select({ gmailId: mailMessages.gmailId }).from(mailMessages).where(eq(mailMessages.id, i.id));
+    const [row] = await ctx.handle.select({ gmailId: mailMessages.gmailId, connectionId: mailMessages.connectionId }).from(mailMessages).where(eq(mailMessages.id, i.id));
     if (!row) throw new ToolError("not_found", "Unknown message.");
-    const [conn] = await ctx.handle.select({ scopes: connections.scopes }).from(connections).where(eq(connections.id, "google_calendar"));
+    const [conn] = await ctx.handle.select({ scopes: connections.scopes }).from(connections).where(eq(connections.id, row.connectionId));
     if (!conn || !gmailAllowed(conn.scopes, "read")) return { connected: false, message: NOT_ALLOWED, untrusted: true };
     try {
-      const gmail = createGmail({ getToken: googleTokenSource(ctx.handle, { fetch: ctx.fetch, now: ctx.now }), fetch: ctx.fetch });
+      const gmail = createGmail({ getToken: googleTokenSource(ctx.handle, { connectionId: row.connectionId, fetch: ctx.fetch, now: ctx.now }), fetch: ctx.fetch });
       const m = await gmail.getFull(row.gmailId);
       const hs = m.payload?.headers ?? [];
       const addrs = (n: string) => parseAddrList(headerOf(hs, n)).map((a) => (a.name ? `${cut(a.name, 100)} <${a.address}>` : a.address)).join(", ");
@@ -138,6 +138,8 @@ const sh = mailReplyPayload.shape;
 // threadId/to/cc/inReplyTo/references/originalSubject are declared only so executeApproved's tool.input.parse(payload)
 // keeps them; resolve() ALWAYS overwrites them from the stored message and live Gmail headers.
 const locked = {
+  connectionId: sh.connectionId, // always overwritten by resolve
+  mailbox: sh.mailbox, // always overwritten by resolve
   threadId: sh.threadId.optional(), // always overwritten by resolve
   to: sh.to.optional(), // always overwritten by resolve
   cc: sh.cc.optional(), // always overwritten by resolve
@@ -168,15 +170,17 @@ const sendReplyTool: Tool<ReplyIn, { messageId: string; threadId: string }> = {
   sideEffect: true,
   private: true,
   async available(ctx) {
-    const [conn] = await ctx.handle.select({ scopes: connections.scopes }).from(connections).where(eq(connections.id, "google_calendar"));
-    return conn && gmailAllowed(conn.scopes, "compose") ? null : NOT_ALLOWED;
+    const rows = await ctx.handle.select({ id: connections.id, scopes: connections.scopes }).from(connections);
+    return rows.some((c) => isGoogleConnection(c.id) && gmailAllowed(c.scopes, "compose")) ? null : NOT_ALLOWED;
   },
   async resolve(i, ctx) {
     const [row] = await ctx.handle.select().from(mailMessages).where(eq(mailMessages.id, i.messageId));
     if (!row) throw new ToolError("not_found", "Unknown message.");
+    const [account] = await ctx.handle.select({ login: connections.login, scopes: connections.scopes }).from(connections).where(eq(connections.id, row.connectionId));
+    if (!account || !gmailAllowed(account.scopes, "compose")) throw new ToolError("unavailable", NOT_ALLOWED);
     let hs: { name: string; value: string }[];
     try {
-      const gmail = createGmail({ getToken: googleTokenSource(ctx.handle, { fetch: ctx.fetch, now: ctx.now }), fetch: ctx.fetch });
+      const gmail = createGmail({ getToken: googleTokenSource(ctx.handle, { connectionId: row.connectionId, fetch: ctx.fetch, now: ctx.now }), fetch: ctx.fetch });
       hs = (await gmail.getMetadata(row.gmailId, HEADERS)).payload?.headers ?? [];
     } catch (e) {
       if (e instanceof ProviderError) throw new ToolError("unavailable", e.kind === "scope" ? NOT_ALLOWED : "Couldn't reach Gmail. Try again later.");
@@ -187,7 +191,7 @@ const sendReplyTool: Tool<ReplyIn, { messageId: string; threadId: string }> = {
     const to = [sender];
     let cc: { name: string; address: string }[] = [];
     if (i.replyAll) {
-      const owner = (await mailSyncState(ctx.handle)).email?.toLowerCase();
+      const owner = account.login?.toLowerCase();
       const skip = new Set([...(owner ? [owner] : []), sender.address.toLowerCase()]);
       for (const a of [...parseAddrList(headerOf(hs, "To")), ...parseAddrList(headerOf(hs, "Cc"))]) {
         const k = a.address.toLowerCase();
@@ -200,6 +204,8 @@ const sendReplyTool: Tool<ReplyIn, { messageId: string; threadId: string }> = {
     const msgId = headerOf(hs, "Message-ID");
     const full = mailReplyPayload.safeParse({
       messageId: row.id,
+      connectionId: row.connectionId,
+      mailbox: z.email().safeParse(account.login).success ? account.login : undefined,
       threadId: row.threadId,
       to,
       cc,

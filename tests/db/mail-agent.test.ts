@@ -105,6 +105,25 @@ describe("mail.send_reply contract", () => {
 });
 
 describe("recipients are server-filled", () => {
+  it("binds an approved reply to its receiving account and sends with that account's token", async () => {
+    const connectionId = `google_mail:${"b".repeat(64)}`;
+    await saveCalendarSecret(h(), connectionId, { refreshToken: "r2", accessToken: "second-token", expiresAt: "2099-01-01T00:00:00Z" }, { account: "second@example.test", scopes: [GMAIL_READ, GMAIL_COMPOSE] }, { key: Buffer.from(key, "base64") });
+    await h().update(mailMessages).set({ connectionId }).where(eq(mailMessages.id, m1.id));
+    const f = gmail();
+    const fetcher: typeof fetch = (input, init) => {
+      expect(new Headers(init?.headers).get("Authorization")).toBe("Bearer second-token");
+      return f(input, init);
+    };
+    const { ap } = await propose({ messageId: m1.id, connectionId: "google_calendar", subject: "Re: Agenda", body: "Yes." }, fetcher);
+    expect(ap!.originalPayload).toMatchObject({ connectionId });
+    const edit = await decide(h(), ap!.id, "approve", { enqueue: noop, edited: { ...ap!.originalPayload as object, connectionId: "google_calendar" } });
+    expect(edit.ok).toBe(false);
+    expect(f.sent).toHaveLength(0);
+    await approve(ap!.id);
+    expect(await executeApproved(h(), ap!.id, { fetch: fetcher })).toMatchObject({ status: "executed" });
+    expect(f.sent).toHaveLength(1);
+  });
+
   it("never lets a model-supplied to/cc/threadId reach the approval or the sent MIME", async () => {
     const f = gmail();
     const evil = [{ name: "Eve", address: "attacker@evil.test" }];

@@ -21,7 +21,7 @@ Each provider:
 
 ## Known API realities (verify again at each phase)
 - **LinkedIn**: self-serve Share on LinkedIn can create member text posts with `w_member_social`; member analytics remain unavailable here.
-- **Instagram**: this integration uses Instagram Login for a Professional account, without a Facebook Page. Live token and image insight behavior still needs owner verification.
+- **Instagram**: this integration uses Instagram Login for a Professional account, without a Facebook Page. Post insights are implemented; live permission/metric availability still needs owner verification.
 - **TikTok**: Login Kit and Display API provide analytics when granted; publishing remains manual. Public Content Posting needs an audit and video handling.
 - **Meetup**: GraphQL API requires a Pro subscription.
 - **Apple Calendar**: CalDAV with an app-specific password; no official REST API.
@@ -36,7 +36,7 @@ Social drafts and variants are local. Every LinkedIn or Instagram publish, inclu
 | Provider | Auth | Publish | Schedule | Analytics | Media / limitation |
 |---|---|---|---|---|---|
 | LinkedIn | Owner-pasted OAuth token with `openid profile w_member_social` | Text and optional plain URL | LifeOS-side | None for personal profile | No image upload or promised rich link preview |
-| Instagram | Owner-pasted Instagram Login token; Professional account | One public HTTPS image URL and caption, after owner verification | LifeOS-side | Returned account fields; per-image insights await live evidence | No Facebook Page; `verification_pending` disables real publish/analytics |
+| Instagram | Owner-pasted Instagram Login token; Professional account | One public HTTPS image URL and caption, after owner verification | LifeOS-side | Returned account fields and post views/reach/likes/comments/shares/saves | No Facebook Page; `verification_pending` disables real publish/analytics |
 | TikTok | Web Login Kit OAuth; requested `user.info.basic,user.info.stats,video.list` | Manual copy/open/mark as posted | None | Account/video fields only for scopes actually granted | Video upload and posting deferred |
 | Portfolio | No connection | Markdown copy/download, then manual mark as posted | None | None | Optional image URL in Markdown |
 
@@ -44,7 +44,7 @@ LinkedIn uses `/rest/posts` with `Linkedin-Version: 202609` and `X-Restli-Protoc
 
 TikTok's **web** authorization code flow uses an unpredictable state and the configured HTTPS callback; the documented web flow does not use PKCE. The returned grant can omit `user.info.stats` or `video.list`, so LifeOS stores actual scopes and disables missing analytics. A 401/403 marks a connection RECONNECT. Refresh rotates encrypted access/refresh tokens without changing an approval's credential generation.
 
-Instagram stays `verification_pending` after a token is pasted. The owner must confirm token provenance, granted `instagram_business_*` scopes, expiry/refresh, a successful public-image container/publish, and the actual per-image insights response before confirming the real connection in Settings. Exact image insight metric names and the token lifetime are not assumed. Only fields actually returned are shown; missing metrics are unavailable, not zero. Container adoption requires one unique caption match across a complete media scan; an inconclusive result stops for owner review.
+Instagram stays `verification_pending` after a token is pasted. The owner must confirm token provenance, granted `instagram_business_*` scopes, expiry/refresh, a successful public-image container/publish, and the actual per-image insights response before confirming the real connection in Settings. Post insights request views, reach, likes, comments, saved and shares on each non-Story media item within the 90-day sync window. Both values[].value and total_value.value responses are supported; saved maps to saves. Sync pages using cursors on the fixed Instagram host, and never follows a provider-supplied next URL. Only matching real published LifeOS variants receive metrics; this does not import historical Instagram posts. Insights require instagram_business_manage_insights on the connected Professional account. The token lifetime remains owner-confirmed. Only fields actually returned are shown; missing metrics are unavailable, not zero. Container adoption requires one unique caption match across a complete media scan; an inconclusive result stops for owner review.
 
 ## GitHub (Phase 3)
 Two fine-grained personal access tokens, added in Settings -> Connections. They are encrypted at rest (AES-256-GCM, key from `LIFEOS_MASTER_KEY`). Only the last four characters, login, expiry and repository list are shown; tokens are never logged or sent to the browser.
@@ -101,3 +101,13 @@ MOCK events are badged, can be saved to the pipeline, but cannot go on the calen
 - **Stored vs live.** Only metadata is stored (sender, recipients, subject, date, labels, snippet, triage output). Bodies are fetched live per open, as capped plain text (16 KB); HTML is stripped and no remote images load.
 - **Sync.** Quota-safe and resumable: a first sync pulls the last 30 days (capped per run), later runs use the Gmail history id. A 404 on the history id triggers a full resync. Archive and flag in LifeOS are local only; Gmail is never changed.
 - **Reconnect.** A 401/invalid grant marks the connection as needing reconnect and pauses mail sync.
+
+## Multiple Gmail accounts (2026-10-16)
+
+Settings → Connections → Email accounts → Add email account connects another Gmail inbox using the existing Google client and callback. Additional inboxes request Gmail read/compose access without calendar access. No new client secret or callback is required. Select the intended Google account and grant Gmail access. If the Google app is in Testing, each added address must be an allowed test user.
+
+Each account has separately encrypted tokens, sync history, failures and message-ID uniqueness. Existing mail is assigned to the original google_calendar connection by migration 0010_multiple_mail_accounts. The worker syncs every connected Google inbox; one failed account does not hide or stop a healthy one. Outreach shows a unified inbox with the receiving mailbox labelled. Body reads, triage, drafts and approved replies use the original account. Mailbox identity is locked through approval; sending refuses a missing or retargeted original message. Disconnecting an additional inbox removes only its local mail/access/history, while keeping other accounts and the shared triage-pause preference. Calendar account removal remains in its Google Calendar connection card.
+
+Deployment: use the existing Compose deployment procedure, including the migrate service, before starting the updated web/worker. Migration 0010 is required. Never run this code against an unmigrated database. After deploy, add the second email account, sync all inboxes, verify mailbox labels, and approve a test reply from each account. Check Instagram Sync now against a real published LifeOS image post.
+
+Provider references: [Meta's maintained insight metric/result definitions](https://github.com/facebook/facebook-nodejs-business-sdk/blob/main/src/objects/instagram-insights-result.js) and [Google web-server OAuth](https://developers.google.com/identity/protocols/oauth2/web-server).

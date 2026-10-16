@@ -8,6 +8,30 @@ import type { DB } from "@/server/db/client";
 import { connections } from "@/server/db/schema";
 
 describe("social providers", () => {
+  it("syncs paginated Instagram post insights, keeps zero and omits unavailable metrics", async () => {
+    const f = vi.fn<typeof fetch>(async (input, init) => {
+      expect(init?.headers).toMatchObject({ Authorization: "Bearer secret" });
+      const url = new URL(String(input));
+      expect(url.origin).toBe("https://graph.instagram.com");
+      if (url.pathname === "/me") return Response.json({ followers_count: 112, media_count: 3 });
+      if (url.pathname === "/me/media") return Response.json(url.searchParams.has("after")
+        ? { data: [{ id: "old", timestamp: "2020-01-01T00:00:00Z" }] }
+        : { data: [{ id: "image", timestamp: "2026-10-16T00:00:00Z" }], paging: { next: "https://untrusted.example", cursors: { after: "page2" } } });
+      expect(url.searchParams.get("metric")).toBe("views,reach,likes,comments,saved,shares");
+      return Response.json({ data: [{ name: "views", values: [{ value: 0 }] }, { name: "reach", values: [{ value: 12 }] }, { name: "saved", total_value: { value: 2 } }, { name: "likes", values: [] }, { name: "shares", values: [{ value: "4" }] }] });
+    });
+    const p = getProvider("instagram", { status: "connected", token: "secret", login: "123", credentialGeneration: "generation" }, { fetch: f });
+    expect(await p.sync?.(new Date("2026-07-16"))).toEqual({ account: { followers: 112, posts: 3 }, posts: [{ remoteId: "image", metrics: { views: 0, reach: 12, saves: 2 } }] });
+    expect(f).toHaveBeenCalledTimes(4);
+  });
+
+  it("reports Instagram insight permission errors without fabricating metrics", async () => {
+    const f = vi.fn<typeof fetch>(async (input) => String(input).includes("/insights")
+      ? new Response(null, { status: 403 })
+      : Response.json(String(input).includes("/me/media") ? { data: [{ id: "image" }] } : { followers_count: 112 }));
+    const p = getProvider("instagram", { status: "connected", token: "secret", login: "123", credentialGeneration: "generation" }, { fetch: f });
+    await expect(p.sync?.()).rejects.toBeInstanceOf(ProviderAuthError);
+  });
   it("keeps disconnected providers mock and manual platforms unpublishable", () => {
     for (const platform of ["linkedin", "instagram", "tiktok"] as const) expect(getProvider(platform, null).isMock).toBe(true);
     expect(getProvider("tiktok", null).capabilities.publish).toBe(false);

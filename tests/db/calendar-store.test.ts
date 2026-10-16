@@ -75,7 +75,7 @@ describe("calendar connections", () => {
     await removeCalendarConnection(h, "google_calendar", { fetch, key });
     expect(await h.select().from(mailMessages)).toHaveLength(0); // CR-S01
     expect((await h.select().from(settings)).map((r) => r.key)).not.toContain("mail.sync");
-    expect((await h.select().from(settings)).map((r) => r.key)).not.toContain("mail.triage_paused");
+    expect((await h.select().from(settings)).map((r) => r.key)).toContain("mail.triage_paused"); // shared across accounts
     expect(sent).toEqual([{ url: "https://oauth2.googleapis.com/revoke", body: "token=NEW-REFRESH" }]);
     expect(await h.select().from(connections).where(eq(connections.id, "google_calendar"))).toHaveLength(0);
     expect((await h.select().from(calendars)).filter((c) => c.connectionId === "google_calendar")).toHaveLength(0);

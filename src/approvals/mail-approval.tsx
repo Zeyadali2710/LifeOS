@@ -120,7 +120,7 @@ export function MailApprovalBody({ approval: a, editing, draft, errors, onDraft,
           Sends a reply to {first}
           {others > 0 ? ` and ${others} other${others > 1 ? "s" : ""}` : ""} in the thread &quot;{p.originalSubject}&quot;.
         </Fact>
-        <Fact k="WHERE">Gmail</Fact>
+        <Fact k="WHERE">Gmail{p.mailbox ? ` · ${p.mailbox}` : ""}</Fact>
         <Fact k="WHEN">Immediately after approval</Fact>
       </section>
       <section className="border-b border-[rgba(255,255,255,.06)] px-5 py-5">

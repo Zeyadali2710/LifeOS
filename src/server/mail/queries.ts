@@ -3,24 +3,25 @@ import { and, asc, desc, eq, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { MAIL_CATEGORIES, type FollowUpDTO, type MailCat, type MailCategory, type MailCounts, type MailMessageDTO, type MailStatus } from "../../lib/outreach-types";
 import type { ApprovalDTO } from "../../lib/agent-types";
 import { toApprovalDTO } from "../agents/dto";
-import { hasGmail } from "../calendar/connections";
 import type { DB } from "../db/client";
 import { approvals, connections, mailMessages, outreachEvents, settings, tasks } from "../db/schema";
-import { mailSyncState } from "./sync";
+import { mailAccounts } from "./accounts";
 import { TRIAGE_PAUSED_KEY } from "./triage";
 
 const DAY = 86_400_000;
 const inbox = sql`'INBOX' = any(${mailMessages.labelIds})`;
 
 export async function mailStatus(h: DB): Promise<MailStatus> {
-  const [[conn], st, [p], [n]] = await Promise.all([
-    h.select({ status: connections.status, scopes: connections.scopes }).from(connections).where(eq(connections.id, "google_calendar")),
-    mailSyncState(h),
+  const [accounts, [p], [n]] = await Promise.all([
+    mailAccounts(h),
     h.select({ v: settings.value }).from(settings).where(eq(settings.key, TRIAGE_PAUSED_KEY)),
     h.select({ n: sql<number>`count(*)::int` }).from(mailMessages),
   ]);
-  const state = !conn ? "not_connected" : conn.status === "error" ? "reconnect" : !hasGmail(conn.scopes, "read") ? "scope_missing" : st.full === "pending" && !n?.n ? "first_sync" : "ok";
-  return { state, lastSyncAt: st.lastSyncAt, lastSyncError: st.lastSyncError, triagePaused: p?.v === true };
+  const usable = accounts.filter((a) => a.read && a.status !== "error");
+  const state = !accounts.length ? "not_connected" : !usable.length ? accounts.some((a) => a.status === "error") ? "reconnect" : "scope_missing" : usable.every((a) => a.full === "pending") && !n?.n ? "first_sync" : "ok";
+  const synced = usable.flatMap((a) => a.lastSyncAt ? [a.lastSyncAt] : []).sort();
+  const errors = accounts.flatMap((a) => a.lastSyncError ? [`${a.email ?? "Gmail"}: ${a.lastSyncError}`] : a.status === "error" ? [`${a.email ?? "Gmail"} needs reconnecting.`] : []);
+  return { state, lastSyncAt: synced[0] ?? null, lastSyncError: errors.join(" ") || null, triagePaused: p?.v === true };
 }
 
 const COLS = {
@@ -30,7 +31,7 @@ const COLS = {
   actionItems: mailMessages.actionItems, flagged: mailMessages.flagged, flaggedAt: mailMessages.flaggedAt, triagedAt: mailMessages.triagedAt, archivedAt: mailMessages.archivedAt,
 };
 
-const toDTO = ({ fromName, fromAddress, ...r }: { [K in keyof typeof COLS]: (typeof mailMessages.$inferSelect)[K] }): MailMessageDTO => ({
+const toDTO = ({ fromName, fromAddress, ...r }: { [K in keyof typeof COLS]: (typeof mailMessages.$inferSelect)[K] } & { mailbox?: string | null }): MailMessageDTO => ({
   ...r,
   from: { name: fromName, address: fromAddress },
   receivedAt: r.receivedAt.toISOString(),
@@ -53,7 +54,7 @@ export async function loadMailView(h: DB, o: { cat: MailCat }): Promise<{ counts
   for (const c of MAIL_CATEGORIES) counts[c] = grp.find((g) => g.c === c)?.n ?? 0;
   const where =
     o.cat === "archived" ? isNotNull(mailMessages.archivedAt) : o.cat === "untriaged" ? and(live, isNull(mailMessages.category)) : and(live, eq(mailMessages.category, o.cat.toUpperCase() as MailCategory));
-  const rows = await h.select(COLS).from(mailMessages).where(where).orderBy(desc(mailMessages.receivedAt)).limit(200);
+  const rows = await h.select({ ...COLS, mailbox: connections.login }).from(mailMessages).leftJoin(connections, eq(connections.id, mailMessages.connectionId)).where(where).orderBy(desc(mailMessages.receivedAt)).limit(200);
   return { counts, items: rows.map(toDTO), inboxCount: ib?.n ?? 0 };
 }
 

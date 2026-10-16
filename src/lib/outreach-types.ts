@@ -106,6 +106,7 @@ export type EventSourceDTO = {
 
 export type MailMessageDTO = {
   id: string;
+  mailbox?: string | null;
   threadId: string;
   from: Addr;
   to: Addr[];

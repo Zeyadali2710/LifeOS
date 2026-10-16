@@ -223,7 +223,7 @@ export function EmailDetail({
               <p className="text-[12.5px] text-text-3">
                 Message is long; showing the first part.{" "}
                 {THREAD.test(body.threadId) && (
-                  <a href={`https://mail.google.com/mail/u/0/#inbox/${body.threadId}`} target="_blank" rel="noopener noreferrer" className="text-cyan">
+                  <a href={`https://mail.google.com/mail/${m.mailbox ? `?authuser=${encodeURIComponent(m.mailbox)}` : "u/0/"}#inbox/${body.threadId}`} target="_blank" rel="noopener noreferrer" className="text-cyan">
                     Open in Gmail
                   </a>
                 )}

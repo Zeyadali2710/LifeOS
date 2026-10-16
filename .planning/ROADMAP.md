@@ -3,6 +3,8 @@
 ## Overview
 From an empty repo to a personal OS: secure foundation and deploy path first, then the shell and live activity, then the agent/permission core proven end-to-end with GitHub, then one life domain per phase, then automation, hardening and polish. Phase 0 (architecture, ADRs, this roadmap) is complete.
 
+Development now follows direct, owner-requested feature work (GSD discontinued on 2026-10-16). Historical plans are retained as implementation records. Implementation status and outstanding live acceptance checks are listed separately below.
+
 ## Phases
 - [x] **Phase 1: Foundation** - Repo, Next.js + worker, Postgres/migrations, auth, crypto, logging, health, design tokens, Compose, CI
 - [x] **Phase 2: Shell** - Navigation, command palette, Home, live activity stream, notifications, AI panel UI
@@ -17,7 +19,7 @@ From an empty repo to a personal OS: secure foundation and deploy path first, th
  (completed 2026-10-13)
 - [x] **Phase 5.1: Project agent writes + repo contents** (INSERTED) - Agent creates/updates projects via approval; reads repo files (completed 2026-10-13)
 - [x] **Phase 6: Outreach** - Sydney event discovery, pipeline, email intelligence, drafting (completed 2026-10-13)
-- [ ] **Phase 7: Socials** - Social providers, drafts, content calendar, analytics
+- [x] **Phase 7: Socials** - Implementation complete; live publishing/scheduling acceptance pending. Instagram post insights follow-up in progress.
 - [ ] **Phase 8: Knowledge + Goals** - Notes/docs/retrieval, goal hierarchy
 - [ ] **Phase 9: Automation + Daily intelligence** - Automation engine, briefings
 - [ ] **Phase 10: Hardening** - Security review, restore-tested backups, observability, performance
@@ -252,16 +254,19 @@ Plans:
   3. Publishing or scheduling a variant is an APPROVE-tier action with edit-before-approve, idempotent on retry, and honest when a provider can't publish (copy-to-clipboard/open-in-app fallback instead of pretending).
   4. Analytics per post/platform are synced where the API permits and shown on the Socials page; elsewhere the page says what isn't available. Page follows the Claude Design Socials file in the Glass system; e2e + VM DB tests cover providers (fixtures/mocks), drafts, calendar and the publish approval path.
 **Plans**: 7 plans in 6 waves
-- [ ] 07-01-PLAN.md — Schema, pure rules, providers, encrypted connections and fixtures
-- [ ] 07-02-PLAN.md — Owner drafts and queries, Social agent, atomic publish approval
-- [ ] 07-03-PLAN.md — Bound publish executor, analytics sync and TikTok OAuth
-- [ ] 07-04-PLAN.md — DB tests, integration docs and owner action gates
-- [ ] 07-05-PLAN.md — Socials shell, platform cards and honest status states
-- [ ] 07-06-PLAN.md — Board, post sheet, calendar and analytics views
-- [ ] 07-07-PLAN.md — Approval UI, Settings connections, palette and e2e spec
+- [x] 07-01-PLAN.md — Schema, pure rules, providers, encrypted connections and fixtures
+- [x] 07-02-PLAN.md — Owner drafts and queries, Social agent, atomic publish approval
+- [x] 07-03-PLAN.md — Bound publish executor, analytics sync and TikTok OAuth
+- [x] 07-04-PLAN.md — DB tests, integration docs and owner action gates
+- [x] 07-05-PLAN.md — Socials shell, platform cards and honest status states
+- [x] 07-06-PLAN.md — Board, post sheet, calendar and analytics views
+- [x] 07-07-PLAN.md — Approval UI, Settings connections, palette and e2e spec
 
-### Phase 8–11
-Goals per phase list above; a detail section (goal, requirements, success criteria) is written before each phase's discuss.
+### Phase 8: Knowledge + Goals
+Not started. Notes, documents and bookmarks with keyword and semantic retrieval (KNW-01); vision → goals → objectives → projects → tasks with progress and neglect detection (GOL-01). Specific increments will be agreed directly with the owner.
+
+### Phase 9–11
+Not started; scope per phase list above.
 
 ## Credentials & external access needed
 | When | What |
@@ -284,4 +289,5 @@ Goals per phase list above; a detail section (goal, requirements, success criter
 | 5. Career + Projects | 12/12 | Complete | 2026-10-13 |
 | 5.1 Project agent writes | 8/8 | Complete (owner VM UAT pending) | 2026-10-13 |
 | 6. Outreach | 19/19 | Complete (owner VM UAT pending) | 2026-10-13 |
-| 7–11 | - | Not started (Phase 7 discuss + UI-SPEC done) | - |
+| 7. Socials | 7/7 | Implementation complete; follow-ups in progress; owner live UAT pending | Local implementation 2026-10-16 |
+| 8–11 | - | Not started | - |

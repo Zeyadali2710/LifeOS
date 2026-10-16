@@ -6,7 +6,7 @@ import { markCalendarError } from "../calendar/connections";
 import { ProviderError } from "../calendar/errors";
 import { googleTokenSource } from "../calendar/google/client";
 import type { DB } from "../db/client";
-import { approvals, connections } from "../db/schema";
+import { approvals, connections, mailMessages } from "../db/schema";
 import { ToolError } from "../agents/types";
 import { createGmail, gmailAllowed } from "./client";
 import { buildReplyMime, replyMessageId } from "./mime";
@@ -15,10 +15,13 @@ export const RECONNECT = "Gmail isn't allowed. Reconnect Google in Settings → 
 
 type Opts = { fetch?: typeof fetch; key?: Buffer; now?: () => Date };
 
-async function gmailFor(h: DB, o: Opts) {
-  const [conn] = await h.select({ s: connections.scopes }).from(connections).where(eq(connections.id, "google_calendar"));
+async function gmailFor(h: DB, o: Opts, payload: MailReplyPayload) {
+  const [message] = await h.select({ connectionId: mailMessages.connectionId, threadId: mailMessages.threadId }).from(mailMessages).where(eq(mailMessages.id, payload.messageId));
+  const connectionId = payload.connectionId ?? "google_calendar";
+  if (!message || message.connectionId !== connectionId || message.threadId !== payload.threadId) throw new ToolError("not_allowed", "The original mailbox or message is no longer available.");
+  const [conn] = await h.select({ s: connections.scopes }).from(connections).where(eq(connections.id, connectionId));
   if (!conn || !gmailAllowed(conn.s, "compose")) throw new ToolError("unavailable", RECONNECT);
-  return createGmail({ getToken: googleTokenSource(h, { fetch: o.fetch, now: o.now, key: o.key }), fetch: o.fetch });
+  return createGmail({ getToken: googleTokenSource(h, { connectionId, fetch: o.fetch, now: o.now, key: o.key }), fetch: o.fetch });
 }
 
 const out = (m: { id: string; threadId: string }) => ({ messageId: m.id, threadId: m.threadId });
@@ -29,7 +32,7 @@ export async function sendReply(
   h: DB,
   { approvalId, payload, adopt, ...o }: { approvalId: string; payload: MailReplyPayload; adopt: boolean } & Opts,
 ): Promise<{ messageId: string; threadId: string }> {
-  const gmail = await gmailFor(h, o);
+  const gmail = await gmailFor(h, o, payload);
   const notFound = (e: unknown) => {
     if (!(e instanceof ProviderError && e.kind === "not_found")) throw e;
     return null;
@@ -74,7 +77,7 @@ export async function sendReply(
     return await send(draft.id);
   } catch (e) {
     if (e instanceof ProviderError) {
-      if (e.kind === "auth") await markCalendarError(h, "google_calendar", "Access was rejected.").catch(() => undefined);
+      if (e.kind === "auth") await markCalendarError(h, payload.connectionId ?? "google_calendar", "Access was rejected.").catch(() => undefined);
       if (e.kind === "scope") throw new ToolError("unavailable", RECONNECT);
     }
     throw e;
@@ -83,11 +86,11 @@ export async function sendReply(
 
 /** D-31: save a reply as a plain Gmail draft (no deterministic Message-ID; never sent from here). */
 export async function saveReplyDraft(h: DB, payload: MailReplyPayload, o: Opts = {}): Promise<{ draftId: string }> {
-  const gmail = await gmailFor(h, o);
+  const gmail = await gmailFor(h, o, payload);
   try {
     return { draftId: (await gmail.createDraft(mime(payload, null), payload.threadId)).id };
   } catch (e) {
-    if (e instanceof ProviderError && e.kind === "auth") await markCalendarError(h, "google_calendar", "Access was rejected.").catch(() => undefined);
+    if (e instanceof ProviderError && e.kind === "auth") await markCalendarError(h, payload.connectionId ?? "google_calendar", "Access was rejected.").catch(() => undefined);
     if (e instanceof ProviderError && e.kind === "scope") throw new ToolError("unavailable", RECONNECT);
     throw e;
   }
