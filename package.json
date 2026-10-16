@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:worker": "esbuild src/worker/index.ts src/scripts/migrate.ts src/scripts/create-owner.ts --bundle --platform=node --target=node24 --format=esm --packages=external --tsconfig=tsconfig.json --outdir=dist --out-extension:.js=.mjs",
+    "build:worker": "esbuild src/worker/index.ts src/scripts/migrate.ts src/scripts/create-owner.ts src/scripts/rotate-key.ts --bundle --platform=node --target=node24 --format=esm --packages=external --tsconfig=tsconfig.json --outdir=dist --out-extension:.js=.mjs",
     "start": "next start",
     "worker": "tsx watch --env-file-if-exists=.env src/worker/index.ts",
     "db:generate": "drizzle-kit generate",

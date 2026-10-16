@@ -21,7 +21,8 @@ Short current state only. History is in Git and the phase folders under `.planni
 - 1–7.1 complete. 7.1 Finances accepted after real import/reorganisation.
 - 8 Knowledge + Goals: built and pushed 2026-10-17 (autonomous run). Migration 0013. Owner deploy + VM check pending (OWNER-ACTIONS). Review: Codex plan critique + Codex/Claude phase review, all findings fixed.
 - 9 Automation + Daily intelligence: built and pushed 2026-10-17 (autonomous run). Migration 0014. Owner deploy + VM check pending. Codex plan critique + Codex/Claude phase review, findings fixed (one info item declined: the Home lead counts priorities as "items").
-- 10 Hardening, 11 Polish: not started.
+- 10 Hardening: built and pushed 2026-10-17. Migration 0015. Owner deploy + restore drill pending.
+- 11 Polish: not started.
 
 ## Open owner items
 

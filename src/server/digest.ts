@@ -1,11 +1,11 @@
 import { and, desc, eq, gte, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { addDays, sydneyYmd } from "@/lib/project-rules";
-import type { Digest, DigestEvent } from "@/lib/digest";
+import { BACKUP_STALE_HOURS, type Digest, type DigestEvent } from "@/lib/digest";
 import { effectiveBudgets, summariseFinance, type FinanceCategory } from "@/lib/finance";
 import { counts } from "./agents/runs";
 import { conflictsIn, listEvents, loadTasks } from "./calendar/queries";
 import type { DB } from "./db/client";
-import { activityEvents, calendars, financeBudgets, financeCategories, financeTransactions, mailMessages, outreachEvents, tasks } from "./db/schema";
+import { activityEvents, calendars, financeBudgets, financeCategories, financeTransactions, mailMessages, outreachEvents, settings, tasks, users } from "./db/schema";
 import { loadGoals } from "./goals";
 import { sydneyInstant } from "./time";
 
@@ -20,7 +20,7 @@ export async function loadDigest(h: DB, now: Date): Promise<Digest> {
   const month = today.slice(0, 7);
   const soft = <T,>(p: Promise<T>, fallback: T) => p.catch(() => fallback);
 
-  const [cal, events, conflicts, due, done, runCounts, mail, outreach, goals, budgetRows, cats, spend, ci, upcomingRaw] = await Promise.all([
+  const [cal, events, conflicts, due, done, runCounts, mail, outreach, goals, budgetRows, cats, spend, ci, upcomingRaw, backupRow, owner] = await Promise.all([
     soft(h.select({ id: calendars.id }).from(calendars).where(eq(calendars.enabled, true)).limit(1), []),
     soft(listEvents(h, today, today), []),
     soft(conflictsIn(h, start, end), []),
@@ -42,6 +42,8 @@ export async function loadDigest(h: DB, now: Date): Promise<Digest> {
     soft(h.select({ title: activityEvents.title, at: activityEvents.occurredAt }).from(activityEvents)
       .where(and(eq(activityEvents.type, "github.ci.failed"), gte(activityEvents.occurredAt, new Date(now.getTime() - 86_400_000)))).orderBy(desc(activityEvents.occurredAt)).limit(5), []),
     soft(listEvents(h, addDays(today, 1), addDays(today, 6)), []),
+    soft(h.select({ v: settings.value }).from(settings).where(eq(settings.key, "backup.last")), []),
+    soft(h.select({ at: users.createdAt }).from(users).orderBy(users.createdAt).limit(1), []),
   ]);
 
   const spent = summariseFinance(spend, cats as FinanceCategory[], month).categories;
@@ -67,8 +69,15 @@ export async function loadDigest(h: DB, now: Date): Promise<Digest> {
     outreach: outreach.map((o) => ({ id: o.id, title: o.title, start: o.startAt.toISOString(), stage: o.stage ?? "SAVED" })),
     goals: (goals?.goals ?? []).filter((g) => g.status === "active").flatMap((g) => g.objectives.filter((o) => o.status === "active").map((o) => ({ title: o.title, goal: g.title, neglected: o.neglected, momentum: o.momentum }))),
     overBudget, ciFailures: ci.map((c) => ({ title: c.title, at: c.at.toISOString() })), upcoming,
+    // No record at all only alerts once the install is older than the stale window (fresh dev/e2e databases stay quiet).
+    backup: backupOf(backupRow[0]?.v) ?? (owner[0] && now.getTime() - owner[0].at.getTime() > BACKUP_STALE_HOURS * 3_600_000 ? { ok: false, at: owner[0].at.toISOString(), never: true } : null),
   };
 }
+
+const backupOf = (v: unknown): Digest["backup"] => {
+  const b = v as { ok?: unknown; at?: unknown } | undefined;
+  return b && typeof b.ok === "boolean" && typeof b.at === "string" && !Number.isNaN(Date.parse(b.at)) ? { ok: b.ok, at: b.at } : null;
+};
 
 /** Tasks completed in the Sydney week ending on `sunday` (Mon–Sun). */
 export async function completedInWeek(h: DB, sunday: string): Promise<number> {

@@ -66,8 +66,9 @@ services:
       PGDATABASE: ${POSTGRES_DB}
     volumes:
       - ../backups:/backups
+      - ./backup.sh:/backup.sh:ro
     # ponytail: sleep-loop scheduler; move to a pg-boss job or host cron if timing precision matters.
-    entrypoint: ["sh", "-c", "while true; do pg_dump -Fc -f /backups/lifeos-$$(date +%F).dump && find /backups -name 'lifeos-*.dump' -mtime +14 -delete; sleep 86400; done"]
+    entrypoint: ["sh", "/backup.sh"]
     depends_on: { db: { condition: service_healthy } }
     restart: unless-stopped
     networks: [data]

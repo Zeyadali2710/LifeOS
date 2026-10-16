@@ -122,7 +122,7 @@ export const activityEvents = pgTable(
     title: text().notNull(),
     payload: jsonb().$type<Record<string, unknown>>(),
   },
-  (t) => [index().on(t.occurredAt.desc()), index().on(t.type), index().on(t.entityType, t.entityId)],
+  (t) => [index().on(t.occurredAt.desc()), index().on(t.type), index().on(t.type, t.occurredAt), index().on(t.entityType, t.entityId)], // (type, occurred_at): automation trigger scans
 );
 
 export const notificationCategory = pgEnum("notification_category", [

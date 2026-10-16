@@ -19,7 +19,7 @@ LifeOS runs in its own Debian VM on Proxmox, using Docker Compose. It is reachab
 | `migrate` | Applies database migrations, then exits. `web`/`worker` wait for it. |
 | `web` | The Next.js app on port 3000, which is reachable only through Tailscale. |
 | `worker` | Background jobs (heartbeat now; syncs, agents and automations later). |
-| `backup` | `pg_dump` once a day into `./backups/`, keeping 14 days. |
+| `backup` | Verified `pg_dump` once a day into `./backups/` (`docker/backup.sh`), keeping 14 days; status shown on Home if it fails or goes stale. |
 | `tailscale` | Joins your tailnet as the machine `lifeos` and serves HTTPS → `web:3000`. |
 
 ---
@@ -238,6 +238,8 @@ lc restart web
 lc down          # stops; data volumes are kept
 ```
 Never run `down -v` on the VM: `-v` deletes the database volume.
+
+**Restore drill (monthly, safe):** `bash scripts/restore-drill.sh` restores the newest dump into a throwaway `lifeos_restore_drill` database, prints restored vs live row counts for key tables and drops it. It never touches the live database.
 
 **Restore a database backup:**
 ```bash

@@ -20,7 +20,22 @@ LifeOS holds tokens to email, calendars, socials and code. Treat it as highly se
 - OAuth scopes are least-privilege and listed per provider in `integrations.md`.
 
 ## Key rotation
-`LIFEOS_MASTER_KEY` rotation: decrypt-with-old/encrypt-with-new migration script (Phase 10). Until then, back the key up separately from DB backups — a DB backup without the key cannot reveal tokens, and without the key tokens are unrecoverable (re-connect integrations).
+`src/scripts/rotate-key.ts` (bundled as `dist/scripts/rotate-key.mjs`) re-encrypts every secret listed in `ENCRYPTED_COLUMNS` (`src/server/key-rotation.ts`: `connections.ciphertext`, `event_sources.url_ciphertext`) from the current key to a new one in a single transaction, verifying each new ciphertext before commit. Any value that does not decrypt aborts the whole rotation. OAuth state cookies in flight are invalidated (just reconnect).
+
+On the VM:
+```bash
+cd ~/lifeos
+NEW=$(openssl rand -base64 32)                      # keep it in your password manager first
+lc stop web worker                                  # nothing may decrypt with the old key mid-rotation
+lc run --rm -e LIFEOS_MASTER_KEY_NEW="$NEW" -e DRY_RUN=1 migrate node dist/scripts/rotate-key.mjs   # check
+lc run --rm -e LIFEOS_MASTER_KEY_NEW="$NEW" migrate node dist/scripts/rotate-key.mjs               # rotate
+# set LIFEOS_MASTER_KEY=$NEW in .env, then:
+lc up -d
+```
+Back the key up separately from DB backups: a DB backup without the key cannot reveal tokens, and without the key tokens are unrecoverable (reconnect integrations). Backups taken before a rotation need the old key.
+
+## Backups (Phase 10)
+`docker/backup.sh` (the `backup` service) writes a daily `pg_dump -Fc`, keeps it only if `pg_restore --list` can read it back, prunes after 14 days and records the outcome in `settings.backup.last`. A failed backup, or none for 36 hours, appears as a red Home priority. `scripts/restore-drill.sh` restores the newest dump into a throwaway database, compares row counts of key tables with live, then drops it.
 
 ## OpenRouter and free models (Phase 3.1)
 - **Key storage.** The OpenRouter key is stored like an integration token (AES-256-GCM, ADR-007), shown as last4 only, decrypted per call, sent only in the Authorization header, never logged or sent to the browser. Connect/remove is audited.

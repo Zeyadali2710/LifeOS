@@ -17,7 +17,10 @@ export type Digest = {
   overBudget: { category: string; over: number }[]; // AUD cents over the month's limit
   ciFailures: { title: string; at: string }[];
   upcoming: { day: string; events: DigestEvent[] }[]; // next 6 days
+  backup: { ok: boolean; at: string; never?: true } | null; // last verified pg_dump (docker/backup.sh); null = not expected yet
 };
+
+export const BACKUP_STALE_HOURS = 36;
 
 export type Priority = { key: string; label: string; detail: string; href: string; weight: number; tone: "red" | "amber" | "cyan" | "neutral" };
 
@@ -34,6 +37,11 @@ export function rankPriorities(d: Digest, limit = 5): Priority[] {
   for (const c of d.conflicts.slice(0, 2)) out.push({ key: `conflict:${c.a}:${c.b}`, label: `${c.a} overlaps ${c.b}`, detail: "Calendar conflict today", href: "/organization", weight: 65, tone: "red" });
   for (const f of d.ciFailures.slice(0, 2)) out.push({ key: `ci:${f.at}:${f.title}`, label: f.title, detail: "CI failed", href: "/career", weight: 55, tone: "red" });
   for (const b of d.overBudget.slice(0, 2)) out.push({ key: `budget:${b.category}`, label: `${b.category} is over budget`, detail: `${(b.over / 100).toLocaleString("en-AU", { style: "currency", currency: "AUD" })} over this month`, href: "/finances?tab=budgets", weight: 35, tone: "amber" });
+  if (d.backup && (d.backup.never || !d.backup.ok || Date.parse(d.generatedAt) - Date.parse(d.backup.at) > BACKUP_STALE_HOURS * 3_600_000)) {
+    const hours = Math.round((Date.parse(d.generatedAt) - Date.parse(d.backup.at)) / 3_600_000);
+    out.push({ key: "backup", label: d.backup.never ? "No database backup has been recorded" : d.backup.ok ? `Last backup was ${hours < 48 ? `${hours} hours` : `${Math.round(hours / 24)} days`} ago` : "The last database backup failed",
+      detail: "Check the backup container: lc logs backup", href: "/", weight: 75, tone: "red" });
+  }
   for (const g of d.goals.filter((x) => x.neglected).slice(0, 2)) out.push({ key: `goal:${g.goal}:${g.title}`, label: g.title, detail: `Neglected objective · ${g.goal}`, href: "/goals", weight: 30, tone: "neutral" });
   return out.sort((a, b) => b.weight - a.weight || a.label.localeCompare(b.label)).slice(0, limit);
 }

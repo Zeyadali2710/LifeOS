@@ -6,6 +6,7 @@ const base: Digest = {
   events: [{ title: "Standup", start: "2026-10-14T22:00:00.000Z", end: "2026-10-14T22:15:00.000Z", allDay: false, calendar: "Work" }, { title: "Demo", start: "2026-10-15T06:00:00.000Z", end: "2026-10-15T07:00:00.000Z", allDay: false, calendar: "Work" }],
   conflicts: [], tasks: [], doneToday: [], approvalsWaiting: 0, importantMail: [], outreach: [], goals: [], overBudget: [], ciFailures: [],
   upcoming: [{ day: "2026-10-16", events: [{ title: "Gym", start: "2026-10-16T08:00:00.000Z", end: "2026-10-16T09:00:00.000Z", allDay: false, calendar: "Personal" }] }],
+  backup: null,
 };
 
 describe("digest rules", () => {
@@ -29,6 +30,13 @@ describe("digest rules", () => {
     expect(p.find((x) => x.key === "budget:Delivery")?.detail).toMatch(/\$12\.34 over/);
     expect(rankPriorities(d)).toHaveLength(5);
     expect(rankPriorities(base)).toEqual([]);
+  });
+
+  it("flags a failed or stale backup, but not a fresh or never-recorded one", () => {
+    expect(rankPriorities({ ...base, backup: { ok: true, at: "2026-10-14T20:00:00.000Z" } })).toEqual([]);
+    expect(rankPriorities({ ...base, backup: { ok: true, at: "2026-10-13T00:00:00.000Z" } })[0]).toMatchObject({ key: "backup", label: "Last backup was 2 days ago", tone: "red" });
+    expect(rankPriorities({ ...base, backup: { ok: false, at: "2026-10-15T01:00:00.000Z" } })[0]?.label).toBe("The last database backup failed");
+    expect(rankPriorities({ ...base, backup: { ok: false, at: "2026-10-01T00:00:00.000Z", never: true } })[0]?.label).toBe("No database backup has been recorded");
   });
 
   it("composes each briefing kind honestly", () => {

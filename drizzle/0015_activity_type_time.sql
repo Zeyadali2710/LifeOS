@@ -1,0 +1,1 @@
+CREATE INDEX "activity_events_type_occurred_at_index" ON "activity_events" USING btree ("type","occurred_at");

@@ -29,3 +29,9 @@ lc ps                          # web, worker up; migrate exited 0
 - [ ] **Briefings:** Settings → Briefings, check the times (morning 07:00, evening 18:00, weekly Sunday 18:00 on; midday off). Next morning a "Morning briefing" notification should arrive once; open it. `/briefings` → Build now works any time.
 - [ ] **Automations:** create one harmless rule, e.g. "When: Briefing ready → Send a notification 'Briefing: {{event.title}}'", wait for the next briefing (or Build now does not trigger it — only scheduled ones emit the event), confirm one notification and a "Trace →" link under the rule. Optionally an "Ask LifeOS" rule on a schedule: any change it proposes must appear in Approvals, never execute on its own.
 - [ ] **Review Phase 9 auto-decisions** in `.planning/STATE.md` → Decisions.
+
+## Phase 10 — Hardening
+
+- [ ] **Deploy** (standard deploy). Expect `0015_activity_type_time` in `lc logs migrate`. The `backup` service now runs `docker/backup.sh`: after the deploy, `lc logs backup` should show no "FAILED"; tomorrow Home must not show a backup priority.
+- [ ] **Run a restore drill once** (safe, throwaway database): `bash scripts/restore-drill.sh` — expect "Restore drill OK" and restored counts close to live.
+- [ ] **Optional: rotate `LIFEOS_MASTER_KEY`** using `docs/security.md` → Key rotation (stop web+worker, dry run, rotate, update `.env`, `lc up -d`). Save the new key in your password manager first; old backups still need the old key.

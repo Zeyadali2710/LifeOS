@@ -23,7 +23,7 @@ Development now follows direct, owner-requested feature work (GSD discontinued o
 - [ ] **Phase 7.1: Finances** (INSERTED) - CSV imports, deduplication, automatic categories, monthly graphs and carried category budgets. Locally verified; deployment and owner acceptance pending.
 - [x] **Phase 8: Knowledge + Goals** - Notes/docs/retrieval, goal hierarchy (built 2026-10-17 autonomous run; owner VM acceptance pending)
 - [x] **Phase 9: Automation + Daily intelligence** - Automation engine, briefings (built 2026-10-17 autonomous run; owner VM acceptance pending)
-- [ ] **Phase 10: Hardening** - Security review, restore-tested backups, observability, performance
+- [x] **Phase 10: Hardening** - Security review, restore-tested backups, observability, performance (built 2026-10-17 autonomous run; owner VM restore drill pending)
 - [ ] **Phase 11: Polish** - Motion, accessibility audit, mobile refinement
 
 ## Phase Details
@@ -336,7 +336,16 @@ Follow-ups (2026-10-16): Instagram post-level insights implemented; multiple Gma
 
 **Done when:** full gate green, Codex + Claude phase review fixed, docs (`docs/automations-briefings.md`, agents/permissions) updated, owner VM steps in OWNER-ACTIONS.
 
-### Phase 10–11
+### Phase 10: Hardening
+Built 2026-10-17 (autonomous run, direct loop: Claude implemented, Codex reviewed the diff plus the auth/session/proxy/crypto/gateway/OAuth code).
+- Static owner-guard test: every exported server action must call `requireOwner()` first; every API route checks the session except auth and health; every signed-in page requires the owner.
+- Verified backups: `docker/backup.sh` keeps a dump only after it fully restores into a throwaway database; status in `settings.backup.last`; failed, stale (>36 h) or never-recorded backups become a red Home priority. `scripts/restore-drill.sh` for owner drills.
+- Master key rotation: `rotate-key` script (dry run, single transaction, verified re-encryption, all-or-nothing, audited).
+- Performance: `(type, occurred_at)` index on `activity_events` for the per-minute automation scan (migration 0015).
+- Security review: no findings in auth, CSRF/origin, CSP, client-IP handling, crypto, gateway tiers or OAuth callbacks; login `next` is path-checked. npm audit: no high-severity production advisories (4 moderate in dev-only drizzle-kit).
+- Deferred: pg-boss failed-job visibility, activity_events retention, passkeys (v2).
+
+### Phase 11
 Not started; scope per phase list above.
 
 ## Credentials & external access needed
