@@ -33,7 +33,7 @@ const approvalOf = async (r: Awaited<ReturnType<typeof call>>) => {
   const [ap] = await h().select().from(approvals).where(eq(approvals.id, (r as { approvalId: string }).approvalId));
   return ap!;
 };
-const approve = async (id: string) => expect(await decide(h(), id, "approve", { enqueue: async () => {} })).toMatchObject({ ok: true });
+const approve = async (id: string) => expect(await decide(h(), id, "approve", { enqueue: async () => {}, now: () => NOW })).toMatchObject({ ok: true });
 const NOT_CONNECTED = "No calendar is connected yet, so I can't see your schedule. Connect Google Calendar or iCloud in Settings → Connections.";
 
 beforeAll(async () => {

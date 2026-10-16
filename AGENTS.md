@@ -10,10 +10,6 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 ## LifeOS Development Agent Protocol
 
-Before beginning an implementation task, read
-`AGENT_HANDOFF.md` and the relevant approved GSD plan.
-
-Follow the task ownership, security, verification,
-escalation, and completion rules defined there.
-
-Do not independently advance GSD phases.
+Before beginning a task, read `AGENT_HANDOFF.md` and
+`.planning/STATE.md`. Follow the roles, phase loop,
+definition of done and safety rules defined there.

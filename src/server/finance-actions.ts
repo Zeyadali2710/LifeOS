@@ -73,7 +73,22 @@ export async function saveFinanceCategoryAction(raw: unknown) {
   await requireOwner();
   const p = z.object({ name, group: name, kind: z.enum(FINANCE_KINDS) }).safeParse(raw);
   if (!p.success) return invalid;
-  try { await ensureFinance(db()); await db().insert(financeCategories).values(p.data).onConflictDoUpdate({ target: financeCategories.name, set: { group: p.data.group, kind: p.data.kind, updatedAt: new Date() } }); revalidatePath("/finances"); return { ok: true } as const; }
+  try {
+    await ensureFinance(db());
+    const saved = await db().transaction(async (tx) => {
+      // Budgets only exist for expense categories; a hidden budget on another treatment would block agent proposals.
+      // The category row lock is shared with budget saves, so neither can slip past the other's check.
+      await tx.select({ name: financeCategories.name }).from(financeCategories).where(eq(financeCategories.name, p.data.name)).for("update");
+      if (p.data.kind !== "expense") {
+        const [budget] = await tx.select({ month: financeBudgets.month }).from(financeBudgets).where(eq(financeBudgets.category, p.data.name)).limit(1);
+        if (budget) return false;
+      }
+      await tx.insert(financeCategories).values(p.data).onConflictDoUpdate({ target: financeCategories.name, set: { group: p.data.group, kind: p.data.kind, updatedAt: new Date() } });
+      return true;
+    });
+    if (!saved) return { ok: false, error: "Clear this category's monthly budgets before changing it from an expense." } as const;
+    revalidatePath("/finances"); return { ok: true } as const;
+  }
   catch { return { ok: false, error: "Could not save the category." } as const; }
 }
 export async function saveFinanceBudgetAction(category: string, month: string, amount: string) {
@@ -83,9 +98,13 @@ export async function saveFinanceBudgetAction(category: string, month: string, a
     if (!amount.trim()) await db().delete(financeBudgets).where(and(eq(financeBudgets.category, category), eq(financeBudgets.month, month)));
     else {
       const cents = money(amount); if (cents < 0) return invalid;
-      const [cat] = await db().select().from(financeCategories).where(eq(financeCategories.name, category));
-      if (cat?.kind !== "expense") return invalid;
-      await db().insert(financeBudgets).values({ category, month, cents }).onConflictDoUpdate({ target: [financeBudgets.category, financeBudgets.month], set: { cents, updatedAt: new Date() } });
+      const ok = await db().transaction(async (tx) => {
+        const [cat] = await tx.select().from(financeCategories).where(eq(financeCategories.name, category)).for("update");
+        if (cat?.kind !== "expense") return false;
+        await tx.insert(financeBudgets).values({ category, month, cents }).onConflictDoUpdate({ target: [financeBudgets.category, financeBudgets.month], set: { cents, updatedAt: new Date() } });
+        return true;
+      });
+      if (!ok) return invalid;
     }
     revalidatePath("/finances"); return { ok: true } as const;
   } catch { return { ok: false, error: "Enter a valid non-negative AUD budget." } as const; }

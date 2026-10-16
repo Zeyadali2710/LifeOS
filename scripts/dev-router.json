@@ -1,9 +1,0 @@
-{
-  "tiers": {
-    "lightweight": { "model": "gpt-6-luna", "reasoning": "low" },
-    "standard": { "model": "gpt-6.1-sol", "reasoning": "medium" },
-    "advanced": { "model": "gpt-6.1-sol", "reasoning": "high" },
-    "critical": { "model": "gpt-6-astra", "reasoning": "high" }
-  },
-  "openRouterWorker": { "enabled": false }
-}

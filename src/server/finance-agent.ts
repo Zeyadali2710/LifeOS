@@ -72,7 +72,8 @@ export function planFinanceChanges(s: FinanceSnapshot, p: FinanceChangePlan) {
   }
   for (const b of p.budgets) {
     requireCategory(b.category);
-    if (cats.get(b.category)?.kind !== "expense") invalid("Budgets require an expense category.");
+    // Clearing (cents null) stays allowed for any treatment so leftover non-expense budgets can be removed.
+    if (b.cents !== null && cats.get(b.category)?.kind !== "expense") invalid("Budgets require an expense category.");
     if (b.cents === null) budgets.delete(`${b.category}:${b.month}`); else budgets.set(`${b.category}:${b.month}`, { ...b, cents: b.cents });
   }
   for (const b of budgets.values()) if (cats.get(b.category)?.kind !== "expense") invalid("Existing budgets must be removed or mapped to an expense category before changing its treatment.");

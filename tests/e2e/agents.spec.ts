@@ -8,15 +8,17 @@ test.beforeEach(async ({ page }) => {
   await signIn(page);
 });
 
-test("lists orchestrator + 10 domain agents, 7 honestly not connected (Organization and Outreach live)", async ({ page }) => {
+test("lists orchestrator + 10 domain agents, 5 honestly not connected", async ({ page }) => {
   await page.goto("/agents");
   await expect(page.getByRole("heading", { name: "Your autonomous workforce." })).toBeVisible();
   const cards = page.getByRole("region", { name: "Agents" }).getByRole("link");
   await expect(cards).toHaveCount(11);
-  await expect(cards.filter({ hasText: "Not connected" })).toHaveCount(7);
+  await expect(cards.filter({ hasText: "Not connected" })).toHaveCount(5);
   await expect(cards.filter({ hasText: "Projects" })).not.toContainText("Not connected");
   await expect(cards.filter({ hasText: "Organization" })).not.toContainText("Not connected");
   await expect(cards.filter({ hasText: "Outreach" })).not.toContainText("Not connected");
+  await expect(cards.filter({ hasText: "Social" })).not.toContainText("Not connected");
+  await expect(cards.filter({ hasText: "Finance" })).not.toContainText("Not connected");
 });
 
 test("seeded run shows tokens, cost, latency and opens its detail", async ({ page }, info) => {

@@ -91,7 +91,7 @@ test("triaged mail shows summary and action items; Add as task lands in FOLLOW-U
   await detail.getByRole("button", { name: `Add Send the slides ${u} as a task` }).click();
   await expect(detail.getByText("Task added")).toBeVisible();
   await page.goto("/outreach?tab=follow-ups");
-  await expect(page.getByText(new RegExp(`From email · ${subject} · Lee Direct`))).toBeVisible();
+  await expect(page.getByRole("link", { name: new RegExp(`From email · ${subject} · Lee Direct`) })).toBeVisible();
 });
 
 test("pending mail_reply can be edited and approved from the email detail", async ({ page }) => {

@@ -1,3 +1,3 @@
 # LifeOS development
 
-Read `AGENTS.md` and `AGENT_HANDOFF.md` before work. Follow the approved GSD plan and its owner gates. Do not assume this conversation is the current project state; check Git and `.planning/STATE.md` first.
+Read `AGENTS.md` and `AGENT_HANDOFF.md` before work. Claude is the orchestrator in the phase loop described there. Check Git and `.planning/STATE.md` for the current state; do not assume a conversation is current.

@@ -151,6 +151,14 @@ describe("Finance agent and approvals", () => {
     expect(await approve(id)).toMatchObject({ status: "executed" });
     expect(await h().select().from(financeBudgets).where(and(eq(financeBudgets.category, "Groceries"), eq(financeBudgets.month, "2026-04")))).toMatchObject([{ cents: 0 }]);
   });
+  it("can clear a leftover budget on a non-expense category instead of blocking every proposal", async () => {
+    await h().insert(financeBudgets).values({ category: "Old pay", month: "2026-02", cents: 100 });
+    const stuck = financeChangePlan.parse({ title: "Budget only", budgets: [{ category: "Old food", month: "2026-04", cents: 2000 }] });
+    expect(await call("finance.update", { plan: stuck })).toMatchObject({ status: "error" });
+    const id = await propose(financeChangePlan.parse({ title: "Clear leftover", budgets: [{ category: "Old pay", month: "2026-02", cents: null }] }));
+    expect(await approve(id)).toMatchObject({ status: "executed" });
+    expect(await h().select().from(financeBudgets).where(eq(financeBudgets.category, "Old pay"))).toHaveLength(0);
+  });
   it("does not recategorise unrelated transactions when only changing a budget", async () => {
     await h().insert(financeRules).values({ keyword: "unknown transaction", category: "Old food" });
     await t.pool().query("update finance_transactions set category = null where description = $1", ["Unknown transaction"]);

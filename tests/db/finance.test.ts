@@ -100,6 +100,13 @@ describe("finance budgets, edits and owner guard", () => {
     const remaining = await t.handle().select().from(financeTransactions);
     expect(remaining).toHaveLength(2); expect(remaining.every((r) => r.account === "other")).toBe(true);
   });
+  it("refuses to change a budgeted expense category's treatment until its budgets are cleared", async () => {
+    await t.handle().insert(financeBudgets).values({ category: "Groceries", month: "2026-02", cents: 5000 });
+    expect(await saveFinanceCategoryAction({ name: "Groceries", group: "Home", kind: "transfer" })).toMatchObject({ ok: false, error: expect.stringMatching(/budgets/) });
+    expect((await t.handle().select().from(financeCategories).where(eq(financeCategories.name, "Groceries")))[0]?.kind).toBe("expense");
+    expect(await saveFinanceBudgetAction("Groceries", "2026-02", "")).toMatchObject({ ok: true });
+    expect(await saveFinanceCategoryAction({ name: "Groceries", group: "Home", kind: "transfer" })).toMatchObject({ ok: true });
+  });
   it("checks the owner before every finance read/mutation action", async () => {
     allowed.owner = false;
     const form = new FormData();

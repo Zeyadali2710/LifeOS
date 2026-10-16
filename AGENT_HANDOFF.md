@@ -1,33 +1,55 @@
-# LifeOS development agent protocol
+# LifeOS development workflow
 
-This protocol applies to development agents, not the agents running inside LifeOS. Git, approved GSD artifacts, accepted ADRs, and verified checkpoints are the source of truth. A model's conversation is not.
+Applies to development agents, not the agents inside LifeOS. Git, source, tests and `.planning/STATE.md` are the shared memory; a model's conversation is not. GSD and the PowerShell router were retired on 2026-10-16/17 (both are in Git history).
 
-## Roles and ownership
+## Roles
 
-- **Owner:** Approves plans and major architecture, security, destructive, production, infrastructure, external-service, credential, and dependency decisions. Accepts completed work.
-- **Claude Code:** May plan, implement, debug, and review when available. It owns only tasks explicitly assigned to it.
-- **Codex:** May independently plan, implement, debug, test, and verify. It is the normal implementation provider and the fallback when a router-managed Claude call exhausts usage.
-- **OpenRouter development worker:** Disabled. If later configured, it may receive only isolated low-risk work with deterministic checks. It must never receive secrets or private repository content without explicit owner permission. It must not touch authentication, authorization, credentials, agent permissions, migrations, financial logic, or deployment security. This is separate from LifeOS's in-product OpenRouter routing.
+- **Owner:** sets priorities, approves production deploys, destructive data actions, new external access/credentials, major architecture or security changes. Tests on the homelab VM.
+- **Claude Code (orchestrator):** plans each phase, splits it into tasks, writes the risky code itself, dispatches mechanical tasks, merges review findings and makes the fixes.
+- **Codex (critic and reviewer):** reviews the phase plan before work starts and reviews the full phase diff at the end. May execute mechanical tasks with the light tier. Runs headless from the orchestrator:
+  ```bash
+  codex exec -s read-only --ephemeral -o review.md "<instructions>"   # plan critique or diff review
+  codex review --base <sha>                                          # standard review of a phase branch
+  ```
+- **Light executors:** Claude Sonnet/Haiku subagents or Codex `gpt-6-luna`. Only well-specified tasks with an exact file list.
 
-One task has one active provider. Concurrent tasks use separate worktrees or isolated branches. Neither Claude nor Codex permanently owns GSD. Returning to Claude does not automatically transfer a Codex task.
+One task has one active implementer. Parallel implementers need separate worktrees.
 
-## Before work
+## Who writes what
 
-1. Read `AGENTS.md`, this file, `.planning/STATE.md`, the assigned approved plan, and relevant ADRs or source files.
-2. Check Git branch, status, current task contract, and the last verified checkpoint. Never overwrite another agent's uncommitted work.
-3. Confirm task scope: objective, plan, files, acceptance criteria, verification commands, and security constraints. If the plan is a draft or GSD says `ready_to_plan`, seek owner approval before executing it.
-4. Use the smallest change that completes the task. Do not change unrelated application behavior or advance another GSD phase.
+| Orchestrator writes it | Light executor may write it |
+|---|---|
+| auth, sessions, owner checks | UI components to an agreed spec |
+| agent tools, permissions, approvals, privacy taint | tests for already-written logic |
+| money, imports, dedupe, migrations with data changes | docs, copy, additive schema scaffolding |
+| concurrency, locking, idempotency, external writes | simple owner-only CRUD following an existing pattern |
 
-## Execution and safety
+## Phase loop
 
-- The PowerShell router in `scripts/dev-router.ps1` stores one contract per task in the ignored `.dev-router/tasks` directory. Its `approve` action is an explicit owner checkpoint. `run` refuses unapproved tasks, changed worktrees, and concurrent runs. The lock and checkpoint allow recovery after a crash. It never commits, pushes, merges, migrates, deploys, or calls OpenRouter.
-- Router Codex calls use `workspace-write` and `-a never`. Commands that need broader access fail and must be brought to the owner. Never use sandbox-bypass flags for this workflow. Claude's own permission controls still apply when selected; do not preapprove broad tools.
-- Before any major architectural change, auth redesign, agent permission change, destructive DB action, production deployment, security-affecting infrastructure change, external action, credential handling outside established procedures, or significant dependency change, stop and obtain explicit owner approval. The router's task approval does not authorize these later actions.
-- Never weaken existing authorization, validation, tests, or GSD security gates. Do not expose secrets in prompts, logs, commits, or worker payloads. The router refuses API-key environment variables before invoking subscription providers.
-- Keep `.planning/config.json` gates intact; do not turn on `cross_ai_execution` without a separate reviewed decision.
+1. **Plan:** short phase section in `.planning/ROADMAP.md` (goal, scope, tasks, risks). Codex critiques it once; fix or note disagreements.
+2. **Build:** one commit per task. Each task passes the focused tests, then the full suite before the next starts.
+3. **Double review:** Codex reviews the phase diff while Claude reviews independently. Claude merges findings, fixes critical/warning items once, notes the rest.
+4. **Gate and push:** the definition of done below, then push to `main` and record the phase in `.planning/STATE.md`. Owner deploys and tests on the VM.
 
-## Verification and handoff
+Small one-off requests skip the loop: implement directly, then run the gate.
 
-Run focused checks first, then relevant `npm run typecheck`, `npm run lint`, `npm test`, `npm run build`, or `npm run e2e` checks. Report what actually ran. A result in `review` is not accepted: the owner inspects the diff, verification evidence, and `report` output before marking the task `complete`. Update GSD state only through its own acceptance gates. Do not independently change the roadmap or mark a phase complete.
+## Definition of done
 
-Every handoff includes task ID, status, changed files, checks and results, decisions, remaining work, and the next verified checkpoint. On interruption, inspect the workspace and last log before `resume`. An automatically detected Claude usage limit can move a router-managed call to Codex only if Claude changed no workspace files. Authentication, network, and ordinary errors remain interrupted for diagnosis. Arbitrary interactive Claude sessions are outside this failover mechanism.
+```bash
+npm run typecheck && npm run lint
+npx vitest run          # FULL suite: unit + DB (needs TEST_DATABASE_ADMIN_URL, local docker Postgres on 5433)
+npm run build && npm run build:worker
+npx playwright test     # when UI changed (full suite, not just the touched spec)
+```
+
+Report what actually ran. Never skip or weaken a test to go green; fix the test only when the behaviour change was intended. GitHub CI runs the same gate on every push to `main`; check it after pushing.
+
+Windows notes: set `TEMP`/`TMP` to the ignored `test-results/vitest-tmp`; never put temp files in `.next`. Playwright clears `test-results` and uses the disposable `lifeos_e2e` database, so don't run Vitest and Playwright at the same time.
+
+## Safety (unchanged by the workflow change)
+
+Keep owner authentication, validation, approval tiers (config can't lower a tool's floor), privacy boundaries, audit records and idempotency. Never commit secrets, private financial files or real transaction fixtures. `.codex/` stays local and ignored. In-product OpenRouter routing is separate from development providers; development workers on OpenRouter stay disabled.
+
+## Handoff
+
+On interruption, inspect `git status`/`git log` and the last STATE entry, then resume from the last verified commit. A handoff lists: what changed, checks run and results, decisions, owner blockers (also in `.planning/OWNER-ACTIONS.md`).

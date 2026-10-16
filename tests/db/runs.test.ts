@@ -22,8 +22,8 @@ describe("pause + model", () => {
     expect(await setAgentPaused(h, "projects", true)).toBe(true);
     expect(await isPaused(h, "projects")).toBe(true);
     expect(await isPaused(h, "orchestrator")).toBe(false);
-    expect(await setAgentPaused(h, "finance", true)).toBe(false);
-    expect(await setAgentModel(h, "finance", MODELS.opus)).toBe(false);
+    expect(await setAgentPaused(h, "agentops", true)).toBe(false);
+    expect(await setAgentModel(h, "agentops", MODELS.opus)).toBe(false);
     expect(await setAgentModel(h, "projects", "gpt-4")).toBe(false);
     expect(await setAgentModel(h, "projects", MODELS.opus)).toBe(true);
     expect((await agentConfig(h, "projects")).model).toBe(MODELS.opus);
