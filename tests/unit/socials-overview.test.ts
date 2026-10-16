@@ -27,10 +27,11 @@ describe("Socials overview", () => {
     expect(html).not.toContain(">MOCK<");
   });
   it("shows real TikTok partial grants and escapes provider text", () => {
-    const html = render(card({ platform: "tiktok", isMock: false, connection: { id: "tiktok", status: "connected", last4: "1234", login: "<script>alert(1)</script>", expiresAt: null, scopes: ["user.info.basic"], lastSyncAt: null, lastSyncError: null } }));
+    const html = render(card({ platform: "tiktok", isMock: false, connection: { id: "tiktok", status: "connected", last4: "1234", login: "internal-account-id", expiresAt: null, scopes: ["user.info.basic"], lastSyncAt: null, lastSyncError: "<script>alert(1)</script>" } }));
     expect(html).toContain("Profile: granted");
     expect(html).toContain("Account stats: not granted");
     expect(html).toContain("Video stats: not granted");
+    expect(html).not.toContain("internal-account-id");
     expect(html).toContain("&lt;script&gt;");
     expect(html).not.toContain("<script>");
     expect(html).toContain("not available");

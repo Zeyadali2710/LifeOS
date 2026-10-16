@@ -40,7 +40,6 @@ export function PlatformCard({ card, posts, now }: { card: PlatformCardData; pos
         <span aria-hidden="true" className="grid size-9 shrink-0 place-items-center rounded-14 text-[13.5px] font-medium" style={{ color: p.text, background: p.tint }}>{p.mark}</span>
         <div className="min-w-0 flex-1">
           <h2 className="font-display text-[20px] leading-[1.1]">{p.label}</h2>
-          {connection?.login && <p className="mt-1 truncate text-[12.5px] text-text-3">{connection.login}</p>}
         </div>
         {card.isMock && <Badge kind="tag" tone="neutral">MOCK</Badge>}
       </div>
