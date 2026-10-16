@@ -4,7 +4,7 @@ import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { KNOWLEDGE_LIMITS, knowledgeInput } from "@/lib/knowledge";
-import { db } from "./db/client";
+import { db, type DB } from "./db/client";
 import { auditLog, knowledgeItems } from "./db/schema";
 import { setSemanticEnabled } from "./knowledge";
 import { enqueue, QUEUES } from "./queue";
@@ -54,11 +54,14 @@ export async function uploadKnowledgeAction(form: FormData): Promise<Result> {
   const p = knowledgeInput.safeParse({ kind: "document", title, body: text, tags: String(form.get("tags") ?? "").split(",") });
   if (!p.success) return fail(firstIssue(p.error));
   try {
-    const [row] = await db().insert(knowledgeItems).values({ ...p.data, source: "upload" }).returning({ id: knowledgeItems.id });
-    await db().insert(auditLog).values({ actor: "owner", action: "knowledge.upload", target: row!.id, metadata: { bytes: file.size } });
+    const id = await db().transaction(async (tx) => {
+      const [row] = await tx.insert(knowledgeItems).values({ ...p.data, source: "upload" }).returning({ id: knowledgeItems.id });
+      await tx.insert(auditLog).values({ actor: "owner", action: "knowledge.upload", target: row!.id, metadata: { bytes: file.size } });
+      return row!.id;
+    });
     await reindex();
     revalidatePath("/knowledge");
-    return { ok: true, id: row!.id };
+    return { ok: true, id };
   } catch {
     return fail("Could not save this document.");
   }
@@ -68,9 +71,12 @@ export async function deleteKnowledgeAction(id: string): Promise<Result> {
   await requireOwner();
   if (!z.uuid().safeParse(id).success) return fail("Unknown item.");
   try {
-    const gone = await db().delete(knowledgeItems).where(eq(knowledgeItems.id, id)).returning({ id: knowledgeItems.id });
-    if (!gone.length) return fail("This item no longer exists.");
-    await db().insert(auditLog).values({ actor: "owner", action: "knowledge.delete", target: id, metadata: {} });
+    const deleted = await db().transaction(async (tx) => {
+      const gone = await tx.delete(knowledgeItems).where(eq(knowledgeItems.id, id)).returning({ id: knowledgeItems.id });
+      if (gone.length) await tx.insert(auditLog).values({ actor: "owner", action: "knowledge.delete", target: id, metadata: {} });
+      return gone.length > 0;
+    });
+    if (!deleted) return fail("This item no longer exists.");
     revalidatePath("/knowledge");
     return { ok: true };
   } catch {
@@ -88,8 +94,10 @@ export async function markKnowledgeViewedAction(id: string): Promise<void> {
 export async function setKnowledgeSemanticAction(on: boolean): Promise<Result> {
   await requireOwner();
   if (typeof on !== "boolean") return fail("Invalid setting.");
-  await setSemanticEnabled(db(), on);
-  await db().insert(auditLog).values({ actor: "owner", action: "knowledge.semantic", metadata: { enabled: on } });
+  await db().transaction(async (tx) => {
+    await setSemanticEnabled(tx as unknown as DB, on);
+    await tx.insert(auditLog).values({ actor: "owner", action: "knowledge.semantic", metadata: { enabled: on } });
+  });
   if (on) await reindex();
   revalidatePath("/knowledge");
   return { ok: true };

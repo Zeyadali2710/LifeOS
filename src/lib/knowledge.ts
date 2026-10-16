@@ -46,5 +46,8 @@ export function prefixQuery(q: string): string {
   return tokens.slice(0, 12).map((t) => `${t}:*`).join(" & ");
 }
 
-/** Text sent for embedding: title plus the start of the body (well under the model's input limit). */
-export const embeddingText = (title: string, body: string) => `${title}\n\n${body}`.slice(0, 24_000);
+/**
+ * Text sent for embedding: title plus the start of the body. 8,000 characters can never exceed the model's
+ * 8,192-token input limit (a token is at least one character), so one dense item can't fail every batch.
+ */
+export const embeddingText = (title: string, body: string) => `${title}\n\n${body}`.slice(0, 8000);

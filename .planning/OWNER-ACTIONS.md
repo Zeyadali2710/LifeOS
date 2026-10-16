@@ -15,4 +15,9 @@ lc ps                          # web, worker up; migrate exited 0
 
 ## Phase 8 — Knowledge + Goals
 
-(Added during the autonomous run; see below.)
+- [ ] **Deploy** (standard deploy above). Expect `0013_knowledge_goals` in `lc logs migrate`; it also runs `CREATE EXTENSION IF NOT EXISTS vector` (needs the compose DB superuser, which is the default).
+- [ ] **Knowledge check** on the tailnet page: add a note, a bookmark (https link) and upload a `.md` file; keyword search finds each by a word prefix and by tag; edit and delete one.
+- [ ] **Decide on semantic search.** It is off. Turning it on (Knowledge → Semantic → Turn on) sends item titles/text (first 8,000 chars) and semantic queries to OpenRouter (`openai/text-embedding-3-small`) with your saved OpenRouter key. If you turn it on: within ~10 minutes "Semantic index N/M" should reach M/M, and a by-meaning query should rank sensibly. Cost is fractions of a cent for hundreds of notes.
+- [ ] **Goals check:** write the vision, add a goal and 2 objectives, link a real project to one, tick a task in the tree, check the horizon tabs and the header sentence. Archive and restore a goal via Show archived.
+- [ ] **Ask Knowledge / Ask Goals** once each from the AI panel; both should answer from your data (paid model, no free model in Command Centre).
+- [ ] **Review Phase 8 auto-decisions** in `.planning/STATE.md` → Decisions and ROADMAP Phase 8 (critique section).

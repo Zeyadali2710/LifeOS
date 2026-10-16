@@ -1,10 +1,14 @@
 # Agents
 
-Status: Orchestrator, Projects, Organization, Outreach, Social and Finance are live. Other registry entries remain NOT CONNECTED until implemented.
+Status: Orchestrator, Projects, Organization, Outreach, Social, Finance, Knowledge and Goals are live. Other registry entries remain NOT CONNECTED until implemented.
 
 ## Contract
 
 Finance (`finance`) manages `/finances`: private READ tools `finance.overview`, `finance.list_merchants`, `finance.list_transactions`, and HIGH_RISK `finance.update` for one composite category/rule/transaction/budget proposal. The orchestrator delegates finance requests to it. It uses paid models only and has no tools that move money. Full merchant-page coverage, source snapshot checks, owner review, atomic execution and retry adoption protect bulk changes; see `finances.md`.
+
+Knowledge (`knowledge`) answers from `/knowledge` with READ tools `knowledge.search` (keyword, or semantic when the owner enabled it) and `knowledge.get`. Paid models only; knowledge data is hard-private and untrusted. It cannot write items yet.
+
+Goals (`goals`) explains `/goals` with one READ tool, `goals.overview` (vision, goals, objectives, progress, momentum, neglect, linked projects, optional open tasks). It cannot change goals yet. See `knowledge-goals.md`.
 Every agent is a registry entry plus a set of tools:
 
 | Field | Meaning |

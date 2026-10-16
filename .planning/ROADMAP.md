@@ -21,7 +21,7 @@ Development now follows direct, owner-requested feature work (GSD discontinued o
 - [x] **Phase 6: Outreach** - Sydney event discovery, pipeline, email intelligence, drafting (completed 2026-10-13)
 - [x] **Phase 7: Socials** - Closed 2026-10-16 after owner confirmed the deployed page and pushed the recent changes. Live publishing/scheduling remains a separate operational check.
 - [ ] **Phase 7.1: Finances** (INSERTED) - CSV imports, deduplication, automatic categories, monthly graphs and carried category budgets. Locally verified; deployment and owner acceptance pending.
-- [ ] **Phase 8: Knowledge + Goals** - Notes/docs/retrieval, goal hierarchy
+- [x] **Phase 8: Knowledge + Goals** - Notes/docs/retrieval, goal hierarchy (built 2026-10-17 autonomous run; owner VM acceptance pending)
 - [ ] **Phase 9: Automation + Daily intelligence** - Automation engine, briefings
 - [ ] **Phase 10: Hardening** - Security review, restore-tested backups, observability, performance
 - [ ] **Phase 11: Polish** - Motion, accessibility audit, mobile refinement

@@ -50,6 +50,8 @@ export async function embedPending(h: DB, opts: { fetch?: EmbedFetch; key?: () =
   if (!key) return { embedded: 0, skipped: "no_key" };
   let embedded = 0;
   for (let round = 0; round < 10; round++) {
+    // Re-checked every batch: switching semantic search off must stop further item text leaving LifeOS.
+    if (round > 0 && !(await semanticEnabled(h))) return { embedded, skipped: "disabled" };
     const rows = await h.select({ id: knowledgeItems.id, title: knowledgeItems.title, body: knowledgeItems.body, hash: contentHash }).from(knowledgeItems)
       .where(sql`${knowledgeItems.embeddedHash} is distinct from ${contentHash}`).limit(EMBED_BATCH);
     if (!rows.length) break;
@@ -110,7 +112,7 @@ export async function searchKnowledge(h: DB, f: KnowledgeFilter, opts: { fetch?:
       return { hits: [], semanticError: "unavailable" };
     }
     const distance = sql<number>`${knowledgeItems.embedding} <=> ${JSON.stringify(vector)}::vector`;
-    const rows = await h.select({ ...cols, distance }).from(knowledgeItems).where(and(filters, isNotNull(knowledgeItems.embedding))).orderBy(distance).limit(limit);
+    const rows = await h.select({ ...cols, distance }).from(knowledgeItems).where(and(filters, isNotNull(knowledgeItems.embedding), sql`${knowledgeItems.embeddedHash} = ${contentHash}`)).orderBy(distance).limit(limit);
     return { hits: rows.map((r) => toHit(r, Math.max(0, Math.min(1, 1 - Number(r.distance))))) };
   }
 

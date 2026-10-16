@@ -15,6 +15,15 @@
 
 Critical tests (Phase 3): tier resolution, HIGH_RISK floor, approval suspend/resume, idempotent retry, agent allow-list, foreign/unknown id rejection.
 
+## Knowledge and Goals tools
+
+| Tool | Tier |
+|---|---|
+| `knowledge.search`, `knowledge.get` | READ, private, untrusted content |
+| `goals.overview` | READ, private |
+
+Read-only by absence: no knowledge or goal write tools exist. Knowledge reads apply the same hard privacy block as mail and finance (never a free model, across the conversation tree, regardless of the private-data opt-in). Goals reads use the normal private taint.
+
 ## Finance tools
 
 | Tool | Tier |

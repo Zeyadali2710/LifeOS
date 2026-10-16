@@ -67,6 +67,7 @@ export function KnowledgeView({ data }: { data: KnowledgeData }) {
         <div className="flex flex-col gap-2.5">
           <p className="text-[11px] tracking-[.12em] text-purple-text">KNOWLEDGE</p>
           <h1 className="font-display text-[clamp(36px,4.4vw,60px)] leading-[.95]">Everything you&apos;ve read, written and saved.</h1>
+          <p className="text-[12px] text-text-3">Keyword search stays inside LifeOS. Ask Knowledge sends the items it reads to Anthropic.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" onClick={() => openAI("Ask the Knowledge agent about my saved notes: ")}><Icon name="auto_awesome" size={16} />Ask Knowledge</Button>

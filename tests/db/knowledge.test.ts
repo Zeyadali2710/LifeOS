@@ -91,7 +91,20 @@ describe("knowledge items", () => {
     const id = hits[1]!.id;
     await saveKnowledgeAction({ kind: "note", title: "Postgres notes", body: "approval queue design", tags: [] }, id);
     expect(await semanticStatus(h())).toMatchObject({ indexed: 1, total: 2 });
+    // A stale vector (text changed since embedding) is never ranked.
+    const stale = (await searchKnowledge(h(), { q: "database", mode: "semantic", kind: null, tags: [] }, { fetch: fakeFetch, key })).hits;
+    expect(stale.map((x) => x.id)).not.toContain(id);
     expect(await embedPending(h(), { fetch: fakeFetch, key })).toEqual({ embedded: 1 });
+    const fresh = (await searchKnowledge(h(), { q: "approval", mode: "semantic", kind: null, tags: [] }, { fetch: fakeFetch, key })).hits;
+    expect(fresh[0]?.id).toBe(id);
+  });
+
+  it("stops sending item text as soon as semantic search is switched off mid-run", async () => {
+    await setSemanticEnabled(h(), true);
+    await h().insert(knowledgeItems).values(Array.from({ length: 40 }, (_, i) => ({ kind: "note", title: `Item ${i}` })));
+    const offAfterFirst = vi.fn(async (u: string | URL | Request, init?: RequestInit) => { await setSemanticEnabled(h(), false); return fakeFetch(u, init); }) as unknown as typeof fetch;
+    expect(await embedPending(h(), { fetch: offAfterFirst, key })).toEqual({ embedded: 32, skipped: "disabled" });
+    expect(offAfterFirst).toHaveBeenCalledTimes(1);
   });
 
   it("keeps items pending when the provider fails or returns a malformed body", async () => {

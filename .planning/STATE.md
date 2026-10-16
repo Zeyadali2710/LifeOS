@@ -19,7 +19,7 @@ Short current state only. History is in Git and the phase folders under `.planni
 ## Phases
 
 - 1–7.1 complete. 7.1 Finances accepted after real import/reorganisation.
-- 8 Knowledge + Goals: in progress (see ROADMAP Phase 8 details).
+- 8 Knowledge + Goals: built and pushed 2026-10-17 (autonomous run). Migration 0013. Owner deploy + VM check pending (OWNER-ACTIONS). Review: Codex plan critique + Codex/Claude phase review, all findings fixed.
 - 9 Automation + Daily intelligence, 10 Hardening, 11 Polish: not started.
 
 ## Open owner items
@@ -32,6 +32,8 @@ See `.planning/OWNER-ACTIONS.md`. Main deferred live check: Socials real posting
 - Earlier "unit only" checkpoints (563 tests) did not include the DB suite; always run the full suite now.
 
 ## Decisions
+
+- Phase 8 auto-decisions (owner to review): semantic search off by default, OpenRouter `openai/text-embedding-3-small` via the existing key; Knowledge agent paid-only + hard-private; agents read-only (writes deferred); one objective per project; neglect = 21 days, momentum = 14-day windows; PDFs not supported; bookmarks are never fetched server-side.
 
 - Finance: transfers count as income/spending; budgets carry forward until changed and cover all accounts; savings are net Savings-category contributions; integer AUD cents.
 - Finance agent uses paid models only; finance data taints the run against free models.

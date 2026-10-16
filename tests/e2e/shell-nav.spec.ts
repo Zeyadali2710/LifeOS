@@ -8,7 +8,7 @@ const ROUTES = [
   ["/organization", /^(Your calendar, in one place\.|Nothing scheduled\.|You're free .+\.|Your schedule is full .+\.)$/],
   ["/projects", "Projects"],
   ["/knowledge", "Everything you've read, written and saved."],
-  ["/goals", "Goals"],
+  ["/goals", /^(Set a direction\.|Momentum is up on \d+ of \d+ goals?\.)$/],
   ["/agents", "Your autonomous workforce."],
   ["/approvals", /decisions? (is|are) waiting|caught up/],
   ["/settings", "Connections"],
