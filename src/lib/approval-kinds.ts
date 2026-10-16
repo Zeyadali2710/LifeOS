@@ -5,9 +5,10 @@ import { mailReplyPayload, type MailReplyPayload } from "./mail-payload";
 import { draftCounts, projectCreatePayload, projectUpdatePayload } from "./project-payload";
 import { z } from "zod";
 import { checkVariant } from "./social-types";
+import { financeChangePayload } from "./finance-payload";
 
 // Per-tool-kind approval contract (client-safe).
-export type ApprovalKind = "issue" | "event_create" | "event_update" | "event_delete" | "project_create" | "project_update" | "mail_reply" | "social_publish";
+export type ApprovalKind = "issue" | "event_create" | "event_update" | "event_delete" | "project_create" | "project_update" | "mail_reply" | "social_publish" | "finance_update";
 
 export const socialPublishPayload = z.object({
   variantId: z.uuid(), platform: z.enum(["linkedin", "instagram"]), text: z.string().max(10_000),
@@ -26,6 +27,7 @@ const KINDS: Record<string, ApprovalKind> = {
   "projects.update": "project_update",
   "mail.send_reply": "mail_reply", // never the "issue" fallback: bodies must not reach audit_log
   "socials.publish": "social_publish",
+  "finance.update": "finance_update",
 };
 export const approvalKind = (tool: string): ApprovalKind => KINDS[tool] ?? "issue";
 
@@ -38,6 +40,7 @@ const SCHEMAS = {
   project_update: projectUpdatePayload,
   mail_reply: mailReplyPayload,
   social_publish: socialPublishPayload,
+  finance_update: financeChangePayload,
 };
 export const payloadSchemaFor = (tool: string) => SCHEMAS[approvalKind(tool)];
 
@@ -51,6 +54,7 @@ export const LOCKED: Record<ApprovalKind, string[]> = {
   project_update: ["projectId", "before", "sources"],
   mail_reply: ["messageId", "connectionId", "mailbox", "threadId", "to", "cc", "inReplyTo", "references", "originalSubject", "from"],
   social_publish: ["variantId", "platform", "providerMode", "connectionGeneration"],
+  finance_update: ["before"],
 };
 
 // Key-order-independent: the stored original comes back from jsonb, which reorders object keys.
@@ -91,6 +95,7 @@ const NOTHING: Record<ApprovalKind, string> = {
   project_update: "Nothing was changed.",
   mail_reply: "Nothing was sent.",
   social_publish: "Nothing was posted.",
+  finance_update: "No finance data was changed.",
 };
 export const nothingText = (kind: ApprovalKind) => NOTHING[kind];
 
@@ -133,6 +138,10 @@ export function approvalSummary(tool: string, payload: unknown, expiresAt: Date)
     const m = parsed.data as MailReplyPayload;
     const to = m.to[0]!;
     return { title: `Approval waiting: reply to ${to.name || to.address} · ${m.subject}`, body: `${m.body.length} characters to ${to.address}. Expires ${exp}.` };
+  }
+  if (kind === "finance_update") {
+    const p = financeChangePayload.parse(parsed.data);
+    return { title: "Approval waiting: finance changes", body: `${p.impact.changed} transactions, ${p.plan.categories.length} categories, ${p.plan.budgets.length} budget changes. Expires ${exp}.` };
   }
   if (kind === "social_publish") {
     const p = parsed.data as z.infer<typeof socialPublishPayload>;

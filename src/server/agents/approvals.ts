@@ -16,6 +16,7 @@ import { itemsChanged } from "./tools/projects";
 import { prepareApprovedSocial } from "./tools/socials";
 import { socialPublishPayload } from "@/lib/approval-kinds";
 import { ToolError, type Tool } from "./types";
+import { refreshFinanceProposal } from "../finance-agent";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- heterogeneous tool map
 type Tools = Record<string, Tool<any, any>>;
@@ -102,6 +103,10 @@ export async function decide(
   const orig = cur.originalPayload;
   const locked = checkLocked(approvalKind(cur.tool), orig, parsed.data);
   if (locked) return { ok: false, reason: "invalid", errors: locked };
+  if (approvalKind(cur.tool) === "finance_update") {
+    try { parsed.data = await refreshFinanceProposal(h, parsed.data); }
+    catch (err) { if (err instanceof ToolError) return { ok: false, reason: "invalid", errors: { form: err.message } }; throw err; }
+  }
 
   let won: Row | undefined;
   try {
@@ -115,7 +120,7 @@ export async function decide(
         }
         return rows;
         })
-      : await h.update(approvals).set({ status: "approved", decidedAt: now, ...(opts.edited ? { editedPayload: parsed.data } : {}) })
+      : await h.update(approvals).set({ status: "approved", decidedAt: now, ...(opts.edited || approvalKind(cur.tool) === "finance_update" ? { editedPayload: parsed.data } : {}) })
         .where(and(eq(approvals.id, id), eq(approvals.status, "pending"), sql`${approvals.expiresAt} > ${now}`)).returning();
     won = rows[0];
   } catch (err) {
@@ -146,6 +151,10 @@ export async function saveEdit(
   const orig = cur.originalPayload;
   const locked = checkLocked(approvalKind(cur.tool), orig, parsed.data);
   if (locked) return { ok: false, errors: locked };
+  if (approvalKind(cur.tool) === "finance_update") {
+    try { parsed.data = await refreshFinanceProposal(h, parsed.data); }
+    catch (err) { if (err instanceof ToolError) return { ok: false, errors: { form: err.message } }; throw err; }
+  }
   const [won] = await h
     .update(approvals)
     .set({ editedPayload: parsed.data })
@@ -291,6 +300,8 @@ export async function expireDue(h: DB, now: Date = new Date(), opts: { enqueue?:
             ? `The reply "${titleOf(a)}" was not sent. Nothing ran after the request expired.`
             : kind === "social_publish"
             ? "The social publish request expired. Nothing was posted."
+            : kind === "finance_update"
+            ? "The finance proposal expired. No finance data was changed."
             : kind === "issue"
             ? `The issue "${titleOf(a)}" was not created. Nothing ran after the request expired.`
             : kind === "project_create" || kind === "project_update"

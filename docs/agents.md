@@ -1,8 +1,10 @@
 # Agents
 
-Status: **implemented (Phase 3; Organization agent added in Phase 4, see below).** Orchestrator, Projects and Organization (`organization`) agents are live; the other eight domain agents are registered but show NOT CONNECTED until their phase.
+Status: Orchestrator, Projects, Organization, Outreach, Social and Finance are live. Other registry entries remain NOT CONNECTED until implemented.
 
 ## Contract
+
+Finance (`finance`) manages `/finances`: private READ tools `finance.overview`, `finance.list_merchants`, `finance.list_transactions`, and HIGH_RISK `finance.update` for one composite category/rule/transaction/budget proposal. The orchestrator delegates finance requests to it. It uses paid models only and has no tools that move money. Full merchant-page coverage, source snapshot checks, owner review, atomic execution and retry adoption protect bulk changes; see `finances.md`.
 Every agent is a registry entry plus a set of tools:
 
 | Field | Meaning |

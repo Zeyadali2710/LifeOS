@@ -14,10 +14,12 @@ export const CONTENT_TOOLS = [
   "github.get_file", "github.list_tree", "github.get_pull_request", "github.list_issues", "github.list_pull_requests", "github.recent_commits",
   "outreach.list_events", "outreach.get_event", "mail.list", "mail.get_message", "mail.send_reply", // D-19, D-29: events and mail are third-party text too
   "socials.get_post", "socials.list_posts", // posts may contain copied repo or event content
+  "finance.overview", "finance.list_merchants", "finance.list_transactions", "finance.update",
 ] as const;
 
 /** D-28: mail is always private. Once any of these ran in a run's content scope, no run in that scope may use a free model. */
 export const MAIL_TOOLS = ["mail.list", "mail.get_message", "mail.send_reply"] as const;
+export const FINANCE_TOOLS = ["finance.overview", "finance.list_merchants", "finance.list_transactions", "finance.update"] as const;
 
 /**
  * Run ids whose content reads count for `runId`: its orchestrator tree (self, parent, siblings, children), the run it
@@ -43,13 +45,13 @@ export function withContentFloor(tier: ToolTier, sideEffect: boolean, sawContent
   return sideEffect && sawContent && (tier === "READ" || tier === "PREPARE" || tier === "EXECUTE") ? "APPROVE" : tier;
 }
 
-/** Hard mail taint (Pitfall 1): deliberately ignores ai.free_private_ok. Same reach as the content floor. */
-export async function mailInScope(h: DB, runId: string | null): Promise<boolean> {
+/** Mail and financial data always stay off free models, including sibling/retry/thread history. */
+export async function hardPrivateInScope(h: DB, runId: string | null): Promise<boolean> {
   if (!runId) return false;
   const [hit] = await h
     .select({ id: toolCalls.id })
     .from(toolCalls)
-    .where(sql`${inArray(toolCalls.tool, [...MAIL_TOOLS])} and ${toolCalls.runId} in ${contentScope(runId)}`)
+    .where(sql`${inArray(toolCalls.tool, [...MAIL_TOOLS, ...FINANCE_TOOLS])} and ${toolCalls.runId} in ${contentScope(runId)}`)
     .limit(1);
   return Boolean(hit);
 }

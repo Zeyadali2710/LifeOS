@@ -6,6 +6,7 @@ import { nothingText, payloadSchemaFor, type ApprovalKind } from "@/lib/approval
 import { isSafeGithubUrl } from "@/lib/safe-url";
 import { approveAction, rejectAction } from "@/server/approval-actions";
 import { SocialApprovalShell } from "@/approvals/social-approval";
+import { FinanceApprovalShell } from "@/approvals/finance-approval";
 import { issueOf, UnreadableApproval } from "@/approvals/approval-detail";
 import { eventOf, whenText } from "@/approvals/event-approval";
 import { mailOf, mailResolved, redirectNote } from "@/approvals/mail-approval";
@@ -102,6 +103,7 @@ const EV: Record<ApprovalKind, { verb: string; ok: string }> = {
   project_update: { verb: "change a project", ok: "UPDATE PROJECT" },
   mail_reply: { verb: "reply to", ok: "SEND REPLY" },
   social_publish: { verb: "publish to", ok: "PUBLISH" },
+  finance_update: { verb: "update finances", ok: "APPLY FINANCE CHANGES" },
 };
 
 export function ApprovalCard({ approval, onDecided }: { approval: ApprovalDTO; onDecided: () => void }) {
@@ -136,6 +138,7 @@ export function ApprovalCard({ approval, onDecided }: { approval: ApprovalDTO; o
     onDecided();
   };
   if (social) return <SocialApprovalShell approval={a} onChange={(next) => { setLocal(next); onDecided(); }} />;
+  if (a.kind === "finance_update") return <FinanceApprovalShell approval={a} onChange={(next) => { setLocal(next); onDecided(); }} />;
   return (
     <div id={`approval-${a.runId}`} className="flex flex-col gap-2.5 rounded-14 border border-[rgba(255,159,10,.30)] bg-[rgba(255,159,10,.10)] p-3.5">
       <div className="flex items-center gap-1.5 text-[10.5px] font-medium tracking-[.12em] text-amber">

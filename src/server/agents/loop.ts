@@ -9,7 +9,7 @@ import { log } from "../log";
 import { enqueue as realEnqueue, QUEUES, type Enqueue } from "../queue";
 import { routeSteps, toApprovalDTO, toRunDTO, toStepDTO } from "./dto";
 import { callTool } from "./gateway";
-import { mailInScope } from "./policy";
+import { hardPrivateInScope } from "./policy";
 import { getLlm } from "./llm";
 import { addRunUsage } from "./usage";
 import { FreeModelError } from "./openrouter";
@@ -61,7 +61,7 @@ export async function createRun(
   const agent = getAgent(p.agentId)!;
   const cfg = await agentConfig(h, p.agentId);
   const at = (p.now ?? (() => new Date()))();
-  const mail = await mailInScope(h, p.parentRunId ?? p.privacyAnchor ?? null); // D-28: mail never reaches a free model, toggle or not
+  const hardPrivate = p.agentId === "finance" || await hardPrivateInScope(h, p.parentRunId ?? p.privacyAnchor ?? null);
   const { model, mode, reason, blocked } = resolveModel({
     agentId: p.agentId,
     pref: cfg.pref,
@@ -70,8 +70,8 @@ export async function createRun(
     tier: p.tier ?? null,
     hasKey: await hasFreeKey(h),
     coolingDown: freeCoolingDown(at),
-    privateTainted: mail || (await privateInTree(h, p.parentRunId ?? p.privacyAnchor ?? null)),
-    privateOk: (await getFreePrivateOk(h)) && !mail,
+    privateTainted: hardPrivate || (await privateInTree(h, p.parentRunId ?? p.privacyAnchor ?? null)),
+    privateOk: (await getFreePrivateOk(h)) && !hardPrivate,
   });
   if (blocked) return { ok: false, code: blocked };
   const history: Msg[] = p.threadId ? await threadHistory(h, p.threadId, 20) : [];
@@ -243,7 +243,7 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
         return await fail(
           priv ? "private_blocked" : "free_unavailable",
           priv
-            ? "This run needs private data (private repos, calendar or tasks), which isn't sent to free models. Allow it in Settings → Connections or pick another model for this agent."
+            ? "This run needs private data that cannot be sent to its selected free model. Pick a paid model for this agent."
             : "The free model couldn't complete this run. The agent is pinned to Free only.",
         );
       }
@@ -280,14 +280,14 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
       // every turn: the opt-in may have been switched off since createRun (e.g. during an approval wait).
       if (
         isFree(curModel) &&
-        ((await mailInScope(h, run0.parentRunId ?? run0.id)) || // D-28: hard mail check, ignores the toggle
+        ((agent.id === "finance" || await hardPrivateInScope(h, run0.parentRunId ?? run0.id)) ||
           (!(await getFreePrivateOk(h)) &&
             (tainted ||
               (await privateInTree(h, run0.parentRunId ?? run0.id)) ||
               (!!run0.retryOf && (await privateInTree(h, run0.retryOf))) ||
               mentionsSensitive(messages, await sensitiveRepoNames(h)))))
       ) {
-        const s = await switchToSonnet("private", "private repo data");
+        const s = await switchToSonnet("private", "private data in conversation");
         if (s) return s;
         continue;
       }

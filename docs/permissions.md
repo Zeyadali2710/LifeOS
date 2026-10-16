@@ -15,6 +15,15 @@
 
 Critical tests (Phase 3): tier resolution, HIGH_RISK floor, approval suspend/resume, idempotent retry, agent allow-list, foreign/unknown id rejection.
 
+## Finance tools
+
+| Tool | Tier |
+|---|---|
+| `finance.overview`, `finance.list_merchants`, `finance.list_transactions` | READ, private |
+| `finance.update` | HIGH_RISK, private; cannot be lowered by configuration |
+
+Only the Finance agent has these tools. The orchestrator reaches them by delegation. Writes cover category definitions/replacements, keyword rules, transaction category assignments and monthly budget overrides; no original financial amounts, dates, transactions or bank connections can be edited/deleted. Owner approval is mandatory, including bulk recategorisation of reviewed assignments. Replacing categories preserves transactions and carried budgets. Proposals bind to a server-built snapshot; changed data requires a fresh proposal. Reads/proposals also apply the hard mail-style privacy block across the conversation tree: financial data never reaches free models, even with the private-data opt-in enabled. No data is changed merely by delegating or preparing a proposal.
+
 ## Model routing and permissions
 `escalate` is a routing pseudo-tool, not a gateway tool: it grants nothing and is not in any agent's allow-list. Tool calls made by a free model go through the same gateway, tiers and approvals as any other model.
 

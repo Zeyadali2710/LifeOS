@@ -22,6 +22,7 @@ import { ProjectApprovalBody, projectOf, projectResolved, sameProject, toProject
 import { MailApprovalBody, mailOf, mailResolved, sameMail, toMailDraft, validateMailDraft, type MailDraft, type MailDraftErrors } from "./mail-approval";
 import { EventApprovalBody, Fact, eventOf, eventResolved, sameEvent, toEventDraft, validateEventDraft, type EventDraft, type EventDraftErrors, type EventPayload } from "./event-approval";
 import { SocialApprovalShell, socialOf } from "./social-approval";
+import { FinanceApprovalShell } from "./finance-approval";
 
 export type WriteFacts = { connected: boolean; login: string | null; last4: string | null };
 
@@ -137,6 +138,7 @@ type DetailProps = { approval: ApprovalDTO; write: WriteFacts; onChange: (a: App
 
 /** Dispatches on kind; the GitHub issue view is IssueApprovalBody, unchanged from Phase 3. */
 export function ApprovalDetail(props: DetailProps) {
+  if (props.approval.kind === "finance_update") return <FinanceApprovalShell {...props} />;
   const issue = issueOf(props.approval);
   if (issue) return <IssueApprovalBody {...props} issue={issue} />;
   if (props.approval.kind === "issue") return <UnreadableApproval />;
@@ -160,8 +162,9 @@ const EVENT_VERB: Record<ApprovalKind, string> = {
   project_update: "change a project",
   mail_reply: "send an email reply",
   social_publish: "publish a social post",
+  finance_update: "update finances",
 };
-const EVENT_OK: Record<ApprovalKind, string> = { issue: "", event_create: "ADD TO CALENDAR", event_update: "UPDATE EVENT", event_delete: "DELETE EVENT", project_create: "CREATE PROJECT", project_update: "UPDATE PROJECT", mail_reply: "SEND REPLY", social_publish: "PUBLISH" };
+const EVENT_OK: Record<ApprovalKind, string> = { issue: "", event_create: "ADD TO CALENDAR", event_update: "UPDATE EVENT", event_delete: "DELETE EVENT", project_create: "CREATE PROJECT", project_update: "UPDATE PROJECT", mail_reply: "SEND REPLY", social_publish: "PUBLISH", finance_update: "APPLY FINANCE CHANGES" };
 
 // Event kinds: shared header, reason, expiry and decisions around EventApprovalBody.
 function EventApprovalShell({ approval: a, onChange }: DetailProps) {

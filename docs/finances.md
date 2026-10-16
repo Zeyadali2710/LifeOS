@@ -1,6 +1,6 @@
 # Finances
 
-Open **Finances** in the navigation (or More on mobile). All reads and actions require the owner session. Financial data stays in the LifeOS database; categorisation uses local keywords and does not call an AI provider.
+Open **Finances** in the navigation (or More on mobile). All reads and actions require the owner session. CSV import and keyword categorisation run locally. Asking the optional Finance agent sends the requested finance context to your configured paid AI provider; it never uses a free model.
 
 ## Import transaction history
 
@@ -45,3 +45,15 @@ docker compose -f docker/compose.yml --env-file .env ps
 The migrate service applies additive migration **0012_finances** before web and worker start. Check it exits successfully. No new credentials, services, dependencies or environment variables are needed. Keep the existing backup process running: imported financial descriptions and account labels are private database content.
 
 Deployment, live bank exports and the owner's first real import are not performed by local tests.
+
+## Finance agent
+
+Use **Ask Finance**, or ask the main assistant directly. The orchestrator delegates finance requests to the live **Finance** agent, which also appears in the Agent Command Centre. It reads category and budget definitions, totals, merchant groups and transaction details. It can propose a detailed taxonomy, replace old categories, recategorise imported history, create/edit keyword rules, correct individual assignments and set/remove monthly budget overrides.
+
+Example: “Review all my finance transactions. Design a detailed category split, replace the old categories and categorise every transaction. Preserve my budget limits and prepare one proposal for approval.” For budgets, provide the category, month and AUD limit; the agent must not invent limits.
+
+For a full reorganisation the server requires complete, current merchant-page coverage. One **HIGH_RISK** approval previews category definitions and replacements, keyword rules, individual corrections, budget changes, changed/uncategorised counts and fallback counts. Review and edit it in chat or Approvals, then explicitly approve. Existing manual/CSV assignments are replaced only when the proposal says it will recategorise all history. Unmatched transactions receive the named fallback income/expense category, and the proposal discloses the count rather than inferring their purpose.
+
+Retiring categories remaps their transactions and retained rules; carried budget histories merge at every monthly boundary so a limit is not lost just because two old categories changed in different months. Other limits persist. Transactions, original amounts/dates and imports are never deleted by the agent. A proposal fails safely if finance data changes before execution. Approved writes commit atomically, record counts in the audit log and are safe to retry without applying twice.
+
+Finance reads and proposals taint the entire conversation/delegation scope as private, including siblings and retries. The general free-private-data opt-in cannot send that data to free models. The Finance agent uses the existing paid model configuration (Sonnet by default), spend caps, pause controls and approval queue. No new credentials or migrations are required for the agent; deploy both web and worker after the existing finance migration has been applied. No tools move money or change bank connections.

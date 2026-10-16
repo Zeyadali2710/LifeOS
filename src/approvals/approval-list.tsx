@@ -15,7 +15,7 @@ export const stamp = (iso: string) => {
   return `${p.weekday} ${p.day} ${MONTHS[p.month - 1]} ${formatHM(new Date(iso))}`;
 };
 
-const BADGE: Record<ApprovalKind, string> = { issue: "CREATE ISSUE", event_create: "CREATE EVENT", event_update: "EDIT EVENT", event_delete: "DELETE EVENT", project_create: "CREATE PROJECT", project_update: "EDIT PROJECT", mail_reply: "REPLY", social_publish: "SOCIAL POST" };
+const BADGE: Record<ApprovalKind, string> = { issue: "CREATE ISSUE", event_create: "CREATE EVENT", event_update: "EDIT EVENT", event_delete: "DELETE EVENT", project_create: "CREATE PROJECT", project_update: "EDIT PROJECT", mail_reply: "REPLY", social_publish: "SOCIAL POST", finance_update: "FINANCES" };
 
 const STATE: Record<ApprovalStatus, [string, string]> = {
   pending: ["PENDING", "text-amber"],
@@ -112,12 +112,12 @@ export function ApprovalList({
                   {social && <Icon name="public" size={16} className="text-pink" />}
                   {proj && <Icon name="folder_open" size={16} className="text-text-3" />}
                   {a.kind === "mail_reply" && <Icon name="mail" size={16} className="text-text-3" />}
-                  <Badge kind="tag" tone={a.kind === "event_delete" ? "red" : "neutral"}>
+                  <Badge kind="tag" tone={a.kind === "event_delete" || a.kind === "finance_update" ? "red" : "neutral"}>
                     {BADGE[a.kind]}
                   </Badge>
                 </div>
                 <p className="text-[14px] leading-[1.4] break-words">
-                  {social ? `${String(p.platform)} · ${p.providerMode === "mock" ? "MOCK · " : ""}${String(p.text ?? "").slice(0, 100)}` : a.kind === "issue" ? `Create an issue in ${String(p.repo)}: ` : ""}&quot;{String(p.title ?? p.name ?? p.subject ?? p.before?.name ?? "")}&quot;
+                  {a.kind === "finance_update" ? "Review category, transaction and budget changes" : <>{social ? `${String(p.platform)} · ${p.providerMode === "mock" ? "MOCK · " : ""}${String(p.text ?? "").slice(0, 100)}` : a.kind === "issue" ? `Create an issue in ${String(p.repo)}: ` : ""}&quot;{String(p.title ?? p.name ?? p.subject ?? p.before?.name ?? "")}&quot;</>}
                 </p>
                 <div className="flex flex-wrap items-center gap-2 text-[11px] text-text-3">
                   <span>Requested {formatHM(new Date(a.createdAt))}</span>

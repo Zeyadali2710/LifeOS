@@ -28,7 +28,7 @@ export const delegateTool: Tool<{ agentId: string; task: string; tier: "simple" 
     if (!ctx.llm) throw new ToolError("unavailable", "The assistant isn't available.");
     const made = await createRun(ctx.handle, { agentId, prompt: task, threadId: null, parentRunId: ctx.runId, tier, tierReason, now: ctx.now });
     if (!made.ok && made.code === "private_blocked")
-      throw new ToolError("unavailable", "This agent is pinned to Free only and this conversation includes private data (private repos, calendar or tasks), which isn't sent to free models.");
+      throw new ToolError("unavailable", "This agent is pinned to Free only and this conversation includes private data, which isn't sent to free models. Use Auto or a paid model.");
     if (!made.ok) throw new ToolError(made.code === "paused" ? "paused" : "unavailable", made.code === "paused" ? "Paused by you" : "Agent unavailable");
     await ctx.handle
       .update(toolCalls)

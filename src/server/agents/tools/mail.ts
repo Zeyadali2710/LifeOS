@@ -1,5 +1,5 @@
 // Mail for agents (D-28, D-29): READ only. Mail is untrusted (CONTENT_TOOLS floor + envelope) and private
-// (hard mail taint in policy.mailInScope). Bodies are fetched live and never stored.
+// (hard mail taint in policy.hardPrivateInScope). Bodies are fetched live and never stored.
 import { and, desc, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { isGoogleConnection } from "@/lib/google-accounts";

@@ -12,7 +12,7 @@ workflow: direct feature development (owner requested; GSD discontinued)
 See: .planning/PROJECT.md (updated 2026-10-07)
 
 **Core value:** Know what matters, what needs attention, and what to do next — in one place.
-**Current focus:** Phase 7.1 Finances: CSV imports, categorisation, monthly charts and budgets. Phase 8 Knowledge + Goals remains unstarted.
+**Current focus:** Phase 7.1 Finances: Finance agent integration for orchestrator delegation, approved category reorganisation and budgets. Phase 8 Knowledge + Goals remains unstarted.
 
 ## Current Position
 
@@ -62,7 +62,7 @@ The owner discontinued GSD on 2026-10-16. Work proceeds directly per requested f
 ## Session Continuity
 
 Last session: 2026-10-16
-Stopped at: Finances implementation locally verified. Next: review the changes, then commit/push before homelab deployment with migration 0012 and owner acceptance of the first CSV import. Socials page accepted by the owner. Multiple Gmail accounts still require the previously documented owner live check.
+Stopped at: Finance agent implemented and locally verified. Next: commit/push and redeploy web/worker, then ask the orchestrator to reorganise transactions and review the resulting proposal. No real transactions/categories have been changed by this development session. Socials page accepted by the owner. Multiple Gmail accounts still require the previously documented owner live check.
 Resume file: None
 
 ## Social post history follow-up (2026-10-16)
@@ -85,3 +85,13 @@ Verification: 553 unit tests (66 files) and 35 Socials/migration DB tests (2 fil
 ### Bank CSV timestamp compatibility follow-up (2026-10-16)
 
 The owner's current bank export uses `Transaction Date` with ISO timestamps and timezone offsets. The shared date parser now accepts that format and preserves the calendar date written in the export, preventing UTC conversion from shifting a transaction's day/month. Invalid dates, clock values and timezone offsets still fail validation. All 2,242 rows in the attached CSV passed read-only parsing and the upload size limit; no records were imported. Ten focused finance unit tests passed, including timestamp regression and month-boundary checks. Production deployment remains an owner step.
+
+### Finance agent integration (2026-10-16)
+
+Owner explicitly requested finance agent access and category/budget edits through the orchestrator. The existing `finance` registry entry is now live with paid Sonnet by default, private READ tools for overview, paginated merchant groups and transaction details, and one composite `finance.update` HIGH_RISK proposal. The orchestrator delegates finance requests to it; it appears in the command centre and has an Ask Finance entry on `/finances`.
+
+Full reorganisations require every current merchant page to have been read in that run. Proposals expose category definitions/replacements, rule replacement, explicit transaction corrections, monthly budget limits and changed/uncategorised/fallback counts. Owner edits recompute impact server-side. A locked snapshot rejects stale data. Execution is atomic, preserves transaction amounts/dates/imports, merges carried budgets across all monthly boundaries and uses an audit marker for retry adoption. Configuration cannot lower the write tool's HIGH_RISK floor. Finance privacy taint, like mail, crosses siblings/threads/retries and cannot be disabled by the free-private-data toggle. No new bank connection or money-movement tools.
+
+Verified: 563 unit tests; 64 affected Finance/routing/calendar privacy/project-approval DB tests, plus the final 11-test Finance agent suite including injected-write rollback, the permission floor and budget-only changes preserving transaction categories; original 9 Finance import/budget DB tests also passed. Four Finance agent desktop/mobile browser tests passed after correcting selectors, alongside the four existing finance browser tests. Browser tests use seeded data; LLM delegation tests use scripted models. Typecheck and focused lint passed; full lint has 0 errors and 19 existing warnings. Final production and worker builds passed.
+
+Current changes are uncommitted. Existing work preserved; `.codex/` remains local/ignored. No homelab deploy, real financial reorganisation or paid model call performed. The agent requires no migration beyond the existing finance schema and no new credentials. User-facing setup and privacy notes are in `docs/finances.md`, agent/permission contracts in `docs/agents.md` and `docs/permissions.md`.

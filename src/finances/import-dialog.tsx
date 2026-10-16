@@ -44,7 +44,7 @@ export function ImportDialog({ onClose, accounts }: { onClose(): void; accounts:
   const conflicts = rows.filter((r) => r.status === "conflict").length;
   return <Dialog open onClose={() => { if (!busy) onClose(); }} title="Import transactions or category rules" width={520} sheet actions={<><Button variant="secondary" disabled={busy} onClick={onClose}>Cancel</Button>{preview ? <Button loading={busy} disabled={conflicts > 0} onClick={commit}>Confirm import</Button> : <Button loading={busy} onClick={inspect}>Preview CSV</Button>}</>}>
     <div className="space-y-4">
-      <p className="text-[13px] text-text-2">CSV is processed inside LifeOS. Your financial data is not sent to an AI service.</p>
+      <p className="text-[13px] text-text-2">CSV imports are processed inside LifeOS using local rules. Asking the optional Finance agent shares the requested data with your configured paid AI provider.</p>
       <Field label="Account label" helper="Use the same label for overlapping exports from the same account. Use a different label for each bank account."><Input list="finance-accounts" value={account} maxLength={80} disabled={busy} onChange={(e) => { setAccount(e.target.value); setPreview(null); }} /></Field>
       <datalist id="finance-accounts">{accounts.map((a) => <option key={a} value={a} />)}</datalist>
       <Field label="CSV file" helper="Up to 750 KB / 5,000 rows. Bank Date, Amount, Description, Balance; or your Excel Month, Amount, Name, Balance, Category layout."><Input type="file" accept=".csv,text/csv" disabled={busy} onChange={(e) => { setFile(e.target.files?.[0] ?? null); setPreview(null); setKeep(false); setError(""); }} /></Field>

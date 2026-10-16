@@ -6,6 +6,7 @@ import { aud, FINANCE_KINDS, merchantText, type FinanceKind } from "@/lib/financ
 import type { loadFinance } from "@/server/finance";
 import { categoriseFinanceAction, deleteFinanceRuleAction, removeFinanceImportAction, saveFinanceBudgetAction, saveFinanceCategoryAction, saveFinanceRuleAction } from "@/server/finance-actions";
 import { useShell } from "@/shell/shell-provider";
+import { useLiveEvents } from "@/shell/live-provider";
 import { Button } from "@/ui/button";
 import { Checkbox, Field, Input, Select } from "@/ui/field";
 import { Dialog } from "@/ui/dialog";
@@ -29,7 +30,8 @@ function BudgetRow({ row, month, hasData, save }: { row: FinanceData["budgets"][
 }
 
 export function FinanceView({ data, tab: requestedTab }: { data: FinanceData; tab: string }) {
-  const router = useRouter(), sp = useSearchParams(), { toast } = useShell();
+  const router = useRouter(), sp = useSearchParams(), { toast, openAI } = useShell();
+  useLiveEvents("approval", a => { if (!a || a.kind === "finance_update") router.refresh(); });
   const tabs = ["overview", "transactions", "budgets", "rules"];
   const tab = tabs.includes(requestedTab) ? requestedTab : "overview";
   const [importing, setImporting] = useState(false);
@@ -53,7 +55,7 @@ export function FinanceView({ data, tab: requestedTab }: { data: FinanceData; ta
   const totalBudgetActual = budgeted.reduce((sum, b) => sum + b.actual, 0);
   const monthLabel = new Date(`${data.month}-15T12:00:00Z`).toLocaleDateString("en-AU", { month: "long", year: "numeric", timeZone: "UTC" });
   return <div className="mx-auto max-w-[1440px] space-y-6">
-    <header className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-[11px] tracking-[.14em] text-text-3">FINANCES</p><h1 className="mt-2 font-display text-[clamp(36px,5vw,62px)] leading-none">Your money, in view.</h1><p className="mt-3 text-[13px] text-text-2">{monthLabel} · AUD · Based on imported transactions</p></div><Button onClick={() => setImporting(true)}>Import CSV</Button></header>
+    <header className="flex flex-wrap items-end justify-between gap-4"><div><p className="text-[11px] tracking-[.14em] text-text-3">FINANCES</p><h1 className="mt-2 font-display text-[clamp(36px,5vw,62px)] leading-none">Your money, in view.</h1><p className="mt-3 text-[13px] text-text-2">{monthLabel} · AUD · Based on imported transactions</p></div><div className="flex gap-2"><Button variant="secondary" onClick={() => openAI("Help me manage my finances: review my transactions, categories and budgets with the Finance agent. Propose any changes for my approval.")}>Ask Finance</Button><Button onClick={() => setImporting(true)}>Import CSV</Button></div></header><p className="text-[12px] text-text-3">CSV imports use local rules. Asking Finance shares the requested finance data with your configured paid AI provider; changes require your approval.</p>
     <div className="flex flex-wrap items-end gap-3"><Field label="Month"><Input type="month" min="2000-01" max="2100-12" value={data.month} onChange={(e) => { if (e.target.value) params({ month: e.target.value }); }} /></Field><Field label="Account"><Select value={data.account} onChange={(e) => params({ account: e.target.value })}><option value="">All accounts</option>{data.accounts.map((a) => <option key={a}>{a}</option>)}</Select></Field></div>
     <nav aria-label="Finances sections" className="flex flex-wrap gap-2 border-b border-white/[.08] pb-3">{tabs.map((t) => <Button key={t} variant={tab === t ? "primary" : "ghost"} aria-current={tab === t ? "page" : undefined} onClick={() => params({ tab: t })} className="capitalize">{t}</Button>)}</nav>
     {tab === "overview" && <>

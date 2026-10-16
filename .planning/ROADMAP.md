@@ -274,6 +274,8 @@ Follow-ups (2026-10-16): Instagram post-level insights implemented; multiple Gma
 **Database:** Additive migration `0012_finances`; production deployment and the owner's first import remain pending.
 **Reference:** `docs/finances.md` describes supported CSV formats, import checks and deployment.
 
+**Agent increment (2026-10-16):** Owner requested orchestrator access to Finance. Live Finance agent reads transaction history and proposes category/rule replacements, bulk recategorisation, individual corrections and budget changes through one HIGH_RISK approval. Complete merchant coverage and server snapshots protect bulk edits; existing transaction amounts/dates and carried budget history are preserved. Paid models only, including subsequent delegated/private context; owner deployment and live acceptance remain pending.
+
 ### Phase 8: Knowledge + Goals
 Not started. Notes, documents and bookmarks with keyword and semantic retrieval (KNW-01); vision → goals → objectives → projects → tasks with progress and neglect detection (GOL-01). Specific increments will be agreed directly with the owner.
 
