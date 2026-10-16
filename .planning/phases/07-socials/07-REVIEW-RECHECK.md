@@ -1,14 +1,16 @@
 ---
 phase: 07-socials
-reviewed: 2026-10-15T23:59:59Z
+reviewed: 2026-10-16T00:07:17Z
+first_recheck_reviewed: 2026-10-15T23:59:59Z
 depth: targeted
-iteration: 1
+iteration: 2
 original_review: .planning/phases/07-socials/07-REVIEW.md
 fix_report: .planning/phases/07-socials/07-REVIEW-FIX.md
 diff_base: 147638e
-reviewed_source_head: 074746c
-checkout_head: 3beca87
-files_reviewed: 26
+reviewed_source_head: 0301ad5
+checkout_head: e99edcf
+first_recheck_source_head: 074746c
+files_reviewed: 27
 files_reviewed_list:
   - src/app/(os)/socials/page.tsx
   - src/lib/social-types.ts
@@ -31,6 +33,7 @@ files_reviewed_list:
   - tests/unit/social-draft.test.ts
   - tests/unit/social-enqueue.test.ts
   - tests/unit/social-owner-resume.test.ts
+  - tests/unit/social-publish-auth.test.ts
   - tests/unit/social-publish-executor.test.ts
   - tests/unit/social-refresh.test.ts
   - tests/unit/social-types.test.ts
@@ -38,16 +41,22 @@ files_reviewed_list:
   - tests/unit/socials-ui.test.ts
 original_findings:
   total: 14
-  closed: 13
-  partially_closed: 1
+  closed: 14
+  partially_closed: 0
   open: 0
 findings:
   critical: 0
-  warning: 1
+  warning: 0
   info: 0
-  total: 1
-status: issues_found
+  total: 0
+status: clean
 ---
+
+# Current disposition — final targeted check
+
+**All 14 original findings and the WR-08 follow-up are closed at code-review level.** The final check covered only commit `0301ad5`, its publish-auth tests and directly affected snapshot/error paths. No additional defect was found in that scope. The 27-file list above is the cumulative distinct scope across the two targeted checks, not a repeated audit of all files.
+
+The iteration 1 report below is preserved as historical evidence. Its partial CR-02 disposition, WR-08 warning and acceptance instruction are superseded by the final disposition appended at the end. `status: clean` describes this review scope; VM, browser, queue and live acceptance remain pending.
 
 # Phase 7: Targeted Review Recheck — Iteration 1
 
@@ -120,4 +129,32 @@ Instagram per-image insights remain intentionally unavailable pending owner resp
 
 _Reviewer: Codex (gsd-code-reviewer)_
 _Review mode: targeted iteration 1_
+
+## Final targeted disposition — Iteration 2
+
+**Reviewed:** 2026-10-16T00:07:17Z
+
+**Source fix:** `0301ad5`
+
+**Checkout:** `e99edcf`
+
+**Scope:** WR-08 only; `src/server/socials/publish.ts`, `tests/unit/social-publish-auth.test.ts` and the existing connection comparison helper.
+
+### WR-08 / CR-02 residual — Closed
+
+The executor reads the connection once and builds its provider from that same row. Its server-local authSnapshot retains the original ciphertext and generation before the remote request. ProviderAuthError passes that snapshot into fail(), which forwards it to markSocialAuthError; connectionMatches therefore compares both original values. A successful same-generation refresh changes ciphertext and defeats the stale auth-error UPDATE. An unchanged credential still matches and becomes RECONNECT.
+
+The change preserves the existing provider selection and publish guard behavior. The snapshot is used only for the server-side error predicate; it is absent from approval data, publication inputs, live frames, activity metadata and log arguments inspected in this path. No new post, retry or queue behavior was introduced by this fix.
+
+**Direct verification:** 10 tests passed across social-publish-auth, social-publish-executor and social-refresh, with one worker and the existing stable TEMP/TMP directory. The four new production-path cases cover delayed Instagram 401/403 responses across an actual refreshSocialToken call, unchanged-credential 401/403, one connection read and no token/ciphertext in emitted activity output. The in-memory predicate accepts generation-only comparison, so the old omission would fail the refreshed-token assertions. The adjacent executor/refresh cases also passed. Expected logs from intentionally lost refresh comparisons are not DB evidence.
+
+**Current counts:** original findings 14 closed, 0 partial/open; residual findings 0 critical, 0 warning. No further source fix is requested by this targeted check.
+
+**Limits and next checkpoint:** No broad audit, full-suite rerun, build, VM/DB execution, browser/UAT, real queue delivery, migration, deployment or live provider call was performed in this final check. The orchestrator's 548-test/full-build evidence remains attributed to its fix report. GSD verification and owner VM/concurrency/queue/browser/live acceptance remain separate pending checkpoints. Instagram per-image insights remain the previously documented intentional limitation.
+
+Only this review artifact was changed; the original review, fix report, source, STATE, ROADMAP and gates remain untouched. No commit or push was made.
+
+_Reviewer: Codex (gsd-code-reviewer)_
+
+_Review mode: final targeted WR-08 check_
 
