@@ -28,7 +28,7 @@ export async function loadDigest(h: DB, now: Date): Promise<Digest> {
     soft(h.select({ title: tasks.title }).from(tasks).where(and(gte(tasks.completedAt, start), lt(tasks.completedAt, end))).orderBy(desc(tasks.completedAt)).limit(20), []),
     soft(counts(h), { running: 0, queued: 0, approvalsWaiting: 0 }),
     soft(h.select({ id: mailMessages.id, subject: mailMessages.subject, fromName: mailMessages.fromName, fromAddress: mailMessages.fromAddress }).from(mailMessages)
-      .where(and(eq(mailMessages.importance, "HIGH"), isNull(mailMessages.archivedAt), gte(mailMessages.receivedAt, new Date(now.getTime() - 2 * 86_400_000))))
+      .where(and(eq(mailMessages.importance, "HIGH"), isNull(mailMessages.archivedAt), sql`'UNREAD' = any(${mailMessages.labelIds})`, sql`'INBOX' = any(${mailMessages.labelIds})`, gte(mailMessages.receivedAt, new Date(now.getTime() - 2 * 86_400_000))))
       .orderBy(desc(mailMessages.receivedAt)).limit(5), []),
     soft(h.select({ id: outreachEvents.id, title: outreachEvents.title, startAt: outreachEvents.startAt, stage: outreachEvents.stage }).from(outreachEvents)
       .where(and(inArray(outreachEvents.stage, ["SAVED", "INTERESTED", "ATTENDING"]), isNull(outreachEvents.dismissedAt), eq(outreachEvents.isMock, false),

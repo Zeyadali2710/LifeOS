@@ -2,7 +2,7 @@ import { PgBoss } from "pg-boss";
 import { env } from "./env";
 import { log } from "./log";
 
-export const QUEUES = { githubSync: "github.sync", resume: "agent.resume", expire: "approval.expire", sweep: "run.sweep", calendarSync: "calendar.sync", taskReminders: "task.reminders", eventsSync: "outreach.events.sync", mailSync: "mail.sync", mailTriage: "mail.triage", socialsSync: "socials.sync", socialsPublish: "socials.publish", knowledgeEmbed: "knowledge.embed", briefings: "briefings.tick" } as const;
+export const QUEUES = { githubSync: "github.sync", resume: "agent.resume", expire: "approval.expire", sweep: "run.sweep", calendarSync: "calendar.sync", taskReminders: "task.reminders", eventsSync: "outreach.events.sync", mailSync: "mail.sync", mailTriage: "mail.triage", socialsSync: "socials.sync", socialsPublish: "socials.publish", knowledgeEmbed: "knowledge.embed", briefings: "briefings.tick", automations: "automations.tick" } as const;
 
 export type Enqueue = (name: string, data: object, opts?: { singletonKey?: string; startAfter?: Date }) => Promise<void>;
 

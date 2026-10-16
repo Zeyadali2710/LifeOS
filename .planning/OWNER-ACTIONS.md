@@ -21,3 +21,11 @@ lc ps                          # web, worker up; migrate exited 0
 - [ ] **Goals check:** write the vision, add a goal and 2 objectives, link a real project to one, tick a task in the tree, check the horizon tabs and the header sentence. Archive and restore a goal via Show archived.
 - [ ] **Ask Knowledge / Ask Goals** once each from the AI panel; both should answer from your data (paid model, no free model in Command Centre).
 - [ ] **Review Phase 8 auto-decisions** in `.planning/STATE.md` → Decisions and ROADMAP Phase 8 (critique section).
+
+## Phase 9 — Daily intelligence, briefings, automations
+
+- [ ] **Deploy** (standard deploy). Expect `0014_briefings_automations` in `lc logs migrate` (if you happened to deploy commit 1dc7c28 overnight, tell Claude first: that commit briefly had a different 0014). Worker restart registers `briefings.tick` and `automations.tick`.
+- [ ] **Home:** Priorities, Today and Upcoming show your real tasks/events; the lead line counts priorities.
+- [ ] **Briefings:** Settings → Briefings, check the times (morning 07:00, evening 18:00, weekly Sunday 18:00 on; midday off). Next morning a "Morning briefing" notification should arrive once; open it. `/briefings` → Build now works any time.
+- [ ] **Automations:** create one harmless rule, e.g. "When: Briefing ready → Send a notification 'Briefing: {{event.title}}'", wait for the next briefing (or Build now does not trigger it — only scheduled ones emit the event), confirm one notification and a "Trace →" link under the rule. Optionally an "Ask LifeOS" rule on a schedule: any change it proposes must appear in Approvals, never execute on its own.
+- [ ] **Review Phase 9 auto-decisions** in `.planning/STATE.md` → Decisions.

@@ -50,9 +50,9 @@ export type CreateRunResult = { ok: true; runId: string } | { ok: false; code: "
 /** Preflight (live, pause, spend cap) then insert a queued run. Child runs skip the cap (D-15). */
 export async function createRun(
   h: DB,
-  p: { agentId: string; prompt: string; threadId?: string | null; parentRunId?: string; retryOf?: string; tier?: "simple" | "reasoning" | null; tierReason?: string; privacyAnchor?: string | null; now?: () => Date; emit?: typeof emitActivity },
+  p: { agentId: string; prompt: string; threadId?: string | null; parentRunId?: string; retryOf?: string; tier?: "simple" | "reasoning" | null; tierReason?: string; privacyAnchor?: string | null; origin?: "automation"; now?: () => Date; emit?: typeof emitActivity },
 ): Promise<CreateRunResult> {
-  if (!getAgent(p.agentId)?.live) return { ok: false, code: "not_live" };
+  if (!getAgent(p.agentId)?.live || getAgent(p.agentId)?.system) return { ok: false, code: "not_live" };
   if (await isPaused(h, p.agentId)) return { ok: false, code: "paused" };
   if (!p.parentRunId) {
     const cap = await assertUnderCap(h, (p.now ?? (() => new Date()))(), p.emit);
@@ -85,6 +85,7 @@ export async function createRun(
       threadId: p.threadId ?? null,
       parentRunId: p.parentRunId ?? null,
       retryOf: p.retryOf ?? null,
+      origin: p.origin ?? null,
       prompt: p.prompt,
       model,
       tier: p.tier ?? null,
@@ -176,7 +177,7 @@ export async function advance(runId: string, opts: AdvanceOpts): Promise<RunStat
   const fail = (kind: string, error: string) => finish({ status: "failed", errorKind: kind, error });
 
   try {
-    if (!agent?.live) return await fail("not_live", "Agent is not live");
+    if (!agent?.live || agent.system) return await fail("not_live", "Agent is not live");
     const allowed = Object.fromEntries(agent.tools.flatMap((n) => (tools[n] ? [[n, tools[n]!]] : [])));
     const anthropicTools = Object.values(allowed).map(toAnthropicTool);
     const messages = [...(run0.messages as Msg[])];

@@ -6,7 +6,7 @@ import { agentRuns, approvals, permissions, socialPosts, socialVariants, toolCal
 import { emitActivity, notifyLive } from "../events";
 import { log } from "../log";
 import { approvalSummary } from "@/lib/approval-kinds";
-import { CONTENT_TOOLS, contentScope, resolvePolicy, withContentFloor } from "./policy";
+import { automationOrigin, CONTENT_TOOLS, contentScope, resolvePolicy, withContentFloor, withUnattendedFloor } from "./policy";
 import { redact, summarize } from "./redact";
 import { getAgent } from "./registry";
 import { apiName, ToolError, type LlmClient, type Tool, type ToolContext } from "./types";
@@ -123,7 +123,9 @@ export async function callTool(
       .limit(1);
     seen = Boolean(hit);
   }
-  const tier = withContentFloor(resolved, tool.sideEffect, seen);
+  // The automations agent executes the owner's own configured actions; every other agent in an unattended tree is floored.
+  const unattended = tool.sideEffect && agentId !== "automations" && (await automationOrigin(h, runId));
+  const tier = withUnattendedFloor(withContentFloor(resolved, tool.sideEffect, seen), tool.sideEffect, unattended);
   const needsApproval = tier === "APPROVE" || tier === "HIGH_RISK";
 
   // Step 4: claim the row (approval branch creates the approval atomically).

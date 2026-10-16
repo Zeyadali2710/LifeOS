@@ -9,7 +9,7 @@ import { useShell } from "./shell-provider";
 import { SystemBlock } from "./system-block";
 import { useDialog } from "./use-dialog";
 
-export const MORE_SHEET_KEYS = ["career", "socials", "outreach", "organization", "finances", "projects", "knowledge", "goals", "settings"];
+export const MORE_SHEET_KEYS = ["career", "socials", "outreach", "organization", "finances", "projects", "knowledge", "goals", "briefings", "automations", "settings"];
 
 const links = MORE_SHEET_KEYS.map((k) => [...NAV_ITEMS, ...SECONDARY_ITEMS].find((n) => n.key === k)!);
 

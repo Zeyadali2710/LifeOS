@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { BRIEFING_KINDS, BRIEFING_LABEL, composeBriefing, DEFAULT_SCHEDULE, dueBriefings, periodKey, type BriefingKind, type BriefingSchedule } from "@/lib/digest";
 import type { DB } from "./db/client";
@@ -22,13 +22,23 @@ export async function saveSchedule(h: DB, s: BriefingSchedule): Promise<void> {
   await h.insert(settings).values({ key: SCHEDULE_KEY, value: s }).onConflictDoUpdate({ target: settings.key, set: { value: s } });
 }
 
-/** Builds and stores one briefing; returns its id, or null when this kind/period already exists. */
-export async function generateBriefing(h: DB, kind: BriefingKind, now: Date, emit: typeof emitActivity = emitActivity): Promise<string | null> {
+/**
+ * Builds one briefing for the current period. Scheduled: stores it (or replaces an early manual build) and notifies once;
+ * returns null when the scheduled one already exists. Manual ("Build now"): creates or refreshes it without notifying.
+ */
+export async function generateBriefing(h: DB, kind: BriefingKind, now: Date, emit: typeof emitActivity = emitActivity, opts: { manual?: boolean } = {}): Promise<string | null> {
   const digest = await loadDigest(h, now);
   const period = periodKey(kind, digest.today);
   const body = composeBriefing(kind, period, digest, kind === "weekly" ? { completed: await completedInWeek(h, period) } : undefined);
+  if (opts.manual) {
+    const [row] = await h.insert(briefings).values({ kind, period, headline: body.headline, body })
+      .onConflictDoUpdate({ target: [briefings.kind, briefings.period], set: { headline: body.headline, body } }).returning({ id: briefings.id });
+    return row!.id;
+  }
   return h.transaction(async (tx) => {
-    const [row] = await tx.insert(briefings).values({ kind, period, headline: body.headline, body }).onConflictDoNothing().returning({ id: briefings.id });
+    const [row] = await tx.insert(briefings).values({ kind, period, headline: body.headline, body, scheduled: true })
+      .onConflictDoUpdate({ target: [briefings.kind, briefings.period], set: { headline: body.headline, body, scheduled: true, readAt: null, createdAt: now }, setWhere: sql`${briefings.scheduled} = false` })
+      .returning({ id: briefings.id });
     if (!row) return null;
     // Counts only in the notification: briefing sections can hold mail subjects and stay on the owner-only page.
     const sent = await emit(

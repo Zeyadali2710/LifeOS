@@ -8,9 +8,12 @@ Applies to development agents, not the agents inside LifeOS. Git, source, tests 
 - **Claude Code (orchestrator):** plans each phase, splits it into tasks, writes the risky code itself, dispatches mechanical tasks, merges review findings and makes the fixes.
 - **Codex (critic and reviewer):** reviews the phase plan before work starts and reviews the full phase diff at the end. May execute mechanical tasks with the light tier. Runs headless from the orchestrator:
   ```bash
-  codex exec -s read-only --ephemeral -o review.md "<instructions>"   # plan critique or diff review
-  codex review --base <sha>                                          # standard review of a phase branch
+  # Pipe everything Codex needs on stdin: launched from Claude's sandbox, Codex's own Windows command runner
+  # fails ("helper_unknown_error"), so it can't run git or read files itself. Put the diff + key files in the input.
+  { echo "<instructions>"; git diff <base> -- . ':!drizzle/meta'; } > review-input.txt
+  codex exec -s read-only --ephemeral -o review.md - < review-input.txt
   ```
+  `codex review --uncommitted` can't take custom instructions; prefer `codex exec` as above.
 - **Light executors:** Claude Sonnet/Haiku subagents or Codex `gpt-6-luna`. Only well-specified tasks with an exact file list.
 
 One task has one active implementer. Parallel implementers need separate worktrees.

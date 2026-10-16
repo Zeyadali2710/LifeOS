@@ -31,6 +31,7 @@ export type AgentDef = {
   tools: string[];
   systemPrompt: string;
   routable?: boolean; // eligible for model routing (D-04)
+  system?: boolean; // no model: runs are inserted by an engine, never delegated to or chatted with
   requiresTools?: boolean;
 };
 
@@ -240,6 +241,13 @@ export const AGENTS: AgentDef[] = [
     limits: { toolCalls: 32, tokens: 300_000, turnMaxTokens: 16384, activeMs: 600_000 },
     tools: ["finance.overview", "finance.list_merchants", "finance.list_transactions", "finance.update"],
     systemPrompt: FINANCE_PROMPT,
+  },
+  {
+    // Not a model: the automation engine runs the owner's configured actions through the gateway as this agent.
+    id: "automations", name: "Automations", icon: "repeat", color: "#e8b86a", purpose: "Runs your automation rules.",
+    live: true, system: true, arrival: null, defaultModel: "automation",
+    tools: ["automation.notify", "automation.create_task", "automation.ask_agent"],
+    systemPrompt: "",
   },
   off("agentops", "AgentOps", "monitor_heart", "#aeaeb2", "Agent health and cost.", null),
 ];

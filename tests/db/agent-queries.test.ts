@@ -21,7 +21,7 @@ beforeEach(async () => {
 describe("agent read models", () => {
   it("disabled agents have no stats; live agents with no runs get zeros", async () => {
     const o = await agentsOverview(h(), now);
-    expect(o.agents).toHaveLength(11);
+    expect(o.agents).toHaveLength(12);
     expect(o.agents.find((a) => a.id === "home")).toMatchObject({ stats: null, status: "NOT CONNECTED" });
     const p = await projects();
     expect(p.status).toBe("READY");

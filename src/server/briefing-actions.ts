@@ -3,11 +3,10 @@
 import { and, eq, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { BRIEFING_KINDS, periodKey, type BriefingKind, type BriefingSchedule } from "@/lib/digest";
+import { BRIEFING_KINDS, type BriefingKind, type BriefingSchedule } from "@/lib/digest";
 import { generateBriefing, getBriefing, saveSchedule, scheduleInput } from "./briefings";
 import { db, type DB } from "./db/client";
 import { auditLog, briefings } from "./db/schema";
-import { sydneyYmd } from "@/lib/project-rules";
 import { requireOwner } from "./session";
 
 export async function saveBriefingScheduleAction(raw: unknown): Promise<{ ok: true } | { ok: false; error: string }> {
@@ -28,8 +27,7 @@ export async function briefingNowAction(kind: string): Promise<{ ok: true; id: s
   if (!BRIEFING_KINDS.includes(kind as BriefingKind)) return { ok: false, error: "Unknown briefing." };
   const now = new Date();
   const k = kind as BriefingKind;
-  const id = await generateBriefing(db(), k, now).catch(() => null)
-    ?? (await db().select({ id: briefings.id }).from(briefings).where(and(eq(briefings.kind, k), eq(briefings.period, periodKey(k, sydneyYmd(now))))))[0]?.id;
+  const id = await generateBriefing(db(), k, now, undefined, { manual: true }).catch(() => null);
   if (!id) return { ok: false, error: "Could not build the briefing. Try again." };
   revalidatePath("/briefings");
   return { ok: true, id };

@@ -6,7 +6,7 @@ test.beforeEach(async ({ page }) => {
   await signIn(page);
 });
 
-const ALLOWED = /\/(api\/(events|activity|notifications|health)|_next)(\/|\?|$)/;
+const ALLOWED = /\/(api\/(events|activity|notifications|health|agents\/status)|_next)(\/|\?|$)/; // background read polls
 
 test("desktop: palette navigates, closes, and asks", async ({ page }, info) => {
   test.skip(info.project.name !== "desktop");

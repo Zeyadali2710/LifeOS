@@ -1,6 +1,6 @@
 # Agents
 
-Status: Orchestrator, Projects, Organization, Outreach, Social, Finance, Knowledge and Goals are live. Other registry entries remain NOT CONNECTED until implemented.
+Status: Orchestrator, Projects, Organization, Outreach, Social, Finance, Knowledge and Goals are live, plus the system Automations agent (no model). Other registry entries remain NOT CONNECTED until implemented.
 
 ## Contract
 
@@ -9,6 +9,8 @@ Finance (`finance`) manages `/finances`: private READ tools `finance.overview`, 
 Knowledge (`knowledge`) answers from `/knowledge` with READ tools `knowledge.search` (keyword, or semantic when the owner enabled it) and `knowledge.get`. Paid models only; knowledge data is hard-private and untrusted. It cannot write items yet.
 
 Goals (`goals`) explains `/goals` with one READ tool, `goals.overview` (vision, goals, objectives, progress, momentum, neglect, linked projects, optional open tasks). It cannot change goals yet. See `knowledge-goals.md`.
+
+Automations (`automations`) is a system agent with no model: the automation engine executes the owner's configured actions as its gateway tool calls (`automation.notify`, `automation.create_task`, `automation.ask_agent`). It cannot be delegated to or chatted with. Pausing it pauses all automations. See `automations-briefings.md`.
 Every agent is a registry entry plus a set of tools:
 
 | Field | Meaning |

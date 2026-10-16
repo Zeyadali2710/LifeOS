@@ -240,6 +240,7 @@ export const agentRuns = pgTable(
     endedAt: tstz(),
     heartbeatAt: tstz(),
     cancelRequestedAt: tstz(),
+    origin: text(), // null = owner-started; "automation" = unattended (Phase 9): side effects floored at APPROVE, never free models
     ...timestamps,
   },
   (t) => [
@@ -901,6 +902,7 @@ export const briefings = pgTable(
     period: text().notNull(), // Sydney YYYY-MM-DD (weekly: that week's Sunday)
     headline: text().notNull(),
     body: jsonb().$type<import("../../lib/digest").BriefingBody>().notNull(),
+    scheduled: boolean().notNull().default(false), // false = built early by "Build now"; the scheduled tick refreshes it
     readAt: tstz(),
     createdAt: tstz().notNull().defaultNow(),
   },
@@ -908,5 +910,37 @@ export const briefings = pgTable(
     uniqueIndex("briefings_kind_period_idx").on(t.kind, t.period),
     index().on(t.createdAt),
     check("briefings_kind_chk", sql`${t.kind} in ('morning','midday','evening','weekly')`),
+  ],
+);
+
+export const automations = pgTable("automations", {
+  id: uuid().primaryKey().defaultRandom(),
+  name: text().notNull(),
+  enabled: boolean().notNull().default(true),
+  enabledAt: tstz().notNull().defaultNow(), // events before this never trigger (no backlog replay on create/re-enable)
+  trigger: jsonb().$type<import("../../lib/automations").Trigger>().notNull(),
+  conditions: jsonb().$type<import("../../lib/automations").Condition[]>().notNull().default([]),
+  actions: jsonb().$type<import("../../lib/automations").Action[]>().notNull(),
+  ...timestamps,
+});
+
+export const automationRuns = pgTable(
+  "automation_runs",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    automationId: uuid().notNull().references(() => automations.id, { onDelete: "cascade" }),
+    triggerRef: text().notNull(), // "event:<activity id>" | "schedule:<Sydney date>T<HH:MM>"
+    status: text().notNull().default("running"),
+    attempts: integer().notNull().default(1),
+    agentRunId: uuid().references(() => agentRuns.id, { onDelete: "set null" }),
+    result: jsonb().$type<unknown[]>(),
+    error: text(),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("automation_runs_trigger_idx").on(t.automationId, t.triggerRef),
+    index().on(t.status, t.updatedAt),
+    index().on(t.automationId, t.createdAt),
+    check("automation_runs_status_chk", sql`${t.status} in ('running','done','failed','skipped')`),
   ],
 );

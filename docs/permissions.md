@@ -24,6 +24,14 @@ Critical tests (Phase 3): tier resolution, HIGH_RISK floor, approval suspend/res
 
 Read-only by absence: no knowledge or goal write tools exist. Knowledge reads apply the same hard privacy block as mail and finance (never a free model, across the conversation tree, regardless of the private-data opt-in). Goals reads use the normal private taint.
 
+## Automation tools and unattended runs
+
+| Tool | Tier |
+|---|---|
+| `automation.notify`, `automation.create_task`, `automation.ask_agent` | EXECUTE, only for the system `automations` agent |
+
+These run the owner's own saved rules. Any run started by `automation.ask_agent` has a trusted `origin = 'automation'`; for that run and its delegated/retried descendants the gateway floors every side-effect tool at APPROVE regardless of tier overrides, and the run is hard-private.
+
 ## Finance tools
 
 | Tool | Tier |

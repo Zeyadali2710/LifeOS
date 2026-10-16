@@ -17,6 +17,8 @@ export const NAV_ITEMS: NavItem[] = [
 
 export const SECONDARY_ITEMS: NavItem[] = [
   { key: "approvals", label: "Approvals", href: "/approvals", icon: "verified_user" },
+  { key: "briefings", label: "Briefings", href: "/briefings", icon: "event_note" },
+  { key: "automations", label: "Automations", href: "/automations", icon: "repeat" },
   { key: "settings", label: "Settings", href: "/settings", icon: "tune", shortcut: "Ctrl+," },
 ];
 
@@ -24,7 +26,7 @@ const byKey = (...keys: string[]) =>
   keys.map((k) => [...NAV_ITEMS, ...SECONDARY_ITEMS].find((n) => n.key === k)!);
 
 export const PRIMARY_ITEMS: NavItem[] = byKey("home", "career", "socials", "outreach", "organization", "finances", "projects", "agents", "approvals");
-export const MORE_ITEMS: NavItem[] = byKey("knowledge", "goals", "settings");
+export const MORE_ITEMS: NavItem[] = byKey("knowledge", "goals", "briefings", "automations", "settings");
 
 export function isCurrent(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/");

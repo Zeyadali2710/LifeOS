@@ -50,6 +50,27 @@ export function withContentFloor(tier: ToolTier, sideEffect: boolean, sawContent
   return sideEffect && sawContent && (tier === "READ" || tier === "PREPARE" || tier === "EXECUTE") ? "APPROVE" : tier;
 }
 
+/**
+ * True when the run's ancestry (parent and retry chain, up to the root) starts from an automation. That origin is set
+ * only by the automation engine, never by model input, so it is a trusted signal for the unattended-run floor.
+ */
+export async function automationOrigin(h: DB, runId: string | null): Promise<boolean> {
+  if (!runId) return false;
+  const r = await h.execute<{ hit: boolean }>(sql`
+    with recursive up(id, parent, retry, origin, depth) as (
+      select id, parent_run_id, retry_of, origin, 0 from agent_runs where id = ${runId}
+      union all
+      select a.id, a.parent_run_id, a.retry_of, a.origin, up.depth + 1 from agent_runs a join up on a.id = coalesce(up.parent, up.retry) where up.depth < 20
+    )
+    select exists(select 1 from up where origin = 'automation') as hit`);
+  return Boolean(r.rows[0]?.hit);
+}
+
+/** Unattended runs: any side effect needs an owner approval, whatever the tool's tier or a permission override says. */
+export function withUnattendedFloor(tier: ToolTier, sideEffect: boolean, unattended: boolean): ToolTier {
+  return unattended && sideEffect && (tier === "READ" || tier === "PREPARE" || tier === "EXECUTE") ? "APPROVE" : tier;
+}
+
 /** Mail, financial and knowledge data always stay off free models, including sibling/retry/thread history. */
 export async function hardPrivateInScope(h: DB, runId: string | null): Promise<boolean> {
   if (!runId) return false;
@@ -58,5 +79,6 @@ export async function hardPrivateInScope(h: DB, runId: string | null): Promise<b
     .from(toolCalls)
     .where(sql`${inArray(toolCalls.tool, HARD_PRIVATE_TOOLS)} and ${toolCalls.runId} in ${contentScope(runId)}`)
     .limit(1);
-  return Boolean(hit);
+  // Unattended automation runs may carry event text (e.g. email subjects) in their prompt: treat them as hard-private too.
+  return Boolean(hit) || (await automationOrigin(h, runId));
 }

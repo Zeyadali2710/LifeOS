@@ -6,7 +6,7 @@ import { AGENTS } from "../registry";
 import { ToolError, type Tool } from "../types";
 
 // Only live non-orchestrator agents; the orchestrator alone lists this tool, so depth is one level (D-13).
-const ids = AGENTS.filter((a) => a.live && a.id !== "orchestrator").map((a) => a.id) as [string, ...string[]];
+const ids = AGENTS.filter((a) => a.live && !a.system && a.id !== "orchestrator").map((a) => a.id) as [string, ...string[]];
 
 const out = z.object({ status: z.string(), answer: z.string().nullable(), childRunId: z.string().optional() });
 

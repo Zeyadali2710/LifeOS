@@ -6,11 +6,11 @@ import { redact, summarize } from "@/server/agents/redact";
 import { apiName, toAnthropicTool } from "@/server/agents/types";
 
 describe("registry", () => {
-  it("lists 11 agents in order with Social live", () => {
+  it("lists 12 agents in order with Social live", () => {
     expect(AGENTS.map((a) => a.id)).toEqual([
-      "orchestrator", "home", "career", "social", "outreach", "organization", "projects", "knowledge", "goals", "finance", "agentops",
+      "orchestrator", "home", "career", "social", "outreach", "organization", "projects", "knowledge", "goals", "finance", "automations", "agentops",
     ]);
-    expect(AGENTS.filter((a) => a.live).map((a) => a.id)).toEqual(["orchestrator", "social", "outreach", "organization", "projects", "knowledge", "goals", "finance"]);
+    expect(AGENTS.filter((a) => a.live).map((a) => a.id)).toEqual(["orchestrator", "social", "outreach", "organization", "projects", "knowledge", "goals", "finance", "automations"]);
     expect(Object.fromEntries(AGENTS.map((a) => [a.id, a.arrival]))).toMatchObject({
       home: "Phase 9", career: "Phase 5", social: null, outreach: null, organization: null,
       knowledge: null, goals: null, finance: null, agentops: null,

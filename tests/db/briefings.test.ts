@@ -30,7 +30,10 @@ describe("digest + briefings", () => {
       { title: "Done this morning", completedAt: at(9) },
       { title: "Done yesterday", completedAt: new Date("2026-10-13T23:00:00Z") },
     ]);
-    await h().insert(mailMessages).values({ gmailId: "g1", threadId: "t1", subject: "Offer letter", fromName: "Recruiter", receivedAt: at(8), importance: "HIGH" });
+    await h().insert(mailMessages).values([
+      { gmailId: "g1", threadId: "t1", subject: "Offer letter", fromName: "Recruiter", receivedAt: at(8), importance: "HIGH", labelIds: ["INBOX", "UNREAD"] },
+      { gmailId: "g0", threadId: "t0", subject: "Already read", fromName: "Recruiter", receivedAt: at(8), importance: "HIGH", labelIds: ["INBOX"] },
+    ]);
     await emitActivity({ type: "github.ci.failed", source: "github", title: "CI failed on main" }, undefined, h());
     await h().insert(financeCategories).values({ name: "Delivery", group: "Food", kind: "expense" });
     const [imp] = await h().insert(financeImports).values({ account: "main", fileName: "x.csv", fileHash: "h", imported: 1, skipped: 0 }).returning();
@@ -49,7 +52,7 @@ describe("digest + briefings", () => {
   });
 
   it("generates each kind once per period, with a counts-only notification in the same transaction", async () => {
-    await h().insert(mailMessages).values({ gmailId: "g2", threadId: "t2", subject: "Secret subject", fromName: "X", receivedAt: at(8), importance: "HIGH" });
+    await h().insert(mailMessages).values({ gmailId: "g2", threadId: "t2", subject: "Secret subject", fromName: "X", receivedAt: at(8), importance: "HIGH", labelIds: ["INBOX", "UNREAD"] });
     const id = await generateBriefing(h(), "morning", NOW);
     expect(id).toBeTruthy();
     expect(await generateBriefing(h(), "morning", NOW)).toBeNull();
@@ -74,6 +77,18 @@ describe("digest + briefings", () => {
     expect(await runBriefings(h(), new Date("2026-10-15T08:00:00Z"))).toBe(0); // 19:00, evening off, not Sunday
     expect(await runBriefings(h(), new Date("2026-10-18T08:00:00Z"))).toBe(3); // Sunday 19:00: morning, midday, weekly (new day)
     expect((await h().select().from(briefings).where(eq(briefings.kind, "weekly")))[0]?.period).toBe("2026-10-18");
+  });
+
+  it("an early Build now is replaced by the scheduled briefing, which notifies exactly once", async () => {
+    const early = await generateBriefing(h(), "evening", new Date("2026-10-15T03:00:00Z"), undefined, { manual: true });
+    expect(await h().select().from(notifications)).toHaveLength(0);
+    await h().insert(tasks).values({ title: "Done in the afternoon", completedAt: new Date("2026-10-15T05:00:00Z") });
+    const scheduled = await generateBriefing(h(), "evening", new Date("2026-10-15T07:00:00Z"));
+    expect(scheduled).toBe(early);
+    const [b] = await h().select().from(briefings);
+    expect(b).toMatchObject({ scheduled: true, readAt: null, headline: "1 task done today." });
+    expect(await generateBriefing(h(), "evening", new Date("2026-10-15T07:15:00Z"))).toBeNull();
+    expect(await h().select().from(notifications)).toHaveLength(1);
   });
 
   it("builds now on demand, reuses the period's briefing, marks read and checks the owner", async () => {
