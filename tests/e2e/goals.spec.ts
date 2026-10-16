@@ -71,7 +71,7 @@ test("goal → objective → linked project → task tick, horizon target and vi
   await page.getByRole("button", { name: "Edit vision" }).click();
   await page.getByRole("textbox", { name: "Vision" }).fill(`Leverage over my own life ${u}`);
   await page.getByRole("button", { name: "Save vision" }).click();
-  await expect(page.getByRole("button", { name: "Edit vision" })).toContainText(`Leverage over my own life ${u}`);
+  await expect(page.getByRole("region", { name: "Long-term vision" })).toContainText(`Leverage over my own life ${u}`);
 
   await page.getByRole("button", { name: `Edit goal ${goal}` }).click();
   const ed = page.getByRole("dialog", { name: "Edit goal" });

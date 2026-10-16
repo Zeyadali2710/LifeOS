@@ -272,6 +272,10 @@
   user-select: none;
 }
 .msym-fill { font-variation-settings: "FILL" 1, "GRAD" 0; }
+/* The ligature name lives in CSS, not the DOM: icons never leak words like "search" into accessible names, copy/paste or find-in-page. */
+.msym[data-icon]::before { content: attr(data-icon); }
+/* Keyboard-shortcut hints are decoration (the control names the shortcut via aria-keyshortcuts), so they stay out of the DOM text. */
+.kbd-hint[data-hint]::before { content: attr(data-hint); }
 
 /* iOS Safari zooms into any focused field under 16px and stays zoomed; keep touch inputs at 16px. Unlayered so it beats utilities. */
 @media (pointer: coarse) {

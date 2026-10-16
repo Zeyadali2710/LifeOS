@@ -15,7 +15,7 @@ export function StatusTile({ label, value, dot, href }: { label: string; value: 
     </>
   );
   return href ? (
-    <Link href={href} aria-label={`${label}: ${value}`} className={`${cls} hover:no-underline`}>
+    <Link href={href} className={`${cls} hover:no-underline`}>
       {body}
     </Link>
   ) : (

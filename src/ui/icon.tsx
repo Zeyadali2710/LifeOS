@@ -15,8 +15,6 @@ export function Icon({
   style?: CSSProperties;
 }) {
   return (
-    <span aria-hidden="true" className={`msym ${fill ? "msym-fill" : ""} ${className}`} style={{ fontSize: size, ...style }}>
-      {name}
-    </span>
+    <span aria-hidden="true" data-icon={name} className={`msym ${fill ? "msym-fill" : ""} ${className}`} style={{ fontSize: size, ...style }} />
   );
 }

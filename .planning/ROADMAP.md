@@ -24,7 +24,7 @@ Development now follows direct, owner-requested feature work (GSD discontinued o
 - [x] **Phase 8: Knowledge + Goals** - Notes/docs/retrieval, goal hierarchy (built 2026-10-17 autonomous run; owner VM acceptance pending)
 - [x] **Phase 9: Automation + Daily intelligence** - Automation engine, briefings (built 2026-10-17 autonomous run; owner VM acceptance pending)
 - [x] **Phase 10: Hardening** - Security review, restore-tested backups, observability, performance (built 2026-10-17 autonomous run; owner VM restore drill pending)
-- [ ] **Phase 11: Polish** - Motion, accessibility audit, mobile refinement
+- [x] **Phase 11: Polish** - Motion, accessibility audit, mobile refinement (built 2026-10-17 autonomous run)
 
 ## Phase Details
 
@@ -345,8 +345,11 @@ Built 2026-10-17 (autonomous run, direct loop: Claude implemented, Codex reviewe
 - Security review: no findings in auth, CSRF/origin, CSP, client-IP handling, crypto, gateway tiers or OAuth callbacks; login `next` is path-checked. npm audit: no high-severity production advisories (4 moderate in dev-only drizzle-kit).
 - Deferred: pg-boss failed-job visibility, activity_events retention, passkeys (v2).
 
-### Phase 11
-Not started; scope per phase list above.
+### Phase 11: Polish
+Built 2026-10-17 (autonomous run).
+- Accessibility: new `tests/e2e/a11y-audit.spec.ts` runs axe-core (already installed via eslint-plugin-jsx-a11y) on every signed-in page, desktop and mobile, failing on any serious/critical WCAG 2.0/2.1 A/AA violation. Fixed: live activity `role="log"` on a `<ul>` broke list semantics; label-in-name mismatches (status tiles, Socials connect links, Goals vision); icon ligature names and shortcut hints now render via CSS `content: attr(...)` so they never leak into accessible names, copy/paste or find-in-page; Ask buttons expose `aria-keyshortcuts`.
+- Mobile: Knowledge sections as a horizontal row and the open item first; Goals horizon tabs as a 4-column grid; briefings list stacks headline under the name.
+- Motion: existing global `prefers-reduced-motion` rule covers all new UI (no new animation added).
 
 ## Credentials & external access needed
 | When | What |

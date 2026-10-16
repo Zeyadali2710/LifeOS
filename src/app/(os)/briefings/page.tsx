@@ -35,8 +35,8 @@ export default async function BriefingsPage() {
             <li key={b.id}>
               <Link href={`/briefings/${b.id}`} className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-16 px-3 py-3 text-text hover:bg-white/[.03]">
                 <span className={`size-2 rounded-full ${b.readAt ? "bg-transparent" : "bg-accent"}`} aria-label={b.readAt ? undefined : "Unread"} />
-                <span className="w-36 text-[13.5px] font-medium">{BRIEFING_LABEL[b.kind as BriefingKind]}</span>
-                <span className="min-w-0 flex-1 text-[13px] text-text-2">{b.headline}</span>
+                <span className="flex-1 text-[13.5px] font-medium tab:w-36 tab:flex-none">{BRIEFING_LABEL[b.kind as BriefingKind]}</span>
+                <span className="order-last min-w-0 basis-full pl-6 text-[13px] text-text-2 tab:order-none tab:basis-auto tab:flex-1 tab:pl-0">{b.headline}</span>
                 <span className="text-[12px] text-text-3">{day(b.period)}</span>
               </Link>
             </li>

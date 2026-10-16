@@ -95,7 +95,7 @@ export function Header({ owner, version }: { owner: { name: string; email: strin
         >
           <Icon name="search" size={19} className="shrink-0" />
           <span className="min-w-0 flex-1 truncate">Search</span>
-          <span className="hidden shrink-0 text-[11.5px] text-soft tab:inline">{isApple ? "⌘K" : "Ctrl K"}</span>
+          <span aria-hidden="true" data-hint={isApple ? "⌘K" : "Ctrl K"} className="kbd-hint hidden shrink-0 text-[11.5px] text-soft tab:inline" />
         </button>
         <button type="button" onClick={openNotifications} aria-label={bellLabel} aria-haspopup="dialog" className={`${ctl} text-soft hover:bg-white/[.10] hover:text-white`}>
           <Icon name="notifications" size={21} />
@@ -106,11 +106,12 @@ export function Header({ owner, version }: { owner: { name: string; email: strin
           onClick={() => openAI()}
           aria-expanded={aiOpen}
           aria-label="Ask LifeOS"
+          aria-keyshortcuts="Control+J"
           className="hidden h-10 shrink-0 items-center gap-2 rounded-full bg-[rgba(10,132,255,.2)] px-3.5 text-[13px] font-semibold text-cyan-soft hover:bg-[rgba(10,132,255,.3)] desk:flex"
         >
           <Icon name="auto_awesome" size={18} className="text-cyan" />
           Ask
-          <span className="text-[11.5px] font-normal text-cyan">{mod}J</span>
+          <span aria-hidden="true" data-hint={`${mod}J`} className="kbd-hint text-[11.5px] font-normal text-cyan" />
         </button>
         <button
           type="button"

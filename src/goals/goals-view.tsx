@@ -121,15 +121,16 @@ export function GoalsView({ data, archived }: { data: GoalsData; archived: boole
               </div>
             </div>
           ) : (
-            <button type="button" onClick={() => setEditingVision(true)} className="text-left font-display text-[clamp(22px,2.4vw,29px)] leading-[1.12] text-pretty hover:opacity-90" aria-label="Edit vision">
-              {data.vision || <span className="text-text-3">Write the long-term vision your goals serve.</span>}
-            </button>
+            <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+              <p className="font-display text-[clamp(22px,2.4vw,29px)] leading-[1.12] text-pretty">{data.vision || <span className="text-text-3">Write the long-term vision your goals serve.</span>}</p>
+              <Button variant="ghost" size="xs" onClick={() => setEditingVision(true)}><Icon name="edit" size={14} />Edit vision</Button>
+            </div>
           )}
         </div>
-        <div role="tablist" aria-label="Horizon" className="relative flex max-w-full gap-0.5 overflow-x-auto rounded-10 border border-white/[.07] bg-[rgba(18,18,20,.6)] p-[3px]">
+        <div role="tablist" aria-label="Horizon" className="relative grid w-full grid-cols-4 gap-0.5 rounded-10 border border-white/[.07] bg-[rgba(18,18,20,.6)] p-[3px] tab:flex tab:w-auto">
           {HORIZONS.map((h) => (
             <button key={h} type="button" role="tab" aria-selected={horizon === h} onClick={() => setHorizon(h)}
-              className={`h-[30px] shrink-0 rounded-full px-3 text-[11px] tracking-[.12em] whitespace-nowrap ${horizon === h ? "bg-white/10 text-text" : "text-text-3 hover:text-text"}`}>{HORIZON_LABEL[h]}</button>
+              className={`h-[30px] shrink-0 rounded-full px-1 text-[9.5px] tracking-[.04em] whitespace-nowrap tab:px-3 tab:text-[11px] tab:tracking-[.12em] ${horizon === h ? "bg-white/10 text-text" : "text-text-3 hover:text-text"}`}>{HORIZON_LABEL[h]}</button>
           ))}
         </div>
       </section>

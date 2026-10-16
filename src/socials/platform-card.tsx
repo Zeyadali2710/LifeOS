@@ -65,7 +65,7 @@ export function PlatformCard({ card, posts, now }: { card: PlatformCardData; pos
       {connection?.lastSyncError && <p role="alert" className="text-[12.5px] text-red">{p.label} sync: {connection.lastSyncError}</p>}
       <footer className="mt-auto flex flex-wrap items-center gap-2 pt-3">
         {platform === "portfolio" ? <span className="text-[12.5px] text-text-3">No connection needed</span> : <><StatusDot state={reconnect ? "attention" : card.isMock ? "idle" : pending || expiry === "soon" ? "paused" : "online"} /><span className="text-[10.5px] font-medium tracking-[.14em] text-text-2">{status}</span></>}
-        {(card.isMock || reconnect || pending) && <Link href={`/settings?section=connections#social-${platform}`} aria-label={`Connect ${p.label} in Settings`} className="ml-auto text-[12.5px]">Connect in Settings</Link>}
+        {(card.isMock || reconnect || pending) && <Link href={`/settings?section=connections#social-${platform}`} className="ml-auto text-[12.5px]">Connect <span className="sr-only">{p.label} </span>in Settings</Link>}
       </footer>
     </article>
   );

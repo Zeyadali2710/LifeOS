@@ -91,16 +91,14 @@ export function ActivityList() {
           <EmptyState icon="dns" title="Live updates are offline." body="LifeOS keeps trying to reconnect. Recent activity appears once it does." />
         )
       ) : (
-        <ul
-          role="log"
-          aria-live="polite"
-          aria-relevant="additions"
-          className="max-h-[520px] overflow-hidden glass-card rounded-24 p-2"
-        >
-          {shown.map((a) => (
-            <Item key={a.id} a={a} fresh={freshIds.has(a.id)} />
-          ))}
-        </ul>
+        // role="log" on a wrapper: on the <ul> itself it would drop the list semantics its <li> items need.
+        <div role="log" aria-live="polite" aria-relevant="additions" className="max-h-[520px] overflow-hidden glass-card rounded-24 p-2">
+          <ul>
+            {shown.map((a) => (
+              <Item key={a.id} a={a} fresh={freshIds.has(a.id)} />
+            ))}
+          </ul>
+        </div>
       )}
     </section>
   );

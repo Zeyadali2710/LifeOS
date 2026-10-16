@@ -22,7 +22,7 @@ Short current state only. History is in Git and the phase folders under `.planni
 - 8 Knowledge + Goals: built and pushed 2026-10-17 (autonomous run). Migration 0013. Owner deploy + VM check pending (OWNER-ACTIONS). Review: Codex plan critique + Codex/Claude phase review, all findings fixed.
 - 9 Automation + Daily intelligence: built and pushed 2026-10-17 (autonomous run). Migration 0014. Owner deploy + VM check pending. Codex plan critique + Codex/Claude phase review, findings fixed (one info item declined: the Home lead counts priorities as "items").
 - 10 Hardening: built and pushed 2026-10-17. Migration 0015. Owner deploy + restore drill pending.
-- 11 Polish: not started.
+- 11 Polish: built and pushed 2026-10-17 (axe audit on every page, a11y + mobile fixes). Milestone v1.0 roadmap complete pending owner VM acceptance of Phases 8–11.
 
 ## Open owner items
 
@@ -30,7 +30,7 @@ See `.planning/OWNER-ACTIONS.md`. Main deferred live check: Socials real posting
 
 ## Verification checkpoints
 
-- 2026-10-17 full gate: typecheck, lint, build, worker bundle; Vitest 1,065 (unit + DB) after fixing 3 stale/date-dependent tests; Playwright full desktop + mobile after fixing 2 stale specs.
+- 2026-10-17 morning gate (after Phases 8–11): typecheck, lint (0 errors / 19 existing warnings), worker bundle; Vitest 1,116 (unit + DB); Playwright 149 passed / 17 intentionally skipped (desktop + mobile), plus the new axe audit.
 - Earlier "unit only" checkpoints (563 tests) did not include the DB suite; always run the full suite now.
 
 ## Decisions
