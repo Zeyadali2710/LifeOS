@@ -414,6 +414,72 @@ describe("connection, retry and analytics contracts", () => {
     expect(await variantRow(v.id)).toMatchObject({ status: "failed", remoteId: null, lastError: expect.stringContaining("may have posted") });
   });
 
+  it("persists Instagram post insights only on matching real published variants", async () => {
+    const now = new Date();
+    const f = vi.fn<typeof fetch>(async (input) => {
+      const url = new URL(String(input));
+      if (url.pathname === "/me" && url.searchParams.get("fields")?.includes("user_id")) return json({ user_id: "owner_1" });
+      if (url.pathname === "/me") return json({ followers_count: 112, media_count: 5 });
+      if (url.pathname === "/me/media") return json({ data: [{ id: "media_1", timestamp: now.toISOString() }] });
+      if (url.pathname === "/media_1/insights") return json({ data: [{ name: "views", values: [{ value: 0 }] }, { name: "likes", values: [{ value: 7 }] }, { name: "saved", values: [{ value: 2 }] }] });
+      throw new Error("Unexpected Instagram test request");
+    });
+    await connect("instagram", f);
+    expect(await confirmInstagramSmoke((await socialConnectionStatus(h())).instagram!.credentialGeneration!)).toEqual({ ok: true });
+    const real = await variant("instagram");
+    const mock = await variant("instagram");
+    const unrelated = await variant("instagram");
+    for (const [id, remoteId, isMock] of [[real.id, "media_1", false], [mock.id, "media_1", true], [unrelated.id, "media_other", false]] as const) {
+      await h().update(socialVariants).set({ status: "published", remoteId, publishedAt: now, isMock }).where(eq(socialVariants.id, id));
+    }
+    await syncSocials(h(), now, f);
+    expect(await variantRow(real.id)).toMatchObject({ metrics: { views: 0, likes: 7, saves: 2 }, metricsAt: now });
+    expect((await variantRow(mock.id)).metricsAt).toBeNull();
+    expect((await variantRow(unrelated.id)).metricsAt).toBeNull();
+    expect(await h().select().from(socialAccountSnapshots)).toMatchObject([{ platform: "instagram", followers: 112, posts: 5 }]);
+  });
+
+  it.each(["instagram", "tiktok"] as const)("imports this year's existing %s posts once without rewriting approved LifeOS text", async (platform) => {
+    const now = new Date("2026-10-16T02:00:00Z");
+    vi.useFakeTimers({ toFake: ["Date"] }); vi.setSystemTime(now);
+    const january = new Date("2026-01-12T01:00:00Z");
+    const older = new Date("2025-12-31T01:00:00Z");
+    const f = vi.fn<typeof fetch>(async (input) => {
+      const url = new URL(String(input));
+      if (url.pathname === "/me" && url.searchParams.get("fields")?.includes("user_id")) return json({ user_id: "owner_1" });
+      if (url.pathname === "/me") return json({ followers_count: 112, media_count: 3 });
+      if (url.pathname === "/me/media") return json({ data: url.searchParams.has("after")
+        ? [{ id: "january", caption: "January history", timestamp: january.toISOString(), permalink: "https://www.instagram.com/p/january/" }, { id: "last_year", timestamp: older.toISOString() }]
+        : [{ id: "existing", caption: "Remote edit", timestamp: now.toISOString() }],
+        ...(!url.searchParams.has("after") ? { paging: { next: "present", cursors: { after: "page2" } } } : {}) });
+      if (url.pathname.endsWith("/insights")) return json({ data: [{ name: "views", values: [{ value: 12 }] }] });
+      if (url.pathname === "/v2/video/list/") return json({ error: { code: "ok" }, data: { has_more: false, videos: [
+        { id: "existing", create_time: +now / 1000, video_description: "Remote edit" },
+        { id: "january", create_time: +january / 1000, video_description: "January history", share_url: "https://www.tiktok.com/@owner/video/123", view_count: 12 },
+        { id: "last_year", create_time: +older / 1000 },
+      ] } });
+      throw new Error("Unexpected history request");
+    });
+    if (platform === "instagram") {
+      await connect("instagram", f);
+      expect(await confirmInstagramSmoke((await socialConnectionStatus(h())).instagram!.credentialGeneration!)).toEqual({ ok: true });
+    } else await saveTikTokTokens(h(), { accessToken: "fixture_access", refreshToken: "fixture_refresh", openId: "owner_1", scopes: ["user.info.basic", "video.list"], expiresAt: new Date(+now + 86400000), refreshExpiresAt: new Date("2027-10-16") });
+    const existing = await variant(platform, "Approved LifeOS text");
+    await h().update(socialVariants).set({ status: "published", publishedAt: now, remoteId: "existing", isMock: false }).where(eq(socialVariants.id, existing.id));
+    await syncSocials(h(), now, f);
+    const [imported] = (await h().select().from(socialVariants)).filter((v) => v.remoteId === "january");
+    expect(imported).toMatchObject({ importedAccount: "owner_1", status: "posted_manually", publishedAt: january, text: "January history", metrics: { views: 12 } });
+    expect(imported!.remoteUrl).toContain(platform === "instagram" ? "instagram.com/p/january" : "tiktok.com/@owner/video/123");
+    const [post] = await h().select().from(socialPosts).where(eq(socialPosts.id, imported!.postId));
+    expect(post).toMatchObject({ title: "January history", draftedFromContent: true });
+    await syncSocials(h(), now, f);
+    expect(await h().select().from(socialPosts)).toHaveLength(2);
+    expect(await h().select().from(socialVariants)).toHaveLength(2);
+    expect(await variantRow(existing.id)).toMatchObject({ text: "Approved LifeOS text", importedAccount: null });
+    expect((await variantRow(imported!.id)).publishedAt).toEqual(january);
+    expect(await h().select().from(approvals)).toHaveLength(0);
+  });
+
   it("upserts today's real snapshot, respects partial TikTok grants, and rotates tokens without changing the binding", async () => {
     const now = new Date("2026-10-15T02:00:00Z");
     vi.useFakeTimers({ toFake: ["Date"] });

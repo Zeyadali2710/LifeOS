@@ -3,7 +3,8 @@ import type { SocialConnection } from "./connections";
 
 export type PublishVariant = { text: string; imageUrl?: string | null; linkUrl?: string | null; containerId?: string | null };
 export type PublishResult = { state: "published"; remoteId: string; remoteUrl?: string; containerId?: string } | { state: "container_pending"; containerId: string };
-export type SyncResult = { account?: { followers?: number; posts?: number }; posts?: { remoteId: string; metrics: SocialMetrics }[] };
+export type SyncedPost = { remoteId: string; metrics: SocialMetrics; text?: string; title?: string; publishedAt?: string; remoteUrl?: string };
+export type SyncResult = { account?: { followers?: number; posts?: number }; posts?: SyncedPost[]; warning?: string };
 export interface SocialProvider {
   platform: SocialPlatform;
   label: string;
@@ -191,30 +192,53 @@ function instagram(connection: SocialConnection, f: Fetch): SocialProvider {
         if (typeof body.followers_count === "number") account.followers = body.followers_count;
         if (typeof body.media_count === "number") account.posts = body.media_count;
         const posts: NonNullable<SyncResult["posts"]> = [];
+        let warning: string | undefined;
+        let skipInsights = false;
         let after: string | undefined;
         const seen = new Set<string>();
         for (let page = 0; page < 50; page++) {
           const url = new URL(`${INSTAGRAM}/me/media`);
-          url.search = new URLSearchParams({ fields: "id,timestamp,media_product_type", limit: "100", ...(after ? { after } : {}) }).toString();
+          url.search = new URLSearchParams({ fields: "id,caption,timestamp,permalink,media_product_type", limit: "100", ...(after ? { after } : {}) }).toString();
           const body = object(await (await request(f, url.toString(), { headers })).json());
           if (!Array.isArray(body.data)) throw new SocialProviderError();
           let older = false;
           for (const item of body.data) {
             const media = object(item);
             if (since && typeof media.timestamp === "string" && Date.parse(media.timestamp) < since.getTime()) { older = true; continue; }
-            if (typeof media.id !== "string" || media.media_product_type === "STORY") continue;
-            const insight = object(await (await request(f, `${INSTAGRAM}/${encodeURIComponent(media.id)}/insights?metric=views,reach,likes,comments,saved,shares`, { headers })).json());
-            if (!Array.isArray(insight.data)) throw new SocialProviderError();
+            if (typeof media.id !== "string" || !media.id || media.media_product_type === "STORY") continue;
+            let insight: Record<string, unknown> = {};
+            // History remains useful when an older post has no insights or the insights grant is missing.
+            if (!skipInsights) {
+              try {
+                const res = await f(`${INSTAGRAM}/${encodeURIComponent(media.id)}/insights?metric=views,reach,likes,comments,saved,shares`, { headers, signal: AbortSignal.timeout(15_000) });
+                if (res.status === 401) throw new ProviderAuthError();
+                const body = object(await res.json());
+                if (object(body.error).code === 190) throw new ProviderAuthError();
+                if (res.ok && Array.isArray(body.data)) insight = body;
+                else {
+                  skipInsights = res.status === 403 || res.status === 429 || res.status >= 500;
+                  warning = "Post history synced; some Instagram insights are unavailable. Check the insights permission in Settings.";
+                }
+              } catch (err) {
+                if (err instanceof ProviderAuthError) throw err;
+                skipInsights = true;
+                warning = "Post history synced; some Instagram insights could not be fetched. Retry later.";
+              }
+            }
             const values: Record<string, unknown> = {};
-            for (const entry of insight.data) {
+            for (const entry of Array.isArray(insight.data) ? insight.data : []) {
               const metric = object(entry);
               if (typeof metric.name !== "string") continue;
               values[metric.name] = Array.isArray(metric.values) ? object(metric.values[0]).value : object(metric.total_value).value;
             }
-            posts.push({ remoteId: media.id, metrics: metrics(values, [["views", "views"], ["reach", "reach"], ["likes", "likes"], ["comments", "comments"], ["saved", "saves"], ["shares", "shares"]]) });
+            posts.push({ remoteId: media.id,
+              ...(typeof media.caption === "string" ? { text: media.caption } : {}),
+              ...(typeof media.timestamp === "string" && Number.isFinite(Date.parse(media.timestamp)) ? { publishedAt: new Date(media.timestamp).toISOString() } : {}),
+              ...(typeof media.permalink === "string" && isHttpsUrl(media.permalink) ? { remoteUrl: media.permalink } : {}),
+              metrics: metrics(values, [["views", "views"], ["reach", "reach"], ["likes", "likes"], ["comments", "comments"], ["saved", "saves"], ["shares", "shares"]]) });
           }
           const paging = object(body.paging);
-          if (older || !paging.next) return { account, posts };
+          if (older || !paging.next) return { account, posts, ...(warning ? { warning } : {}) };
           const next = object(paging.cursors).after;
           if (typeof next !== "string" || !next || seen.has(next)) throw new SocialProviderError();
           seen.add(next);
@@ -249,15 +273,20 @@ function tikTok(connection: SocialConnection, f: Fetch): SocialProvider {
         let cursor: number | undefined;
         const seen = new Set<number>();
         for (;;) {
-          const res = await request(f, `${TIKTOK}/v2/video/list/?fields=id,create_time,view_count,like_count,comment_count,share_count`, {
+          const res = await request(f, `${TIKTOK}/v2/video/list/?fields=id,create_time,title,video_description,share_url,view_count,like_count,comment_count,share_count`, {
             method: "POST", headers, body: JSON.stringify({ max_count: 20, ...(cursor ? { cursor } : {}) }),
           });
           const data = object((await tikTokBody(res)).data);
           const videos = Array.isArray(data.videos) ? data.videos : [];
           for (const video of videos) {
             const v = object(video);
-            if (typeof v.id !== "string" || (since && typeof v.create_time === "number" && v.create_time * 1000 < since.getTime())) continue;
-            out.posts.push({ remoteId: v.id, metrics: metrics(v, [["view_count", "views"], ["like_count", "likes"], ["comment_count", "comments"], ["share_count", "shares"]]) });
+            if (typeof v.id !== "string" || !v.id || (since && typeof v.create_time === "number" && v.create_time * 1000 < since.getTime())) continue;
+            out.posts.push({ remoteId: v.id,
+              ...(typeof v.title === "string" ? { title: v.title } : {}),
+              ...(typeof v.video_description === "string" ? { text: v.video_description } : {}),
+              ...(typeof v.create_time === "number" && v.create_time > 0 && Number.isFinite(new Date(v.create_time * 1000).getTime()) ? { publishedAt: new Date(v.create_time * 1000).toISOString() } : {}),
+              ...(typeof v.share_url === "string" && isHttpsUrl(v.share_url) ? { remoteUrl: v.share_url } : {}),
+              metrics: metrics(v, [["view_count", "views"], ["like_count", "likes"], ["comment_count", "comments"], ["share_count", "shares"]]) });
           }
           const next = data.cursor;
           if (data.has_more !== true || typeof next !== "number" || seen.has(next) ||

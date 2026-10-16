@@ -24,12 +24,12 @@ export default async function SocialsPage({ searchParams }: { searchParams: Prom
       sp.view === "analytics" ? analytics(h) : null,
     ]);
     const days = sp.range === "7D" ? 7 : sp.range === "90D" ? 90 : sp.range === "1Y" ? 365 : 30;
-    const since = new Date(now.getTime() - days * 86400000);
+    const since = !["7D", "30D", "90D", "1Y"].includes(String(sp.range)) ? new Date(`${dayKey(now).slice(0, 4)}-01-01T00:00:00+11:00`) : new Date(now.getTime() - days * 86400000);
     const rangeVariants = stats?.variants.filter((v) => v.publishedAt && v.publishedAt >= since) ?? [];
     const totals: Record<string, number> = {};
     for (const variant of rangeVariants) for (const [metric, value] of Object.entries(variant.metrics ?? {})) if (typeof value === "number") totals[metric] = (totals[metric] ?? 0) + value;
     data = { cards, board, post, sources, calendar, analytics: stats ? { ...stats,
-      snapshots: stats.snapshots.filter((s) => s.date >= since.toISOString().slice(0, 10)),
+      snapshots: stats.snapshots.filter((s) => s.date >= dayKey(since)),
       totals, variants: rangeVariants } : null, now };
   } catch (error) {
     console.error("socials: load failed", error instanceof Error ? error.name : "unknown");

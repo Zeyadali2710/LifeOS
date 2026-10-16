@@ -51,6 +51,27 @@ beforeEach(async () => {
 });
 
 describe("mail triage", () => {
+  it("fetches each account's mail body with its own token and triages accounts in separate batches", async () => {
+    const connectionId = `google_mail:${"c".repeat(64)}`;
+    await saveCalendarSecret(t.handle(), connectionId, { refreshToken: "r2", accessToken: "second-token", expiresAt: "2099-01-01T00:00:00Z" }, { account: "second@example.test", scopes: [GMAIL_READ, GMAIL_COMPOSE] }, { key });
+    const primary = await msg({ gmailId: "m-reply" });
+    const secondary = await msg({ gmailId: "m-inject", connectionId });
+    const f = fakeGmail();
+    const tokens: string[] = [];
+    const fetcher: typeof fetch = (input, init) => {
+      const token = new Headers(init?.headers).get("Authorization")!;
+      expect(token).toBe(String(input).includes("m-inject") ? "Bearer second-token" : "Bearer tok");
+      tokens.push(token);
+      return f(input, init);
+    };
+    const llm = scriptedLlm([answer(), answer()]);
+    expect(await runTriage({ handle: t.handle(), llm, key, fetch: fetcher, now: () => NOW })).toMatchObject({ triaged: 2 });
+    expect(new Set(tokens)).toEqual(new Set(["Bearer tok", "Bearer second-token"]));
+    expect(llm.calls.map((c) => idsOf(c).length)).toEqual([1, 1]);
+    expect((await row(primary.id)).triagedAt).not.toBeNull();
+    expect((await row(secondary.id)).triagedAt).not.toBeNull();
+  });
+
   it("classifies bulk by rules with no LLM call and sends the rest to Haiku in batches of 10, each a recorded run", async () => {
     const bulk = await Promise.all([1, 2, 3].map(() => msg({ bulk: true })));
     for (let i = 0; i < 12; i++) await msg();

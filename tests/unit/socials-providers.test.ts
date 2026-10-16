@@ -21,13 +21,22 @@ describe("social providers", () => {
       return Response.json({ data: [{ name: "views", values: [{ value: 0 }] }, { name: "reach", values: [{ value: 12 }] }, { name: "saved", total_value: { value: 2 } }, { name: "likes", values: [] }, { name: "shares", values: [{ value: "4" }] }] });
     });
     const p = getProvider("instagram", { status: "connected", token: "secret", login: "123", credentialGeneration: "generation" }, { fetch: f });
-    expect(await p.sync?.(new Date("2026-07-16"))).toEqual({ account: { followers: 112, posts: 3 }, posts: [{ remoteId: "image", metrics: { views: 0, reach: 12, saves: 2 } }] });
+    expect(await p.sync?.(new Date("2026-07-16"))).toEqual({ account: { followers: 112, posts: 3 }, posts: [{ remoteId: "image", publishedAt: "2026-10-16T00:00:00.000Z", metrics: { views: 0, reach: 12, saves: 2 } }] });
     expect(f).toHaveBeenCalledTimes(4);
   });
 
   it("reports Instagram insight permission errors without fabricating metrics", async () => {
     const f = vi.fn<typeof fetch>(async (input) => String(input).includes("/insights")
-      ? new Response(null, { status: 403 })
+      ? Response.json({ error: { code: 200 } }, { status: 403 })
+      : Response.json(String(input).includes("/me/media") ? { data: [{ id: "image" }, { id: "second" }] } : { followers_count: 112 }));
+    const p = getProvider("instagram", { status: "connected", token: "secret", login: "123", credentialGeneration: "generation" }, { fetch: f });
+    expect(await p.sync?.()).toMatchObject({ posts: [{ remoteId: "image", metrics: {} }, { remoteId: "second", metrics: {} }], warning: expect.stringContaining("insights permission") });
+    expect(f.mock.calls.filter(([input]) => String(input).includes("/insights"))).toHaveLength(1);
+  });
+
+  it.each([401, 400])("still rejects an expired Instagram token during insight fetching (HTTP %s)", async (status) => {
+    const f = vi.fn<typeof fetch>(async (input) => String(input).includes("/insights")
+      ? Response.json({ error: { code: 190 } }, { status })
       : Response.json(String(input).includes("/me/media") ? { data: [{ id: "image" }] } : { followers_count: 112 }));
     const p = getProvider("instagram", { status: "connected", token: "secret", login: "123", credentialGeneration: "generation" }, { fetch: f });
     await expect(p.sync?.()).rejects.toBeInstanceOf(ProviderAuthError);
@@ -182,7 +191,7 @@ describe("social providers", () => {
       ? { data: { videos: [{ id: "new", create_time: 1792000000, view_count: 4 }], has_more: true, cursor: 1 }, error: { code: "ok" } }
       : { data: { videos: [{ id: "old", create_time: 1000000000, view_count: 9 }], has_more: true, cursor: 2 }, error: { code: "ok" } }));
     const p = getProvider("tiktok", { status: "connected", token: "secret", scopes: ["user.info.basic", "video.list"], credentialGeneration: "generation" }, { fetch: f });
-    expect((await p.sync?.(new Date("2026-10-01T00:00:00Z")))?.posts).toEqual([{ remoteId: "new", metrics: { views: 4 } }]);
+    expect((await p.sync?.(new Date("2026-10-01T00:00:00Z")))?.posts).toEqual([{ remoteId: "new", publishedAt: new Date(1792000000 * 1000).toISOString(), metrics: { views: 4 } }]);
     expect(f).toHaveBeenCalledTimes(2);
   });
 

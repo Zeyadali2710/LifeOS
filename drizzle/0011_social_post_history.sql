@@ -1,0 +1,2 @@
+ALTER TABLE "social_variants" ADD COLUMN "imported_account" text;--> statement-breakpoint
+CREATE UNIQUE INDEX "social_variants_import_uniq" ON "social_variants" USING btree ("platform","imported_account","remote_id");

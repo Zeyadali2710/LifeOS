@@ -6,18 +6,32 @@ import { canPublish, editableVariant, safePostUrl, calendarDays, calendarRange, 
 import { VariantPanel } from "@/socials/variant-panel";
 import { PostsTable } from "@/socials/posts-table";
 import { FollowersChart } from "@/socials/followers-chart";
+import { AnalyticsView } from "@/socials/analytics-view";
 import type { Card, Variant } from "@/socials/model";
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }), useSearchParams: () => new URLSearchParams() }));
 vi.mock("@/shell/shell-provider", () => ({ useShell: () => ({ toast: vi.fn() }) }));
 vi.mock("@/server/socials-actions", () => ({ cancelSchedule: vi.fn(), requestPublish: vi.fn(), retryVariant: vi.fn(), saveVariant: vi.fn(), markPosted: vi.fn(), reschedule: vi.fn() }));
 
 const now = new Date("2026-10-15T00:00:00Z");
 const card = { platform: "instagram", label: "Instagram", isMock: true, capabilities: { publish: true, schedule: true, analytics: true, draft: true }, connection: null, followers: null, history: [], latest: null } satisfies Card;
-const variant = { id: "variant", postId: "post", platform: "instagram", text: "<script>caption</script>", status: "scheduled", imageUrl: "https://images.example.com/photo.jpg", linkUrl: null, scheduledAt: now, publishedAt: null, approvalId: "approval", approvedTextHash: "hash", approvedProviderMode: "mock", approvedConnectionGeneration: null, remoteId: null, remoteUrl: null, containerId: null, isMock: false, metrics: null, metricsAt: null, lastError: null, createdAt: now, updatedAt: now } satisfies Variant;
+const variant = { id: "variant", postId: "post", platform: "instagram", text: "<script>caption</script>", status: "scheduled", imageUrl: "https://images.example.com/photo.jpg", linkUrl: null, scheduledAt: now, publishedAt: null, approvalId: "approval", approvedTextHash: "hash", approvedProviderMode: "mock", approvedConnectionGeneration: null, remoteId: null, remoteUrl: null, importedAccount: null, containerId: null, isMock: false, metrics: null, metricsAt: null, lastError: null, createdAt: now, updatedAt: now } satisfies Variant;
 const panel = (patch: Partial<Variant> = {}, account: Card = card) => renderToStaticMarkup(createElement(VariantPanel, { variant: { ...variant, ...patch }, title: "Post", card: account, now, defaultDate: "2026-10-15", parentDirty: false, onDirty: () => {} }));
 
 describe("Socials owner UI rules", () => {
+  it("shows January imported posts in the default year-to-date analytics view", () => {
+    const january = new Date("2026-01-12T01:00:00Z");
+    const post = { id: "post", title: "January archive", body: "old caption", stage: "draft", createdBy: "owner", draftedFromContent: true, sourceKind: null, sourceId: null, createdAt: january, updatedAt: january, column: "Published" as const,
+      variants: [{ ...variant, status: "posted_manually", publishedAt: january, importedAccount: "owner", isMock: false, metrics: { views: 12 } }] };
+    const html = renderToStaticMarkup(createElement(AnalyticsView, { data: { cards: [card], board: [post], post: null, sources: null, calendar: [], analytics: null, now }, onOpen: () => {} }));
+    expect(html).toContain("January archive");
+    expect(html).toContain("1 this year");
+    expect(html).toContain(">YTD</label>");
+    const imported = panel({ status: "posted_manually", publishedAt: january, importedAccount: "owner", imageUrl: null });
+    expect(imported).toContain("Imported from Instagram");
+    expect(imported).not.toContain("Publish now");
+    expect(imported).not.toContain("Instagram needs one public HTTPS image");
+  });
   it("shows the Portfolio image error before export", () => {
     const html = panel({ platform: "portfolio", status: "draft", imageUrl: "http://images.example.com/photo.jpg" }, { ...card, platform: "portfolio", isMock: false, capabilities: { ...card.capabilities, publish: false } });
     expect(html).toContain("Portfolio image URL must be public HTTPS.");

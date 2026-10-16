@@ -23,6 +23,29 @@ describe("migrations", () => {
   beforeAll(() => admin(`create database ${dbName}`));
   afterAll(() => admin(`drop database if exists ${dbName} with (force)`));
 
+  it("upgrades existing single-account mail without losing its IDs or metadata (0010)", async () => {
+    await runMigrations(testUrl);
+    const client = new Client({ connectionString: testUrl });
+    await client.connect();
+    try {
+      await client.query("begin");
+      // Recreate the pre-0010 shape inside this throwaway database transaction.
+      await client.query('drop index mail_messages_account_gmail_idx');
+      await client.query('alter table mail_messages drop column connection_id');
+      await client.query('alter table mail_messages add constraint "mail_messages_gmailId_unique" unique (gmail_id)');
+      const old = await client.query("insert into mail_messages (gmail_id, thread_id, subject, received_at) values ('same-id', 'thread-1', 'Preserve me', now()) returning id");
+      const migration = readFileSync("drizzle/0010_multiple_mail_accounts.sql", "utf8");
+      for (const statement of migration.split("--> statement-breakpoint").filter((s) => s.trim())) await client.query(statement);
+      const existing = await client.query("select id, connection_id, subject from mail_messages where gmail_id = 'same-id'");
+      expect(existing.rows).toEqual([{ id: old.rows[0].id, connection_id: "google_calendar", subject: "Preserve me" }]);
+      await client.query("insert into mail_messages (connection_id, gmail_id, thread_id, received_at) values ('second-account', 'same-id', 'thread-2', now())");
+      await expect(client.query("insert into mail_messages (connection_id, gmail_id, thread_id, received_at) values ('google_calendar', 'same-id', 'thread-3', now())")).rejects.toThrow(/mail_messages_account_gmail_idx/);
+    } finally {
+      await client.query("rollback");
+      await client.end();
+    }
+  });
+
   it("apply cleanly to an empty database and are idempotent", async () => {
     await runMigrations(testUrl);
     await runMigrations(testUrl);

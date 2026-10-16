@@ -55,14 +55,14 @@ export function PlatformCard({ card, posts, now }: { card: PlatformCardData; pos
       </dl>
       <div className="flex flex-col gap-1 border-t border-white/[.05] pt-3">
         <p className="text-[11px] tracking-[.14em] text-text-3 uppercase">Latest post</p>
-        {card.latest && latestTitle ? <Link href={`/socials?post=${card.latest.postId}`} aria-label={`Open latest ${p.label} post: ${latestTitle}`} className="line-clamp-2 text-[13.5px] font-medium text-text hover:text-cyan">{latestTitle}</Link> : <p className="text-[12.5px] text-text-3">Nothing posted from LifeOS yet.</p>}
+        {card.latest && latestTitle ? <Link href={`/socials?post=${card.latest.postId}`} aria-label={`Open latest ${p.label} post: ${latestTitle}`} className="line-clamp-2 text-[13.5px] font-medium text-text hover:text-cyan">{latestTitle}</Link> : <p className="text-[12.5px] text-text-3">No synced or LifeOS posts yet.</p>}
         {card.latest?.publishedAt && <p className="text-[12.5px] text-text-3">{date(card.latest.publishedAt)}{metricText && ` · ${metricText}`}{card.latest.isMock && " · MOCK"}</p>}
       </div>
-      {platform === "linkedin" && <p className="text-[12.5px] text-text-3">LinkedIn doesn&apos;t share personal-profile analytics with self-serve apps.</p>}
+      {platform === "linkedin" && <p className="text-[12.5px] text-text-3">LinkedIn doesn&apos;t share personal-profile analytics with self-serve apps. Reading previous personal posts requires restricted access that this connection doesn&apos;t have.</p>}
       {platform === "portfolio" && <p className="text-[12.5px] text-text-3">Portfolio analytics aren&apos;t connected.</p>}
       {pending && <p className="text-[12.5px] text-amber">Real publishing and analytics are unavailable until the owner verifies the Instagram smoke test in Settings.</p>}
       {platform === "tiktok" && connection && <div className="flex flex-col gap-1 text-[12.5px] text-text-3">{[["user.info.basic", "Profile"], ["user.info.stats", "Account stats"], ["video.list", "Video stats"]].map(([scope, label]) => <p key={scope}>{label}: {connection.scopes.includes(scope!) ? "granted" : "not granted — data unavailable"}</p>)}</div>}
-      {connection?.lastSyncError && <p role="alert" className="text-[12.5px] text-red">{p.label} didn&apos;t sync: {connection.lastSyncError}</p>}
+      {connection?.lastSyncError && <p role="alert" className="text-[12.5px] text-red">{p.label} sync: {connection.lastSyncError}</p>}
       <footer className="mt-auto flex flex-wrap items-center gap-2 pt-3">
         {platform === "portfolio" ? <span className="text-[12.5px] text-text-3">No connection needed</span> : <><StatusDot state={reconnect ? "attention" : card.isMock ? "idle" : pending || expiry === "soon" ? "paused" : "online"} /><span className="text-[10.5px] font-medium tracking-[.14em] text-text-2">{status}</span></>}
         {(card.isMock || reconnect || pending) && <Link href={`/settings?section=connections#social-${platform}`} aria-label={`Connect ${p.label} in Settings`} className="ml-auto text-[12.5px]">Connect in Settings</Link>}

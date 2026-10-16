@@ -1,8 +1,8 @@
-import { and, eq, gte, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { sydneyYmd } from "@/lib/project-rules";
 import { decrypt } from "../crypto";
 import { db, type DB } from "../db/client";
-import { connections, socialAccountSnapshots, socialVariants } from "../db/schema";
+import { connections, socialAccountSnapshots, socialPosts, socialVariants } from "../db/schema";
 import { emitActivity, notifyLive } from "../events";
 import { log } from "../log";
 import { connectionMatches, decodeSocialConnection, refreshSocialToken, tikTokAppCredentials, markSocialAuthError, type ConnectionSnapshot } from "./connections";
@@ -77,7 +77,8 @@ export async function syncSocials(h: DB = db(), now = new Date(), f: typeof fetc
         if (connection?.expiresAt && connection.expiresAt <= now) throw new ProviderAuthError();
         continue;
       }
-      const result = await provider.sync(new Date(now.getTime() - 90 * DAY));
+      const since = new Date(`${sydneyYmd(now).slice(0, 4)}-01-01T00:00:00+11:00`);
+      const result = await provider.sync(since);
       await h.transaction(async (tx) => {
       const [active] = await tx.select({ id: connections.id }).from(connections).where(connectionMatches(platform, row!)).for("update");
       if (!active) return;
@@ -85,17 +86,34 @@ export async function syncSocials(h: DB = db(), now = new Date(), f: typeof fetc
         followers: result.account.followers ?? null, posts: result.account.posts ?? null })
         .onConflictDoUpdate({ target: [socialAccountSnapshots.platform, socialAccountSnapshots.date],
           set: { followers: result.account.followers ?? null, posts: result.account.posts ?? null, updatedAt: now } });
-      const posts = new Map((result.posts ?? []).map((p) => [p.remoteId, p.metrics]));
-      if (posts.size) {
-        const variants = await tx.select({ id: socialVariants.id, remoteId: socialVariants.remoteId }).from(socialVariants)
+      if (result.posts?.length && row!.login) {
+        const variants = await tx.select().from(socialVariants)
           .where(and(eq(socialVariants.platform, platform), inArray(socialVariants.status, ["published", "posted_manually"]),
-            eq(socialVariants.isMock, false), gte(socialVariants.publishedAt, new Date(now.getTime() - 90 * DAY))));
-        for (const v of variants) {
-          const metrics = v.remoteId ? posts.get(v.remoteId) : undefined;
-          if (metrics) await tx.update(socialVariants).set({ metrics, metricsAt: now, updatedAt: now }).where(eq(socialVariants.id, v.id));
+            eq(socialVariants.isMock, false)));
+        for (const post of result.posts) {
+          const existing = variants.find((v) => v.remoteId === post.remoteId && (!v.importedAccount || v.importedAccount === row!.login));
+          const metrics = Object.keys(post.metrics).length ? { metrics: post.metrics, metricsAt: now } : {};
+          if (existing && !existing.importedAccount) {
+            await tx.update(socialVariants).set({ ...metrics, updatedAt: now }).where(eq(socialVariants.id, existing.id));
+            continue; // Keep the approved text on posts published through LifeOS.
+          }
+          const at = post.publishedAt ? new Date(post.publishedAt) : null;
+          if (!at || !Number.isFinite(+at) || at < since || at > now) continue;
+          const text = (post.text ?? post.title ?? "").slice(0, 10000);
+          const title = (post.title || text.split("\n")[0]?.trim() || `${provider.label} post · ${sydneyYmd(at)}`).slice(0, 200);
+          if (existing) {
+            await tx.update(socialVariants).set({ text, remoteUrl: post.remoteUrl ?? null, publishedAt: at, ...metrics, updatedAt: now }).where(eq(socialVariants.id, existing.id));
+            await tx.update(socialPosts).set({ title, body: text }).where(eq(socialPosts.id, existing.postId));
+          } else {
+            const [created] = await tx.insert(socialPosts).values({ title, body: text, stage: "draft", draftedFromContent: true, createdAt: at, updatedAt: at }).returning({ id: socialPosts.id });
+            const [createdVariant] = await tx.insert(socialVariants).values({ postId: created!.id, platform, text, status: "posted_manually",
+              publishedAt: at, remoteId: post.remoteId, remoteUrl: post.remoteUrl ?? null, importedAccount: row!.login, ...metrics,
+              createdAt: at, updatedAt: now }).returning();
+            variants.push(createdVariant!);
+          }
         }
       }
-      await tx.update(connections).set({ lastSyncAt: now, lastSyncError: null }).where(connectionMatches(platform, row!));
+      await tx.update(connections).set({ lastSyncAt: now, lastSyncError: result.warning ?? null }).where(connectionMatches(platform, row!));
       });
     } catch (err) {
       if (err instanceof ProviderAuthError) await markSocialAuthError(h, platform, row);

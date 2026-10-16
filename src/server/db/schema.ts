@@ -375,6 +375,7 @@ export const socialVariants = pgTable(
     approvedTextHash: text(),
     approvedProviderMode: text(),
     approvedConnectionGeneration: uuid(),
+    importedAccount: text(), // provider history, keyed to the account that supplied it
     remoteId: text(),
     remoteUrl: text(),
     containerId: text(),
@@ -386,6 +387,7 @@ export const socialVariants = pgTable(
   },
   (t) => [
     uniqueIndex("social_variants_post_platform_uniq").on(t.postId, t.platform),
+    uniqueIndex("social_variants_import_uniq").on(t.platform, t.importedAccount, t.remoteId),
     index().on(t.status, t.scheduledAt),
     check("social_variants_platform_chk", sql`${t.platform} in (${inList(PLATFORMS)})`),
     check("social_variants_status_chk", sql`${t.status} in (${inList(VARIANT_STATUSES)})`),
