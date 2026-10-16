@@ -2,10 +2,11 @@ import Link from "next/link";
 import { Icon } from "@/ui/icon";
 import type { IconName } from "@/ui/icon-names";
 
-export const SECTIONS: { key: "connections" | "ai" | "outreach"; label: string; icon: IconName }[] = [
+export const SECTIONS: { key: "connections" | "ai" | "outreach" | "briefings"; label: string; icon: IconName }[] = [
   { key: "connections", label: "Connections", icon: "hub" },
   { key: "ai", label: "AI and spend", icon: "auto_awesome" },
   { key: "outreach", label: "Outreach", icon: "travel_explore" },
+  { key: "briefings", label: "Briefings", icon: "event_note" },
 ];
 
 export function SettingsNav({ current }: { current: string }) {

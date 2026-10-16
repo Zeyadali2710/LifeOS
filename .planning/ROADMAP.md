@@ -306,7 +306,37 @@ Follow-ups (2026-10-16): Instagram post-level insights implemented; multiple Gma
 
 **Done when:** full gate green, Codex + Claude phase review fixed, docs (`docs/knowledge-goals.md`, agents/permissions) updated, owner VM steps in OWNER-ACTIONS.
 
-### Phase 9–11
+### Phase 9: Automation + Daily intelligence
+**Goal:** AUT-01 and AUT-02, plus the Home sections still showing placeholders (Priorities, Today, Upcoming). Plan written 2026-10-17 by Claude (autonomous run); decisions are auto-decisions for owner review. No new external services, credentials or dependencies.
+
+**A. Daily digest, Home, briefings**
+1. `src/server/digest.ts`: one deterministic read model (no LLM, nothing leaves LifeOS) from existing data: today's events and conflicts, tasks due/overdue today, tasks completed today, approvals waiting, unread IMPORTANT mail (subjects), saved/attending Sydney events in the next 3 days, neglected or slowing objectives, over-budget categories this month, CI failures in the last 24 h, next 6 days of events.
+2. Ranked **Priorities** (top 5) from that digest with fixed weights: overdue high-priority tasks, approvals waiting, important mail, today's conflicts, CI failures, over-budget categories, neglected objectives. Each item links to its page.
+3. Home: replace the Priorities, Today and Upcoming placeholders with real data (honest empty states when a source isn't connected).
+4. Migration `0014_briefings`: `briefings` (kind morning|midday|evening|weekly, period key, sections jsonb, created_at, read_at; unique (kind, period)). Worker job `briefings.tick` every 15 min generates any enabled briefing whose Sydney time has passed for the current period, idempotent on the unique key, then emits one FYI notification linking to `/briefings/<id>`. Morning = today; midday = what's left today; evening = done today + tomorrow; weekly (Sunday) = week's completed tasks, goal momentum, month budget, next week's calendar.
+5. Settings → Briefings: per-kind on/off and Sydney time (defaults: morning 07:00 on, midday 12:30 off, evening 18:00 on, weekly Sun 18:00 on). `/briefings` lists recent briefings; `/briefings/<id>` renders one.
+
+**B. Automations**
+6. Migration `0015_automations`: `automations` (name, enabled, trigger, conditions, actions as validated jsonb) and `automation_runs` (automation, trigger ref, status, result/error; unique (automation, trigger ref) for idempotency).
+7. Triggers: an activity event type (from the existing event vocabulary, e.g. `github.ci.failed`, `mail.important`, `calendar.conflict`) or a Sydney schedule (time + weekdays). Conditions: all-of filters on event title/source/detail (`contains`/`equals`, case-insensitive). Events whose source is `automation` never trigger automations (no loops).
+8. Actions: `notify` (title/body/priority), `create_task` (title, due in N days, optional project), and `ask_agent` (prompt to the orchestrator). `ask_agent` runs go through the normal gateway and approval tiers; automation-originated runs additionally floor every side-effect tool at APPROVE because nobody is watching. Spend cap applies. A per-automation rate limit (max 20 runs/day) prevents storms.
+9. Worker job `automations.tick` every minute: scans activity events after a stored cursor and due schedules, evaluates, records runs, executes actions. Failures recorded per run; no retries of side-effecting actions.
+10. UI `/automations` (linked from Agents and the palette): list with enabled toggle, last run, recent runs; create/edit dialog with trigger, conditions and actions; delete confirm.
+
+**After Codex plan critique (2026-10-17):**
+- Every action goes through the gateway: a live, non-LLM `automations` agent owns tools `automation.notify`, `automation.create_task` (EXECUTE, owner-authored config) and `automation.ask_agent`. Each automation run gets an agent run (model `automation`) and calls tools with deterministic tool-use ids `a<runId>:<actionIndex>`, so a crashed run re-executed by recovery returns the earlier results instead of duplicating (gateway unique (run, toolUseId) + idempotency key). Tool calls appear in Command Centre traces.
+- `ask_agent` creates an orchestrator run with a trusted `agent_runs.origin = 'automation'` column (migration) and enqueues the existing resume job. The gateway floors side-effect tools at APPROVE when the run's root (via parent/retry chain) has that origin, covering delegated and resumed runs.
+- No event cursor: event triggers consider events from the last hour that occurred after the automation was (re)enabled (`enabled_at`), and claim `automation_runs` with `insert … on conflict (automation_id, trigger_ref) do nothing`. Rate limit (20/24 h) is checked inside the claim transaction under a per-automation advisory lock. A failing event never blocks others.
+- Recovery: runs left `running` for over 5 minutes are re-executed (idempotent as above) up to 3 attempts, then marked failed.
+- Sydney periods: briefing period key = Sydney date (weekly = that Sunday's date); generation + its notification happen in one transaction keyed on (kind, period). A late worker still generates within the same period; missed periods are skipped. Scheduled automation trigger ref = `schedule:<Sydney date>T<HH:MM>`, fired up to 30 minutes late, else skipped. Local times use Intl Sydney parts (DST-safe).
+- Privacy: briefings and run results stay in LifeOS (owner-only pages). Notifications carry counts only, never mail subjects. `ask_agent` runs get the normal privacy taint; nothing in the editor sends data externally on its own.
+- Home sections stay in scope but reuse the digest (no extra queries).
+
+**Risks:** duplicate execution on worker restart (unique trigger ref + transaction); automation loops (source filter + rate limit); unattended agent side effects (APPROVE floor); notification noise (briefing defaults, rate limit).
+
+**Done when:** full gate green, Codex + Claude phase review fixed, docs (`docs/automations-briefings.md`, agents/permissions) updated, owner VM steps in OWNER-ACTIONS.
+
+### Phase 10–11
 Not started; scope per phase list above.
 
 ## Credentials & external access needed

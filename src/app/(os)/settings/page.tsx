@@ -19,6 +19,8 @@ import { ConnectionsSection } from "@/settings/connections-section";
 import { OutreachSection } from "@/settings/outreach-section";
 import { SettingsNav } from "@/settings/settings-nav";
 import { SpendSection } from "@/settings/spend-section";
+import { BriefingsSection } from "@/settings/briefings-section";
+import { getSchedule } from "@/server/briefings";
 import { SignOut } from "../sign-out";
 
 export const metadata = { title: "Settings · LifeOS" };
@@ -29,7 +31,7 @@ const GOOGLE_RESULTS = ["connected", "cancelled", "state", "scope", "failed", "n
 export default async function SettingsPage({ searchParams }: { searchParams: Promise<{ section?: string; google?: string; n?: string; gmail?: string; tiktok?: string }> }) {
   await requireOwner();
   const { section: raw, google: g, n, gmail, tiktok } = await searchParams;
-  const section = raw === "ai" || raw === "outreach" ? raw : "connections";
+  const section = raw === "ai" || raw === "outreach" || raw === "briefings" ? raw : "connections";
   const googleResult = g && GOOGLE_RESULTS.includes(g) ? { google: g, n: n && /^\d{1,4}$/.test(n) ? Number(n) : null, gmail: gmail === "1" ? true : gmail === "0" ? false : null } : null;
   const now = new Date();
   const h = db();
@@ -48,6 +50,8 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         rows={by.map((r) => ({ ...r, label: MODEL_LABELS[r.model] ?? r.model }))}
       />
     );
+  } else if (section === "briefings") {
+    body = <BriefingsSection schedule={await getSchedule(h)} />;
   } else if (section === "outreach") {
     const [row] = await h.select({ v: settings.value }).from(settings).where(eq(settings.key, INTERESTS_KEY));
     const stored = row?.v;
@@ -82,7 +86,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         <div>
           <div className="text-[11px] font-medium tracking-[.12em] text-text-2">SETTINGS</div>
           <h1 className="mt-2.5 font-display text-[clamp(34px,4.4vw,60px)] leading-[.95] font-normal tracking-[-0.015em]">
-            {section === "ai" ? "AI and spend" : section === "outreach" ? "Outreach" : "Connections"}
+            {section === "ai" ? "AI and spend" : section === "outreach" ? "Outreach" : section === "briefings" ? "Briefings" : "Connections"}
           </h1>
         </div>
         <SignOut />

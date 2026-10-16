@@ -99,6 +99,13 @@
       "when": 1792165938157,
       "tag": "0013_knowledge_goals",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792168191973,
+      "tag": "0014_briefings",
+      "breakpoints": true
     }
   ]
 }

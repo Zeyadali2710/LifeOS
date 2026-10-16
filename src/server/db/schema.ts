@@ -891,3 +891,22 @@ export const objectiveProjects = pgTable(
   },
   (t) => [index().on(t.objectiveId)],
 );
+
+// ── Phase 9: briefings + automations ────────────────────────────────────────
+export const briefings = pgTable(
+  "briefings",
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    kind: text().notNull(),
+    period: text().notNull(), // Sydney YYYY-MM-DD (weekly: that week's Sunday)
+    headline: text().notNull(),
+    body: jsonb().$type<import("../../lib/digest").BriefingBody>().notNull(),
+    readAt: tstz(),
+    createdAt: tstz().notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("briefings_kind_period_idx").on(t.kind, t.period),
+    index().on(t.createdAt),
+    check("briefings_kind_chk", sql`${t.kind} in ('morning','midday','evening','weekly')`),
+  ],
+);

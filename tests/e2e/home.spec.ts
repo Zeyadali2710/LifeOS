@@ -12,8 +12,9 @@ test("home shows date line, greeting, honest tiles and empty sections", async ({
   await expect(page.getByText("0 running", { exact: true })).toBeVisible();
   await expect(page.getByText(/^\d+ waiting$/)).toBeVisible();
   await expect(page.getByText(/^(Healthy|Degraded|Down|Unknown)$/)).toBeVisible();
-  await expect(page.getByText("Nothing is ranked yet.")).toBeVisible();
-  await expect(page.getByText("Your day isn't connected yet.")).toBeVisible();
+  // Real digest sections; content depends on what other specs seeded into the shared e2e database.
+  await expect(page.getByRole("region", { name: "Priorities" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Today" })).toBeVisible();
   await expect(page.getByRole("region", { name: "Live activity" })).toBeVisible();
 
   if (info.project.name === "mobile") {

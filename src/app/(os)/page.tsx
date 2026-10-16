@@ -9,6 +9,9 @@ import { counts } from "@/server/agents/runs";
 import { db } from "@/server/db/client";
 import { recentActivity } from "@/server/events";
 import { loadActiveProjects } from "@/server/project-queries";
+import { loadDigest } from "@/server/digest";
+import { Priorities, Today, Upcoming } from "@/home/digest-sections";
+import { rankPriorities } from "@/lib/digest";
 import { ActiveProjects } from "@/projects/active-projects";
 import { ActivityList, Item as ActivityItem } from "@/shell/activity-list";
 import { SystemTile } from "@/shell/system-tile";
@@ -46,7 +49,7 @@ function Section({
 export default async function HomePage() {
   const { user } = await requireOwner();
   const now = new Date();
-  const [health, weather, unreadImportant, agentCounts, agentActivity, activeProjects] = await Promise.all([
+  const [health, weather, unreadImportant, agentCounts, agentActivity, activeProjects, digest] = await Promise.all([
     checkHealth(now.getTime()),
     getSydneyWeather(),
     unreadImportantCount().catch(() => 0),
@@ -55,6 +58,7 @@ export default async function HomePage() {
       .then((a) => a.filter((x) => x.type.startsWith("agent.")).slice(0, 5))
       .catch(() => []),
     loadActiveProjects(db(), now).catch(() => []),
+    loadDigest(db(), now),
   ]);
   const first = user.name.trim().split(/\s+/)[0] ?? "";
 
@@ -72,7 +76,7 @@ export default async function HomePage() {
           )}
         </h1>
         <p className="mt-2.5 max-w-[640px] text-[15px] leading-normal text-text-2 tab:text-[17px]">
-          {lead({ unreadImportant, health }).map((p, i) => (
+          {lead({ unreadImportant: Math.max(unreadImportant, rankPriorities(digest).length), health }).map((p, i) => (
             <span key={i} className={p.strong ? "text-text" : undefined}>
               {p.text}
             </span>
@@ -85,24 +89,10 @@ export default async function HomePage() {
         </div>
       </header>
 
-      <Section
-        id="h-priorities"
-        label="Priorities"
-        icon="priority_high"
-        title="Nothing is ranked yet."
-        body="Priorities appear here once agents are connected and have something to rank."
-      />
+      <Priorities digest={digest} />
 
       <div className="flex flex-wrap gap-6">
-        <Section
-          id="h-today"
-          label="Today"
-          link={{ href: "/organization", label: "Open calendar →" }}
-          icon="event_busy"
-          title="Your day isn't connected yet."
-          body="Today shows events and tasks once a calendar is connected in Organization."
-          className="min-w-0 flex-[1.5_1_520px]"
-        />
+        <Today digest={digest} className="min-w-0 flex-[1.5_1_520px]" />
         <div className="min-w-0 flex-[1_1_340px]">
           <Link
             href="/agents"
@@ -141,14 +131,7 @@ export default async function HomePage() {
         )}
       </div>
 
-      <Section
-        id="h-upcoming"
-        label="Upcoming"
-        icon="date_range"
-        title="Nothing upcoming."
-        body="The next six days appear here once your calendar is connected."
-        className="hidden tab:block"
-      />
+      <Upcoming digest={digest} />
     </div>
   );
 }
