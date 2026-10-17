@@ -13,15 +13,15 @@ Short current state only. History is in Git and the phase folders under `.planni
 
 ## Deployed
 
-- Homelab runs `main` as of 96fcc02 (owner confirmed 2026-10-17), migrations through `0012_finances`.
+- Homelab runs `main` as of d08ce89 (deployed 2026-10-17 morning), migrations through `0015_activity_type_time`.
 - Owner-confirmed live: Phases 1–7 incl. 5.1/6 VM UAT, Socials page + connections, multiple Gmail accounts, Finances with first real CSV import and an agent reorganisation.
 
 ## Phases
 
 - 1–7.1 complete. 7.1 Finances accepted after real import/reorganisation.
-- 8 Knowledge + Goals: built and pushed 2026-10-17 (autonomous run). Migration 0013. Owner deploy + VM check pending (OWNER-ACTIONS). Review: Codex plan critique + Codex/Claude phase review, all findings fixed.
-- 9 Automation + Daily intelligence: built and pushed 2026-10-17 (autonomous run). Migration 0014. Owner deploy + VM check pending. Codex plan critique + Codex/Claude phase review, findings fixed (one info item declined: the Home lead counts priorities as "items").
-- 10 Hardening: built and pushed 2026-10-17. Migration 0015. Owner deploy + restore drill pending.
+- 8 Knowledge + Goals: accepted 2026-10-17 after owner VM checks. Review: Codex plan critique + Codex/Claude phase review, all findings fixed.
+- 9 Automation + Daily intelligence: built and pushed 2026-10-17 (autonomous run). Accepted 2026-10-17 after owner VM checks. Codex plan critique + Codex/Claude phase review, findings fixed (one info item declined: the Home lead counts priorities as "items").
+- 10 Hardening: accepted 2026-10-17 (restore drill OK after the drill/backup-ordering fix d08ce89).
 - 11 Polish: built and pushed 2026-10-17 (axe audit on every page, a11y + mobile fixes). Milestone v1.0 roadmap complete pending owner VM acceptance of Phases 8–11.
 
 ## Open owner items
