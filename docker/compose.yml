@@ -69,7 +69,8 @@ services:
       - ./backup.sh:/backup.sh:ro
     # ponytail: sleep-loop scheduler; move to a pg-boss job or host cron if timing precision matters.
     entrypoint: ["sh", "/backup.sh"]
-    depends_on: { db: { condition: service_healthy } }
+    # Wait for migrations too, so a deploy never dumps the schema it is about to change.
+    depends_on: { db: { condition: service_healthy }, migrate: { condition: service_completed_successfully } }
     restart: unless-stopped
     networks: [data]
     deploy: { resources: { limits: { cpus: "0.5", memory: 256m } } }
