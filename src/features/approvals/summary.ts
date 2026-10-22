@@ -38,6 +38,9 @@ export const TIER_OF: Record<ApprovalKind, "APPROVE" | "HIGH_RISK"> = {
   project_update: "APPROVE", mail_reply: "APPROVE", social_publish: "APPROVE", finance_update: "APPROVE",
 };
 
+/** Kinds that must be approved from the full review (impact list + acknowledgement), never from a one-click summary. */
+export const fullReviewOnly = (kind: ApprovalKind) => kind === "finance_update";
+
 export type ApprovalSummary = {
   title: string;
   target: string;

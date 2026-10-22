@@ -8,6 +8,7 @@ import { paletteSearchAction } from "@/server/palette-actions";
 import { Icon } from "@/ui/icon";
 import { useApprovalCount } from "./agent-status";
 import { buildPalette, SCOPE_LABEL } from "./palette-items";
+import { trapTab } from "@/ui/overlay";
 import type { PaletteItem } from "./palette-items";
 import { useShell } from "./shell-provider";
 import s from "./shell.module.css";
@@ -29,6 +30,12 @@ function PaletteDialog() {
   const [sel, setSel] = useState(0);
   const [result, setResult] = useState<{ key: string; data: PaletteData } | null>(null);
   const mod = isApple ? "⌘" : "Ctrl ";
+
+  // The dialog unmounts instead of closing, so the browser's own focus restore never runs. Runs before showModal moves focus.
+  useEffect(() => {
+    const prev = document.activeElement as HTMLElement | null;
+    return () => prev?.focus();
+  }, []);
 
   useEffect(() => {
     const d = dlg.current;
@@ -59,7 +66,8 @@ function PaletteDialog() {
     };
   }, [q, scope, key, searchable]);
 
-  const data = result && searchable ? result.data : undefined;
+  const current = result?.key === key ? result : null;
+  const data = current && searchable ? current.data : undefined;
   const groups = useMemo(() => buildPalette(query, { approvalsWaiting, data, scope, mod }), [query, approvalsWaiting, data, scope, mod]);
   const flat = useMemo(() => groups.flatMap((g) => g.items), [groups]);
   const idx = Math.min(sel, Math.max(0, flat.length - 1));
@@ -89,6 +97,7 @@ function PaletteDialog() {
 
   const onKeyDown = (e: KeyboardEvent<HTMLDialogElement>) => {
     if (e.nativeEvent.isComposing) return;
+    trapTab(e.nativeEvent, e.currentTarget);
     if (e.key === "ArrowDown") {
       e.preventDefault();
       setSel(Math.min(flat.length - 1, idx + 1));
@@ -149,7 +158,7 @@ function PaletteDialog() {
         ))}
       </div>
       <div id={listId} role="listbox" aria-label="Results" className={s.palList}>
-        {groups.length === 0 && <p className={s.palEmpty}>{searchable && !result ? "Searching…" : `Nothing in ${SCOPE_LABEL[scope]} matches “${q}”.`}</p>}
+        {groups.length === 0 && <p className={s.palEmpty}>{searchable && !current ? "Searching…" : `Nothing in ${SCOPE_LABEL[scope]} matches “${q}”.`}</p>}
         {groups.map((g) => (
           <div key={g.label} role="group" aria-label={g.label}>
             <div className={s.palGroup} aria-hidden="true">

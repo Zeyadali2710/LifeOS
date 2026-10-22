@@ -58,6 +58,12 @@ export function ProjectDetail({
   const [confirm, setConfirm] = useState<Confirm>(null);
   const [busy, setBusy] = useState(false);
   const [doneIds, setDoneIds] = useState<Record<string, boolean>>({});
+  // Optimistic overrides only bridge until the server's tasks arrive; fresh props win.
+  const [seenTasks, setSeenTasks] = useState(d.tasks);
+  if (seenTasks !== d.tasks) {
+    setSeenTasks(d.tasks);
+    setDoneIds({});
+  }
 
   const h = HEALTH[healthOf({ health: d.health, project: p })];
   const isDone = (t: TaskDTO) => doneIds[t.id] ?? Boolean(t.completedAt);

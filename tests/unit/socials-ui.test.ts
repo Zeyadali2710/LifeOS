@@ -65,10 +65,10 @@ describe("Socials owner UI rules", () => {
     const html = renderToStaticMarkup(createElement(AnalyticsView, { data: { cards: [card], board: [post], post: null, sources: null, calendar: [], analytics: null, now }, onOpen: () => {} }));
     expect(html).toContain("January archive");
     expect(html).toContain("1 this year");
-    expect(html).toContain(">YTD</label>");
+    expect(html).toContain(`data-value="YTD" aria-selected="true"`);
     const imported = panel({ status: "posted_manually", publishedAt: january, importedAccount: "owner", imageUrl: null });
     expect(imported).toContain("Imported from Instagram");
-    expect(imported).not.toContain("Publish now");
+    expect(imported).not.toContain("Send for approval");
     expect(imported).not.toContain("Instagram needs one public HTTPS image");
   });
   it("shows the Portfolio image error before export", () => {
@@ -119,16 +119,16 @@ describe("Socials owner UI rules", () => {
   it("renders scheduled content read-only, escapes text, and exposes only time/cancel actions", () => {
     const html = panel();
     expect(html).not.toContain("<textarea");
-    expect(html).not.toContain("Publish now");
+    expect(html).not.toContain("Send for approval");
     expect(html).toContain("Reschedule");
-    expect(html).toContain("Cancel schedule");
+    expect(html).toContain("Unschedule");
     expect(html).toContain("&lt;script&gt;");
     expect(html).not.toContain("<script>");
   });
   it("renders mock Instagram approval buttons but removes real verification-pending publish", () => {
-    expect(panel({ status: "draft" })).toContain("Publish now");
+    expect(panel({ status: "draft" })).toContain("Send for approval");
     const html = panel({ status: "draft" }, { ...card, isMock: false, connection: { id: "instagram", status: "verification_pending", last4: "1234", login: "owner", scopes: [], expiresAt: null, lastSyncAt: null, lastSyncError: null } });
-    expect(html).not.toContain("Publish now");
+    expect(html).not.toContain("Send for approval");
     expect(html).not.toContain(">Schedule<");
     expect(html).toContain("unavailable until the owner verifies");
   });

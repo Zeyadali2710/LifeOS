@@ -387,6 +387,14 @@ Codex critique resolutions (2026-10-22)
 - E2E specs are rewritten with each route; the full Playwright suite runs at the end (it builds the app and shares one DB).
 - Contrast: `--ink-3` on `--wash` is 4.497 and `--accent` on `--accent-wash` 4.07; text never uses those pairs (event-card reached state keeps the accent icon/fill, label in `--ink`).
 
+Phase notes (built 2026-10-22/23; Claude orchestrated and reviewed, Codex built Organization (part), Outreach, Career, Socials, Finances, Knowledge, Goals, Briefings, Automations, Settings, Login and the e2e rewrite)
+- New read-only server queries (all owner-guarded): `home.ts` loadHome/homeDateLine; `agents/view.ts` agentTable, agentInspector, runTrace, lastFailed (+ `agents-view-actions.ts` wrappers); `projects-view.ts` loadProjectsPage, projectObjective; `outreach-view.ts` outreachMailboxes; `career-view.ts` loadCareerView, loadRepoView (synced GitHub tables only, no new GitHub calls); `socials-view.ts` socialPostReviews; `finances-view.ts` loadFinancesView; `settings-view.ts` settingsModelTurns; `automations-view.ts` loadAutomationsView; `time.ts` clock(). Palette search rewritten for the scopes.
+- Approval notification links now point to `/agents?view=approvals&id=`; `/approvals`, `/agents/[id]`, `/agents/runs/[id]` redirect into the Agents view.
+- Deviations from the prototype, kept on purpose: Socials keeps a Calendar tab (the old UI had it; the prototype shows only Overview/Posts); notification Snooze is a preset menu (1 hour / Tonight / Tomorrow) rather than "Snooze 1h"; finance approvals are never one-click from Home or a paused run (they open the full review with its acknowledgement).
+- Not built: the `/ui-kit` page.
+- Codex phase review: 14 findings, all fixed (quick-approve bypass for finance, stale Agents/Approvals selection and traces, lost save-edits, run Cancel/Retry, paid-model selector, palette stale results, project optimistic overrides, Socials calendar entry, snooze presets, office keyboard entry).
+- Known: while a modal drawer is open, toasts render under its backdrop and screen readers don't announce them (the page outside a modal is inert). Follow-up: mount the toast region inside the open dialog.
+
 ## Credentials & external access needed
 | When | What |
 |---|---|

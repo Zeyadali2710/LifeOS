@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { CalendarDTO, ConflictDTO, PlanItemDTO } from "@/lib/calendar-types";
 import { addPlanItemAction, type EventActionResult } from "@/server/calendar-actions";
-import { formatHM, sydneyParts } from "@/server/time";
+import { clock, sydneyParts } from "@/server/time";
 import { useShell } from "@/features/shell/shell-provider";
 import { Button, IconButton } from "@/ui/button";
 import { Select } from "@/ui/controls";
@@ -72,7 +72,7 @@ export function TodaysPlanCard({
     setBusy(null);
     if (r.ok) {
       setAdded((s) => new Set(s).add(it.id));
-      const msg = `Added to ${r.calendarName} · ${formatHM(new Date(r.start))}`;
+      const msg = `Added to ${r.calendarName} · ${clock(new Date(r.start))}`;
       setNote(msg);
       toast(msg);
       router.refresh();
@@ -104,7 +104,7 @@ export function TodaysPlanCard({
     const end = it.end ? new Date(it.end) : null;
     const state: State = conflict ? "CONFLICT" : added.has(it.id) ? "ON CALENDAR" : skipped.has(it.id) ? "SKIPPED" : "SUGGESTED";
     const pending = state === "SUGGESTED";
-    const hm = start ? formatHM(start) : "";
+    const hm = start ? clock(start) : "";
     const time = start ? (ymd(start) === today ? hm : `${sydneyParts(start).weekday} ${hm}`) : "";
     const mins = start && end ? Math.round((end.getTime() - start.getTime()) / 60000) : null;
     return (
@@ -138,7 +138,7 @@ export function TodaysPlanCard({
         const key = `${c.a}:${c.b}`;
         if (ignored.has(key)) return null;
         return <div role="alert" className={s.planConflict} key={key}>
-          <span className={s.conflictText}>▲ <button className={s.evLinkBtn} onClick={() => onOpen(c.a)}>{c.aTitle}</button> overlaps <button className={s.evLinkBtn} onClick={() => onOpen(c.b)}>{c.bTitle}</button> · {formatHM(new Date(c.start))}–{formatHM(new Date(c.end))}</span>
+          <span className={s.conflictText}>▲ <button className={s.evLinkBtn} onClick={() => onOpen(c.a)}>{c.aTitle}</button> overlaps <button className={s.evLinkBtn} onClick={() => onOpen(c.b)}>{c.bTitle}</button> · {clock(new Date(c.start))}–{clock(new Date(c.end))}</span>
           <div className={s.planActions}><Button size="sm" onClick={() => openAI(`Ask Organization to propose a fix for the calendar conflict between “${c.aTitle}” (${c.a}) and “${c.bTitle}” (${c.b}) at ${c.start}–${c.end}. Find a free slot and propose moving one event, then wait for my approval.`)}>Propose a fix</Button><Button size="sm" variant="ghost" onClick={() => setIgnored(v => new Set(v).add(key))}>Keep both</Button></div>
         </div>;
       })}

@@ -12,7 +12,9 @@ import { chartScale } from "./chart-model";
 import s from "./finances.module.css";
 
 type Months = FinanceData['summary']['monthly'];
-const monthLabel = (month: string) => new Date(`${month}-15T12:00:00Z`).toLocaleDateString('en-AU', { month: 'short', year: '2-digit', timeZone: 'UTC' });
+// Fixed table: Node and browsers disagree on en-AU short months ("Sept" vs "Sep"), which broke hydration.
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const monthLabel = (month: string) => `${MONTHS[Number(month.slice(5, 7)) - 1]} ${month.slice(2, 4)}`;
 export function PanelHead({ icon, title, sub, action }: { icon: IconName; title: string; sub?: string; action?: ReactNode }) {
   return <div className={s.panelHead}><div className={s.panelTitle}><span className={s.iconChip}><Icon name={icon} size={19} /></span><div><h2>{title}</h2>{sub && <p className={s.sub}>{sub}</p>}</div></div>{action}</div>;
 }
@@ -45,7 +47,7 @@ export function TrendChart({ months, metric, title, colour, helper }: { months: 
   const values = months.map(m => m[metric]), scale = chartScale(values, 120), width = Math.max(280, months.length * 16), step = width / months.length;
   const hasData = months.some(m => m.count), cumulative = metric !== 'cashflow';
   return <Card className={s.trend}><div className={s.trendLabel}>{title}</div><div className={s.trendValue}>{hasData ? aud(values.at(-1) ?? 0) : '—'}</div>
-    {hasData ? <svg viewBox={`0 0 ${width} 130`} role="img" aria-label={`${title}: ${aud(values[0] ?? 0)} at the start, ${aud(values.at(-1) ?? 0)} at the end. ${helper}`}><line x1="0" x2={width} y1={scale.zero + 5} y2={scale.zero + 5} stroke="var(--border)" />{months.map((m, i) => (m.count || cumulative) ? <rect key={m.month} x={i * step + 2} y={Math.min(scale.y(m[metric]), scale.zero) + 5} width={Math.max(1, step - 4)} height={Math.max(1, Math.abs(scale.y(m[metric]) - scale.zero))} rx="2" fill={m[metric] < 0 ? 'var(--status-failed)' : colour}><title>{monthLabel(m.month)}: {aud(m[metric])}</title></rect> : null)}</svg> : <p className={s.sub}>No imported data for this range.</p>}
+    {hasData ? <svg viewBox={`0 0 ${width} 130`} role="img" aria-label={`${title}: ${aud(values[0] ?? 0)} at the start, ${aud(values.at(-1) ?? 0)} at the end. ${helper}`}><line x1="0" x2={width} y1={scale.zero + 5} y2={scale.zero + 5} stroke="var(--border)" />{months.map((m, i) => (m.count || cumulative) ? <rect key={m.month} x={i * step + 2} y={Math.min(scale.y(m[metric]), scale.zero) + 5} width={Math.max(1, step - 4)} height={Math.max(1, Math.abs(scale.y(m[metric]) - scale.zero))} rx="2" fill={m[metric] < 0 ? 'var(--status-failed)' : colour}><title>{`${monthLabel(m.month)}: ${aud(m[metric])}`}</title></rect> : null)}</svg> : <p className={s.sub}>No imported data for this range.</p>}
     <p className={s.sub}>{helper}</p><details className={s.sub}><summary>View values</summary>{months.map(m => <div className={s.listRow} key={m.month}><span>{monthLabel(m.month)}</span><span>{hasData && (m.count || cumulative) ? aud(m[metric]) : 'No data'}</span></div>)}</details>
   </Card>;
 }

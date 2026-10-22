@@ -12,7 +12,7 @@ import { approvalsHref } from "@/features/shell/nav";
 import { Alert } from "@/ui/feedback";
 import { PixelAvatar } from "@/ui/pixel-avatar";
 import { ApprovalDetail, rowTitle, type WriteFacts } from "./detail";
-import { RESOLVED, since, stamp } from "./summary";
+import { fullReviewOnly, RESOLVED, since, stamp } from "./summary";
 import s from "./approvals.module.css";
 
 const upsert = (list: ApprovalDTO[], a: ApprovalDTO) => (list.some((x) => x.id === a.id) ? list.map((x) => (x.id === a.id ? a : x)) : [a, ...list]);
@@ -40,6 +40,17 @@ export function ApprovalsInbox({
   const [extra, setExtra] = useState(initialSelected);
   const [tab, setTab] = useState<"pending" | "resolved">(initialSelected && initialSelected.status !== "pending" ? "resolved" : "pending");
   const [selId, setSelId] = useState<string | null>(initialSelected?.id ?? null);
+  const [snapshot, setSnapshot] = useState({ pending: initialPending, resolved: initialResolved, selectedId: initialSelected?.id });
+  if (snapshot.pending !== initialPending || snapshot.resolved !== initialResolved || snapshot.selectedId !== initialSelected?.id) {
+    setSnapshot({ pending: initialPending, resolved: initialResolved, selectedId: initialSelected?.id });
+    setPending(initialPending);
+    setResolved(initialResolved);
+    setExtra(initialSelected);
+    if (snapshot.selectedId !== initialSelected?.id && initialSelected) {
+      setSelId(initialSelected.id);
+      setTab(initialSelected.status === "pending" ? "pending" : "resolved");
+    }
+  }
   const [say, setSay] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -60,7 +71,8 @@ export function ApprovalsInbox({
   });
 
   const list = tab === "pending" ? pending : resolved;
-  const current = list.find((a) => a.id === selId) ?? (extra && extra.id === selId ? extra : null) ?? list[0] ?? null;
+  const current = [...pending, ...resolved].find((a) => a.id === selId) ?? (extra && extra.id === selId ? extra : null) ?? list[0] ?? null;
+  if (current && !selId) setSelId(current.id);
   const idx = current ? list.findIndex((a) => a.id === current.id) : -1;
 
   const select = (id: string) => {
@@ -73,7 +85,7 @@ export function ApprovalsInbox({
   }, [current]);
 
   const quick = async (a: ApprovalDTO, approve: boolean) => {
-    if (approve && !QUICK.has(a.kind)) {
+    if (approve && (fullReviewOnly(a.kind) || !QUICK.has(a.kind))) {
       toast("Review this one in the detail before approving.", "error");
       return;
     }
@@ -139,7 +151,8 @@ export function ApprovalsInbox({
         </div>
       )}
       <div className={s.body}>
-        <div ref={listRef} role="listbox" aria-label="Approvals. Arrow keys move, A approves, R rejects, E edits." className={s.list} onKeyDown={onKey}>
+        <div className={s.list}>
+          {list.length > 0 && <div ref={listRef} role="listbox" aria-label="Approvals. Arrow keys move, A approves, R rejects, E edits." onKeyDown={onKey}>
           {list.map((a) => {
             const r = RESOLVED[a.status];
             const who = getAgent(a.agentId)?.name ?? a.agentId;
@@ -157,6 +170,7 @@ export function ApprovalsInbox({
               </button>
             );
           })}
+          </div>}
           {list.length === 0 && (
             <div className={s.listEmpty}>
               <PixelAvatar agent="orchestrator" state="idle" size={42} radius={6} />

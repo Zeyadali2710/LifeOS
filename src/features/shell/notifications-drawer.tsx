@@ -1,13 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import type { NotificationCategory, NotificationDTO } from "@/lib/live-types";
 import { isSafeGithubUrl, isSafePath } from "@/lib/safe-url";
 import { dismiss, markAllRead, markRead, snooze } from "@/server/notification-actions";
-import { groupNotifications, snoozeToast } from "@/server/time";
+import { groupNotifications, snoozePresets, snoozeToast, type SnoozePreset } from "@/server/time";
 import { Button } from "@/ui/button";
 import { Alert, Skeleton } from "@/ui/feedback";
-import { Drawer } from "@/ui/overlay";
+import { Drawer, Menu } from "@/ui/overlay";
 import { restoreItem } from "./live";
 import { useLive } from "./live-provider";
 import { useShell } from "./shell-provider";
@@ -23,10 +24,10 @@ const CAT_COLOR: Record<NotificationCategory, string> = {
 };
 const IMPORTANT = new Set<NotificationCategory>(["URGENT", "IMPORTANT"]);
 const ACTION: Partial<Record<NotificationCategory, string>> = { APPROVAL: "Review", REMINDER: "Open", AGENT: "Open" };
-const HOUR = 3_600_000;
 
 function Row({ n, fresh }: { n: NotificationDTO; fresh: boolean }) {
   const router = useRouter();
+  const [presets, setPresets] = useState<SnoozePreset[]>([]);
   const { setNotifications, refetchNotifications } = useLive();
   const { closeNotifications, toast } = useShell();
   const unread = n.readAt === null;
@@ -77,16 +78,15 @@ function Row({ n, fresh }: { n: NotificationDTO; fresh: boolean }) {
         <button type="button" className={s.notifLink} onClick={() => void setRead(unread)}>
           {unread ? "Mark read" : "Mark unread"}
         </button>
-        <button
-          type="button"
-          className={s.notifLink}
-          onClick={() => {
-            const until = new Date(Date.now() + HOUR);
-            void mutate((l) => l.filter((i) => i.id !== n.id), () => snooze(n.id, until.toISOString()), snoozeToast(until, new Date()), true);
-          }}
-        >
-          Snooze 1h
-        </button>
+        <Menu
+          label="Snooze until"
+          items={presets.map((pr) => ({ label: pr.label, hint: pr.hint, onSelect: () => void mutate((l) => l.filter((i) => i.id !== n.id), () => snooze(n.id, pr.until.toISOString()), snoozeToast(pr.until, new Date()), true) }))}
+          trigger={(p) => (
+            <button type="button" {...p} className={s.notifLink} onClick={() => { setPresets(snoozePresets(new Date())); p.onClick(); }}>
+              Snooze
+            </button>
+          )}
+        />
         <button type="button" className={`${s.notifLink} ${s.notifDismiss}`} onClick={() => void mutate((l) => l.filter((i) => i.id !== n.id), () => dismiss(n.id), "Notification dismissed", true)}>
           Dismiss
         </button>

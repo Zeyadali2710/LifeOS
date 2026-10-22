@@ -14,7 +14,7 @@ import { officeState } from "@/features/agents/model";
 import { approvalsHref } from "@/features/shell/nav";
 import { useAgentStatus } from "@/features/shell/agent-status";
 import { useShell } from "@/features/shell/shell-provider";
-import { since, stamp, summarize } from "@/features/approvals/summary";
+import { fullReviewOnly, since, stamp, summarize } from "@/features/approvals/summary";
 import { Button, ButtonLink } from "@/ui/button";
 import { AGENT_STATES } from "@/ui/display";
 import type { AgentState } from "@/ui/display";
@@ -95,8 +95,9 @@ function NeedsYou({ data }: { data: HomeData }) {
         quote: sum.quote,
         note: sum.note,
         expires: `Expires ${stamp(a.expiresAt, false)}`,
-        primaryLabel: "Approve",
-        primary: () => done(approveAction(a.id), "Approved. It runs now and is recorded in Activity.", "Couldn't approve. Open it in Approvals to check the content."),
+        ...(fullReviewOnly(a.kind)
+          ? { primaryLabel: "Review", primary: async () => router.push(approvalsHref(a.id)) }
+          : { primaryLabel: "Approve", primary: () => done(approveAction(a.id), "Approved. It runs now and is recorded in Activity.", "Couldn't approve. Open it in Approvals to check the content.") }),
         rejectLabel: "Reject",
         reject: () => done(rejectAction(a.id), "Rejected. Nothing was sent.", "Couldn't reject. Try again."),
         openLabel: "Open in Approvals",
@@ -155,7 +156,7 @@ function NeedsYou({ data }: { data: HomeData }) {
 
   return (
     <Section id="h-wait" label={`Needs you · ${items.length}`} meta={<span className={s.keys}>↑↓ MOVE · ↵ EXPAND · A APPROVE · R REJECT</span>}>
-      <div
+      {items.length === 0 ? <p className={s.quiet}>Nothing needs you. Approved work is recorded in Activity.</p> : <div
         role="list"
         className={s.inbox}
         onKeyDown={onKey}
@@ -204,8 +205,7 @@ function NeedsYou({ data }: { data: HomeData }) {
             </div>
           );
         })}
-        {items.length === 0 && <p className={s.quiet}>Nothing needs you. Approved work is recorded in Activity.</p>}
-      </div>
+      </div>}
     </Section>
   );
 }

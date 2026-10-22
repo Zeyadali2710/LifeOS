@@ -20,7 +20,7 @@ export function Status({ tone, glyph, children, mono, className }: { tone: Tone;
       <span className={s.glyph} aria-hidden="true">
         {glyph}
       </span>
-      {children}
+      <span>{children}</span>
     </span>
   );
 }

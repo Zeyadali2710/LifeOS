@@ -6,6 +6,18 @@ import type { KeyboardEvent, ReactNode } from "react";
 import { Button, IconButton } from "./button";
 import s from "./overlay.module.css";
 
+const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
+
+/** Keeps Tab inside an open modal: a native modal <dialog> otherwise lets focus leave to the browser chrome. */
+export function trapTab(e: globalThis.KeyboardEvent, root: HTMLElement) {
+  if (e.key !== "Tab") return;
+  const els = [...root.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((el) => el.offsetParent !== null || el === document.activeElement);
+  const first = els[0], last = els.at(-1);
+  if (!first || !last) return;
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+}
+
 /** Opens/closes a native <dialog> as modal and reports Esc/backdrop closes back through onClose. */
 function useModal(open: boolean, onClose: () => void) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -22,8 +34,13 @@ function useModal(open: boolean, onClose: () => void) {
       e.preventDefault();
       onClose();
     };
+    const tab = (e: globalThis.KeyboardEvent) => trapTab(e, d);
     d.addEventListener("cancel", cancel);
-    return () => d.removeEventListener("cancel", cancel);
+    d.addEventListener("keydown", tab);
+    return () => {
+      d.removeEventListener("cancel", cancel);
+      d.removeEventListener("keydown", tab);
+    };
   }, [onClose]);
   const onBackdrop = (e: React.MouseEvent<HTMLDialogElement>) => {
     if (e.target === e.currentTarget) onClose();
@@ -232,6 +249,11 @@ export function Menu({
       )}
     </div>
   );
+}
+
+/** Polite live region that also positions the toast, so the region itself is what is visible. */
+export function ToastRegion({ children }: { children: React.ReactNode }) {
+  return <div role="status" aria-live="polite" className={s.toastRegion}>{children}</div>;
 }
 
 export function ToastView({ message, tone, action }: { message: string; tone: "success" | "error"; action?: { label: string; onClick: () => void } }) {

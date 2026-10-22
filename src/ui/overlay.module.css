@@ -45,12 +45,12 @@
 .menuHint { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
 .menuSep { height: 1px; background: var(--rule-faint); margin: 4px 2px; }
 
+.toastRegion { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 60; max-width: calc(100% - 32px); }
 .toast {
-  position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 60;
-  max-width: calc(100% - 32px); background: var(--ink); color: var(--paper); font-size: var(--text-ui);
+  background: var(--ink); color: var(--paper); font-size: var(--text-ui);
   padding: 10px 16px; border-radius: var(--radius-md); box-shadow: var(--shadow-menu);
   animation: los-in var(--dur-base) var(--ease-out); display: flex; align-items: center; gap: 12px;
 }
 .toast.error { background: var(--status-failed); }
 .toastAction { border: 0; background: none; color: var(--paper); text-decoration: underline; font-size: var(--text-small); padding: 0; }
-@media (max-width: 719.98px) { .toast { bottom: calc(80px + env(safe-area-inset-bottom)); } }
+@media (max-width: 719.98px) { .toastRegion { bottom: calc(80px + env(safe-area-inset-bottom)); } }

@@ -1,5 +1,5 @@
 .dateLine { font-family: var(--font-mono); font-size: var(--text-label); letter-spacing: .1em; color: var(--ink-3); }
-.briefLink { color: var(--accent); }
+.briefLink { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
 .h1 { margin-top: 12px; font-family: var(--font-display); font-weight: 400; font-size: 28px; line-height: 1.12; letter-spacing: -.015em; max-width: 860px; text-wrap: pretty; }
 @media (min-width: 720px) { .h1 { font-size: 34px; } }
 @media (min-width: 1100px) { .h1 { font-size: var(--text-display); } }

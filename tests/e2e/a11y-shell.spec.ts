@@ -23,7 +23,7 @@ test("desktop: skip link, landmarks, live region", async ({ page }, info) => {
   await expect(page.getByRole("banner").getByRole("navigation", { name: "Primary" })).toBeVisible();
   await expect(page.getByRole("banner")).toBeVisible();
   await expect(page.getByRole("main")).toBeVisible();
-  await expect(page.getByRole("status").and(page.locator('[aria-live="polite"]'))).toBeAttached();
+  await expect(page.getByRole("status").and(page.locator('[aria-live="polite"]')).first()).toBeAttached();
 });
 
 test("desktop: palette and drawer trap focus and restore it", async ({ page }, info) => {

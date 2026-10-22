@@ -7,7 +7,7 @@ import type { ApprovalDTO } from "@/lib/agent-types";
 import { nothingText, payloadSchemaFor } from "@/lib/approval-kinds";
 import { isSafeGithubUrl } from "@/lib/safe-url";
 import { checkVariant } from "@/lib/social-types";
-import { approveAction, rejectAction, retryApprovalAction } from "@/server/approval-actions";
+import { approveAction, rejectAction, retryApprovalAction, saveEditAction } from "@/server/approval-actions";
 import { saveReplyToDraftsAction } from "@/server/mail-actions";
 import { socialReviewFacts } from "@/server/socials-actions";
 import { getAgent } from "@/server/agents/registry";
@@ -114,6 +114,7 @@ function Decision({
   next,
   extra,
   danger,
+  onSave,
 }: {
   approveLabel: string;
   onApprove: () => void;
@@ -124,6 +125,7 @@ function Decision({
   next: string;
   extra?: ReactNode;
   danger?: boolean;
+  onSave?: () => void;
 }) {
   return (
     <>
@@ -134,6 +136,7 @@ function Decision({
         <Button size="lg" disabled={busy !== null} onClick={onReject} style={{ color: "var(--status-failed)" }}>
           {busy === "reject" ? "Rejecting…" : "Reject"}
         </Button>
+        {onSave && <Button size="lg" disabled={busy !== null} onClick={onSave}>{busy === "save" ? "Saving..." : "Save edits"}</Button>}
         {extra}
         {source && (
           <Link href={source.href} style={{ fontSize: 14, padding: "9px 8px" }}>
@@ -173,11 +176,11 @@ function IssueDetail({ approval: a, write, onChange }: Props) {
   const current = toPayload(saved.repo, draft);
   const dirty = !sameIssue(current, saved);
   const res = a.result as { number?: number; url?: string } | null;
-  const approve = () => {
+  const decide = (save = false) => {
     const v = validateDraft(saved.repo, draft);
     if ("errors" in v) return setErrors(v.errors);
     setErrors({});
-    void guard("approve", () => approveAction(a.id, dirty ? v.payload : undefined), `Issue created in ${saved.repo}`);
+    void guard(save ? "save" : "approve", () => save ? saveEditAction(a.id, v.payload) : approveAction(a.id, dirty ? v.payload : undefined), save ? "Edits saved. Nothing was created." : `Issue created in ${saved.repo}`);
   };
   return (
     <>
@@ -196,7 +199,8 @@ function IssueDetail({ approval: a, write, onChange }: Props) {
           )}
           <Decision
             approveLabel={dirty ? "Approve with edits" : "Approve"}
-            onApprove={approve}
+            onApprove={() => decide()}
+            onSave={dirty ? () => decide(true) : undefined}
             onReject={() => void guard("reject", () => rejectAction(a.id), "Rejected. Nothing was created.")}
             busy={busy}
             disabled={!write.connected}
@@ -228,19 +232,23 @@ function IssueDetail({ approval: a, write, onChange }: Props) {
 function MailDetail({ approval: a, onChange }: Props) {
   const saved = mailOf(a);
   const [draft, setDraft] = useState<MailDraft>(() => toMailDraft(saved));
-  const [base] = useState(saved);
+  const [base, setBase] = useState(saved);
   const [errors, setErrors] = useState<MailDraftErrors>({});
   const { busy, guard } = useDecide(onChange, (e) => setErrors(e));
   const dirty = draft.subject !== saved.subject || draft.body !== saved.body;
   const at = formatHM(new Date(a.decidedAt ?? a.createdAt));
   const res = mailResolved(a, at);
   const to = saved.to?.[0];
-  const approve = () => {
+  const decide = async (save = false) => {
     if (!sameMail(base, saved)) return setErrors({ body: "This draft changed while you were editing. Reload it and check again." });
     const v = validateMailDraft(a.tool, saved, draft);
     if ("errors" in v) return setErrors(v.errors);
     setErrors({});
-    void guard("approve", () => approveAction(a.id, dirty ? v.payload : undefined), "Reply approved · sending");
+    const ok = await guard(save ? "save" : "approve", () => save ? saveEditAction(a.id, v.payload) : approveAction(a.id, dirty ? v.payload : undefined), save ? "Edits saved. Nothing was sent." : "Reply approved - sending");
+    if (ok && save) {
+      setBase(v.payload);
+      setDraft(toMailDraft(v.payload));
+    }
   };
   const toDrafts = () =>
     void guard(
@@ -277,7 +285,8 @@ function MailDetail({ approval: a, onChange }: Props) {
           <ContentField label="Message" edited={dirty || (a.edited != null && !sameMail(saved, a.original as typeof saved))} value={draft.body} error={errors.body} onChange={(body) => setDraft({ ...draft, body })} rows={9} />
           <Decision
             approveLabel={dirty ? "Approve with edits" : "Approve"}
-            onApprove={approve}
+            onApprove={() => void decide()}
+            onSave={dirty ? () => void decide(true) : undefined}
             onReject={() => void guard("reject", () => rejectAction(a.id), "Rejected. Nothing was sent.")}
             busy={busy}
             extra={
@@ -403,11 +412,11 @@ function EventDetail({ approval: a, onChange }: Props) {
   const res = eventResolved(a, at);
   const verb = a.kind === "event_create" ? "Create" : a.kind === "event_update" ? "Change" : "Delete";
   const before = saved.before;
-  const approve = () => {
+  const decide = (save = false) => {
     if (del) return void guard("approve", () => approveAction(a.id), "Event deleted");
     if (!v || "errors" in v) return setErrors(v && "errors" in v ? v.errors : {});
     setErrors({});
-    void guard("approve", () => approveAction(a.id, dirty ? v.payload : undefined), "Calendar updated");
+    void guard(save ? "save" : "approve", () => save ? saveEditAction(a.id, v.payload) : approveAction(a.id, dirty ? v.payload : undefined), save ? "Edits saved. The calendar is unchanged." : "Calendar updated");
   };
   const set = (k: keyof EventDraft, val: string | boolean) => setDraft({ ...draft, [k]: val } as EventDraft);
   return (
@@ -447,7 +456,8 @@ function EventDetail({ approval: a, onChange }: Props) {
           <Decision
             approveLabel={del ? "Delete event" : dirty ? "Approve with edits" : "Approve"}
             danger={del}
-            onApprove={approve}
+            onApprove={() => decide()}
+            onSave={!del && dirty && !a.targetChanged ? () => decide(true) : undefined}
             onReject={() => void guard("reject", () => rejectAction(a.id), "Rejected. The calendar is unchanged.")}
             busy={busy}
             disabled={a.targetChanged === true}

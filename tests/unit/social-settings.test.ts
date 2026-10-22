@@ -68,8 +68,8 @@ describe("Social settings and palette", () => {
     const connection = { status: "connected", last4: "1234", login: "owner", expiresAt: null, credentialGeneration: null, scopes: ["user.info.basic"], lastSyncError: null };
     const html = renderToStaticMarkup(createElement(SocialConnections, { connections: { linkedin: null, instagram: { ...connection, status: "verification_pending" }, tiktok: connection, tiktok_app: connection }, redirectUri: "https://lifeos.example/api/connections/tiktok/callback", result: null }));
     expect(html).toContain("VERIFICATION PENDING"); expect(html).toContain("disabled"); expect(html).toContain("Missing user.info.stats"); expect(html).toContain("Missing video.list"); expect(html).toContain("No connection needed: Markdown export");
-    expect(html).toMatch(/Missing user.info.stats<\/span><p[^>]*>Account statistics/);
-    expect(html).toMatch(/Missing video.list<\/span><p[^>]*>Video metrics/);
+    expect(html).toMatch(/Missing user.info.stats(<\/span>)+<p[^>]*>Account statistics/);
+    expect(html).toMatch(/Missing video.list(<\/span>)+<p[^>]*>Video metrics/);
     for (const id of ["linkedin", "instagram", "tiktok", "portfolio"]) expect(html).toContain(`id="social-${id}"`);
   });
   it("offers new-post navigation and title-search post hits", () => {

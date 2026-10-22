@@ -99,8 +99,9 @@ export function Masthead({ owner, version }: { owner: { name: string; email: str
             { label: "Sign out", onSelect: () => void signOut() },
           ]}
           trigger={(p) => (
-            <button type="button" {...p} aria-label={`Account: ${owner.name}`} className={s.avatarBtn}>
+            <button type="button" {...p} className={s.avatarBtn}>
               <Avatar name={owner.name} size={30} />
+              <span className="sr-only">Account: {owner.name}</span>
             </button>
           )}
         />

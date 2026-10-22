@@ -81,7 +81,7 @@ test("mobile: tab bar and More reach domain pages", async ({ page }, info) => {
     await expect(sheet).toBeHidden();
     await bar.getByRole("button", { name: "More", exact: true }).click();
     await expect(sheet.getByRole("menuitem", { name: label, exact: true })).toHaveAttribute("aria-current", "page");
-    await page.getByRole("button", { name: "Close menu", exact: true }).click();
+    await page.getByRole("button", { name: "Close menu", exact: true }).click({ position: { x: 20, y: 20 } });
   }
   await bar.getByRole("link", { name: /^Agents($| )/ }).click();
   await page.getByRole("navigation", { name: "View", exact: true }).getByRole("link", { name: /^Approvals/ }).click();

@@ -57,7 +57,12 @@ test("snooze via keyboard hides the row; snoozed-until-soon reappears", async ({
   const title = `Snooze ${uid()}`;
   await openWith(page, title);
   const r = row(page, title);
-  await r.getByRole("button", { name: "Snooze 1h" }).focus();
+  await r.getByRole("button", { name: "Snooze" }).focus();
+  await page.keyboard.press("Enter");
+  const menu = page.getByRole("menu");
+  await expect(menu.getByRole("menuitem", { name: /1 hour/ })).toBeVisible();
+  await expect(menu.getByRole("menuitem", { name: /Tomorrow/ })).toBeVisible();
+  await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Enter");
   await expect(r).toHaveCount(0);
   await expect(page.getByRole("status").filter({ hasText: /Snoozed until/ })).toBeVisible();

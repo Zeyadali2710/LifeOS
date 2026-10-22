@@ -31,7 +31,7 @@ test("desktop: pending approval, edit validation, missing token, create issue", 
   await expect(page.getByRole("tab", { name: /^Pending/ })).toHaveAttribute("aria-selected", "true");
   await expect(page.getByRole("option", { name: new RegExp(title) })).toHaveAttribute("aria-selected", "true");
   const detail = page.getByRole("region", { name: "Approval detail" });
-  await expect(detail.getByText("AWAITING YOUR APPROVAL", { exact: true })).toBeVisible();
+  await expect(detail.getByText(/^. AWAITING YOUR APPROVAL$/)).toBeVisible();
   await expect(detail.getByRole("heading", { name: `Create issue “${title}”` })).toBeVisible();
   await expect(detail.getByRole("button", { name: "Approve", exact: true })).toBeDisabled();
   await expect(detail.getByText(/issues-write token isn't connected/)).toBeVisible();

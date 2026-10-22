@@ -63,7 +63,7 @@ test("TikTok uses copy and owner Mark as posted, without approval", async ({ pag
     postId = new URL(page.url()).searchParams.get("post")!;
     await page.getByRole("button", { name: "Copy text", exact: true }).click();
     await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe("My manual caption");
-    await page.getByRole("button", { name: "Mark as posted", exact: true }).click();
+    await page.getByRole("button", { name: "Mark posted manually", exact: true }).click();
     const manual = page.getByRole("dialog", { name: "Mark as posted on TikTok" });
     await manual.getByRole("button", { name: "Mark as posted", exact: true }).click();
     await expect.poll(async () => (await socialPostState(postId!))[0]?.status).toBe("posted_manually");
@@ -76,6 +76,6 @@ test("a removed real credential cannot turn its queued publish into mock publica
     expect(result).toMatchObject({ status: "failed", remoteId: null });
     expect((await socialPostState(result.postId))[0]).toMatchObject({ status: "failed", is_mock: false, remote_id: null });
     await page.goto(`/socials?post=${result.postId}`);
-    await expect(page.getByText("Connection or approved content changed. Request a new approval.", { exact: true })).toBeVisible();
+    await expect(page.getByRole("complementary", { name: "Review" }).getByText("Connection or approved content changed. Request a new approval.", { exact: true })).toBeVisible();
   } finally { await deleteSocialPost(result.postId); }
 });

@@ -46,7 +46,7 @@
 .thead { border-bottom: var(--section-rule); font-family: var(--font-mono); font-size: var(--text-mono-xs); letter-spacing: .08em; color: var(--ink-3); padding: 10px 6px; }
 .trow { width: 100%; border: 0; border-bottom: 1px solid var(--rule); background: transparent; text-align: left; font-size: var(--text-ui); color: var(--ink); }
 .trow:hover { background: var(--wash); }
-.trow[aria-pressed="true"] { background: var(--wash); }
+.trow[aria-selected="true"] { background: var(--wash); }
 .agentCols { grid-template-columns: 36px 130px 130px minmax(0, 1fr) 110px 50px 64px 70px; }
 .runCols { grid-template-columns: 70px 110px minmax(0, 1fr) 140px 64px 60px 60px; font-size: var(--text-small); }
 .ell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }

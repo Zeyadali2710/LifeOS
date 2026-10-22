@@ -19,6 +19,7 @@ button { cursor: pointer; }
 button:disabled { cursor: not-allowed; }
 a { color: var(--accent); text-decoration: none; }
 a:hover { color: var(--ink); }
+p a:not([class]) { text-decoration: underline; text-underline-offset: 2px; }
 :focus-visible { outline: var(--focus-ring); outline-offset: var(--focus-offset); }
 ::selection { background: var(--accent-wash); }
 

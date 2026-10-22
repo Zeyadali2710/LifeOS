@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
-import { ToastView } from "@/ui/overlay";
+import { ToastRegion, ToastView } from "@/ui/overlay";
 import { matchShortcut } from "./shortcuts";
 
 type ToastState = { id: number; message: string; kind: "success" | "error"; action?: { label: string; onClick: () => void } } | null;
@@ -156,9 +156,9 @@ export function ShellProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={value}>
       {children}
-      <div role="status" aria-live="polite">
+      <ToastRegion>
         {toastState && <ToastView key={toastState.id} message={toastState.message} tone={toastState.kind} action={toastState.action} />}
-      </div>
+      </ToastRegion>
     </Ctx.Provider>
   );
 }

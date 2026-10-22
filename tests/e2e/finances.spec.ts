@@ -31,21 +31,21 @@ test("overview ranges, three trend charts, monthly values and spending category 
   await page.goto(`/finances?month=2026-10&range=3m&account=${account}`);
   const range = page.getByRole("radiogroup", { name: "Overview time range", exact: true });
   await expect(range.getByRole("radio", { name: "3m", exact: true })).toBeChecked();
-  const savings = page.getByText("Savings · cumulative", { exact: true }).locator("..");
-  const net = page.getByText("Net cash flow · monthly", { exact: true }).locator("..");
-  const cumulative = page.getByText("Cash flow · cumulative", { exact: true }).locator("..");
-  const spending = page.getByRole("heading", { name: "Where the money went", exact: true }).locator("..").locator("..").locator("..");
+  const savings = page.locator("#main").getByText("Savings · cumulative", { exact: true }).locator("..");
+  const net = page.locator("#main").getByText("Net cash flow · monthly", { exact: true }).locator("..");
+  const cumulative = page.locator("#main").getByText("Cash flow · cumulative", { exact: true }).locator("..");
+  const spending = page.getByRole("heading", { name: "Where the money went", exact: true }).locator("..").locator("..").locator("..").locator("..");
   await expect(savings.getByRole("img")).toHaveAccessibleName(/\$150\.00 at the end/);
   await expect(cumulative.getByRole("img")).toHaveAccessibleName(/\$680\.00 at the end/);
   if (info.project.name === "desktop") {
     const boxes = await Promise.all([savings, net, cumulative].map(p => p.boundingBox()));
     expect(new Set(boxes.map(b => Math.round(b!.y))).size).toBe(1);
   }
-  for (const [chart, month, amount] of [[net, "Oct 26", "$30.00"], [savings, "Oct 26", "$150.00"], [cumulative, "Sept 26", "$650.00"]] as const) {
+  for (const [chart, month, amount] of [[net, "Oct 26", "$30.00"], [savings, "Oct 26", "$150.00"], [cumulative, "Sep 26", "$650.00"]] as const) {
     await chart.getByText("View values", { exact: true }).click();
     await expect(chart.getByText(month, { exact: true }).locator("..")).toContainText(amount);
   }
-  const income = page.getByRole("heading", { name: "Income and spending", exact: true }).locator("..").locator("..").locator("..");
+  const income = page.getByRole("heading", { name: "Income and spending", exact: true }).locator("..").locator("..").locator("..").locator("..");
   const august = income.getByRole("button", { name: /Aug 26: income/ });
   if (info.project.name === "desktop") await august.hover(); else await august.tap();
   await expect(income.getByRole("status")).toContainText("Income $1,000.00");

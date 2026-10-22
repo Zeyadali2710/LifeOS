@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent, ReactNode } from "react";
 import type { ApprovalDTO, RunDTO, RunStatus, StepDTO } from "@/lib/agent-types";
 import { formatDuration, formatTokens, formatUsd } from "@/lib/format";
 import { agentInspectorAction, runTraceAction } from "@/server/agents-view-actions";
-import { pauseAgentAction, pauseAllAction, resumeAgentAction, resumeAllAction, retryRunAction, setAgentModelAction } from "@/server/agent-actions";
+import { cancelRunAction, pauseAgentAction, pauseAllAction, resumeAgentAction, resumeAllAction, retryRunAction, setAgentModelAction } from "@/server/agent-actions";
 import { approveAction, rejectAction } from "@/server/approval-actions";
 import type { Inspector, RunTrace } from "@/server/agents/view";
 import { MODELS, modelShort } from "@/server/agents/registry";
@@ -18,7 +18,7 @@ import { useShell } from "@/features/shell/shell-provider";
 import { approvalsHref } from "@/features/shell/nav";
 import { ApprovalsInbox } from "@/features/approvals/inbox";
 import type { WriteFacts } from "@/features/approvals/detail";
-import { since, stamp, summarize, TIER_OF } from "@/features/approvals/summary";
+import { fullReviewOnly, since, stamp, summarize, TIER_OF } from "@/features/approvals/summary";
 import { Button, ButtonLink } from "@/ui/button";
 import { CountBadge, AGENT_STATES } from "@/ui/display";
 import type { AgentState } from "@/ui/display";
@@ -37,9 +37,9 @@ const TONE: Record<AgentState, string> = {
   working: "var(--status-working)",
   approval: "var(--status-approval)",
   failed: "var(--status-failed)",
-  idle: "var(--ink-3)",
-  paused: "var(--ink-3)",
-  offline: "var(--ink-3)",
+  idle: "var(--ink-2)",
+  paused: "var(--ink-2)",
+  offline: "var(--ink-2)",
 };
 const RUN_STATUS: Record<RunStatus, { label: string; color: string; group: string }> = {
   queued: { label: "○ Queued", color: "var(--ink-3)", group: "running" },
@@ -96,7 +96,19 @@ function Trace({ steps }: { steps: StepDTO[] }) {
   );
 }
 
-function RunPanel({ trace, back, onBack }: { trace: RunTrace; back: string; onBack: () => void }) {
+function RunPanel({ trace, back, onBack, onRun, onChange }: { trace: RunTrace; back: string; onBack: () => void; onRun: (id: string) => void; onChange: () => void }) {
+  const { toast } = useShell();
+  const [busy, setBusy] = useState(false);
+  const act = async (retry: boolean) => {
+    setBusy(true);
+    const result = await (retry ? retryRunAction(trace.run.id) : cancelRunAction(trace.run.id)).catch(() => ({ ok: false }));
+    setBusy(false);
+    toast(result.ok ? (retry ? "Retry started." : "Cancellation requested.") : "Couldn't do that. Try again.", result.ok ? "success" : "error");
+    if (result.ok) {
+      if ("runId" in result && result.runId) onRun(result.runId);
+      onChange();
+    }
+  };
   const r = trace.run;
   const st = RUN_STATUS[r.status];
   return (
@@ -114,6 +126,10 @@ function RunPanel({ trace, back, onBack }: { trace: RunTrace; back: string; onBa
         </div>
       </div>
       {r.error && <p className={s.failText}>{r.error}</p>}
+      <div className={s.row}>
+        {["queued", "running", "waiting_approval"].includes(r.status) && <Button destructive disabled={busy} onClick={() => void act(false)}>Cancel run</Button>}
+        {["failed", "cancelled", "expired"].includes(r.status) && <Button variant="primary" disabled={busy} onClick={() => void act(true)}>Retry</Button>}
+      </div>
       <Trace steps={trace.steps} />
       <p className={s.small}>LifeOS stores the execution summary and tool calls only. Hidden reasoning is never stored or shown. Limits per run: 12 tool calls, 60k tokens, 120 s active.</p>
     </div>
@@ -190,10 +206,10 @@ function AgentPanel({
           <div className={s.propTarget}>{sum.target}</div>
           {(sum.quote ?? sum.note) && <blockquote className={s.quote}>{sum.quote ?? sum.note}</blockquote>}
           <div className={s.row}>
-            <Button variant="primary" size="lg" disabled={busy} onClick={() => void act(() => approveAction(pending.id), "Approved. The run resumes.", "Couldn't approve here. Review it in Approvals.")}>
+            {!fullReviewOnly(pending.kind) && <Button variant="primary" size="lg" disabled={busy} onClick={() => void act(() => approveAction(pending.id), "Approved. The run resumes.", "Couldn't approve here. Review it in Approvals.")}>
               Approve
-            </Button>
-            <ButtonLink href={approvalsHref(pending.id)} size="lg">
+            </Button>}
+            <ButtonLink href={approvalsHref(pending.id)} variant={fullReviewOnly(pending.kind) ? "primary" : undefined} size="lg">
               Review in Approvals
             </ButtonLink>
             <Button variant="ghost" size="lg" destructive disabled={busy} onClick={() => void act(() => rejectAction(pending.id), "Rejected. Nothing was sent.")}>
@@ -243,14 +259,15 @@ function AgentPanel({
               <span className={s.small} style={{ color: "var(--ink-2)", fontSize: 13 }}>
                 Model
               </span>
-              {ins.routable ? (
+              {!ins.system && agent.id !== "orchestrator" ? (
                 <>
                   <div role="radiogroup" aria-label="Model" className={s.views} style={{ alignSelf: "flex-start" }}>
-                    {MODEL_OPTS.map(([v, l]) => (
+                    {(ins.routable ? MODEL_OPTS : [[MODELS.haiku, "Haiku"] as const, ...MODEL_OPTS.filter(([v]) => v !== "auto" && v !== "free")]).map(([v, l]) => (
                       <button
                         key={v}
                         type="button"
                         role="radio"
+                        disabled={busy}
                         aria-checked={ins.modelPref === v}
                         style={{ border: 0, borderLeft: v === "auto" ? 0 : "1px solid var(--border)", padding: "6px 11px", fontSize: 13, background: ins.modelPref === v ? "var(--wash)" : "transparent" }}
                         onClick={() => void act(() => setAgentModelAction(agent.id, v), `${agent.name} now uses ${l}.`)}
@@ -259,7 +276,7 @@ function AgentPanel({
                       </button>
                     ))}
                   </div>
-                  <span className={s.small}>Auto sends simple turns to the free model and reasoning to Sonnet, with one fallback. Private data never goes to a free model.</span>
+                  <span className={s.small}>{ins.routable ? "Auto sends simple turns to the free model and reasoning to Sonnet, with one fallback. Private data never goes to a free model." : "Paid models only. Private data never goes to a free model."}</span>
                 </>
               ) : (
                 <span style={{ fontSize: 14 }}>
@@ -398,7 +415,7 @@ function Office({
               data-agent-spot={a.id}
               aria-pressed={selected}
               aria-label={`${a.name}, ${info.label}.${a.currentTask ? ` ${a.currentTask}` : ""}`}
-              tabIndex={selected ? 0 : -1}
+              tabIndex={selected || (!agents.some((a) => a.id === sel) && k === 0) ? 0 : -1}
               className={s.spot}
               style={{ left: Math.round(cx + (st.fx - 9) * scale), top: Math.round(cy + (st.fy - 30) * scale), width: 18 * scale, height: 26 * scale }}
               onClick={() => onSelect(a.id)}
@@ -450,9 +467,13 @@ export function AgentsViewScreen({
   const reduced = useReducedMotion();
   const root = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: 1200, h: 800, mobile: false });
-  const [sel, setSel] = useState(initialSel);
+  const search = useSearchParams();
+  const requestedAgent = view === "approvals" ? null : search.get("id");
+  const requestedRun = search.get("run");
+  const sel = agents.some((a) => a.id === requestedAgent) ? requestedAgent! : initialSel;
   const [inspectors, setInspectors] = useState<Record<string, Inspector>>(initialInspector ? { [initialInspector.id]: initialInspector } : {});
-  const [trace, setTrace] = useState<RunTrace | null>(initialTrace);
+  const [loadedTrace, setTrace] = useState<RunTrace | null>(initialTrace);
+  const trace = loadedTrace?.run.id === requestedRun ? loadedTrace : null;
   const [runFilter, setRunFilter] = useState("all");
   const [confirmPause, setConfirmPause] = useState(false);
 
@@ -490,17 +511,30 @@ export function AgentsViewScreen({
 
   const select = (id: string) => {
     if (id === sel && !trace) return;
-    setSel(id);
     setTrace(null);
     url({ id, run: null });
     if (!inspectors[id]) void loadInspector(id);
   };
-  const openRun = async (id: string) => {
-    const t = await runTraceAction(id);
-    if (!t) return toast("That run isn't available.", "error");
-    setTrace(t);
-    url({ run: id });
-  };
+  const openRun = (id: string) => url({ run: id });
+
+  useEffect(() => {
+    let active = true;
+    void agentInspectorAction(sel).then((ins) => {
+      if (active && ins) setInspectors((m) => ({ ...m, [sel]: ins }));
+    });
+    return () => { active = false; };
+  }, [sel]);
+
+  useEffect(() => {
+    if (!requestedRun) return;
+    let active = true;
+    void runTraceAction(requestedRun).then((t) => {
+      if (!active) return;
+      setTrace(t);
+      if (!t) toast("That run isn't available.", "error");
+    });
+    return () => { active = false; };
+  }, [requestedRun, toast]);
 
   // Live: refresh the server data and the open inspector when runs or approvals change.
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
@@ -509,6 +543,7 @@ export function AgentsViewScreen({
     timer.current = setTimeout(() => {
       router.refresh();
       void loadInspector(sel);
+      if (requestedRun) void runTraceAction(requestedRun).then((t) => setTrace((current) => current?.run.id === requestedRun ? t : current));
     }, 600);
   };
   useEffect(() => () => clearTimeout(timer.current), []);
@@ -586,7 +621,6 @@ export function AgentsViewScreen({
       {view === "approvals" && (
         <div className={`${s.pane} ${s.flush}`}>
           <ApprovalsInbox
-            key={`${approvals.pending.length}:${approvals.resolved.length}`}
             initialPending={approvals.pending}
             initialResolved={approvals.resolved}
             initialSelected={approvals.selected}
@@ -598,7 +632,7 @@ export function AgentsViewScreen({
 
       {view === "table" && (
         <div className={s.pane}>
-          <div role="table" aria-label="All agents" className={s.table}>
+          <div role="grid" aria-label="All agents" className={s.table}>
             <div role="row" className={`${s.thead} ${s.agentCols}`}>
               <span role="columnheader" />
               <span role="columnheader">AGENT</span>
@@ -617,29 +651,29 @@ export function AgentsViewScreen({
               const t = tableRow.get(a.id);
               const last = a.stats?.last;
               return (
-                <button key={a.id} type="button" role="row" aria-pressed={a.id === sel} className={`${s.trow} ${s.agentCols}`} onClick={() => select(a.id)}>
-                  <span role="cell">
+                <button key={a.id} type="button" role="row" aria-selected={a.id === sel} className={`${s.trow} ${s.agentCols}`} onClick={() => select(a.id)}>
+                  <span role="gridcell">
                     <PixelAvatar agent={a.id} state={state} size={28} />
                   </span>
-                  <span role="cell" style={{ fontWeight: 600 }}>
+                  <span role="gridcell" style={{ fontWeight: 600 }}>
                     {a.name}
                   </span>
-                  <span role="cell" className={s.monoSm} style={{ color: TONE[state] }}>
+                  <span role="gridcell" className={s.monoSm} style={{ color: TONE[state] }}>
                     {info.glyph} {info.label}
                   </span>
-                  <span role="cell" className={s.ell} style={{ color: "var(--ink-2)" }}>
+                  <span role="gridcell" className={s.ell} style={{ color: "var(--ink-2)" }}>
                     {a.currentTask ?? last?.prompt ?? (a.live ? "No runs yet" : "Not connected")}
                   </span>
-                  <span role="cell" style={{ fontSize: 13, color: "var(--ink-2)" }}>
+                  <span role="gridcell" style={{ fontSize: 13, color: "var(--ink-2)" }}>
                     {a.id === "automations" ? "No model" : last ? modelShort(last.model) : "—"}
                   </span>
-                  <span role="cell" className={s.mono}>
+                  <span role="gridcell" className={s.mono}>
                     {t?.runs24 ?? 0}
                   </span>
-                  <span role="cell" className={s.mono}>
+                  <span role="gridcell" className={s.mono}>
                     {t ? formatUsd(t.cost24).replace("US", "") : "—"}
                   </span>
-                  <span role="cell" className={`${s.monoSm} ${s.right}`}>
+                  <span role="gridcell" className={`${s.monoSm} ${s.right}`}>
                     {last?.startedAt ? ago(last.startedAt) : ""}
                   </span>
                 </button>
@@ -664,7 +698,7 @@ export function AgentsViewScreen({
               </button>
             ))}
           </div>
-          <div role="table" aria-label="Runs" className={s.table}>
+          <div role="grid" aria-label="Runs" className={s.table}>
             <div role="row" className={`${s.thead} ${s.runCols}`}>
               <span role="columnheader">TIME</span>
               <span role="columnheader">AGENT</span>
@@ -677,26 +711,26 @@ export function AgentsViewScreen({
               </span>
             </div>
             {shownRuns.map((r) => (
-              <button key={r.id} type="button" role="row" aria-pressed={trace?.run.id === r.id} className={`${s.trow} ${s.runCols}`} onClick={() => void openRun(r.id)}>
-                <span role="cell" className={s.monoSm}>
+              <button key={r.id} type="button" role="row" aria-selected={trace?.run.id === r.id} className={`${s.trow} ${s.runCols}`} onClick={() => void openRun(r.id)}>
+                <span role="gridcell" className={s.monoSm}>
                   {runWhen(r)}
                 </span>
-                <span role="cell" style={{ fontWeight: 600 }}>
+                <span role="gridcell" style={{ fontWeight: 600 }}>
                   {agents.find((a) => a.id === r.agentId)?.name ?? r.agentId}
                 </span>
-                <span role="cell" className={s.ell}>
+                <span role="gridcell" className={s.ell}>
                   {r.prompt}
                 </span>
-                <span role="cell" className={s.monoSm} style={{ color: RUN_STATUS[r.status].color }}>
+                <span role="gridcell" className={s.monoSm} style={{ color: RUN_STATUS[r.status].color }}>
                   {RUN_STATUS[r.status].label}
                 </span>
-                <span role="cell" className={s.route}>
+                <span role="gridcell" className={s.route}>
                   {runRoute(r)}
                 </span>
-                <span role="cell" className={s.monoSm} style={{ color: "var(--ink)" }}>
+                <span role="gridcell" className={s.monoSm} style={{ color: "var(--ink)" }}>
                   {r.toolCalls}
                 </span>
-                <span role="cell" className={`${s.monoSm} ${s.right}`}>
+                <span role="gridcell" className={`${s.monoSm} ${s.right}`}>
                   {runTook(r)}
                 </span>
               </button>
@@ -708,9 +742,9 @@ export function AgentsViewScreen({
 
       <aside aria-label={trace ? "Run detail" : "Selected agent"} className={s.panel}>
         {trace ? (
-          <RunPanel trace={trace} back={selAgent.name} onBack={() => (setTrace(null), url({ run: null }))} />
+          <RunPanel key={trace.run.id} trace={trace} back={selAgent.name} onBack={() => (setTrace(null), url({ run: null }))} onRun={openRun} onChange={later} />
         ) : (
-          <AgentPanel agent={selAgent} state={states.get(selAgent.id) ?? "idle"} ins={inspectors[selAgent.id] ?? null} onRun={(id) => void openRun(id)} onDecided={() => router.refresh()} />
+          <AgentPanel agent={selAgent} state={states.get(selAgent.id) ?? "idle"} ins={inspectors[selAgent.id] ?? null} onRun={(id) => void openRun(id)} onDecided={() => { router.refresh(); void loadInspector(selAgent.id); }} />
         )}
       </aside>
 
