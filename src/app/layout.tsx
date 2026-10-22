@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Instrument_Sans, JetBrains_Mono, Newsreader } from "next/font/google";
 import localFont from "next/font/local";
 import { headers } from "next/headers";
-import "./legacy.css";
 import "./globals.css";
 
 const display = Newsreader({ subsets: ["latin"], style: ["normal", "italic"], weight: ["400", "500"], variable: "--font-newsreader", display: "swap" });

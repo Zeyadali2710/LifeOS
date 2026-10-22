@@ -35,30 +35,30 @@ test("keyword search, sections, tags, detail and semantic opt-in notice", async 
   ]);
   await signIn(page);
   await page.goto("/knowledge");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Everything you've read, written and saved.");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Knowledge");
 
-  await page.getByRole("searchbox", { name: "Search knowledge" }).or(page.getByLabel("Search knowledge")).fill(`replay ${u}`);
+  await page.getByRole("searchbox", { name: "Search knowledge" }).fill(`replay ${u}`);
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/q=replay/);
-  const results = page.getByRole("region", { name: "Results" });
+  const results = page.getByRole("list", { name: "Knowledge items", exact: true });
   await expect(results.getByRole("button", { name: new RegExp(`Event log architecture ${u}`) })).toBeVisible();
   await expect(results.getByRole("button", { name: new RegExp(`Coffee with Priya ${u}`) })).toHaveCount(0);
 
   await results.getByRole("button", { name: new RegExp(`Event log architecture ${u}`) }).click();
-  const article = page.getByRole("article", { name: `Event log architecture ${u}` });
-  await expect(article.getByText("Append-only logs make agent actions replayable.")).toBeVisible();
+  const article = page.getByRole("article", { name: "Knowledge editor" });
+  await expect(article.getByRole("textbox", { name: "Text", exact: true })).toHaveValue("Append-only logs make agent actions replayable.");
 
   await page.goto(`/knowledge?tags=arch${u}`);
-  await expect(page.getByRole("search").getByRole("button", { name: new RegExp(`#arch${u}`) })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: new RegExp(`^#arch${u}`) })).toHaveAttribute("aria-pressed", "true");
   await expect(results.getByRole("button")).toHaveCount(2);
-  await page.getByRole("navigation", { name: "Knowledge sections" }).getByRole("button", { name: /Bookmarks/ }).click();
+  await page.getByRole("navigation", { name: "Knowledge kinds" }).getByRole("button", { name: /^Bookmark/ }).click();
   await expect(results.getByRole("button")).toHaveCount(1);
 
-  await page.getByRole("radio", { name: "semantic" }).click();
+  await page.getByRole("radio", { name: "Semantic", exact: true }).click();
   await expect(page.getByRole("status").filter({ hasText: /Semantic search (is off|needs an OpenRouter key)/ })).toBeVisible();
 });
 
-test("create, edit and delete a note through the dialog", async ({ page }) => {
+test("create a note, autosave an edit and delete it", async ({ page }) => {
   const u = randomUUID().slice(0, 8);
   await signIn(page);
   await page.goto("/knowledge");
@@ -67,22 +67,21 @@ test("create, edit and delete a note through the dialog", async ({ page }) => {
   await dialog.getByLabel("Title").fill(`Approval UX ${u}`);
   await dialog.getByLabel("Text").fill("Show what will happen, why, and which account.");
   await dialog.getByLabel("Tags").fill("UX, #agents");
-  await dialog.getByRole("button", { name: "Add" }).click();
-  const article = page.getByRole("article", { name: `Approval UX ${u}` });
+  await dialog.getByRole("button", { name: "Add item", exact: true }).click();
+  const article = page.getByRole("article", { name: "Knowledge editor" });
   await expect(article).toBeVisible();
   const id = new URL(page.url()).searchParams.get("item")!;
   created.push(id);
   await expect(article.getByText("#ux")).toBeVisible();
 
-  await article.getByRole("button", { name: "Edit" }).click();
-  const edit = page.getByRole("dialog", { name: "Edit item" });
-  await edit.getByLabel("Title").fill(`Approval UX principles ${u}`);
-  await edit.getByRole("button", { name: "Save" }).click();
-  await expect(page.getByRole("article", { name: `Approval UX principles ${u}` })).toBeVisible();
+  await article.getByRole("textbox", { name: "Title", exact: true }).fill(`Approval UX principles ${u}`);
+  await expect(article.getByRole("status")).toContainText("Saved automatically");
+  await page.reload();
+  await expect(article.getByRole("textbox", { name: "Title", exact: true })).toHaveValue(`Approval UX principles ${u}`);
 
-  await page.getByRole("article").getByRole("button", { name: "Delete" }).click();
-  await page.getByRole("dialog", { name: "Delete this item?" }).getByRole("button", { name: "Delete" }).click();
-  await expect(page.getByRole("article")).toHaveCount(0);
+  await article.getByRole("button", { name: "Delete item", exact: true }).click();
+  await page.getByRole("dialog", { name: "Delete this item?" }).getByRole("button", { name: "Delete item", exact: true }).click();
+  await expect(article).toHaveCount(0);
 });
 
 test("bookmark without a link shows the validation error", async ({ page }) => {
@@ -91,6 +90,6 @@ test("bookmark without a link shows the validation error", async ({ page }) => {
   await page.getByRole("button", { name: "New item" }).click();
   const dialog = page.getByRole("dialog", { name: "New knowledge item" });
   await dialog.getByLabel("Title").fill("No link");
-  await dialog.getByRole("button", { name: "Add" }).click();
+  await dialog.getByRole("button", { name: "Save bookmark", exact: true }).click();
   await expect(dialog.getByRole("alert")).toHaveText("Bookmarks need a link.");
 });

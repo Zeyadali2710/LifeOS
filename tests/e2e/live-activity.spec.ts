@@ -4,7 +4,7 @@ import { E2E_DB_URL, E2E_OWNER, seedHeartbeat, signIn } from "./owner";
 
 test.beforeAll(seedHeartbeat);
 
-test("live activity: auth guard, fast SSE open, new event appears without refresh", async ({ page, browser, playwright, baseURL }, info) => {
+test("live activity: auth guard, fast SSE open, new event arrives without refresh", async ({ page, browser, playwright, baseURL }, info) => {
   test.skip(info.project.name !== "desktop");
 
   // (1) unauthenticated SSE is refused
@@ -13,17 +13,22 @@ test("live activity: auth guard, fast SSE open, new event appears without refres
   await anon.dispose();
 
   await signIn(page);
-  const log = page.getByRole("log");
-  await expect(page.getByRole("region", { name: "Live activity" })).toBeVisible();
+  await expect(page.getByRole("banner").getByRole("button", { name: /^Notifications, \d+ unread$/ })).toBeVisible();
 
   // (2) SSE first frame is fast on the prod build
   const openMs = await page.evaluate(
     () =>
       new Promise<number>((resolve, reject) => {
         const t0 = performance.now();
+        const state = window as unknown as { e2eActivity: string[] };
+        state.e2eActivity = [];
         const es = new EventSource("/api/events");
+        es.addEventListener("activity", (e) => {
+          const activity = JSON.parse((e as MessageEvent<string>).data) as { title: string };
+          state.e2eActivity.push(activity.title);
+          if (activity.title === "Failed sign-in attempt") es.close();
+        });
         es.addEventListener("open", () => {
-          es.close();
           resolve(performance.now() - t0);
         });
         es.addEventListener("error", () => reject(new Error("sse error")));
@@ -31,7 +36,7 @@ test("live activity: auth guard, fast SSE open, new event appears without refres
   );
   expect(openMs).toBeLessThan(2000);
 
-  // (3) a failed sign-in from another browser shows up live, no reload
+  // (3) a failed sign-in from another browser arrives over SSE, no reload
   const unreadOf = async () => {
     const l = (await page.getByRole("banner").getByRole("button", { name: /^Notifications/ }).getAttribute("aria-label")) ?? "";
     return Number(/(\d+) unread/.exec(l)?.[1] ?? 0);
@@ -46,7 +51,7 @@ test("live activity: auth guard, fast SSE open, new event appears without refres
   await expect(p2.getByRole("main").getByRole("alert")).toBeVisible();
   await other.close();
 
-  await expect(log).toContainText("Failed sign-in attempt", { timeout: 10_000 });
+  await expect.poll(() => page.evaluate(() => (window as unknown as { e2eActivity: string[] }).e2eActivity), { timeout: 10_000 }).toContain("Failed sign-in attempt");
   const bellUp = await expect.poll(unreadOf, { timeout: 3000 }).toBeGreaterThan(before).then(() => true, () => false);
   if (!bellUp) {
     // notification throttle: an earlier failed sign-in within 10 min already created the row
@@ -58,7 +63,7 @@ test("live activity: auth guard, fast SSE open, new event appears without refres
   }
 
   // (4) no emails or IPs in activity text
-  const text = (await log.innerText()) ?? "";
+  const text = await page.evaluate(() => (window as unknown as { e2eActivity: string[] }).e2eActivity.join("\n"));
   expect(text).not.toContain("@");
   expect(text).not.toMatch(/\d+\.\d+\.\d+\.\d+/);
 });

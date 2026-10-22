@@ -20,7 +20,7 @@ test("finances requires sign-in", async ({ page }) => {
   await expect(page).toHaveURL(/\/login/);
 });
 
-test("overview ranges, three trend charts, point values and spending category toggles", async ({ page }, info) => {
+test("overview ranges, three trend charts, monthly values and spending category toggles", async ({ page }, info) => {
   const account = `charts-${randomUUID().slice(0, 8)}`;
   chartAccounts.push(account);
   const conn = createDb(E2E_DB_URL);
@@ -29,46 +29,43 @@ test("overview ranges, three trend charts, point values and spending category to
   } finally { await conn.pool.end(); }
   await signIn(page);
   await page.goto(`/finances?month=2026-10&range=3m&account=${account}`);
-  const range = page.getByRole("group", { name: "Overview time range", exact: true });
-  await expect(range.getByRole("button", { name: "3m", exact: true })).toHaveAttribute("aria-pressed", "true");
-  const savings = page.getByRole("region", { name: "Cumulative savings", exact: true });
-  const net = page.getByRole("region", { name: "Net cash flow by month", exact: true });
-  const cumulative = page.getByRole("region", { name: "Cumulative cash flow", exact: true });
-  const spending = page.getByRole("region", { name: "Where the money went", exact: true });
-  await expect(savings.getByRole("paragraph").filter({ hasText: /^\$150\.00$/ })).toBeVisible();
-  await expect(cumulative.getByRole("paragraph").filter({ hasText: /^\$680\.00$/ })).toBeVisible();
+  const range = page.getByRole("radiogroup", { name: "Overview time range", exact: true });
+  await expect(range.getByRole("radio", { name: "3m", exact: true })).toBeChecked();
+  const savings = page.getByText("Savings · cumulative", { exact: true }).locator("..");
+  const net = page.getByText("Net cash flow · monthly", { exact: true }).locator("..");
+  const cumulative = page.getByText("Cash flow · cumulative", { exact: true }).locator("..");
+  const spending = page.getByRole("heading", { name: "Where the money went", exact: true }).locator("..").locator("..").locator("..");
+  await expect(savings.getByRole("img")).toHaveAccessibleName(/\$150\.00 at the end/);
+  await expect(cumulative.getByRole("img")).toHaveAccessibleName(/\$680\.00 at the end/);
   if (info.project.name === "desktop") {
     const boxes = await Promise.all([savings, net, cumulative].map(p => p.boundingBox()));
     expect(new Set(boxes.map(b => Math.round(b!.y))).size).toBe(1);
   }
-  const netPoint = net.getByRole("button", { name: "Oct 26: Net cash flow by month $30.00", exact: true });
-  if (info.project.name === "desktop") await netPoint.hover(); else await netPoint.tap();
-  await expect(net.getByRole("tooltip")).toContainText("$30.00");
-  await savings.getByRole("button", { name: "Oct 26: Cumulative savings $150.00", exact: true }).focus();
-  await expect(savings.getByRole("tooltip")).toContainText("$150.00");
-  await cumulative.getByRole("button", { name: "Sept 26: Cumulative cash flow $650.00", exact: true }).focus();
-  await expect(cumulative.getByRole("tooltip")).toContainText("$650.00");
-  const income = page.getByRole("region", { name: "Income and spending", exact: true });
+  for (const [chart, month, amount] of [[net, "Oct 26", "$30.00"], [savings, "Oct 26", "$150.00"], [cumulative, "Sept 26", "$650.00"]] as const) {
+    await chart.getByText("View values", { exact: true }).click();
+    await expect(chart.getByText(month, { exact: true }).locator("..")).toContainText(amount);
+  }
+  const income = page.getByRole("heading", { name: "Income and spending", exact: true }).locator("..").locator("..").locator("..");
   const august = income.getByRole("button", { name: /Aug 26: income/ });
   if (info.project.name === "desktop") await august.hover(); else await august.tap();
-  await expect(income.getByRole("tooltip")).toContainText("Income: $1,000.00");
-  await spending.getByRole("button", { name: "Groceries: $120.00", exact: true }).focus();
-  await expect(spending.getByRole("tooltip")).toContainText("$120.00");
-  await spending.getByRole("checkbox", { name: "Include Groceries", exact: true }).uncheck();
-  await expect(spending.getByRole("checkbox", { name: "Include Delivery", exact: true })).toBeChecked();
-  await expect(spending.getByRole("group", { name: "Spending by category chart" })).toContainText("$50.00");
-  await expect(spending.getByRole("button", { name: "Groceries: $120.00", exact: true })).toHaveCount(0);
+  await expect(income.getByRole("status")).toContainText("Income $1,000.00");
+  const groceries = spending.getByRole("checkbox", { name: /Groceries/, exact: false });
+  await expect(groceries.locator("..").locator("..")).toContainText("$120.00");
+  await groceries.uncheck();
+  await expect(spending.getByRole("checkbox", { name: /Delivery/ })).toBeChecked();
+  await expect(spending.getByText("Selected $50.00 of spending", { exact: true })).toBeVisible();
+  await expect(groceries).not.toBeChecked();
   await spending.getByRole("button", { name: "Hide all", exact: true }).click();
-  await expect(spending.getByRole("group", { name: "Spending by category chart" })).toContainText("$0.00");
+  await expect(spending.getByText("Selected $0.00 of spending", { exact: true })).toBeVisible();
   await spending.getByRole("button", { name: "Show all", exact: true }).click();
-  await expect(spending.getByRole("group", { name: "Spending by category chart" })).toContainText("$170.00");
+  await expect(spending.getByText("Selected $170.00 of spending", { exact: true })).toBeVisible();
   for (const [label, months] of [["6m", 6], ["1yr", 12], ["All time", 24]] as const) {
-    await range.getByRole("button", { name: label, exact: true }).click();
-    await expect(range.getByRole("button", { name: label, exact: true })).toHaveAttribute("aria-pressed", "true");
-    await expect(income.getByRole("button")).toHaveCount(months);
+    await range.getByRole("radio", { name: label, exact: true }).click();
+    await expect(range.getByRole("radio", { name: label, exact: true })).toBeChecked();
+    await expect(income.getByRole("group", { name: /^Monthly income and spending\./ }).getByRole("button")).toHaveCount(months);
   }
-  await range.getByRole("button", { name: "3m", exact: true }).click();
-  await expect(income.getByRole("button")).toHaveCount(3);
+  await range.getByRole("radio", { name: "3m", exact: true }).click();
+  await expect(income.getByRole("group", { name: /^Monthly income and spending\./ }).getByRole("button")).toHaveCount(3);
   await savings.scrollIntoViewIfNeeded();
   await page.screenshot({ path: `test-results/finance-trends-${info.project.name}.png` });
 });
@@ -78,12 +75,12 @@ test("CSV preview, repeat import, remembered category and carried monthly budget
   const month = info.project.name === "desktop" ? "2026-02" : "2026-04";
   const followingMonth = info.project.name === "desktop" ? "2026-03" : "2026-05";
   await page.goto(`/finances?month=${month}`);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Your money, in view.");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Finances");
   const account = `test-${randomUUID().slice(0, 8)}`;
   const merchant = `Example market ${randomUUID().slice(0, 8)}`;
   const csv = `Date,Amount,Description,Balance,Category\n${month}-01,1000,Example salary,1100,Work\n${month}-02,-25,${merchant},1075,`;
   async function preview() {
-    await page.getByRole("button", { name: "Import CSV", exact: true }).click();
+    await page.getByRole("button", { name: "Import CSV", exact: true }).first().click();
     const dialog = page.getByRole("dialog");
     await dialog.getByLabel("Account label").fill(account);
     await dialog.getByLabel("CSV file", { exact: true }).setInputFiles({ name: "example.csv", mimeType: "text/csv", buffer: Buffer.from(csv) });
@@ -91,34 +88,37 @@ test("CSV preview, repeat import, remembered category and carried monthly budget
     return dialog;
   }
   let dialog = await preview();
-  await expect(dialog.getByText("2 new", { exact: true })).toBeVisible();
+  await expect(dialog.getByText("new rows", { exact: true }).locator("..")).toHaveText("2new rows");
+  await expect(dialog.getByRole("table", { name: "CSV import preview" }).getByRole("row").filter({ hasText: "Ready" })).toHaveCount(2);
   await dialog.getByRole("button", { name: "Confirm import" }).click();
-  await expect(page.getByRole("table").getByText(merchant)).toBeVisible();
-  await page.getByRole("table").getByRole("button", { name: "Needs review" }).click();
-  dialog = page.getByRole("dialog");
-  await dialog.getByLabel("Category", { exact: true }).selectOption("Groceries");
-  await dialog.getByLabel("Remember a rule for similar transactions").check();
-  await dialog.getByLabel("Description keyword", { exact: true }).fill(merchant);
-  await dialog.getByRole("button", { name: "Save category", exact: true }).click();
-  await expect(dialog).not.toBeVisible();
-  const marketRow = page.getByRole("row").filter({ hasText: merchant });
-  await expect(marketRow.getByRole("button", { name: "Groceries", exact: true })).toBeVisible();
+  await expect(dialog.getByRole("status")).toContainText("Imported 2 transactions");
+  await dialog.getByRole("button", { name: "Done", exact: true }).click();
+  const transactions = page.getByRole("table", { name: "Imported transactions", exact: true });
+  await expect(transactions.getByText(merchant)).toBeVisible();
+  const marketRow = transactions.getByRole("row").filter({ hasText: merchant });
+  await marketRow.getByLabel(`Category for ${merchant}`, { exact: true }).selectOption("Groceries");
+  await marketRow.getByLabel("Remember for future imports").check();
+  await marketRow.getByLabel("Description keyword", { exact: true }).fill(merchant);
+  await marketRow.getByRole("button", { name: "Save category", exact: true }).click();
+  await expect(marketRow.getByRole("button", { name: "Save category", exact: true })).toBeHidden();
+  await expect(marketRow.getByLabel(`Category for ${merchant}`, { exact: true })).toHaveValue("Groceries");
   dialog = await preview();
-  await expect(dialog.getByText("2 confirmed duplicates", { exact: true })).toBeVisible();
+  await expect(dialog.getByText("duplicates skipped", { exact: true }).locator("..")).toHaveText("2duplicates skipped");
+  await expect(dialog.getByRole("table", { name: "CSV import preview" }).getByRole("row").filter({ hasText: "duplicate" })).toHaveCount(2);
   await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
-  await page.getByRole("button", { name: "budgets", exact: true }).click();
+  await page.getByRole("tab", { name: "Budgets", exact: true }).click();
   await page.getByLabel("Groceries monthly budget in AUD", { exact: true }).fill("200");
   await page.getByRole("button", { name: "Save Groceries budget", exact: true }).click();
-  await expect(page.getByRole("row").filter({ has: page.getByRole("rowheader", { name: /Groceries/ }) })).toContainText("$175.00 left");
+  await expect(page.getByLabel("Groceries monthly budget in AUD", { exact: true }).locator("..").locator("..").locator("..")).toContainText("$175.00 left");
   await page.getByLabel("Month", { exact: true }).fill(followingMonth);
   await expect(page.getByLabel("Groceries monthly budget in AUD", { exact: true })).toHaveValue("200.00");
-  await expect(page.getByText(/No transactions have been imported for this month/)).toBeVisible();
+  await expect(page.getByText(/No transactions imported for this month/)).toBeVisible();
   await page.getByLabel("Month", { exact: true }).fill(month);
-  await expect(page.getByText(/No transactions have been imported for this month/)).not.toBeVisible();
+  await expect(page.getByText(/No transactions imported for this month/)).not.toBeVisible();
   await expect(page.getByLabel("Month", { exact: true })).toHaveValue(month);
-  await page.getByRole("button", { name: "overview", exact: true }).click();
+  await page.getByRole("tab", { name: "Overview", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Where the money went" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Where the money went" })).toContainText("$25.00");
+  await expect(page.getByRole("heading", { name: "Where the money went" }).locator("..").locator("..").locator("..")).toContainText("$25.00");
   await page.screenshot({ path: `test-results/finances-${info.project.name}.png`, fullPage: true });
   await page.getByRole("heading", { name: "Where the money went" }).scrollIntoViewIfNeeded();
   await page.screenshot({ path: `test-results/finances-charts-${info.project.name}.png`, fullPage: true });

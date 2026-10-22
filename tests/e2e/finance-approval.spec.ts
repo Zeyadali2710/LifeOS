@@ -12,8 +12,11 @@ test.beforeEach(async ({ page }) => signIn(page));
 
 test("Finance agent is available in the command centre", async ({ page }) => {
   await page.goto("/agents/finance");
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("Finance");
-  await expect(page.getByRole("region", { name: "TOOLS", exact: true }).getByText("finance.update", { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/agents\?[^#]*id=finance/);
+  const inspector = page.getByRole("complementary", { name: "Selected agent" });
+  await expect(inspector.getByText("Finance", { exact: true })).toBeVisible();
+  await inspector.getByText("SETTINGS · MODEL AND TOOLS", { exact: true }).click();
+  await expect(inspector.getByText("finance.update", { exact: true })).toBeVisible();
 });
 
 test("owner edits a finance budget and explicitly reviews before approving", async ({ page }, info) => {
@@ -29,18 +32,18 @@ test("owner edits a finance budget and explicitly reviews before approving", asy
     const [call] = await conn.db.insert(toolCalls).values({ runId, toolUseId: "finance-e2e", kind: "tool", tool: "finance.update", tier: "HIGH_RISK", status: "waiting_approval", input: { plan }, seq: 1 }).returning();
     const [a] = await conn.db.insert(approvals).values({ runId, toolCallId: call!.id, agentId: "finance", tool: "finance.update", originalPayload: payload, payloadHash: randomUUID(), expiresAt: new Date(Date.now() + 86400000) }).returning();
     await page.goto(`/approvals?id=${a!.id}`);
-    const detail = page.getByRole("article", { name: "Approval detail" });
+    const detail = page.getByRole("region", { name: "Approval detail" });
     await expect(detail.getByRole("heading", { name: title })).toBeVisible();
-    await expect(detail.getByRole("button", { name: "APPLY FINANCE CHANGES", exact: true })).toBeDisabled();
-    await detail.getByRole("button", { name: "EDIT", exact: true }).click();
-    await detail.getByRole("button", { name: "Edit budgets", exact: true }).click();
+    await expect(detail.getByRole("button", { name: "Apply finance changes", exact: true })).toBeDisabled();
+    await detail.getByRole("button", { name: "Edit", exact: true }).click();
+    await detail.getByText("Edit budgets (1)", { exact: true }).click();
     await detail.getByLabel(`${category} · 2026-10 limit in AUD`, { exact: true }).fill("125.50");
-    await detail.getByRole("button", { name: "SAVE AND REVIEW", exact: true }).click();
-    await expect(detail.getByRole("button", { name: "EDIT", exact: true })).toBeVisible();
-    await detail.getByRole("button", { name: "Budget changes (1)", exact: true }).click();
+    await detail.getByRole("button", { name: "Save and review", exact: true }).click();
+    await expect(detail.getByRole("button", { name: "Edit", exact: true })).toBeVisible();
+    await detail.getByText("Budget changes (1)", { exact: true }).click();
     await expect(detail.getByText(`${category} · 2026-10: $125.50`, { exact: true })).toBeVisible();
     await detail.getByLabel("I reviewed the category replacements, transaction changes and budgets").check();
-    await detail.getByRole("button", { name: "APPLY FINANCE CHANGES", exact: true }).click();
+    await detail.getByRole("button", { name: "Apply finance changes", exact: true }).click();
     await expect(detail.getByRole("status")).toContainText("Applying approved finance changes");
     const [stored] = await conn.db.select().from(approvals).where(eq(approvals.id, a!.id));
     expect(stored!.status).toBe("approved");

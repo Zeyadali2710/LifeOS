@@ -41,19 +41,19 @@ const seed = async (u: string) => {
   seeded.push(id);
   return id;
 };
-const article = (page: Page) => page.getByRole("article", { name: "Approval detail" });
+const article = (page: Page) => page.getByRole("region", { name: "Approval detail" });
 
 test("untrusted note and preview render for a pending project draft", async ({ page }) => {
   const u = uid();
   const id = await seed(u);
   await page.goto(`/approvals?id=${id}`);
   const d = article(page);
-  await expect(d.getByText("Drafted from repository files (untrusted)")).toBeVisible();
+  await expect(d.getByText(/^Drafted from repository files \(untrusted\)/)).toBeVisible();
   await expect(d.getByText("me/studio · README.md")).toBeVisible();
   await expect(d.getByText("PREVIEW")).toBeVisible();
   await expect(d.getByText(`Draft README ${u}`)).toBeVisible();
-  await expect(d.getByText(`Creates project "Studio ${u}" with 2 milestones, 3 tasks and 1 links in LifeOS.`)).toBeVisible();
-  await expect(d.getByRole("button", { name: "CREATE PROJECT" })).toBeEnabled();
+  await expect(d.getByText("LifeOS projects · 2 milestones, 3 tasks, 1 links · nothing is written to GitHub", { exact: true })).toBeVisible();
+  await expect(d.getByRole("button", { name: "Approve", exact: true })).toBeEnabled();
 });
 
 test("edit removes a task and renames, approve records the edited draft", async ({ page }) => {
@@ -61,16 +61,16 @@ test("edit removes a task and renames, approve records the edited draft", async 
   const id = await seed(u);
   await page.goto(`/approvals?id=${id}`);
   const d = article(page);
-  await d.getByRole("button", { name: "EDIT" }).click();
+  await d.getByRole("button", { name: "Edit", exact: true }).click();
   await d.getByRole("button", { name: `Remove task Draft README ${u}` }).click();
-  await expect(d.getByText(`"Draft README ${u}" removed`)).toBeVisible();
-  await expect(d.getByRole("button", { name: `Restore Draft README ${u}` })).toBeFocused();
+  await expect(d.getByText(`“Draft README ${u}” removed`, { exact: true })).toBeVisible();
+  await expect(d.getByRole("button", { name: `Restore Draft README ${u}` })).toBeVisible();
   await d.getByLabel("Name", { exact: true }).fill(`Renamed ${u}`);
-  await d.getByRole("button", { name: "DONE" }).click();
-  await expect(d.getByText("EDITED", { exact: true })).toBeVisible();
-  await d.getByRole("button", { name: "CREATE PROJECT" }).click();
-  await expect(d.getByRole("status").filter({ hasText: /Creating the project|Project created/ })).toBeVisible();
-  await expect(d.getByRole("button", { name: "CREATE PROJECT" })).toHaveCount(0);
+  await d.getByRole("button", { name: "Done editing", exact: true }).click();
+  await expect(d.getByText("EDITED · RE-VALIDATED ON APPROVE", { exact: true })).toBeVisible();
+  await d.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(d.getByRole("status").filter({ hasText: /Approved · running|Project created/ })).toBeVisible();
+  await expect(d.getByRole("button", { name: "Approve", exact: true })).toHaveCount(0);
 
   const row = await readApproval(id);
   expect(row.status).toBe("approved");
@@ -84,12 +84,12 @@ test("removing the repo link is accepted by the server", async ({ page }) => {
   const id = await seed(u);
   await page.goto(`/approvals?id=${id}`);
   const d = article(page);
-  await d.getByRole("button", { name: "EDIT" }).click();
+  await d.getByRole("button", { name: "Edit", exact: true }).click();
   await d.getByRole("button", { name: "Remove link me/studio" }).click();
-  await d.getByRole("button", { name: "DONE" }).click();
-  await expect(d.getByText("EDITED", { exact: true })).toBeVisible();
-  await d.getByRole("button", { name: "CREATE PROJECT" }).click();
-  await expect(d.getByRole("button", { name: "CREATE PROJECT" })).toHaveCount(0);
+  await d.getByRole("button", { name: "Done editing", exact: true }).click();
+  await expect(d.getByText("EDITED · RE-VALIDATED ON APPROVE", { exact: true })).toBeVisible();
+  await d.getByRole("button", { name: "Approve", exact: true }).click();
+  await expect(d.getByRole("button", { name: "Approve", exact: true })).toHaveCount(0);
   const row = await readApproval(id);
   expect(row.status).toBe("approved");
   expect((row.edited as { links?: unknown[] }).links ?? []).toHaveLength(0);

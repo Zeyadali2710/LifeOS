@@ -7,6 +7,7 @@ import { goals, projects, tasks } from "@/server/db/schema";
 
 test.beforeAll(seedHeartbeat);
 const goalTitles: string[] = [], projectIds: string[] = [];
+
 test.afterEach(async () => {
   const conn = createDb(E2E_DB_URL);
   try {
@@ -20,7 +21,7 @@ test("goals requires sign-in", async ({ page }) => {
   await expect(page).toHaveURL(/\/login/);
 });
 
-test("goal → objective → linked project → task tick, horizon target and vision", async ({ page }) => {
+test("goal to objective to linked project, task progress, horizon target and vision", async ({ page }) => {
   const u = randomUUID().slice(0, 8);
   const goal = `Launch LifeOS ${u}`, objective = `Ship 0.9 ${u}`, project = `LifeOS 0.9 ${u}`;
   goalTitles.push(goal, `${goal} edited`);
@@ -37,9 +38,10 @@ test("goal → objective → linked project → task tick, horizon target and vi
   const gd = page.getByRole("dialog", { name: "New goal" });
   await gd.getByLabel("Goal").fill(goal);
   await gd.getByRole("button", { name: "Add goal" }).click();
-  await expect(page.getByRole("button", { name: `Goal ${goal}`, exact: true })).toHaveAttribute("aria-pressed", "true");
+  const goalSection = page.getByRole("region", { name: goal, exact: true });
+  await expect(goalSection).toBeVisible();
 
-  await page.getByRole("button", { name: "Add objective" }).click();
+  await goalSection.getByRole("button", { name: "Add objective" }).click();
   const od = page.getByRole("dialog", { name: "New objective" });
   await od.getByLabel("Objective").fill(objective);
   const soon = new Date(Date.now() + 86_400_000 * 40).toISOString().slice(0, 10);
@@ -49,33 +51,42 @@ test("goal → objective → linked project → task tick, horizon target and vi
   await expect(od.getByRole("alert")).toHaveText("Progress must be a whole number from 0 to 100.");
   await od.getByLabel("Manual progress % (optional)").fill("");
   await od.getByRole("button", { name: "Add objective" }).click();
-  await expect(page.getByRole("button", { name: `Objective ${objective}`, exact: true })).toBeVisible();
-
-  const tree = page.getByRole("region", { name: "Goal tree" });
-  await tree.getByLabel("Project to link").selectOption({ label: project });
-  await tree.getByRole("button", { name: "Link", exact: true }).click();
-  await expect(tree.getByRole("button", { name: `Project ${project}`, exact: true })).toBeVisible();
-  const taskBox = tree.getByRole("checkbox", { name: `Finish migration ${u}` });
+  const openObjective = goalSection.getByRole("button", { name: `Open objective ${objective}`, exact: true });
+  await expect(openObjective).toBeVisible();
+  await openObjective.click();
+  const detail = page.getByRole("dialog", { name: objective, exact: true });
+  await detail.getByLabel("Project to link").selectOption({ label: project });
+  await detail.getByRole("button", { name: "Link project", exact: true }).click();
+  await expect(detail.getByRole("link", { name: `${project} →`, exact: true })).toBeVisible();
+  const taskBox = detail.getByRole("checkbox", { name: `Finish migration ${u}` });
   await taskBox.check();
   await expect(taskBox).toBeChecked();
-  await expect(tree.getByRole("button", { name: `Project ${project}`, exact: true })).toContainText("50%");
-  await expect(tree.getByRole("button", { name: `Objective ${objective}`, exact: true })).toContainText("▲ rising");
+  await expect(detail.getByRole("progressbar", { name: `${project}: 50%`, exact: true })).toHaveAttribute("aria-valuenow", "50");
+  await expect(detail.getByText("Rising", { exact: true })).toBeVisible();
+  await detail.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(goalSection.getByRole("progressbar", { name: `${objective}: 50%`, exact: true })).toHaveAttribute("aria-valuenow", "50");
 
-  const tabs = page.getByRole("tablist", { name: "Horizon" });
-  for (const h of ["THIS WEEK", "THIS MONTH", "THIS YEAR", "LONG TERM"]) {
-    await tabs.getByRole("tab", { name: h }).click();
-    const has = await page.getByRole("region", { name: `${h} targets` }).getByText(objective).count();
-    if (has) { await expect(page.getByRole("region", { name: `${h} targets` }).getByText("50%")).toBeVisible(); break; }
+  const horizons = page.getByRole("radiogroup", { name: "Horizon" });
+  const year = new Intl.DateTimeFormat("en", { timeZone: "Australia/Sydney", year: "numeric" }).format(new Date());
+  const targetHorizon = soon.startsWith(year) ? "This year" : "Long term";
+  for (const horizon of ["This week", "This month", "This year", "Long term"]) {
+    const radio = horizons.getByRole("radio", { name: horizon, exact: true });
+    await radio.click();
+    await expect(radio).toBeChecked();
+    await expect(openObjective).toHaveCount(horizon === targetHorizon ? 1 : 0);
+    if (horizon === targetHorizon) await expect(goalSection.getByRole("progressbar", { name: `${objective}: 50%`, exact: true })).toHaveAttribute("aria-valuenow", "50");
   }
 
-  await page.getByRole("button", { name: "Edit vision" }).click();
-  await page.getByRole("textbox", { name: "Vision" }).fill(`Leverage over my own life ${u}`);
+  const vision = `Leverage over my own life ${u}`;
+  await page.getByRole("textbox", { name: "Vision", exact: true }).fill(vision);
   await page.getByRole("button", { name: "Save vision" }).click();
-  await expect(page.getByRole("region", { name: "Long-term vision" })).toContainText(`Leverage over my own life ${u}`);
+  await expect(page.getByRole("status").filter({ hasText: "Vision saved" })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole("textbox", { name: "Vision", exact: true })).toHaveValue(vision);
 
   await page.getByRole("button", { name: `Edit goal ${goal}` }).click();
   const ed = page.getByRole("dialog", { name: "Edit goal" });
-  await ed.getByRole("button", { name: "Delete" }).click();
-  await ed.getByRole("button", { name: "Delete goal" }).click();
-  await expect(page.getByRole("button", { name: `Goal ${goal}`, exact: true })).toHaveCount(0);
+  await ed.getByRole("button", { name: "Delete", exact: true }).click();
+  await ed.getByRole("button", { name: "Delete goal", exact: true }).click();
+  await expect(goalSection).toHaveCount(0);
 });

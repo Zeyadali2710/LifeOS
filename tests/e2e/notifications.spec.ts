@@ -46,7 +46,7 @@ test("mark read, unread, dismiss persists", async ({ page }) => {
   await expect(r.getByRole("button", { name: "Mark read" })).toBeVisible();
   await r.getByRole("button", { name: "Dismiss" }).click();
   await expect(r).toHaveCount(0);
-  await expect(page.getByText("Notification dismissed")).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "Notification dismissed" })).toBeVisible();
   await page.reload();
   await bell(page).click();
   await expect(drawer(page)).toBeVisible();
@@ -57,14 +57,10 @@ test("snooze via keyboard hides the row; snoozed-until-soon reappears", async ({
   const title = `Snooze ${uid()}`;
   await openWith(page, title);
   const r = row(page, title);
-  await r.getByRole("button", { name: "Snooze" }).click();
-  const menu = page.getByRole("menu");
-  await expect(menu.getByRole("menuitem", { name: /1 hour/ })).toBeVisible();
-  await expect(menu.getByRole("menuitem", { name: /Tomorrow/ })).toBeVisible();
-  await page.keyboard.press("ArrowDown");
+  await r.getByRole("button", { name: "Snooze 1h" }).focus();
   await page.keyboard.press("Enter");
   await expect(r).toHaveCount(0);
-  await expect(page.getByText(/Snoozed until/)).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: /Snoozed until/ })).toBeVisible();
 
   const later = `Wake ${uid()}`;
   await insertNotification({ category: "FYI", title: later, snoozedUntil: new Date(Date.now() + 3000) });
@@ -88,22 +84,17 @@ test("Open follows safe actionUrl; unsafe renders no Open", async ({ page }, inf
   await expect(drawer(page)).toBeHidden();
 });
 
-test("category filter and mark all read", async ({ page }) => {
+test("category tags and mark all read", async ({ page }) => {
   const fyi = `Fyi ${uid()}`;
   const imp = `Imp ${uid()}`;
   await insertNotification({ category: "IMPORTANT", title: imp });
   await openWith(page, fyi, { category: "FYI" });
   await expect(row(page, imp)).toBeVisible();
-  const group = drawer(page).getByRole("group", { name: "Filter by category" });
-  await group.getByRole("button", { name: "FYI" }).click();
-  await expect(group.getByRole("button", { name: "FYI" })).toHaveAttribute("aria-pressed", "true");
-  await expect(row(page, imp)).toHaveCount(0);
-  await expect(row(page, fyi)).toBeVisible();
-  await group.getByRole("button", { name: "All" }).click();
-  await expect(row(page, imp)).toBeVisible();
+  await expect(row(page, imp).getByText("IMPORTANT", { exact: true })).toBeVisible();
+  await expect(row(page, fyi).getByText("FYI", { exact: true })).toBeVisible();
 
   await drawer(page).getByRole("button", { name: "Mark all read" }).click();
-  await expect(page.getByText("All notifications marked read")).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "All notifications marked read" })).toBeVisible();
   await expect(row(page, imp).getByRole("button", { name: "Mark unread" })).toBeVisible();
   await expect(row(page, fyi).getByRole("button", { name: "Mark unread" })).toBeVisible();
 });
@@ -116,14 +107,14 @@ test("desktop: Esc closes and returns focus to the bell", async ({ page }, info)
   await expect(bell(page)).toBeFocused();
 });
 
-test("mobile: bell opens a floating sheet; bell reopens it after close", async ({ page }, info) => {
+test("mobile: bell opens a full-width drawer; bell reopens it after close", async ({ page }, info) => {
   test.skip(info.project.name !== "mobile");
   await openWith(page, `Sheet ${uid()}`);
   // poll: the sheet animates in, a one-shot measure can land mid-transition (sub-pixel)
   await expect
     .poll(async () => (await drawer(page).boundingBox())?.width ?? 0)
-    .toBeGreaterThanOrEqual((page.viewportSize()?.width ?? 0) - 27);
-  await drawer(page).getByRole("button", { name: "Close notifications" }).click();
+    .toBeGreaterThanOrEqual((page.viewportSize()?.width ?? 0) - 1);
+  await drawer(page).getByRole("button", { name: "Close", exact: true }).click();
   await expect(drawer(page)).toBeHidden();
   await bell(page).click();
   await expect(drawer(page)).toBeVisible();

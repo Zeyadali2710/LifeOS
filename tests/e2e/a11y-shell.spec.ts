@@ -6,7 +6,7 @@ test.beforeEach(async ({ page }) => {
   await signIn(page);
 });
 
-test("desktop: skip link, landmarks, log", async ({ page }, info) => {
+test("desktop: skip link, landmarks, live region", async ({ page }, info) => {
   test.skip(info.project.name !== "desktop");
   await page.setViewportSize({ width: 1400, height: 900 });
   await page.goto("/");
@@ -23,7 +23,7 @@ test("desktop: skip link, landmarks, log", async ({ page }, info) => {
   await expect(page.getByRole("banner").getByRole("navigation", { name: "Primary" })).toBeVisible();
   await expect(page.getByRole("banner")).toBeVisible();
   await expect(page.getByRole("main")).toBeVisible();
-  await expect(page.getByRole("log")).toBeAttached();
+  await expect(page.getByRole("status").and(page.locator('[aria-live="polite"]'))).toBeAttached();
 });
 
 test("desktop: palette and drawer trap focus and restore it", async ({ page }, info) => {
@@ -31,7 +31,7 @@ test("desktop: palette and drawer trap focus and restore it", async ({ page }, i
   await page.setViewportSize({ width: 1400, height: 900 });
   await page.goto("/");
 
-  const trigger = page.getByRole("button", { name: "Search pages or run a command" });
+  const trigger = page.getByRole("button", { name: "Search or jump" });
   const palette = page.getByRole("dialog", { name: "Command palette" });
   await trigger.focus();
   await expect(async () => {
@@ -59,19 +59,20 @@ test("desktop: palette and drawer trap focus and restore it", async ({ page }, i
   await expect(bell).toBeFocused();
 });
 
-test("desktop: nav tooltip on focus; reduced motion stops the status dot", async ({ page }, info) => {
+test("desktop: nav shortcut hint; reduced motion stops overlay animation", async ({ page }, info) => {
   test.skip(info.project.name !== "desktop");
   await page.setViewportSize({ width: 900, height: 900 });
   await page.goto("/");
   const nav = page.getByRole("banner").getByRole("navigation", { name: "Primary" });
-  await page.keyboard.press("Tab"); // ensure keyboard modality for :focus-visible
-  await nav.getByRole("link").first().focus();
-  await expect(nav.getByRole("tooltip").first()).toBeVisible();
+  await nav.getByRole("link", { name: "Home", exact: true }).focus();
+  await expect(nav.getByRole("link", { name: "Home", exact: true })).toHaveAttribute("title", "Alt+1");
 
-  const dot = page.getByRole("region", { name: "Live activity" }).locator("span.rounded-full").first();
-  await expect.poll(() => dot.evaluate((e) => getComputedStyle(e).animationName)).not.toBe("none");
+  await page.getByRole("banner").getByRole("button", { name: "Search", exact: true }).click();
+  const palette = page.getByRole("dialog", { name: "Command palette" });
+  await expect(palette).toBeVisible();
+  await expect.poll(() => palette.evaluate((e) => getComputedStyle(e).animationName)).not.toBe("none");
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await expect.poll(() => dot.evaluate((e) => getComputedStyle(e).animationName)).toBe("none");
+  await expect.poll(() => palette.evaluate((e) => getComputedStyle(e).animationName)).toBe("none");
 });
 
 test("mobile: bottom bar is labelled and touch-sized", async ({ page }, info) => {

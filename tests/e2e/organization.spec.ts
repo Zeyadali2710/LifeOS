@@ -48,18 +48,18 @@ test.beforeEach(async ({ page }) => {
 test("no calendar connected: empty state and tasks-only lead", async ({ page }) => {
   await page.goto("/organization");
   // During a navigation/refresh Next can briefly keep a hidden copy of the previous route tree, so match the visible one.
-  await expect(page.getByText("No calendar connected.").filter({ visible: true })).toBeVisible();
-  await expect(page.getByText("Connect a calendar to see your week. Tasks work without one.").filter({ visible: true })).toBeVisible();
+  await expect(page.getByText("No calendar connected").filter({ visible: true })).toBeVisible();
+  await expect(page.getByText("Connect Google Calendar or iCloud to see your events here and let LifeOS plan around them. Tasks work without a calendar.").filter({ visible: true })).toBeVisible();
 });
 
-test("quick add shows the task under TASKS · TODAY and the checkbox toggles it", async ({ page }) => {
+test("quick add shows the task under Tasks · today and the checkbox toggles it", async ({ page }) => {
   const title = `E2E task ${uid()}`;
   await page.goto("/organization");
-  await expect(page.getByRole("heading", { name: "TASKS · TODAY" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /^Tasks · today · \d+ open$/ })).toBeVisible();
   const input = page.getByLabel("New task", { exact: true });
   // The task also shows in Today's plan, so assert inside the Tasks card. Retry only covers Enter before hydration:
   // never resubmit once the task exists, or each retry adds a duplicate.
-  const box = page.getByRole("region", { name: "Tasks" }).getByRole("checkbox", { name: title });
+  const box = page.getByRole("region", { name: /^Tasks · today · \d+ open$/ }).getByRole("checkbox", { name: title });
   await expect(async () => {
     if ((await box.count()) === 0) {
       await input.fill(title);
@@ -71,8 +71,7 @@ test("quick add shows the task under TASKS · TODAY and the checkbox toggles it"
   await expect(box).toBeChecked();
   // A completed task collapses out of the list after 4s (UI-SPEC); reopen it from "Show completed" so slow runners don't race the timer.
   await expect(box).toHaveCount(0, { timeout: 10_000 });
-  const tasks = page.getByRole("region", { name: "Tasks" });
-  await tasks.getByRole("button", { name: "Task list options" }).click();
+  const tasks = page.getByRole("region", { name: /^Tasks · today · \d+ open$/ });
   await tasks.getByRole("button", { name: "Show completed" }).click();
   await expect(box).toBeChecked();
   await box.uncheck();
@@ -92,29 +91,29 @@ test("palette New task command opens the task dialog", async ({ page }, info) =>
   test.skip(info.project.name !== "desktop");
   await page.goto("/organization?new=task");
   await expect(page.getByRole("dialog", { name: "New task" })).toBeVisible();
-  await expect(page).toHaveURL(/\/organization\?view=week/);
+  await expect(page).toHaveURL(/\/organization\?view=week&date=\d{4}-\d{2}-\d{2}$/);
 });
 
 test("view switch updates ?view=", async ({ page }) => {
   await page.goto("/organization?view=week");
-  const radio = (n: string) => page.getByRole("radiogroup", { name: "Calendar view" }).getByRole("radio", { name: n });
-  await radio("Day").click();
+  const tab = (n: string) => page.getByRole("tablist", { name: "Calendar view (D, W, M)" }).getByRole("tab", { name: n, exact: true });
+  await tab("Day").click();
   await expect(page).toHaveURL(/view=day/);
-  await radio("Month").click();
+  await tab("Month").click();
   await expect(page).toHaveURL(/view=month/);
-  await radio("Week").click();
+  await tab("Week").click();
   await expect(page).toHaveURL(/view=week/);
 });
 
 test("seeded overlapping events render with the Conflict marking and header count", async ({ page }, info) => {
   test.skip(info.project.name !== "desktop");
   const tag = uid();
-  // tomorrow keeps both events in the future; ponytail: flakes only if tomorrow falls in next week (Sunday), then the header count is 0
+  // The conflict count follows the selected range, so tomorrow is safe across week boundaries.
   const day = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
   await seedOverlap(day, tag);
   try {
     await page.goto(`/organization?view=day&date=${day}`);
-    const blocks = page.locator('[aria-label$=", Conflict"]');
+    const blocks = page.getByRole("region", { name: "Calendar", exact: true }).getByRole("button", { name: /, Conflict$/ });
     await expect(blocks).toHaveCount(2);
     await expect(page.getByText(`E2E overlap 1 ${tag}`).first()).toBeVisible();
     await expect(page.getByText(`E2E overlap 2 ${tag}`).first()).toBeVisible();

@@ -31,11 +31,11 @@ test.beforeEach(async ({ page }) => {
   await signIn(page);
 });
 
-test("not connected: honest empty state with Open Settings", async ({ page }) => {
+test("not connected: honest empty state with Open Connections", async ({ page }) => {
   await page.goto("/career");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Career");
-  await expect(page.getByText("GitHub isn't connected").filter({ visible: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: "Open Settings" }).filter({ visible: true })).toBeVisible();
+  await expect(page.getByText("Connect GitHub", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Open Connections" }).filter({ visible: true })).toBeVisible();
 });
 
 test("connected: repo card opens the repo detail", async ({ page }) => {
@@ -52,9 +52,11 @@ test("connected: repo card opens the repo detail", async ({ page }) => {
     );
   });
   await page.goto("/career");
-  await page.getByRole("link", { name: `e2eowner/${repoName}` }).filter({ visible: true }).first().click();
+  await page.getByRole("list", { name: "Repositories" }).getByRole("link").filter({ hasText: `e2eowner/${repoName}` }).click();
   await expect(page).toHaveURL(`/career/e2eowner/${repoName}`);
-  await expect(page.getByRole("heading", { name: /open pull requests/i }).filter({ visible: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: repoName, level: 1 })).toBeVisible();
+  await page.getByRole("navigation", { name: "Repository", exact: true }).getByRole("link", { name: /Pull requests/ }).click();
+  await expect(page.getByText("No pull requests.", { exact: true })).toBeVisible();
 });
 
 test("invalid owner segment 404s", async ({ page }) => {

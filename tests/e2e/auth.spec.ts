@@ -28,8 +28,9 @@ test("owner can sign in and out; session cookie is hardened", async ({ page, con
   await page.getByLabel("Password").fill(E2E_OWNER.password);
   await page.getByRole("button", { name: "Sign in" }).click();
 
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("Ada.");
-  await expect(page.getByText("SYSTEM", { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("banner").getByRole("link", { name: "LifeOS home" })).toBeVisible();
+  await expect(page.getByRole("main")).toBeVisible();
 
   const session = (await context.cookies()).find((c) => c.name.includes("session_token"));
   expect(session).toBeDefined();
@@ -59,7 +60,8 @@ test("login ignores off-origin `next` redirects", async ({ page }) => {
   await page.getByLabel("Email").fill(E2E_OWNER.email);
   await page.getByLabel("Password").fill(E2E_OWNER.password);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("Ada.");
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("banner").getByRole("link", { name: "LifeOS home" })).toBeVisible();
   expect(new URL(page.url()).host).toBe("localhost:3100");
 });
 

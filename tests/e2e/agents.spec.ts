@@ -9,41 +9,38 @@ test.beforeEach(async ({ page }) => {
 });
 
 test("lists orchestrator + 11 agents, 3 honestly not connected", async ({ page }) => {
-  await page.goto("/agents");
-  await expect(page.getByRole("heading", { name: "Your autonomous workforce." })).toBeVisible();
-  const cards = page.getByRole("region", { name: "Agents" }).getByRole("link");
-  await expect(cards).toHaveCount(12);
-  await expect(cards.filter({ hasText: "Not connected" })).toHaveCount(3);
-  await expect(cards.filter({ hasText: "Projects" })).not.toContainText("Not connected");
-  await expect(cards.filter({ hasText: "Organization" })).not.toContainText("Not connected");
-  await expect(cards.filter({ hasText: "Outreach" })).not.toContainText("Not connected");
-  await expect(cards.filter({ hasText: "Social" })).not.toContainText("Not connected");
-  await expect(cards.filter({ hasText: "Finance" })).not.toContainText("Not connected");
+  await page.goto("/agents?view=table");
+  await expect(page.getByRole("heading", { name: "Agents", exact: true })).toBeVisible();
+  const rows = page.getByRole("table", { name: "All agents" }).getByRole("row").filter({ has: page.getByRole("cell") });
+  await expect(rows).toHaveCount(12);
+  await expect(rows.filter({ hasText: "Not connected" })).toHaveCount(3);
+  for (const name of ["Projects", "Organization", "Outreach", "Social", "Finance"]) {
+    await expect(rows.filter({ has: page.getByRole("cell", { name, exact: true }) })).not.toContainText("Not connected");
+  }
 });
 
-test("seeded run shows tokens, cost, latency and opens its detail", async ({ page }, info) => {
+test("seeded run shows tokens, cost, latency and opens its detail", async ({ page }) => {
   const prompt = `What is happening ${uid()}`;
   const id = await insertRun({ prompt });
-  await page.goto("/agents");
-  const link = info.project.name === "desktop" ? page.locator(`a[href="/agents/runs/${id}"]`).first() : page.getByRole("link").filter({ hasText: prompt });
-  if (info.project.name === "desktop") {
-    const row = page.getByRole("row").filter({ hasText: prompt });
-    await expect(row).toContainText("US$");
-    await expect(row).toContainText("1.5k");
-    await expect(row).toContainText("4.2s");
-  } else {
-    await expect(link).toContainText("US$");
-    await expect(link).toContainText("1 tools");
-  }
-  await link.click();
-  await expect(page).toHaveURL(new RegExp(`/agents/runs/${id}$`));
-  await expect(page.getByText("TOOL CALLS", { exact: true }).first()).toBeVisible();
-  await page.getByRole("button", { name: /^(\d+ )?github\.list_repos READ/ }).click();
-  await expect(page.getByRole("button", { name: "Copy input" })).toBeVisible();
+  await page.goto("/agents?view=runs");
+  const row = page.getByRole("table", { name: "Runs", exact: true }).getByRole("row").filter({ hasText: prompt });
+  await expect(row).toContainText("4.2s");
+  await expect(row.getByRole("cell", { name: "1", exact: true })).toBeVisible();
+  await row.click();
+  await expect(page).toHaveURL(new RegExp(`/agents\\?view=runs&run=${id}$`));
+  const detail = page.getByRole("complementary", { name: "Run detail" });
+  await expect(detail).toContainText(prompt);
+  await expect(detail).toContainText("US$0.042");
+  await expect(detail).toContainText("1.5k tokens");
+  await expect(detail).toContainText("4.2s");
+  await expect(detail.getByText("TRACE · TOOL CALLS AND ROUTE STEPS", { exact: true })).toBeVisible();
+  await expect(detail.getByText("github.list_repos", { exact: true })).toBeVisible();
+  await expect(detail.getByText("0 repos", { exact: true })).toBeVisible();
 });
 
-// ponytail: "No runs yet." is not asserted here; desktop and mobile share the DB so run counts are racy.
+// shortcut: run counts are not asserted; desktop and mobile share the database.
 test("an unconnected agent says so", async ({ page }) => {
   await page.goto("/agents/home");
-  await expect(page.getByText("Home isn't connected yet.")).toBeVisible();
+  await expect(page).toHaveURL(/\/agents\?[^#]*id=home/);
+  await expect(page.getByRole("complementary", { name: "Selected agent" })).toContainText("Not connected");
 });
