@@ -1,6 +1,12 @@
 import type { Action } from "@/lib/automations";
 import type { Tone } from "@/ui/display";
 
+/** A completed dispatch still needs attention while any child waits for the owner. */
+export function linkedRunState(runs: { id: string; status: string }[]) {
+  const priority = ["waiting_approval", "failed", "running", "queued", "cancelled", "expired", "completed"];
+  return priority.flatMap((status) => runs.filter((run) => run.status === status))[0] ?? runs[0];
+}
+
 export function runState(run: { status: string; agentStatus: string | null }): { label: string; glyph: string; tone: Tone } {
   const status = run.status === "done" && run.agentStatus ? run.agentStatus : run.status;
   switch (status) {

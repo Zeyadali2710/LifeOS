@@ -116,6 +116,7 @@ export function GoalsView({ data, archived }: { data: GoalsData; archived: boole
   const active = data.goals.filter((goal) => goal.status === "active");
   const rising = active.filter((goal) => goal.momentum === "rising").length;
   const neglected = active.reduce((sum, goal) => sum + goal.neglected, 0);
+  const empty = PAGE_STATES.goals?.empty;
   return <Page label="Goals">
     <PageHeader title="Goals" sub={`${rising} of ${active.length} active goals rising · ${neglected} objective${neglected === 1 ? "" : "s"} neglected`} actions={<Button variant="primary" onClick={() => setEditor({ kind: "goal", goal: null })}>New goal</Button>} />
     <Vision key={data.vision} value={data.vision} />
@@ -129,7 +130,7 @@ export function GoalsView({ data, archived }: { data: GoalsData; archived: boole
     }}>
       {(["all", ...HORIZONS] as const).map((h) => <button key={h} type="button" role="radio" aria-checked={horizon === h} tabIndex={horizon === h ? 0 : -1} className={s.horizon} onClick={() => setHorizon(h)}>{HORIZON_LABEL[h]}</button>)}
     </div>
-    {data.goals.length === 0 && <PageState inline kind="empty" agent="goals" title={PAGE_STATES.goals.empty[0]} body={PAGE_STATES.goals.empty[1]} action={{ label: "New goal", onClick: () => setEditor({ kind: "goal", goal: null }) }} />}
+    {data.goals.length === 0 && empty && <PageState inline kind="empty" agent="goals" title={empty[0]} body={empty[1]} action={{ label: "New goal", onClick: () => setEditor({ kind: "goal", goal: null }) }} />}
     {data.goals.map((goal) => {
       const objectives = goal.objectives.filter((obj) => horizon === "all" || obj.horizon === horizon);
       return <Section key={goal.id} id={`goal-${goal.id}`} label={goal.title} meta={pct(goal.progress)} className={s.goal}>
@@ -138,7 +139,7 @@ export function GoalsView({ data, archived }: { data: GoalsData; archived: boole
           <div className={s.objectiveInfo}>
             <button type="button" className={s.objectiveName} title={obj.title} aria-label={`Open objective ${obj.title}`} onClick={() => setSelected(obj.id)}>{obj.title}</button>
             <p className={s.projectLine}>{obj.projects.length ? obj.projects.map((project) => project.name).join(", ") : "No linked project"} · target {date(obj.targetDate ?? goal.targetDate)}</p>
-            {obj.neglected && <Status tone="approval" glyph="▲" className={s.neglected}>Neglected: no activity since {date(obj.lastActivity.slice(0, 10))}</Status>}
+            {obj.neglected && <div className={s.neglected}><Status tone="approval" glyph="▲">Neglected:</Status><span>no activity since {date(obj.lastActivity.slice(0, 10))}</span></div>}
             {obj.status === "done" && <Status tone="working" glyph="✓">Done</Status>}
           </div>
           <div className={s.progress}><Progress value={obj.progress ?? 0} label={`${obj.title}: ${obj.progress === null ? "no tasks yet" : pct(obj.progress)}`} /><span className={s.progressLabel}>{obj.progress === null ? "— no tasks yet" : `${obj.progress}%${obj.manualProgress !== null ? " · manual" : ""}`}</span></div>

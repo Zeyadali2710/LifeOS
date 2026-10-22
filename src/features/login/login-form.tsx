@@ -3,10 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
-import { Button } from "@/legacy-ui/button";
-
-const field =
-  "mt-1.5 block h-11 w-full rounded-full border border-white/[.10] bg-white/[.03] px-4 text-[14px] text-text outline-none transition placeholder:text-text-3 focus:border-[rgba(100,210,255,.55)] focus:shadow-[var(--ring-input)]";
+import { Button } from "@/ui/button";
+import { TextField } from "@/ui/controls";
+import { Alert } from "@/ui/feedback";
+import s from "./login.module.css";
 
 export function LoginForm({ next }: { next: string }) {
   const router = useRouter();
@@ -32,19 +32,11 @@ export function LoginForm({ next }: { next: string }) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-5" noValidate>
-      <label className="block text-sm text-text-2">
-        Email
-        <input name="email" type="email" autoComplete="username" required className={field} />
-      </label>
-      <label className="block text-sm text-text-2">
-        Password
-        <input name="password" type="password" autoComplete="current-password" required className={field} />
-      </label>
-      <p role="alert" aria-live="polite" className="min-h-5 text-sm text-red">
-        {error}
-      </p>
-      <Button type="submit" size="touch" loading={pending} className="w-full">
+    <form onSubmit={onSubmit} className={s.form} noValidate>
+      <TextField label="Email" name="email" type="email" autoComplete="username" required />
+      <TextField label="Password" name="password" type="password" autoComplete="current-password" required />
+      {error && <Alert>{error}</Alert>}
+      <Button type="submit" variant="primary" size="lg" disabled={pending} aria-busy={pending || undefined} block className={s.submit}>
         {pending ? "Signing in…" : "Sign in"}
       </Button>
     </form>

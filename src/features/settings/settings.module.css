@@ -5,6 +5,7 @@
 .nav a:hover { background: var(--wash); }
 .content { flex: 1 1 420px; min-width: 0; max-width: 960px; }
 .groups { display: flex; flex-direction: column; gap: 28px; }
+.groups > section { gap: 0; }
 .stack { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .connection { min-width: 0; }
 .connectionRow { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--rule-soft); }
@@ -33,6 +34,7 @@
 .check input { accent-color: var(--ink); }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 0; margin: 0; list-style: none; }
 .chip { display: inline-flex; align-items: center; background: var(--wash); border-radius: var(--radius-pill); padding-left: 12px; font-size: var(--text-small); color: var(--ink); white-space: nowrap; flex: none; }
+.chipText { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .link { color: var(--accent); font-size: var(--text-small); }
 .scheduleRow { display: grid; grid-template-columns: minmax(0, 1fr) 140px auto; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--rule-soft); }
 .feedRow { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 12px 0; border-bottom: 1px solid var(--rule-soft); }
@@ -40,6 +42,10 @@
 .feedRow > span { flex: 1; overflow-wrap: anywhere; }
 .spend { font-family: var(--font-display); font-size: var(--text-display); line-height: 1; }
 .spend span { font-size: var(--text-card-title); color: var(--ink-2); }
+.capForm { margin-top: 6px; }
+.capField { flex-direction: row; align-items: center; gap: 10px; }
+.capField label { color: var(--ink); font-size: var(--text-ui); font-weight: 400; white-space: nowrap; }
+.capField input { width: 80px; height: 36px; background: var(--paper-2); }
 .modelRow { display: grid; grid-template-columns: minmax(0, 1fr) 80px 80px; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--rule-soft); font-size: var(--text-ui); }
 .modelRow > span:not(:first-child) { font-family: var(--font-mono); font-size: var(--text-xs); text-align: right; white-space: nowrap; }
 .modelRow > span:last-child { color: var(--ink-2); }

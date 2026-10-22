@@ -6,6 +6,8 @@ import { SocialConnections } from "@/features/settings/social-connections";
 import { SettingsNav } from "@/features/settings/settings-nav";
 import { ConnectionRow } from "@/features/settings/connection-row";
 import { SpendSection } from "@/features/settings/spend-section";
+import { FreePrivacy } from "@/features/settings/free-privacy";
+import { OutreachSection } from "@/features/settings/outreach-section";
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock("@/features/shell/live-provider", () => ({ useLiveEvents: vi.fn() }));
 vi.mock("@/features/shell/shell-provider", () => ({ useShell: () => ({ toast: vi.fn() }) }));
@@ -13,6 +15,19 @@ vi.mock("@/server/socials-actions", () => ({ saveToken: vi.fn(), confirmInstagra
 vi.mock("@/server/settings-actions", () => ({ removeTokenAction: vi.fn(), saveTokenAction: vi.fn(), saveOpenRouterKeyAction: vi.fn() }));
 vi.mock("@/server/outreach-actions", () => ({ removeEventKeyAction: vi.fn(), saveEventKeyAction: vi.fn() }));
 describe("Social settings and palette", () => {
+  it.each([false, true])("describes the current free-model privacy setting (%s)", (value) => {
+    const html = renderToStaticMarkup(createElement(FreePrivacy, { value }));
+    expect(html).toContain(value ? "On: free models may receive" : "Off: any run that touches");
+    expect(html).toContain("Free providers may log or train on prompts.");
+    expect(html).not.toContain(value ? "Off: any run that touches" : "On: free models may receive");
+  });
+  it("keeps long interest chips readable and their removal controls labelled", () => {
+    const interest = "W".repeat(40);
+    const html = renderToStaticMarkup(createElement(OutreachSection, { interests: [interest] }));
+    expect(html).toContain(`title="${interest}"`);
+    expect(html).toContain(`aria-label="Remove ${interest}"`);
+    expect(html).toContain("/settings?section=connections#event-feeds");
+  });
   it("shows real model turns, token details and the free-model privacy boundary", () => {
     const html = renderToStaticMarkup(createElement(SpendSection, {
       mtdUsd: 4.12, capUsd: 20, monthLabel: "October", resetLabel: "1 Nov", freePrivateOk: false,
@@ -53,6 +68,8 @@ describe("Social settings and palette", () => {
     const connection = { status: "connected", last4: "1234", login: "owner", expiresAt: null, credentialGeneration: null, scopes: ["user.info.basic"], lastSyncError: null };
     const html = renderToStaticMarkup(createElement(SocialConnections, { connections: { linkedin: null, instagram: { ...connection, status: "verification_pending" }, tiktok: connection, tiktok_app: connection }, redirectUri: "https://lifeos.example/api/connections/tiktok/callback", result: null }));
     expect(html).toContain("VERIFICATION PENDING"); expect(html).toContain("disabled"); expect(html).toContain("Missing user.info.stats"); expect(html).toContain("Missing video.list"); expect(html).toContain("No connection needed: Markdown export");
+    expect(html).toMatch(/Missing user.info.stats<\/span><p[^>]*>Account statistics/);
+    expect(html).toMatch(/Missing video.list<\/span><p[^>]*>Video metrics/);
     for (const id of ["linkedin", "instagram", "tiktok", "portfolio"]) expect(html).toContain(`id="social-${id}"`);
   });
   it("offers new-post navigation and title-search post hits", () => {

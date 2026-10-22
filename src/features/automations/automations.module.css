@@ -1,0 +1,43 @@
+.columns { display: flex; flex-wrap: wrap; gap: var(--space-8) var(--space-14); margin-top: var(--space-6); align-items: flex-start; }
+.rules { flex: 1 1 420px; max-width: 680px; min-width: 0; border-top: var(--section-rule); list-style: none; padding: 0; margin: 0; }
+.rule { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 13px 6px; border-bottom: 1px solid var(--rule); }
+.rule[data-selected], .rule:hover { background: var(--wash); }
+.pick { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; border: 0; background: transparent; padding: 0; text-align: left; cursor: pointer; min-width: 0; width: 100%; overflow-wrap: anywhere; color: var(--ink); font: inherit; }
+.pick strong { font-size: var(--text-body); font-weight: 600; }
+.pick .off { color: var(--ink-2); }
+.trigger { font-size: var(--text-small); color: var(--ink-2); }
+.last { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); font: var(--text-label) var(--font-mono); color: var(--ink-2); --status-idle: var(--ink-2); }
+.detail { flex: 1.3 1 380px; min-width: 0; max-width: var(--reading-max); display: flex; flex-direction: column; gap: 18px; }
+.detailHead { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: var(--space-3); }
+.detailHead h2 { margin: 0; font: 400 var(--text-title)/var(--leading-tight) var(--font-display); overflow-wrap: anywhere; }
+.steps { margin: 0; }
+.step { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: var(--space-3); padding: var(--space-3) 0; border-top: 1px solid var(--rule); }
+.step dt { font: var(--text-label) var(--font-mono); letter-spacing: var(--label-tracking); color: var(--ink-3); }
+.step dd { display: flex; flex-direction: column; gap: 6px; margin: 0; min-width: 0; }
+.step dd > span { font-size: var(--text-body); background: var(--paper-2); border: 1px solid var(--rule); border-radius: var(--radius-sm); padding: var(--space-2) 10px; overflow-wrap: anywhere; }
+.note { margin: 0; font-size: var(--text-xs); line-height: var(--leading-body); color: var(--ink-3); }
+.runs { list-style: none; padding: 0; margin: 0; }
+.run { display: grid; grid-template-columns: 90px minmax(0, 1fr) auto; gap: 10px; padding: var(--space-2) 0; border-bottom: 1px solid var(--rule-soft); font-size: var(--text-small); align-items: start; }
+.run > time { font: var(--text-label)/var(--leading-ui) var(--font-mono); color: var(--ink-3); }
+.runBody { min-width: 0; display: flex; flex-direction: column; gap: 2px; overflow-wrap: anywhere; }
+.runDetail { font: var(--text-mono-xs)/var(--leading-ui) var(--font-mono); color: var(--ink-3); }
+.runBody a { color: var(--accent); font-size: var(--text-xs); width: fit-content; }
+.alert { margin-top: var(--space-6); }
+.editor { display: flex; flex-direction: column; gap: var(--space-5); border: 0; padding: 0; margin: 0; min-width: 0; }
+.fieldset { display: flex; flex-direction: column; gap: var(--space-3); border: 0; border-top: 1px solid var(--rule); padding: var(--space-3) 0 0; margin: 0; min-width: 0; }
+.fieldset legend { font: var(--text-label) var(--font-mono); letter-spacing: var(--label-tracking); color: var(--ink-3); padding-right: var(--space-2); }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+.condition { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-2); }
+.condition > div { flex: 1 1 160px; min-width: 0; }
+.actionCard { display: flex; flex-direction: column; gap: var(--space-3); border: 1px solid var(--rule); background: var(--paper-3); border-radius: var(--radius-lg); padding: var(--space-4); min-width: 0; }
+.actionHead { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-2); }
+@media (max-width: 1099px) { .rules { max-width: none; } }
+@media (max-width: 719px) {
+  .rules, .detail { flex-basis: 100%; }
+  .pick { min-height: 44px; }
+  .step { grid-template-columns: 52px minmax(0, 1fr); }
+  .run { grid-template-columns: 70px minmax(0, 1fr); }
+  .run > :last-child { grid-column: 2; }
+  .rule > button[role="switch"] { position: relative; }
+  .rule > button[role="switch"]::before { content: ""; position: absolute; inset: -12px -4px; }
+}

@@ -152,7 +152,7 @@ function Feeds({ feeds, toast, refresh }: {
         {feeds.map(f => <li key={f.id} className={s.feedRow}>
           <Checkbox label={`Sync ${f.label}`} checked={enabled[f.id] ?? f.enabled} onChange={e => toggle(f, e.target.checked)} />
           <span className={s.note}>
-            {f.host} ? {f.lastSyncAt ? `Synced ${ago(f.lastSyncAt)}` : "Not synced yet"}
+            {f.host} · {f.lastSyncAt ? `Synced ${ago(f.lastSyncAt)}` : "Not synced yet"}
           </span>
           <IconButton icon="close" label={`Remove feed ${f.label}`} onClick={() => setConfirm(f)} />
           {f.lastSyncError && <p role="alert" className={s.error}>

@@ -23,6 +23,6 @@ export function FreePrivacy({ value }: {
   }
   return <div className={s.stack}>
     <Checkbox label="Allow private data (private repos, calendar and tasks) to be sent to free models (may be logged by provider)" checked={priv} onChange={e => togglePrivate(e.target.checked)} />
-    <p className={s.note}>Off: any run that touches a private repository, your calendar or your tasks switches to Claude Sonnet before private data is sent. Free providers may log or train on prompts.</p>
+    <p className={s.note}>{priv ? "On: free models may receive private repositories, calendar and tasks." : "Off: any run that touches a private repository, your calendar or your tasks switches to Claude Sonnet before private data is sent."} Free providers may log or train on prompts.</p>
   </div>;
 }

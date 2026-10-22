@@ -1,5 +1,5 @@
-import { AutomationsView } from "@/automations/automations-view";
-import { loadAutomations } from "@/server/automations";
+import { AutomationsView } from "@/features/automations/automations-view";
+import { loadAutomationsView } from "@/server/automations-view";
 import { db } from "@/server/db/client";
 import { requireOwner } from "@/server/session";
 
@@ -8,5 +8,5 @@ export const dynamic = "force-dynamic";
 
 export default async function AutomationsPage() {
   await requireOwner();
-  return <AutomationsView data={await loadAutomations(db())} />;
+  return <AutomationsView data={await loadAutomationsView(db())} />;
 }

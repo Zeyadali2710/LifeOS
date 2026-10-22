@@ -1,6 +1,6 @@
 .vision { margin-top: 24px; }
 .vision label { font-family: var(--font-mono); font-size: var(--text-mono-xs); letter-spacing: var(--label-tracking); color: var(--ink-3); text-transform: uppercase; }
-.vision input { width: 100%; background: transparent; border: 0; border-bottom: 1px solid var(--rule); border-radius: 0; padding: 4px 0 10px; font-family: var(--font-display); font-style: italic; font-size: var(--text-title); line-height: 1.25; color: var(--ink); }
+.vision input { width: 100%; height: auto; background: transparent; border: 0; border-bottom: 1px solid var(--rule); border-radius: 0; padding: 4px 0 10px; font-family: var(--font-display); font-style: italic; font-size: var(--text-title); line-height: 1.25; color: var(--ink); }
 .actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .visionActions { margin-top: 8px; }
 .horizons { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 18px; }
@@ -19,14 +19,14 @@
 .objectiveName:hover { color: var(--accent); }
 .objectiveInfo { min-width: 0; }
 .projectLine { font-size: var(--text-xs); color: var(--ink-2); margin-top: 2px; overflow-wrap: anywhere; }
-.neglected { margin-top: 3px; font-size: var(--text-xs); }
+.neglected { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 4px; margin-top: 3px; font-size: var(--text-xs); color: var(--status-approval); }
+.neglected > span { font-size: inherit; }
 .progress { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .progressLabel { font-family: var(--font-mono); font-size: var(--text-mono-xs); color: var(--ink-3); }
 .goalActions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-top: 10px; }
 .empty { margin: 12px 0 0 18px; font-size: var(--text-small); color: var(--ink-3); }
 .note { margin-top: 28px; max-width: 680px; font-size: var(--text-xs); line-height: 1.55; color: var(--ink-3); }
 .form { display: flex; flex-direction: column; gap: 14px; }
-.formRow { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 14px; }
 .detail { display: flex; flex-direction: column; gap: 20px; }
 .project { padding: 16px 18px; }
 .projectHead { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
@@ -42,7 +42,7 @@
   .objective > :last-child { grid-column: 1 / -1; justify-self: end; }
 }
 @media (max-width: 719.98px) {
-  .vision input { font-size: calc(var(--text-card-title) + 2px); }
+  .vision input { min-height: 44px; font-size: calc(var(--text-card-title) + 2px); }
   .horizon { min-height: 44px; }
   .objective { grid-template-columns: minmax(0, 1fr) auto; }
   .objectiveInfo { grid-column: 1 / -1; }
@@ -50,4 +50,6 @@
   .objective > :last-child { grid-column: 2; grid-row: 3; }
   .progress { grid-column: 1 / -1; }
   .objectiveName { min-height: 44px; }
+  .task { flex-wrap: wrap; }
+  .task > label { min-height: 44px; }
 }

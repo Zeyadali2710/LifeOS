@@ -45,7 +45,7 @@ export function OutreachSection({ interests }: {
     <p className={s.body}>Events are scored against these. They&apos;re also the filter chips on Outreach. Triage runs on new INBOX mail in batches of 10; bulk mail is classified by rule.</p>
     {list.length === 0 ? <EmptyState title="No interests yet" body="Without them, only projects and your schedule affect scores." /> : <ul className={s.chips}>
       {list.map(i => <li key={i} className={s.chip}>
-        {i}<IconButton icon="close" label={`Remove ${i}`} small disabled={busy} onClick={() => void save(list.filter(x => x !== i))} />
+        <span className={s.chipText} title={i}>{i}</span><IconButton icon="close" label={`Remove ${i}`} small disabled={busy} onClick={() => void save(list.filter(x => x !== i))} />
       </li>)}
     </ul>}<form className={s.actions} onSubmit={e => { e.preventDefault(); add(); }}>
       <TextField label="New interest" maxLength={40} value={value} error={error} onChange={e => { setValue(e.target.value); setError(undefined); }} />

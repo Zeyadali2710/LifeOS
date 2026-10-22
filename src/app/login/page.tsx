@@ -2,7 +2,9 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { isSafePath } from "@/lib/safe-url";
 import { auth } from "@/server/auth";
-import { LoginForm } from "./login-form";
+import { Card } from "@/ui/layout";
+import s from "@/features/login/login.module.css";
+import { LoginForm } from "@/features/login/login-form";
 
 export const metadata = { title: "Sign in · LifeOS" };
 
@@ -13,15 +15,15 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   if (session) redirect(target);
 
   return (
-    <main className="canvas-glow grid min-h-dvh place-items-center px-6">
-      <div className="glass-menu w-full max-w-sm rounded-30 p-8">
-        <div className="mb-10">
-          <div className="font-mono text-xs tracking-[0.3em] text-cyan">LIFEOS</div>
-          <h1 className="mt-3 font-display text-[40px] leading-[1.05] font-normal">Welcome back.</h1>
-          <p className="mt-1 text-sm text-text-2">Sign in to your operating system.</p>
-        </div>
+    <main className={s.page} aria-labelledby="login-title">
+      <Card className={s.card}>
+        <header className={s.header}>
+          <div className={s.wordmark}>LifeOS</div>
+          <h1 id="login-title" className={s.title}>Welcome back.</h1>
+          <p className={s.subtitle}>Sign in to your operating system.</p>
+        </header>
         <LoginForm next={target} />
-      </div>
+      </Card>
     </main>
   );
 }

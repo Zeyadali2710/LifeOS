@@ -107,7 +107,10 @@ function TikTokConnection({ connection, app, redirectUri, result }: {
     {connection && <div className={s.inset}>
       <p className={s.note}>Granted scopes: {connection.scopes.join(", ") || "none"}
       </p>
-      {["user.info.stats", "video.list"].filter(scope => !connection.scopes.includes(scope)).map(scope => <Status key={scope} tone="approval" glyph="▲">Missing {scope}: {scope === "video.list" ? "video metrics" : "account statistics"} unavailable.</Status>)}
+      {["user.info.stats", "video.list"].filter(scope => !connection.scopes.includes(scope)).map(scope => <div key={scope}>
+        <Status tone="approval" glyph="▲">Missing {scope}</Status>
+        <p className={s.note}>{scope === "video.list" ? "Video metrics" : "Account statistics"} unavailable.</p>
+      </div>)}
     </div>}
     <p className={s.uri}>Exact redirect URI: {redirectUri}{app ? ` · App key ••••${app.last4}` : ""}
     </p>

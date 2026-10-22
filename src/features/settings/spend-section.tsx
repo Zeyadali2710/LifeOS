@@ -54,11 +54,11 @@ export function SpendSection({ mtdUsd, capUsd, monthLabel, resetLabel, rows, fre
     <Progress value={pct} label={`${pct}% of US$${capUsd.toFixed(2)} · resets ${resetLabel}`} />
     <p className={s.note}>Sydney calendar month · {monthLabel} · at the cap, new runs are blocked and running work finishes · resets {resetLabel}
     </p>
-    <form className={s.actions} onSubmit={e => {
+    <form className={`${s.actions} ${s.capForm}`} onSubmit={e => {
       e.preventDefault(); if (dirty)
         void save();
     }}>
-      <TextField label="Monthly cap US$" type="number" min={1} max={1000} step={1} value={value} onChange={e => setValue(e.target.value)} />
+      <TextField className={s.capField} label="Monthly cap US$" type="number" min={1} max={1000} step={1} value={value} onChange={e => setValue(e.target.value)} />
       <Button type="submit" variant={dirty ? "primary" : "secondary"} disabled={!dirty || busy}>
         {busy ? "Saving…" : "Save cap"}
       </Button>

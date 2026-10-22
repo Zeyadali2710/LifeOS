@@ -85,7 +85,7 @@ export function GoalDialog({ editor, onClose, onSaved }: { editor: GoalEditor; o
         </Alert>}
         <button type="submit" hidden disabled={busy || confirmDelete} />
       </form>
-      {discard && <Alert tone="warn" className={s.discard} action={<span className={s.actions}><Button onClick={() => setDiscard(false)}>Keep editing</Button><Button destructive onClick={onClose}>Discard</Button></span>}>Discard changes?</Alert>}
+      {discard && <Alert tone="warn" className={s.discard} action={<span className={s.actions}><Button disabled={busy} onClick={() => setDiscard(false)}>Keep editing</Button><Button destructive disabled={busy} onClick={() => { if (!lock.current) onClose(); }}>Discard</Button></span>}>Discard changes?</Alert>}
     </Dialog>
   );
 }
