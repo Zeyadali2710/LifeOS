@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import type { ApprovalDTO } from "@/lib/agent-types";
 import type { MailReplyPayload } from "@/lib/mail-payload";
-import { mailOf, redirectNote, sameMail, toMailDraft, validateMailDraft, type MailDraft, type MailDraftErrors } from "@/approvals/mail-approval";
+import { mailOf, redirectNote, sameMail, toMailDraft, validateMailDraft, type MailDraft, type MailDraftErrors } from "@/features/approvals/model/mail";
 import { approveAction, rejectAction, saveEditAction } from "@/server/approval-actions";
 import { saveReplyToDraftsAction } from "@/server/mail-actions";
 import { useLiveEvents } from "@/features/shell/live-provider";

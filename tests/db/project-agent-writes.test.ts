@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { toProjectDraft, validateProjectDraft, type ProjectPayload } from "@/approvals/project-approval";
+import { toProjectDraft, validateProjectDraft, type ProjectPayload } from "@/features/approvals/model/project";
 import { projectCreatePayload } from "@/lib/project-payload";
 import { decide, executeApproved, listApprovals, retryApproval } from "@/server/agents/approvals";
 import { callTool } from "@/server/agents/gateway";

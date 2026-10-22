@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mailOf, mailResolved, sameMail, toMailDraft, validateMailDraft } from "@/approvals/mail-approval";
+import { mailOf, mailResolved, sameMail, toMailDraft, validateMailDraft } from "@/features/approvals/model/mail";
 import type { ApprovalDTO } from "@/lib/agent-types";
 import type { MailReplyPayload } from "@/lib/mail-payload";
 

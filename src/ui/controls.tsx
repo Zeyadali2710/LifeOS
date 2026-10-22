@@ -250,11 +250,11 @@ export function TextArea({ label, help, error, hideLabel, className, ...rest }: 
   );
 }
 
-export function SelectField({ label, help, error, className, children, ...rest }: FieldProps & SelectHTMLAttributes<HTMLSelectElement>) {
+export function SelectField({ label, help, error, hideLabel, className, children, ...rest }: FieldProps & SelectHTMLAttributes<HTMLSelectElement>) {
   const id = useId();
   return (
     <div className={[s.field, className].filter(Boolean).join(" ")}>
-      <label htmlFor={id} className={s.label}>
+      <label htmlFor={id} className={hideLabel ? "sr-only" : s.label}>
         {label}
       </label>
       <select id={id} className={`${s.input} ${s.select}`} aria-invalid={error ? true : undefined} {...rest}>

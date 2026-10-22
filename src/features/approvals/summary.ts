@@ -64,7 +64,7 @@ export function summarize(a: Pick<ApprovalDTO, "tool" | "kind" | "original" | "e
       return { title: `Send reply to ${to.name || to.address || "the sender"}`, target: `${to.address ?? ""} · ${str(p.subject)}`, quote: str(p.body) || null, note: null };
     }
     case "social_publish": {
-      const platform = str(p.platform) === "linkedin" ? "LinkedIn" : "Instagram";
+      const platform = str(p.platform) === "linkedin" ? "LinkedIn" : str(p.platform) === "instagram" ? "Instagram" : "a social platform";
       const when = str(p.publishAt) ? ` · ${stamp(str(p.publishAt))}` : "";
       return { title: `Publish on ${platform}`, target: `${str(p.providerMode) === "mock" ? "Mock publishing" : platform}${when}`, quote: str(p.text) || null, note: null };
     }

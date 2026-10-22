@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { CATEGORY } from "@/lib/calendar-categories";
-import { whenText } from "@/approvals/event-approval";
+import { whenText } from "@/features/approvals/model/event";
 import { isSafeUrl } from "@/lib/safe-url";
 import { tzLabel } from "@/server/time";
 import { Badge } from "@/legacy-ui/badge";

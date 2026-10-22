@@ -1,7 +1,6 @@
-"use client";
-
+// Moved from the pre-Almanac approval UI: logic only, unchanged.
+import type { ApprovalKind } from "@/lib/approval-kinds";
 import { issuePayloadSchema, parseLabels, type IssuePayload } from "@/lib/issue-payload";
-import { Field, Input, Textarea } from "@/legacy-ui/field";
 
 export type Draft = { title: string; body: string; labels: string };
 export type DraftErrors = Partial<Record<"title" | "body" | "labels", string>>;
@@ -21,22 +20,13 @@ export function validateDraft(repo: string, d: Draft): { payload: IssuePayload }
   return { errors };
 }
 
-export function ApprovalEditForm({ repo, draft, errors, onChange }: { repo: string; draft: Draft; errors: DraftErrors; onChange: (d: Draft) => void }) {
-  return (
-    <div className="flex flex-col gap-4">
-      <Field label="Title" error={errors.title}>
-        <Input value={draft.title} maxLength={256} required onChange={(e) => onChange({ ...draft, title: e.target.value })} />
-      </Field>
-      <Field label="Body" error={errors.body}>
-        <Textarea rows={7} value={draft.body} maxLength={65536} onChange={(e) => onChange({ ...draft, body: e.target.value })} />
-      </Field>
-      <Field label="Labels" helper="Comma-separated, up to 10." error={errors.labels}>
-        <Input value={draft.labels} onChange={(e) => onChange({ ...draft, labels: e.target.value })} />
-      </Field>
-      <div>
-        <div className="mb-1 text-[12.5px] text-text-2">Repository</div>
-        <div className="font-code text-[13px] text-text-2">{repo}</div>
-      </div>
-    </div>
-  );
+/** Narrow a kind-tagged approval to its issue payloads (null for event kinds, and for an issue row whose payload doesn't parse). */
+export function issueOf(a: { kind: ApprovalKind; edited: unknown; original: unknown }): { original: IssuePayload; current: IssuePayload } | null {
+  if (a.kind !== "issue") return null;
+  // safeParse: one malformed row must not throw during render and take the whole list or transcript down (WR-B10)
+  const original = issuePayloadSchema.safeParse(a.original);
+  const current = a.edited == null ? original : issuePayloadSchema.safeParse(a.edited);
+  return original.success && current.success ? { original: original.data, current: current.data } : null;
 }
+
+export const sameIssue = (a: IssuePayload, b: IssuePayload) => a.title === b.title && a.body === b.body && a.labels.join(",") === b.labels.join(",");

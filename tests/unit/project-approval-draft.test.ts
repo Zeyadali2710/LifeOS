@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { toProjectDraft, validateProjectDraft, type ProjectPayload } from "@/approvals/project-approval";
+import { toProjectDraft, validateProjectDraft, type ProjectPayload } from "@/features/approvals/model/project";
 import { projectCreatePayload as C, projectUpdatePayload as U } from "@/lib/project-payload";
 
 const PID = "00000000-0000-4000-8000-000000000001";
