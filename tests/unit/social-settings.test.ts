@@ -2,7 +2,10 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { buildPalette } from "@/features/shell/palette-items";
-import { SocialConnections } from "@/settings/social-connections";
+import { SocialConnections } from "@/features/settings/social-connections";
+import { SettingsNav } from "@/features/settings/settings-nav";
+import { ConnectionRow } from "@/features/settings/connection-row";
+import { SpendSection } from "@/features/settings/spend-section";
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock("@/features/shell/live-provider", () => ({ useLiveEvents: vi.fn() }));
 vi.mock("@/features/shell/shell-provider", () => ({ useShell: () => ({ toast: vi.fn() }) }));
@@ -10,6 +13,42 @@ vi.mock("@/server/socials-actions", () => ({ saveToken: vi.fn(), confirmInstagra
 vi.mock("@/server/settings-actions", () => ({ removeTokenAction: vi.fn(), saveTokenAction: vi.fn(), saveOpenRouterKeyAction: vi.fn() }));
 vi.mock("@/server/outreach-actions", () => ({ removeEventKeyAction: vi.fn(), saveEventKeyAction: vi.fn() }));
 describe("Social settings and palette", () => {
+  it("shows real model turns, token details and the free-model privacy boundary", () => {
+    const html = renderToStaticMarkup(createElement(SpendSection, {
+      mtdUsd: 4.12, capUsd: 20, monthLabel: "October", resetLabel: "1 Nov", freePrivateOk: false,
+      rows: [{ model: "sonnet", label: "Sonnet", turns: 188, input: 1000, output: 500, cache: 200, costUsd: 4.12 }],
+    }));
+    expect(html).toContain("188");
+    expect(html).toContain("turns");
+    expect(html).toContain("Token usage details");
+    expect(html).toContain("Mail, finance and knowledge data never reach a free model");
+    const inputId = /<input id="([^"]+)"[^>]*type="number"/.exec(html)?.[1];
+    expect(inputId).toBeTruthy();
+    expect(html).toContain(`for="${inputId}"`);
+  });
+  it("keeps all four section deep links and marks the current section", () => {
+    const html = renderToStaticMarkup(createElement(SettingsNav, { current: "ai" }));
+    for (const section of ["connections", "ai", "outreach", "briefings"]) {
+      expect(html).toContain(`href="/settings?section=${section}"`);
+    }
+    expect(html).toMatch(/aria-current="page"[^>]*>AI and spend/);
+  });
+  it.each([
+    ["none", "Connect", "NOT CONNECTED"],
+    ["connected", "Manage", "CONNECTED"],
+    ["error", "Reconnect", "RECONNECT"],
+  ] as const)("offers the appropriate action for %s connections", (status, action, label) => {
+    const html = renderToStaticMarkup(createElement(ConnectionRow, { id: "linkedin", name: "LinkedIn", detail: "Owner account", status }));
+    expect(html).toContain(`>${action}</button>`);
+    expect(html).toContain(label);
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).not.toContain('type="password"');
+  });
+  it("keeps manual connections free of credential controls", () => {
+    const html = renderToStaticMarkup(createElement(ConnectionRow, { name: "Portfolio", detail: "Markdown export", status: "none", statusLabel: "MANUAL", readOnly: true }));
+    expect(html).toContain("MANUAL");
+    expect(html).not.toContain("<button");
+  });
   it("renders Instagram verification and actual TikTok grants without secret props", () => {
     const connection = { status: "connected", last4: "1234", login: "owner", expiresAt: null, credentialGeneration: null, scopes: ["user.info.basic"], lastSyncError: null };
     const html = renderToStaticMarkup(createElement(SocialConnections, { connections: { linkedin: null, instagram: { ...connection, status: "verification_pending" }, tiktok: connection, tiktok_app: connection }, redirectUri: "https://lifeos.example/api/connections/tiktok/callback", result: null }));

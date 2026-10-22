@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { blockGeometry, earlierCount, packLanes, rangeLabel } from "@/features/organization/grid";
+import { blockGeometry, earlierCount, packLanes, rangeLabel, shiftDate } from "@/features/organization/grid";
 
 // 2026-10-08 is AEDT (+11)
 const at = (d: string, hm: string) => new Date(`${d}T${hm}:00+11:00`).toISOString();
@@ -64,5 +64,21 @@ describe("earlierCount", () => {
     const night = { start: at("2026-10-07", "22:00"), end: at("2026-10-08", "06:00"), allDay: false };
     expect(earlierCount([night], "2026-10-08")).toBe(1);
     expect(earlierCount([night], "2026-10-07")).toBe(0);
+  });
+});
+
+
+describe("calendar navigation", () => {
+  it("moves days across year and leap-day boundaries", () => {
+    expect(shiftDate("day", "2026-12-31", 1)).toBe("2027-01-01");
+    expect(shiftDate("day", "2024-03-01", -1)).toBe("2024-02-29");
+  });
+  it("moves weeks by seven calendar days across Sydney DST", () => {
+    expect(shiftDate("week", "2026-10-01", 1)).toBe("2026-10-08");
+    expect(shiftDate("week", "2026-10-08", -1)).toBe("2026-10-01");
+  });
+  it("moves months to the first day without overflowing short months", () => {
+    expect(shiftDate("month", "2026-01-31", 1)).toBe("2026-02-01");
+    expect(shiftDate("month", "2026-01-31", -1)).toBe("2025-12-01");
   });
 });

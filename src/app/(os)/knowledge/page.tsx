@@ -1,7 +1,7 @@
 import { KNOWLEDGE_KINDS, KNOWLEDGE_LIMITS, normaliseTags, type KnowledgeKind } from "@/lib/knowledge";
-import { KnowledgeView } from "@/knowledge/knowledge-view";
+import { KnowledgeView } from "@/features/knowledge/knowledge-view";
 import { db } from "@/server/db/client";
-import { loadKnowledge } from "@/server/knowledge";
+import { getKnowledgeItem, loadKnowledge } from "@/server/knowledge";
 import { requireOwner } from "@/server/session";
 
 export const metadata = { title: "Knowledge · LifeOS" };
@@ -21,5 +21,8 @@ export default async function KnowledgePage({ searchParams }: { searchParams: Pr
     tags: normaliseTags(str("tags")).slice(0, KNOWLEDGE_LIMITS.tags),
     selected: UUID.test(str("item")) ? str("item") : null,
   });
+  if (!data.detail && !UUID.test(str("item")) && data.hits[0]) {
+    data.detail = await getKnowledgeItem(db(), data.hits[0].id);
+  }
   return <KnowledgeView data={data} />;
 }

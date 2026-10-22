@@ -1,4 +1,4 @@
-import { GoalsView } from "@/goals/goals-view";
+import { GoalsView } from "@/features/goals/goals-view";
 import { db } from "@/server/db/client";
 import { loadGoals } from "@/server/goals";
 import { requireOwner } from "@/server/session";

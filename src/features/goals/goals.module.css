@@ -1,0 +1,53 @@
+.vision { margin-top: 24px; }
+.vision label { font-family: var(--font-mono); font-size: var(--text-mono-xs); letter-spacing: var(--label-tracking); color: var(--ink-3); text-transform: uppercase; }
+.vision input { width: 100%; background: transparent; border: 0; border-bottom: 1px solid var(--rule); border-radius: 0; padding: 4px 0 10px; font-family: var(--font-display); font-style: italic; font-size: var(--text-title); line-height: 1.25; color: var(--ink); }
+.actions { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+.visionActions { margin-top: 8px; }
+.horizons { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 18px; }
+.horizon { border: 1px solid var(--border); background: transparent; border-radius: var(--radius-pill); padding: 4px 11px; font-size: var(--text-xs); color: var(--ink); white-space: nowrap; flex: none; }
+.horizon[aria-checked="true"] { background: var(--wash); border-color: var(--ink); }
+.goal { margin-top: 32px; gap: 0; }
+.goal > div:first-child { padding-top: 12px; gap: 16px; }
+.goal > div:first-child > h2 { font-family: var(--font-display); font-size: calc(var(--text-title) - 2px); font-weight: 400; text-transform: none; letter-spacing: 0; line-height: 1.2; overflow-wrap: anywhere; }
+.goal > div:first-child > span { font-family: var(--font-display); font-size: calc(var(--text-title) - 2px); color: var(--ink); }
+.goalMeta { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 6px 16px; margin-top: 6px; }
+.meta { font-size: var(--text-xs); color: var(--ink-3); line-height: 1.55; }
+.momentum { font-size: var(--text-label); }
+.objective { display: grid; grid-template-columns: minmax(0, 1fr) 160px 150px 110px; gap: 8px 20px; align-items: center; padding: 14px 0 14px 18px; border-bottom: 1px solid var(--rule-soft); position: relative; }
+.objective::before { content: ""; position: absolute; left: 0; top: 22px; width: 8px; height: 1px; background: var(--border); }
+.objectiveName { display: block; min-width: 0; border: 0; background: transparent; color: var(--ink); text-align: left; padding: 0; max-width: 100%; font-size: var(--text-body); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.objectiveName:hover { color: var(--accent); }
+.objectiveInfo { min-width: 0; }
+.projectLine { font-size: var(--text-xs); color: var(--ink-2); margin-top: 2px; overflow-wrap: anywhere; }
+.neglected { margin-top: 3px; font-size: var(--text-xs); }
+.progress { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.progressLabel { font-family: var(--font-mono); font-size: var(--text-mono-xs); color: var(--ink-3); }
+.goalActions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; margin-top: 10px; }
+.empty { margin: 12px 0 0 18px; font-size: var(--text-small); color: var(--ink-3); }
+.note { margin-top: 28px; max-width: 680px; font-size: var(--text-xs); line-height: 1.55; color: var(--ink-3); }
+.form { display: flex; flex-direction: column; gap: 14px; }
+.formRow { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr)); gap: 14px; }
+.detail { display: flex; flex-direction: column; gap: 20px; }
+.project { padding: 16px 18px; }
+.projectHead { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.task { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid var(--rule-faint); }
+.task > label { min-width: 0; overflow-wrap: anywhere; }
+.taskDone { text-decoration: line-through; color: var(--ink-2); }
+.link { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; }
+.link > div { flex: 1 1 220px; min-width: 0; }
+.discard { margin-top: 14px; }
+.delete { margin-right: auto; }
+@media (max-width: 1099.98px) and (min-width: 720px) {
+  .objective { grid-template-columns: minmax(0, 1fr) 110px 140px; }
+  .objective > :last-child { grid-column: 1 / -1; justify-self: end; }
+}
+@media (max-width: 719.98px) {
+  .vision input { font-size: calc(var(--text-card-title) + 2px); }
+  .horizon { min-height: 44px; }
+  .objective { grid-template-columns: minmax(0, 1fr) auto; }
+  .objectiveInfo { grid-column: 1 / -1; }
+  .objective > .momentum { grid-column: 1; }
+  .objective > :last-child { grid-column: 2; grid-row: 3; }
+  .progress { grid-column: 1 / -1; }
+  .objectiveName { min-height: 44px; }
+}

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { budgetState, chartScale } from "@/features/finances/chart-model";
 import { classify, DEFAULT_FINANCE_CATEGORIES, effectiveBudgets, financeOverview, money, shiftFinanceMonth, summariseFinance } from "@/lib/finance";
 import { csvRows, financeDate, parseFinanceCsv } from "@/lib/finance-csv";
 
@@ -98,5 +99,29 @@ describe("finance categories and budgets", () => {
     ]);
     expect(financeOverview(rows, DEFAULT_FINANCE_CATEGORIES, "2026-03").monthly[0]).toMatchObject({ cumulativeSavings: -5000, cumulativeCashflow: 4000 });
     expect(financeOverview([], DEFAULT_FINANCE_CATEGORIES, "2026-03", "all")).toMatchObject({ count: 0, from: "2026-03", to: "2026-03", monthly: [{ count: 0, cumulativeSavings: 0, cumulativeCashflow: 0 }] });
+  });
+});
+
+
+describe("finance chart and budget presentation", () => {
+  it("places negative, positive and zero values on the correct side of the baseline", () => {
+    const scale = chartScale([-100, 0, 300], 120);
+    expect(scale.zero).toBe(90);
+    expect(scale.y(300)).toBe(0);
+    expect(scale.y(0)).toBe(scale.zero);
+    expect(scale.y(-100)).toBe(120);
+    expect(chartScale([0, 0], 120).zero).toBe(0);
+    expect(chartScale([], 120).y(0)).toBe(0);
+    expect(chartScale([-200, -100], 120).zero).toBe(0);
+    expect(chartScale([-200, -100], 120).y(-200)).toBe(120);
+  });
+  it("handles unset, zero, near-limit, over-limit and refunded budgets", () => {
+    expect(budgetState(100, null)).toEqual({ percent: 0, tone: "working" });
+    expect(budgetState(0, 0)).toEqual({ percent: 0, tone: "working" });
+    expect(budgetState(1, 0)).toEqual({ percent: 100, tone: "failed" });
+    expect(budgetState(850, 1000)).toEqual({ percent: 85, tone: "working" });
+    expect(budgetState(851, 1000)).toEqual({ percent: 85.1, tone: "approval" });
+    expect(budgetState(1001, 1000)).toEqual({ percent: 100, tone: "failed" });
+    expect(budgetState(-100, 1000)).toEqual({ percent: 0, tone: "working" });
   });
 });

@@ -2,15 +2,18 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import { boardColumn } from "@/lib/social-types";
-import { canPublish, editableVariant, safePostUrl, calendarDays, calendarRange, dayKey, scheduleInstant, followerTotal, metricValue } from "@/socials/model";
-import { VariantPanel } from "@/socials/variant-panel";
-import { PostsTable } from "@/socials/posts-table";
-import { FollowersChart } from "@/socials/followers-chart";
-import { AnalyticsView } from "@/socials/analytics-view";
-import type { Card, Variant } from "@/socials/model";
+import { canPublish, editableVariant, safePostUrl, calendarDays, calendarRange, dayKey, scheduleInstant, followerTotal, metricValue, matchesStatus } from "@/features/socials/model";
+import { VariantPanel } from "@/features/socials/variant-panel";
+import { PostsTable } from "@/features/socials/posts-table";
+import { FollowersChart } from "@/features/socials/followers-chart";
+import { AnalyticsView } from "@/features/socials/analytics-view";
+import type { Card, Variant } from "@/features/socials/model";
+import type { SocialReview } from "@/server/socials-view";
+import { PostPreview } from "@/features/socials/post-preview";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }), useSearchParams: () => new URLSearchParams() }));
 vi.mock("@/features/shell/shell-provider", () => ({ useShell: () => ({ toast: vi.fn() }) }));
+vi.mock("@/server/approval-actions", () => ({ approveAction: vi.fn(), rejectAction: vi.fn() }));
 vi.mock("@/server/socials-actions", () => ({ cancelSchedule: vi.fn(), requestPublish: vi.fn(), retryVariant: vi.fn(), saveVariant: vi.fn(), markPosted: vi.fn(), reschedule: vi.fn() }));
 
 const now = new Date("2026-10-15T00:00:00Z");
@@ -19,6 +22,42 @@ const variant = { id: "variant", postId: "post", platform: "instagram", text: "<
 const panel = (patch: Partial<Variant> = {}, account: Card = card) => renderToStaticMarkup(createElement(VariantPanel, { variant: { ...variant, ...patch }, title: "Post", card: account, now, defaultDate: "2026-10-15", parentDirty: false, onDirty: () => {} }));
 
 describe("Socials owner UI rules", () => {
+  it("keeps proposals and publishing out of published feed results", () => {
+    for (const status of ["draft", "pending_approval", "scheduled", "publishing", "failed"]) expect(matchesStatus(status, "published")).toBe(false);
+    for (const status of ["published", "posted_manually"]) expect(matchesStatus(status, "published")).toBe(true);
+    expect(matchesStatus("publishing", "scheduled")).toBe(true);
+    expect(matchesStatus("failed", "review")).toBe(true);
+    expect(matchesStatus("pending_approval", "review")).toBe(true);
+  });
+  it("reviews the current edited proposal and blocks approval after the account binding changes", () => {
+    const id = "11111111-1111-4111-8111-111111111111";
+    const payload = { variantId: id, platform: "instagram", text: "Current edited proposal", imageUrl: variant.imageUrl, linkUrl: null, publishAt: "2026-10-16T01:00:00Z", providerMode: "mock", connectionGeneration: null };
+    const review: SocialReview = {
+      approval: { id: "approval", runId: "run", agentId: "social", tool: "socials.publish", status: "pending", kind: "social_publish", original: { ...payload, text: "Old proposal" }, edited: payload, reason: null, createdAt: now.toISOString(), expiresAt: "2026-10-17T00:00:00Z", decidedAt: null, result: null, error: null, repoPrivate: null, targetChanged: null },
+      facts: { postId: "post", status: "pending_approval", approvalId: "approval", scheduledAt: null, remoteUrl: null, isMock: false, lastError: null, draftedFromContent: false, bindingMatches: true, destination: "LifeOS fixture store" },
+    };
+    const render = (value: SocialReview) => renderToStaticMarkup(createElement(VariantPanel, { variant: { ...variant, id, status: "pending_approval" }, title: "Post", card, now, defaultDate: "2026-10-15", parentDirty: false, onDirty: () => {}, review: value }));
+    const html = render(review);
+    expect(html).toContain("Current edited proposal");
+    expect(html).not.toContain("Old proposal");
+    expect(html).not.toContain("&lt;script&gt;caption");
+    expect(html).toContain("Approve &amp; schedule");
+    expect(html).toContain("Back to draft");
+    expect(html).toContain("Not published");
+    expect(html).not.toContain("<textarea");
+    const changed = render({ ...review, facts: { ...review.facts, bindingMatches: false } });
+    expect(changed).toMatch(/<button[^>]*disabled=""[^>]*>Approve &amp; schedule/);
+    expect(changed).toContain("The account binding changed");
+    expect(render({ ...review, approval: { ...review.approval, expiresAt: "2026-10-14T00:00:00Z" } })).toMatch(/<button[^>]*disabled=""[^>]*>Approve &amp; schedule/);
+  });
+  it("shows platform-specific missing media without rendering unsafe image URLs", () => {
+    const render = (platform: "instagram" | "tiktok" | "linkedin", imageUrl: string | null) => renderToStaticMarkup(createElement(PostPreview, { platform, imageUrl, text: "Caption", title: "Draft" }));
+    expect(render("instagram", null)).toContain("Instagram needs a photo");
+    expect(render("tiktok", null)).toContain("a 9:16 video posted in the app");
+    expect(render("linkedin", null)).not.toContain("No media attached");
+    expect(render("instagram", "http://images.example.com/photo.jpg")).not.toContain("<img");
+    expect(render("instagram", "https://images.example.com/photo.jpg")).toContain('data-platform="instagram"');
+  });
   it("shows January imported posts in the default year-to-date analytics view", () => {
     const january = new Date("2026-01-12T01:00:00Z");
     const post = { id: "post", title: "January archive", body: "old caption", stage: "draft", createdBy: "owner", draftedFromContent: true, sourceKind: null, sourceId: null, createdAt: january, updatedAt: january, column: "Published" as const,
@@ -103,3 +142,4 @@ describe("Socials owner UI rules", () => {
     expect(renderToStaticMarkup(createElement(FollowersChart, { cards: [card] }))).toContain("No follower history yet");
   });
 });
+

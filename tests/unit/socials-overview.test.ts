@@ -1,8 +1,8 @@
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { formatCount } from "@/socials/platform";
-import { PlatformCard, type PlatformCardData } from "@/socials/platform-card";
+import { formatCount } from "@/features/socials/platform";
+import { PlatformCard, type PlatformCardData } from "@/features/socials/platform-card";
 import type { listBoard } from "@/server/socials/queries";
 
 const now = new Date("2026-10-15T00:00:00Z");
@@ -45,3 +45,4 @@ describe("Socials overview", () => {
     expect(render(card({ isMock: false, connection: { id: "instagram", status: "connected", last4: "1234", login: "123", expiresAt: new Date("2026-10-14"), scopes: [], lastSyncAt: null, lastSyncError: null } }))).toContain("RECONNECT");
   });
 });
+

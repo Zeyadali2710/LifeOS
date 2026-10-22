@@ -1,4 +1,4 @@
-import { OrganizationView } from "@/organization/organization-view";
+import { OrganizationView } from "@/features/organization/organization-view";
 import { db } from "@/server/db/client";
 import { humanRule } from "@/server/calendar/expand";
 import { addDaysYmd, sydneyYmd } from "@/server/calendar/free-slots";
@@ -26,7 +26,6 @@ export default async function OrganizationPage({ searchParams }: { searchParams:
   const instances = data.instances.map((i) => ({ ...i, repeatText: i.rrule ? humanRule(i.rrule) : null }));
 
   return (
-    <div className="mx-auto max-w-[1600px]">
       <OrganizationView
         data={{ ...data, instances }}
         view={view}
@@ -36,6 +35,5 @@ export default async function OrganizationPage({ searchParams }: { searchParams:
         nowIso={now.toISOString()}
         eventParam={typeof sp.event === "string" ? sp.event : null}
       />
-    </div>
   );
 }

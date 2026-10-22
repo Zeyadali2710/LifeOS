@@ -92,3 +92,15 @@ export function shortDate(iso: string): string {
 
 /** "9:30" in Sydney. */
 export const hmOf = (iso: string) => hm(new Date(iso));
+
+const addDays = (ymd: string, n: number) => {
+  const [y, m, d] = ymd.split("-").map(Number) as [number, number, number];
+  return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
+};
+export function shiftDate(view: "day" | "week" | "month", ymd: string, dir: -1 | 1) {
+  if (view === "day") return addDays(ymd, dir);
+  if (view === "week") return addDays(ymd, 7 * dir);
+  const [y, m] = ymd.split("-").map(Number) as [number, number];
+  return new Date(Date.UTC(y, m - 1 + dir, 1)).toISOString().slice(0, 10);
+}
+

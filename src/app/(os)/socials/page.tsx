@@ -1,8 +1,9 @@
-import { SocialsView, type SocialsData } from "@/socials/socials-view";
+import { SocialsView, type SocialsData } from "@/features/socials/socials-view";
 import { db } from "@/server/db/client";
 import { requireOwner } from "@/server/session";
 import { analytics, calendarItems, getPost, listBoard, listSources, platformCards } from "@/server/socials/queries";
-import { calendarRange, dayKey } from "@/socials/model";
+import { calendarRange, dayKey } from "@/features/socials/model";
+import { socialPostReviews } from "@/server/socials-view";
 
 export const metadata = { title: "Socials · LifeOS" };
 export const dynamic = "force-dynamic";
@@ -11,7 +12,7 @@ export default async function SocialsPage({ searchParams }: { searchParams: Prom
   await requireOwner();
   const sp = await searchParams;
   const now = new Date();
-  let data: SocialsData | null = null;
+  let data: SocialsData;
   try {
     const h = db();
     const anchor = typeof sp.d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.d) && Number.isFinite(Date.parse(sp.d)) ? sp.d : dayKey(now);
@@ -28,11 +29,13 @@ export default async function SocialsPage({ searchParams }: { searchParams: Prom
     const rangeVariants = stats?.variants.filter((v) => v.publishedAt && v.publishedAt >= since) ?? [];
     const totals: Record<string, number> = {};
     for (const variant of rangeVariants) for (const [metric, value] of Object.entries(variant.metrics ?? {})) if (typeof value === "number") totals[metric] = (totals[metric] ?? 0) + value;
-    data = { cards, board, post, sources, calendar, analytics: stats ? { ...stats,
+    data = { cards, board, post, sources, calendar, reviews: await socialPostReviews(h, post), analytics: stats ? { ...stats,
       snapshots: stats.snapshots.filter((s) => s.date >= dayKey(since)),
       totals, variants: rangeVariants } : null, now };
   } catch (error) {
     console.error("socials: load failed", error instanceof Error ? error.name : "unknown");
+    throw error;
   }
   return <SocialsView data={data} />;
 }
+
