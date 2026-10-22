@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { expiryState, type SocialPlatform } from "@/lib/social-types";
 import type { listBoard, platformCards } from "@/server/socials/queries";
 import { ButtonLink } from "@/ui/button";
@@ -21,7 +22,7 @@ export function PlatformCard({ card, posts, now }: { card: PlatformCardData; pos
   return <Card pad as="article"><div className={s.stack}><div className={s.actions}><span className={s.platformMark}>{p.mark}</span><strong>{p.label}</strong>{card.isMock && <Tag>MOCK</Tag>}</div>
     <div><span className={s.number}>{card.followers === null ? <span aria-label="not available">—</span> : formatCount(card.followers)}</span> <span className={s.muted}>followers</span></div>
     <p className={s.muted}>{count} posts · 30D</p><p className={s.muted}>{next?.scheduledAt ? `Next: ${stamp(next.scheduledAt)}` : "Nothing scheduled"}</p>
-    {latestTitle && card.latest ? <ButtonLink variant="text" href={`/socials?post=${card.latest.postId}`}>{latestTitle}</ButtonLink> : <p className={s.muted}>No synced or LifeOS posts yet.</p>}
+    {latestTitle && card.latest ? <Link className={s.latestPost} href={`/socials?post=${card.latest.postId}`} title={latestTitle}>{latestTitle}</Link> : <p className={s.muted}>No synced or LifeOS posts yet.</p>}
     {hasMetrics && <p className={s.muted}>{Object.entries(card.latest?.metrics ?? {}).filter(([, value]) => typeof value === "number").map(([key, value]) => `${formatCount(value!)} ${key}`).join(" · ")}</p>}
     {platform === "linkedin" && <p className={s.muted}>LinkedIn doesn&apos;t share personal-profile analytics with self-serve apps. Reading previous personal posts requires restricted access.</p>}
     {platform === "portfolio" && <p className={s.muted}>Portfolio analytics aren&apos;t connected. No connection needed.</p>}

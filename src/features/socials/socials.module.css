@@ -138,3 +138,5 @@
 .postSettings,.previewDetails { min-width:0; font-size:var(--text-xs); color:var(--ink-2); }
 .postSettings summary,.previewDetails summary { cursor:pointer; margin-bottom:var(--space-2); }
 .previewDetails .livePreview { margin-top:var(--space-2); }
+.latestPost { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; color: var(--accent); }
+.latestPost:hover { color: var(--ink); }

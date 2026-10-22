@@ -1,4 +1,4 @@
-.root { display: grid; grid-template-columns: var(--mail-sidebar-w) minmax(0, 1fr); height: calc(100dvh - var(--masthead-h)); min-height: 500px; overflow: hidden; background: var(--paper); max-width: var(--content-max); margin: 0 auto; color: var(--ink); font-size: var(--text-ui); }
+.root { display: grid; grid-template-columns: var(--mail-sidebar-w) minmax(0, 1fr); height: calc(100dvh - var(--masthead-h)); min-height: 500px; overflow: hidden; background: var(--paper); color: var(--ink); font-size: var(--text-ui); }
 .root p, .root h1, .root h2, .root h3 { margin: 0; }
 .root button, .root a, .root input, .root select { font-family: inherit; }
 .root button { cursor: pointer; }
