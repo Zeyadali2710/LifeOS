@@ -4,10 +4,10 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { formatTokens, formatUsd } from "@/lib/format";
 import { setSpendCapAction } from "@/server/settings-actions";
-import { useShell } from "@/shell/shell-provider";
-import { Button } from "@/ui/button";
-import { Input } from "@/ui/field";
-import { Progress } from "@/ui/progress";
+import { useShell } from "@/features/shell/shell-provider";
+import { Button } from "@/legacy-ui/button";
+import { Input } from "@/legacy-ui/field";
+import { Progress } from "@/legacy-ui/progress";
 
 type ModelRow = { model: string; label: string; input: number; output: number; cache: number; costUsd: number };
 

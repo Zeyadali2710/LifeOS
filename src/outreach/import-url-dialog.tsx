@@ -3,10 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { importEventUrlAction } from "@/server/outreach-actions";
-import { useShell } from "@/shell/shell-provider";
-import { Button } from "@/ui/button";
-import { Dialog } from "@/ui/dialog";
-import { Field, Input } from "@/ui/field";
+import { useShell } from "@/features/shell/shell-provider";
+import { Button } from "@/legacy-ui/button";
+import { Dialog } from "@/legacy-ui/dialog";
+import { Field, Input } from "@/legacy-ui/field";
 
 const ERRORS: Record<string, string> = {
   invalid: "Enter a full https:// address.",

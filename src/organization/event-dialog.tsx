@@ -7,10 +7,10 @@ import type { CalendarDTO } from "@/lib/calendar-types";
 import { eventInput, isTimeZone } from "@/lib/event-payload";
 import { createEventAction, deleteEventAction, reloadEventAction, updateEventAction, type EventActionResult } from "@/server/calendar-actions";
 import { formatHM, sydneyInstant, sydneyParts, tzLabel } from "@/server/time";
-import { useShell } from "@/shell/shell-provider";
-import { Button } from "@/ui/button";
-import { Dialog } from "@/ui/dialog";
-import { Checkbox, Field, Input, Select, Textarea } from "@/ui/field";
+import { useShell } from "@/features/shell/shell-provider";
+import { Button } from "@/legacy-ui/button";
+import { Dialog } from "@/legacy-ui/dialog";
+import { Checkbox, Field, Input, Select, Textarea } from "@/legacy-ui/field";
 import { type Scope, ScopeDialog } from "./scope-dialog";
 import type { OrgInstance } from "./organization-view";
 

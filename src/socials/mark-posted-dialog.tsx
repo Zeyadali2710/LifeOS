@@ -4,10 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { SocialPlatform } from "@/lib/social-types";
 import { markPosted } from "@/server/socials-actions";
-import { useShell } from "@/shell/shell-provider";
-import { Button } from "@/ui/button";
-import { Dialog } from "@/ui/dialog";
-import { Field, Input } from "@/ui/field";
+import { useShell } from "@/features/shell/shell-provider";
+import { Button } from "@/legacy-ui/button";
+import { Dialog } from "@/legacy-ui/dialog";
+import { Field, Input } from "@/legacy-ui/field";
 import { safePostUrl } from "./model";
 import { PLATFORM } from "./platform";
 

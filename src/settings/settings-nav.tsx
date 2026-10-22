@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { Icon } from "@/ui/icon";
-import type { IconName } from "@/ui/icon-names";
+import { Icon } from "@/legacy-ui/icon";
+import type { IconName } from "@/legacy-ui/icon-names";
 
 export const SECTIONS: { key: "connections" | "ai" | "outreach" | "briefings"; label: string; icon: IconName }[] = [
   { key: "connections", label: "Connections", icon: "hub" },

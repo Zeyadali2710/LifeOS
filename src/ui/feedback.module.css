@@ -1,0 +1,28 @@
+.alert { display: flex; gap: 10px; align-items: flex-start; background: var(--status-failed-bg); border-radius: var(--radius-menu); padding: 10px 12px; font-size: 13px; line-height: 1.45; color: var(--ink); }
+.alert > .ms { color: var(--status-failed); margin-top: 1px; }
+.alert.warn { background: var(--status-approval-bg); }
+.alert.warn > .ms { color: var(--status-approval); }
+.alert.info { background: var(--wash); }
+.alert.info > .ms { color: var(--ink-2); }
+.alertBody { flex: 1; min-width: 0; }
+.alertAction { margin-left: 4px; }
+
+.empty { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 10px; padding: 48px 20px; }
+.empty > .ms { color: var(--neutral); }
+.emptyTitle { font-family: var(--font-display); font-size: 22px; line-height: 1.25; }
+.emptyBody { font-size: var(--text-small); color: var(--ink-2); max-width: 46ch; line-height: 1.5; }
+
+.skel { background: var(--wash); border-radius: var(--radius-sm); animation: los-pulse 1.4s ease-in-out infinite; }
+
+/* Route-level state (loading / empty / error / disconnected) */
+.loading { margin-top: 28px; display: flex; flex-direction: column; gap: 14px; max-width: 760px; }
+.loadingHead { display: flex; gap: 12px; align-items: center; font-family: var(--font-mono); font-size: var(--text-meta); color: var(--ink-3); }
+.state { margin-top: 40px; display: grid; grid-template-columns: 72px minmax(0, 560px); gap: 20px; align-items: start; }
+@media (max-width: 719.98px) { .state { grid-template-columns: 1fr; margin-top: 28px; } }
+.stateBody { display: flex; flex-direction: column; gap: 10px; }
+.stateLabel { font-family: var(--font-mono); font-size: 11px; letter-spacing: var(--label-tracking); color: var(--ink-3); }
+.stateLabel.failed { color: var(--status-failed); }
+.stateTitle { font-family: var(--font-display); font-size: 26px; line-height: 1.2; }
+.stateText { font-size: var(--text-body); line-height: 1.55; color: var(--ink-2); }
+.stateActions { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+.inline { margin-top: 0; }

@@ -5,9 +5,9 @@ import { useRef, useState } from "react";
 import { CATEGORY, CATEGORY_KEYS, type CategoryKey } from "@/lib/calendar-categories";
 import type { CalendarDTO } from "@/lib/calendar-types";
 import { setCalendarCategoryAction, setCalendarSyncAction, setDefaultCalendarAction } from "@/server/calendar-settings-actions";
-import { useShell } from "@/shell/shell-provider";
-import { Disclosure } from "@/ui/disclosure";
-import { Checkbox, Select } from "@/ui/field";
+import { useShell } from "@/features/shell/shell-provider";
+import { Disclosure } from "@/legacy-ui/disclosure";
+import { Checkbox, Select } from "@/legacy-ui/field";
 
 const meta = (c: CalendarDTO) => (c.kind === "subscribed" ? "Subscribed" : c.access === "reader" ? "Read only" : "Owner · read and write");
 

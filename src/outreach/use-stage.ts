@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { Stage } from "@/lib/outreach-types";
 import { moveStageAction } from "@/server/outreach-pipeline-actions";
-import { useShell } from "@/shell/shell-provider";
+import { useShell } from "@/features/shell/shell-provider";
 
 /** Optimistic stage for one event: flips at once, reverts with a toast when the server refuses. */
 export function useStage(id: string, initial: Stage | null) {

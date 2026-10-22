@@ -5,12 +5,12 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { CareerDTO } from "@/lib/project-types";
 import { syncNowAction } from "@/server/settings-actions";
-import { useShell } from "@/shell/shell-provider";
-import { Button } from "@/ui/button";
-import { EmptyState } from "@/ui/empty-state";
-import { Icon } from "@/ui/icon";
-import { SectionHeader } from "@/ui/section-header";
-import { StatusTile } from "@/ui/status-tile";
+import { useShell } from "@/features/shell/shell-provider";
+import { Button } from "@/legacy-ui/button";
+import { EmptyState } from "@/legacy-ui/empty-state";
+import { Icon } from "@/legacy-ui/icon";
+import { SectionHeader } from "@/legacy-ui/section-header";
+import { StatusTile } from "@/legacy-ui/status-tile";
 import { ActivityFeed } from "./activity-feed";
 import { RepoCard, relativeTime } from "./repo-card";
 

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="pixelkit.js"></script><script src="lifeos-data.js"></script><script src="lifeos-app.js"></script>
+<style>body{margin:0;background:#f5f2eb;color:#1f1c18;font-family:'Instrument Sans',system-ui,sans-serif}*{box-sizing:border-box}button,input{font-family:inherit;color:inherit}:focus-visible{outline:2px solid #b5502f;outline-offset:2px}@keyframes agZoom{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}@keyframes agIn{from{opacity:0;transform:translateX(12px)}to{opacity:1;transform:none}}@media (prefers-reduced-motion: reduce){*{animation:none!important}}</style>
+</helmet>
+<div ref="{{ rootRef }}" data-screen-label="Agents" style="position:relative;height:{{ rootH }};min-height:640px;background:#efe9dd;display:{{ rootDisplay }};flex-direction:column;overflow:hidden">
+  <div style="position:{{ barPos }};left:0;right:{{ panelW }}px;top:0;z-index:3;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;justify-content:space-between;padding:16px {{ padX }}px">
+    <div style="display:flex;gap:14px;align-items:baseline;flex-wrap:wrap">
+      <h1 style="margin:0;font-family:'Newsreader',serif;font-weight:400;font-size:30px;letter-spacing:-.015em">Agents</h1>
+      <span style="font-size:14px;color:#575047"><button onClick="{{ goApprovals }}" style="border:0;background:none;padding:0;font-size:14px;color:#92560a;cursor:pointer;font-weight:500">{{ approvalN }} need you</button> · {{ count.working }} working · {{ count.failed }} failed · {{ count.paused }} paused · <span style="white-space:nowrap">US$4.12 of US$20 <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6e675c">SAMPLE</span></span></span>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div role="tablist" aria-label="View" style="display:flex;border:1px solid #cfc6b6;border-radius:6px;overflow:hidden;background:#f5f2eb">
+        <sc-for list="{{ views }}" as="vw" hint-placeholder-count="3"><button role="tab" aria-selected="{{ vw.on }}" onClick="{{ vw.pick }}" style="border:0;border-left:{{ vw.sep }};padding:7px 13px;font-size:13.5px;cursor:pointer;background:{{ vw.bg }};font-weight:{{ vw.w }};display:flex;align-items:center;gap:6px">{{ vw.label }}<sc-if value="{{ vw.hasN }}" hint-placeholder-val="{{ false }}"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;background:#92560a;color:#fff;border-radius:9px;padding:0 6px;line-height:17px">{{ vw.n }}</span></sc-if></button></sc-for>
+      </div>
+      <button onClick="{{ toggleReduced }}" aria-pressed="{{ reduced }}" style="white-space:nowrap;flex:none;border:1px solid #cfc6b6;background:#f5f2eb;border-radius:6px;padding:7px 11px;font-size:13.5px;cursor:pointer">{{ reducedLabel }}</button>
+      <button onClick="{{ pauseAll }}" style="border:0;background:none;padding:7px 6px;font-size:13.5px;cursor:pointer;color:#a8321f">Pause all</button>
+    </div>
+  </div>
+
+  <sc-if value="{{ viewOffice }}" hint-placeholder-val="{{ true }}">
+    <div ref="{{ sceneRef }}" onKeyDown="{{ navKey }}" style="position:{{ scenePos }};left:0;top:0;right:{{ panelW }}px;bottom:0;height:{{ sceneH }};overflow:{{ sceneOverflow }};animation:agZoom .32s cubic-bezier(.2,.7,.2,1);transform-origin:45% 55%">
+      <div style="position:relative;width:{{ innerW }}px;height:{{ innerH }}px">
+        <sc-if value="{{ ready }}" hint-placeholder-val="{{ false }}"><canvas ref="{{ officeRef }}" aria-hidden="true" style="position:absolute;left:{{ cx }}px;top:{{ cy }}px;width:{{ cw }}px;height:{{ ch }}px;image-rendering:pixelated"></canvas></sc-if>
+        <sc-for list="{{ spots }}" as="s" hint-placeholder-count="0">
+          <button data-agent-spot="{{ s.id }}" onClick="{{ s.pick }}" onFocus="{{ s.pick }}" onMouseEnter="{{ s.enter }}" onMouseLeave="{{ s.leave }}" aria-label="{{ s.aria }}" aria-pressed="{{ s.selected }}" style="position:absolute;left:{{ s.left }}px;top:{{ s.top }}px;width:{{ s.w }}px;height:{{ s.h }}px;background:transparent;border:0;padding:0;cursor:pointer;border-radius:8px" style-focus="outline:2px solid #b5502f;outline-offset:2px">
+            <sc-if value="{{ s.showTag }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:50%;transform:translateX(-50%);bottom:-8px;white-space:nowrap;background:{{ s.tagBg }};color:{{ s.tagFg }};border:1px solid #1f1c18;font-size:12px;font-weight:500;padding:2px 8px;border-radius:4px">{{ s.name }} · {{ s.stateShort }}</span></sc-if>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+    <div style="position:{{ legendPos }};left:{{ padX }}px;bottom:16px;z-index:3;display:flex;flex-wrap:wrap;gap:8px 16px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#575047;background:rgba(245,242,235,.92);border:1px solid #dcd4c6;border-radius:6px;padding:7px 10px;margin:0 {{ legendMargin }}">
+      <span>… working</span><span>! needs you</span><span>× failed</span><span>II paused</span><span>– idle</span><span>← → move · ↵ select</span><span>Not in the office: Career, AgentOps (not connected)</span>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ viewTable }}" hint-placeholder-val="{{ false }}">
+    <div style="position:{{ scenePos }};left:0;top:72px;right:{{ panelW }}px;bottom:0;overflow:auto;background:#f5f2eb;border-top:1px solid #dcd4c6;padding:0 {{ padX }}px 40px">
+      <div role="table" aria-label="All agents" style="min-width:640px">
+        <div role="row" style="display:grid;grid-template-columns:36px 130px 120px minmax(0,1fr) 90px 50px 60px 70px;gap:10px;padding:10px 6px;border-bottom:2px solid #1f1c18;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.08em;color:#6e675c"><span></span><span>AGENT</span><span>STATE</span><span>CURRENT / LAST</span><span>MODEL</span><span>RUNS</span><span>COST</span><span style="text-align:right">TIME</span></div>
+        <sc-for list="{{ sorted }}" as="a" hint-placeholder-count="11">
+          <button role="row" onClick="{{ a.pick }}" aria-pressed="{{ a.selected }}" style="width:100%;display:grid;grid-template-columns:36px 130px 120px minmax(0,1fr) 90px 50px 60px 70px;gap:10px;align-items:center;padding:9px 6px;border:0;border-bottom:1px solid #dcd4c6;background:{{ a.rowBg }};text-align:left;cursor:pointer;font-size:14px" style-hover="background:#ece6da">
+            <canvas data-pk-avatar="{{ a.id }}" data-pk-state="{{ a.state }}" data-pk-pal="day" data-pk-bg="#e9e1d1" style="width:28px;height:28px;image-rendering:pixelated;border-radius:4px"></canvas>
+            <span style="font-weight:600">{{ a.name }}</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:{{ a.color }}">{{ a.glyph }} {{ a.stateLabel }}</span>
+            <span style="color:#575047;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ a.task }}</span>
+            <span style="font-size:13px;color:#575047">{{ a.model }}</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px">{{ a.runs }}</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12px">{{ a.cost }}</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#6e675c;text-align:right">{{ a.since }}</span>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ viewRuns }}" hint-placeholder-val="{{ false }}">
+    <div style="position:{{ scenePos }};left:0;top:72px;right:{{ panelW }}px;bottom:0;overflow:auto;background:#f5f2eb;border-top:1px solid #dcd4c6;padding:0 {{ padX }}px 40px">
+      <div style="display:flex;gap:6px;padding:12px 0;flex-wrap:wrap"><sc-for list="{{ runFilters }}" as="f" hint-placeholder-count="5"><button onClick="{{ f.pick }}" aria-pressed="{{ f.on }}" style="border:1px solid {{ f.border }};background:{{ f.bg }};border-radius:14px;padding:4px 11px;font-size:12.5px;cursor:pointer">{{ f.label }} <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c">{{ f.n }}</span></button></sc-for></div>
+      <div role="table" aria-label="Runs" style="min-width:640px">
+        <div role="row" style="display:grid;grid-template-columns:70px 110px minmax(0,1fr) 130px 64px 60px 60px;gap:10px;padding:8px 6px;border-bottom:2px solid #1f1c18;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.08em;color:#6e675c"><span>TIME</span><span>AGENT</span><span>SUMMARY</span><span>STATUS</span><span>ROUTE</span><span>TOOLS</span><span style="text-align:right">TOOK</span></div>
+        <sc-for list="{{ runs }}" as="r" hint-placeholder-count="10">
+          <button role="row" onClick="{{ r.pick }}" aria-pressed="{{ r.on }}" style="width:100%;display:grid;grid-template-columns:70px 110px minmax(0,1fr) 130px 64px 60px 60px;gap:10px;align-items:center;padding:9px 6px;border:0;border-bottom:1px solid #dcd4c6;background:{{ r.bg }};text-align:left;cursor:pointer;font-size:13.5px" style-hover="background:#ece6da">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#6e675c">{{ r.when }}</span>
+            <span style="font-weight:600">{{ r.agent }}</span>
+            <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.summary }}</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:{{ r.color }}">{{ r.statusLabel }}</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;border:1px solid #cfc6b6;border-radius:4px;padding:1px 5px;justify-self:start">{{ r.route }}</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">{{ r.tools }}</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#6e675c;text-align:right">{{ r.dur }}</span>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ viewApprovals }}" hint-placeholder-val="{{ false }}">
+    <div style="position:{{ scenePos }};left:0;top:72px;right:0;bottom:0;overflow:auto;background:#f5f2eb;border-top:1px solid #dcd4c6">
+      <dc-import name="Approvals" nav="{{ nav }}" bp="{{ bp }}" embedded="{{ true }}" hint-size="100%,600px"></dc-import>
+    </div>
+  </sc-if>
+
+  <aside aria-label="{{ panelLabel }}" style="position:{{ panelPos }};top:0;right:0;bottom:0;width:{{ panelWcss }};background:#f5f2eb;border-left:1px solid #dcd4c6;overflow:auto;padding:22px {{ panelPad }}px 32px;display:{{ panelDisplay }};flex-direction:column;gap:18px;z-index:4">
+    <sc-if value="{{ showRun }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-direction:column;gap:16px;animation:agIn .2s ease-out">
+        <button onClick="{{ closeRun }}" style="align-self:flex-start;border:0;background:none;padding:0;font-size:13px;color:#b5502f;cursor:pointer">← {{ sel.name }}</button>
+        <div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c">RUN · {{ run.when }} · {{ run.agent }}</div><div style="font-family:'Newsreader',serif;font-size:24px;line-height:1.2;margin-top:6px">{{ run.summary }}</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;margin-top:8px;color:{{ run.color }}">{{ run.statusLabel }} · {{ run.dur }} · {{ run.route }} · {{ run.tokens }} tokens · {{ run.cost }}</div></div>
+        <div style="display:flex;flex-direction:column">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;color:#6e675c;padding-bottom:6px;border-bottom:1px solid #1f1c18">TRACE · TOOL CALLS AND ROUTE STEPS</div>
+          <sc-for list="{{ run.trace }}" as="t" hint-placeholder-count="4">
+            <div style="display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:8px;padding:9px 0;border-bottom:1px solid #e6dfd2;align-items:baseline">
+              <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:{{ t.color }}">{{ t.mark }}</span>
+              <div><div style="font-size:13.5px;font-weight:500">{{ t.label }}</div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c;margin-top:2px">{{ t.meta }}</div></div>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c">{{ t.dur }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <p style="margin:0;font-size:12.5px;line-height:1.5;color:#6e675c">LifeOS stores the execution summary and tool calls only. Hidden reasoning is never stored or shown. Limits per run: 12 tool calls, 60k tokens, 120 s active.</p>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showAgent }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-direction:column;gap:18px;animation:agIn .2s ease-out">
+        <div style="display:flex;gap:14px;align-items:center">
+          <canvas data-pk-avatar="{{ sel.id }}" data-pk-state="{{ sel.state }}" data-pk-pal="day" data-pk-bg="#e9e1d1" style="width:56px;height:56px;image-rendering:pixelated;border-radius:6px"></canvas>
+          <div style="min-width:0"><div style="font-family:'Newsreader',serif;font-size:30px;line-height:1.05">{{ sel.name }}</div><div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.04em;margin-top:6px;color:{{ sel.color }}">{{ sel.glyph }} {{ sel.stateLabel }} · {{ sel.since }} · {{ sel.model }}</div></div>
+        </div>
+        <p style="margin:0;font-size:14.5px;line-height:1.5;color:#575047">{{ sel.purpose }}</p>
+        <div style="border-top:1px solid #dcd4c6;padding-top:14px;display:flex;flex-direction:column;gap:6px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;color:#6e675c">NOW</div>
+          <div style="font-size:16.5px;font-weight:500;line-height:1.35;text-wrap:pretty">{{ sel.task }}</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#6e675c">{{ sel.step }}</div>
+          <sc-if value="{{ sel.hasLiveRun }}" hint-placeholder-val="{{ false }}"><button onClick="{{ openLive }}" style="align-self:flex-start;border:0;background:none;padding:2px 0;font-size:13px;color:#b5502f;cursor:pointer">Open live trace →</button></sc-if>
+        </div>
+        <sc-if value="{{ sel.isApproval }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:#92560a">! PROPOSED · {{ sel.approval.tool }} · {{ sel.approval.tier }}</div>
+            <div style="font-size:15.5px;font-weight:600">{{ sel.approval.title }}</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#575047">{{ sel.approval.target }}</div>
+            <blockquote style="margin:0;background:#fbf9f4;border:1px solid #dcd4c6;border-radius:4px;padding:14px 16px;font-family:'Newsreader',serif;font-size:16.5px;line-height:1.55">{{ sel.approval.body }}</blockquote>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button onClick="{{ approveSel }}" style="background:#1f1c18;color:#f5f2eb;border:0;border-radius:6px;padding:9px 16px;font-size:14px;font-weight:500;cursor:pointer">Approve</button><button onClick="{{ editSel }}" style="background:transparent;border:1px solid #cfc6b6;border-radius:6px;padding:8px 14px;font-size:14px;cursor:pointer">Review in Approvals</button><button onClick="{{ rejectSel }}" style="background:transparent;border:0;padding:8px 10px;font-size:14px;cursor:pointer;color:#a8321f">Reject</button></div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c">{{ sel.approval.expires }} · the run is suspended until you decide</div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ sel.isFailed }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:10px;border-left:2px solid #a8321f;padding:2px 0 2px 14px">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:#a8321f">× RUN FAILED · 9:16</div>
+            <div style="font-size:14.5px;line-height:1.5">{{ sel.error }}</div>
+            <div style="display:flex;gap:8px"><button onClick="{{ retrySel }}" style="background:#1f1c18;color:#f5f2eb;border:0;border-radius:6px;padding:8px 14px;font-size:13.5px;cursor:pointer">Retry narrower</button><button onClick="{{ openLive }}" style="background:transparent;border:1px solid #cfc6b6;border-radius:6px;padding:7px 12px;font-size:13.5px;cursor:pointer">Open trace</button></div>
+          </div>
+        </sc-if>
+        <div style="display:flex;flex-direction:column">
+          <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;color:#6e675c;padding-bottom:6px;border-bottom:1px solid #dcd4c6"><span>RECENT RUNS</span><button onClick="{{ showRuns }}" style="border:0;background:none;padding:0;font:inherit;letter-spacing:inherit;color:#b5502f;cursor:pointer">ALL RUNS →</button></div>
+          <sc-for list="{{ selRuns }}" as="r" hint-placeholder-count="3">
+            <button onClick="{{ r.pick }}" style="display:grid;grid-template-columns:minmax(0,1fr) 56px 56px 64px;gap:8px;padding:9px 0;border:0;border-bottom:1px solid #e6dfd2;background:none;text-align:left;cursor:pointer;font-size:13.5px;align-items:baseline" style-hover="background:#ece6da">
+              <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.summary }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:{{ r.color }}">{{ r.short }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c">{{ r.dur }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c;text-align:right">{{ r.when }}</span>
+            </button>
+          </sc-for>
+          <sc-if value="{{ selNoRuns }}" hint-placeholder-val="{{ false }}"><p style="margin:10px 0 0;font-size:13.5px;color:#6e675c">No runs yet.</p></sc-if>
+        </div>
+        <details style="border-top:1px solid #dcd4c6;padding-top:12px">
+          <summary style="cursor:pointer;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;color:#6e675c">SETTINGS · MODEL AND TOOLS</summary>
+          <div style="display:flex;flex-direction:column;gap:12px;margin-top:12px">
+            <div style="display:flex;flex-direction:column;gap:6px"><span style="font-size:13px;color:#575047">Model</span>
+              <sc-if value="{{ routable }}" hint-placeholder-val="{{ false }}"><div role="radiogroup" aria-label="Model" style="display:flex;border:1px solid #cfc6b6;border-radius:6px;overflow:hidden;align-self:flex-start"><sc-for list="{{ models }}" as="m" hint-placeholder-count="4"><button role="radio" aria-checked="{{ m.on }}" onClick="{{ m.pick }}" style="border:0;border-left:{{ m.sep }};padding:6px 11px;font-size:13px;cursor:pointer;background:{{ m.bg }}">{{ m.label }}</button></sc-for></div><span style="font-size:12.5px;color:#6e675c;line-height:1.45">Auto sends simple turns to the free model and reasoning to Sonnet, with one fallback. Private data never goes to a free model.</span></sc-if>
+              <sc-if value="{{ notRoutable }}" hint-placeholder-val="{{ true }}"><span style="font-size:14px">{{ sel.model }} <span style="color:#6e675c;font-size:12.5px">· {{ lockNote }}</span></span></sc-if>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px"><span style="font-size:13px;color:#575047">Tools</span><sc-for list="{{ tools }}" as="t" hint-placeholder-count="3"><div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:11.5px;padding:3px 0"><span>{{ t.name }}</span><span style="color:{{ t.color }}">{{ t.tier }}</span></div></sc-for></div>
+          </div>
+        </details>
+        <div style="display:flex;gap:16px;font-size:13.5px;flex-wrap:wrap">
+          <button onClick="{{ chatSel }}" style="border:0;background:none;padding:4px 0;color:#b5502f;cursor:pointer">Chat with {{ sel.name }}</button>
+          <button onClick="{{ pauseSel }}" style="border:0;background:none;padding:4px 0;cursor:pointer;text-decoration:underline">{{ pauseLabel }}</button>
+        </div>
+      </div>
+    </sc-if>
+  </aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { ready: false, W: 1200, H: 800, view: 'office', runSel: null, runFilter: 'all', model: 'Auto' };
+  componentDidMount() { const w = () => (window.APP && APP.ready && window.PixelKit) ? (this.un = APP.sub(() => this.forceUpdate()), this.setState({ ready: true, view: APP.state.agentsView || 'office' })) : setTimeout(w, 30); w(); }
+  componentWillUnmount() { this.un && this.un(); this.ro && this.ro.disconnect(); }
+  rootRef = el => { if (!el || this.ro) return; this.ro = new ResizeObserver(e => { const r = e[0].contentRect; this.setState({ W: Math.round(r.width), H: Math.round(r.height) }); }); this.ro.observe(el); };
+  officeRef = el => { if (el) PixelKit.office(el, () => this.__o); };
+  sceneRef = el => { this.sceneEl = el; };
+  nav = (r, p) => this.props.nav ? this.props.nav(r, p) : (p && APP.set(p), APP.toast('Opens ' + r + ' in the LifeOS shell.'));
+  TOOLS = { orchestrator: [['cross-domain reads', 'READ'], ['delegate', 'PREPARE']], projects: [['projects.list', 'READ'], ['projects.get', 'READ'], ['github.list_tree', 'READ'], ['github.get_file', 'READ'], ['github.create_issue', 'APPROVE'], ['projects.create', 'APPROVE'], ['projects.update', 'APPROVE']],
+    organization: [['calendar.list_events', 'READ'], ['calendar.find_free_slots', 'READ'], ['calendar.detect_conflicts', 'READ'], ['tasks.list', 'READ'], ['calendar.create_event', 'APPROVE'], ['calendar.update_event', 'APPROVE'], ['calendar.delete_event', 'HIGH_RISK']],
+    outreach: [['outreach.list_events', 'READ'], ['outreach.get_event', 'READ'], ['mail.list', 'READ'], ['mail.get_message', 'READ'], ['mail.send_reply', 'APPROVE']], social: [['social.draft_variants', 'PREPARE'], ['social.publish', 'APPROVE']],
+    finance: [['finance.overview', 'READ'], ['finance.list_merchants', 'READ'], ['finance.list_transactions', 'READ'], ['finance.update', 'HIGH_RISK']], knowledge: [['knowledge.search', 'READ'], ['knowledge.get', 'READ']], goals: [['goals.overview', 'READ']],
+    automations: [['automation.notify', 'EXECUTE'], ['automation.create_task', 'EXECUTE'], ['automation.ask_agent', 'EXECUTE']], career: [], agentops: [] };
+  traceFor(a, r) {
+    const T = (mark, label, meta, dur, color) => ({ mark, label, meta, dur, color: color || '#6e675c' });
+    if (r.live && a.id === 'outreach') return [T('·', 'Queued from Orchestrator', 'delegate(outreach, tier: reasoning)', '9:22:40'), T('·', 'Routed', 'SONNET · Outreach is not routable', ''), T('✓', 'mail.get_message', 'READ · allowed', '0.3s', '#2f6f55'), T('!', 'mail.send_reply', 'APPROVE · suspended, approval created', '', '#92560a')];
+    if (r.live && a.id === 'projects') return [T('·', 'Routed', 'Auto · simple → FREE', ''), T('✓', 'github.list_tree', 'READ · allowed', '0.6s', '#2f6f55'), T('↗', 'Escalated → SONNET', 'reason: tool markup in free turn', ''), T('!', 'github.create_issue', 'APPROVE · suspended', '', '#92560a')];
+    if (r.live && a.id === 'knowledge') return [T('✓', 'knowledge.search ×9', 'READ · keyword', '1m 40s', '#2f6f55'), T('×', 'Run limit', '60k tokens reached · run ended', '', '#a8321f')];
+    if (r.live && a.id === 'orchestrator') return [T('✓', 'calendar reads', 'READ', '0.8s', '#2f6f55'), T('…', 'delegate(organization)', 'child run · running', '48s', '#2f6f55')];
+    if (r.live && a.id === 'automations') return [T('✓', 'automation.create_task', 'EXECUTE · 1 of 3', '0.2s', '#2f6f55'), T('✓', 'automation.create_task', 'EXECUTE · 2 of 3', '0.2s', '#2f6f55'), T('…', 'automation.create_task', 'EXECUTE · 3 of 3', '', '#2f6f55')];
+    return [T('·', 'Routed', a.model, ''), T('✓', (this.TOOLS[a.id] || [['read', 'READ']])[0][0], 'READ · allowed', '0.4s', '#2f6f55'), T('✓', 'Done', 'summary stored', r.dur, '#2f6f55')];
+  }
+  renderVals() {
+    if (!this.state.ready) return { ready: false };
+    const st = this.state, S = APP.state, v = APP.ctl(), bp = this.props.bp || 'desktop', mob = bp === 'mobile';
+    const SC = { working: '#2f6f55', approval: '#92560a', failed: '#a8321f', paused: '#6e675c', idle: '#6e675c', offline: '#8a8377' };
+    const G = { working: '…', approval: '!', failed: '×', paused: 'II', idle: '–', offline: '○' };
+    const dec = a => Object.assign({}, a, { color: SC[a.state], glyph: G[a.state], rowBg: a.selected ? '#ece6da' : 'transparent', hasLiveRun: ['working', 'approval', 'failed'].includes(a.state) });
+    const RS = { running: ['… Running', '#2f6f55'], waiting_approval: ['! Waiting approval', '#92560a'], succeeded: ['✓ Succeeded', '#1f1c18'], failed: ['× Failed', '#a8321f'], cancelled: ['– Cancelled', '#6e675c'] };
+    const route = a => a.model === 'Opus' ? 'OPUS' : a.model === 'No model' ? '—' : a.id === 'projects' ? 'FREE' : 'SONNET';
+    let runs = [];
+    v.agents.forEach(a => {
+      if (['working', 'approval', 'failed'].includes(a.state)) runs.push({ id: a.id + '-live', agentId: a.id, agent: a.name, summary: a.task, status: a.state === 'working' ? 'running' : a.state === 'approval' ? 'waiting_approval' : 'failed', when: a.id === 'knowledge' ? '9:16' : 'now', dur: a.since, tools: a.id === 'knowledge' ? 9 : 2, tokens: a.id === 'knowledge' ? '60.0k' : '8.4k', cost: a.cost, route: route(a), live: true });
+      (a.recent || []).forEach((r, i) => runs.push({ id: a.id + '-' + i, agentId: a.id, agent: a.name, summary: r[0], status: r[2] === 'Failed' ? 'failed' : 'succeeded', when: r[1], dur: r[3], tools: 1 + (i % 3), tokens: (2 + i * 1.7).toFixed(1) + 'k', cost: '$0.0' + (3 + i), route: route(a) }));
+    });
+    runs = runs.filter((r, i, arr) => !(r.agentId === 'knowledge' && r.summary === 'Pricing page decision search'));
+    const rf = st.runFilter;
+    const runsF = runs.filter(r => rf === 'all' || r.status === rf).map(r => Object.assign({}, r, { statusLabel: RS[r.status][0], color: RS[r.status][1], short: RS[r.status][0].split(' ')[1], on: st.runSel === r.id, bg: st.runSel === r.id ? '#ece6da' : 'transparent', pick: () => this.setState({ runSel: r.id }) }));
+    const sel = dec(v.sel);
+    const runObj = runs.find(r => r.id === st.runSel);
+    const run = runObj ? Object.assign({}, runObj, { statusLabel: RS[runObj.status][0], color: RS[runObj.status][1], trace: this.traceFor(v.agents.find(a => a.id === runObj.agentId), runObj) }) : null;
+    if (S.agentsView) { const vv = S.agentsView; APP.state.agentsView = null; setTimeout(() => this.setState({ view: vv, runSel: null }), 0); }
+    const panelW = mob || st.view === 'approvals' ? 0 : bp === 'tablet' ? 380 : 440;
+    const CFG = { count: 9 };
+    const Lo = PixelKit.layout(CFG);
+    const availW = Math.max(320, st.W - panelW), availH = st.H;
+    const scale = mob ? 2 : (availW >= 1140 && availH >= 820 ? 3 : 2);
+    const cw = Lo.w * scale, ch = Lo.h * scale;
+    const fits = cw <= availW;
+    const cx = mob || !fits ? 0 : Math.round((availW - cw) / 2), cy = mob ? 0 : Math.max(64, Math.round((availH - ch) / 2) + 24);
+    const scroll = mob || !fits;
+    this.__o = v.officeOpts(CFG, 'day');
+    if (this.sceneEl && (mob || cw > availW)) {
+      const s = Lo.stations[v.inOffice.findIndex(a => a.id === v.sel.id)];
+      const key = v.sel.id + ':' + availW;
+      if (s && this.__scrolled !== key) { this.__scrolled = key; const el = this.sceneEl, x = Math.max(0, cx + s.fx * scale - el.clientWidth / 2); requestAnimationFrame(() => { el.scrollLeft = x; }); }
+    }
+    const spots = v.spots(CFG, scale, cx, cy).map(s => Object.assign(dec(s), { showTag: s.selected || S.agentHover === s.id || s.isApproval || s.isFailed, tagBg: s.selected ? '#1f1c18' : '#f5f2eb', tagFg: s.selected ? '#f5f2eb' : '#1f1c18' }));
+    const view = st.view;
+    const views = [['office', 'Office'], ['approvals', 'Approvals'], ['table', 'Table'], ['runs', 'Runs']].map((x, i) => ({ label: x[1], hasN: x[0] === 'approvals' && v.approvalCount > 0, n: v.approvalCount, on: view === x[0], bg: view === x[0] ? '#ece6da' : 'transparent', w: view === x[0] ? 600 : 400, sep: i ? '1px solid #cfc6b6' : '0', pick: () => this.setState({ view: x[0], runSel: x[0] === 'runs' ? st.runSel : null }) }));
+    const count = k => runs.filter(r => r.status === k).length;
+    const tierC = { READ: '#2f6f55', PREPARE: '#575047', EXECUTE: '#575047', APPROVE: '#92560a', HIGH_RISK: '#a8321f' };
+    return {
+      ready: true, rootRef: this.rootRef, officeRef: this.officeRef, count: v.count,
+      rootH: mob ? 'auto' : 'calc(100vh - 56px)', rootDisplay: mob ? 'flex' : 'block', barPos: mob ? 'relative' : 'absolute', scenePos: mob ? 'relative' : 'absolute', panelPos: mob ? 'relative' : 'absolute', legendPos: mob ? 'relative' : 'absolute', legendMargin: mob ? '16px' : '0',
+      sceneH: mob ? '380px' : 'auto', sceneOverflow: scroll ? 'auto' : 'hidden', innerW: scroll ? cw + 24 : availW, innerH: mob ? ch : Math.max(availH, cy + ch + 56), sceneRef: this.sceneRef,
+      panelW, panelWcss: mob ? '100%' : panelW + 'px', panelPad: mob ? 16 : 24, padX: mob ? 16 : 24,
+      cx, cy, cw, ch, spots, navKey: v.navKey, views, viewOffice: view === 'office', viewTable: view === 'table', viewRuns: view === 'runs', viewApprovals: view === 'approvals', approvalN: v.approvalCount, panelDisplay: view === 'approvals' ? 'none' : 'flex', nav: this.props.nav, bp, goApprovals: () => this.setState({ view: 'approvals', runSel: null }),
+      sorted: v.sorted.map(dec), sel, reduced: v.reduced, reducedLabel: v.reduced ? 'Motion off' : 'Motion on', toggleReduced: v.toggleReduced,
+      pauseAll: () => APP.toast('Pause all: running work finishes, new runs are rejected. (Confirm dialog in build.)'),
+      runs: runsF, runFilters: [['all', 'All', runs.length], ['running', 'Running', count('running')], ['waiting_approval', 'Waiting approval', count('waiting_approval')], ['failed', 'Failed', count('failed')], ['succeeded', 'Succeeded', count('succeeded')]].map(f => ({ label: f[1], n: f[2], on: rf === f[0], bg: rf === f[0] ? '#ece6da' : 'transparent', border: rf === f[0] ? '#1f1c18' : '#cfc6b6', pick: () => this.setState({ runFilter: f[0] }) })),
+      showRun: !!run, showAgent: !run, run: run || {}, closeRun: () => this.setState({ runSel: null }), panelLabel: run ? 'Run detail' : 'Selected agent',
+      openLive: () => this.setState({ runSel: sel.id + '-live' }), showRuns: () => this.setState({ view: 'runs' }),
+      selRuns: runs.filter(r => r.agentId === sel.id).slice(0, 4).map(r => Object.assign({}, r, { short: RS[r.status][0].split(' ')[1], color: RS[r.status][1], pick: () => this.setState({ runSel: r.id }) })), selNoRuns: !runs.some(r => r.agentId === sel.id),
+      approveSel: v.approveSel, rejectSel: v.rejectSel, retrySel: v.retrySel, pauseSel: v.pauseSel, pauseLabel: v.pauseLabel, chatSel: () => APP.toast('Opens Ask LifeOS (⌘J) with ' + sel.name + ' as the target.'),
+      editSel: () => { APP.set({ apprSel: sel.id, apprTab: 'pending' }); this.setState({ view: 'approvals', runSel: null }); },
+      routable: sel.id === 'projects', notRoutable: sel.id !== 'projects', lockNote: sel.id === 'orchestrator' ? 'locked to Opus' : sel.id === 'automations' ? 'system agent, runs your rules' : sel.id === 'outreach' ? 'not routable: mail never reaches a free model' : sel.isOffline ? 'not connected' : 'paid model only',
+      models: ['Auto', 'Free only', 'Sonnet', 'Opus'].map((m, i) => ({ label: m, on: st.model === m, bg: st.model === m ? '#ece6da' : 'transparent', sep: i ? '1px solid #cfc6b6' : '0', pick: () => { this.setState({ model: m }); APP.toast('Projects now uses ' + m + '.'); } })),
+      tools: (this.TOOLS[sel.id] || []).map(t => ({ name: t[0], tier: t[1], color: tierC[t[1]] }))
+    };
+  }
+}
+</script>
+</body>
+</html>

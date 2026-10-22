@@ -1,7 +1,7 @@
 "use client";
 
 import { CATEGORY, CATEGORY_KEYS, type CategoryKey } from "@/lib/calendar-categories";
-import { Button } from "@/ui/button";
+import { Button } from "@/legacy-ui/button";
 
 export function CategoryLegend({ hidden, onToggle, onShowAll }: { hidden: Set<CategoryKey>; onToggle(k: CategoryKey): void; onShowAll(): void }) {
   return (

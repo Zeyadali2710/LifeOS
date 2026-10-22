@@ -2,7 +2,7 @@ import type { SocialMetrics, SocialPlatform } from "@/lib/social-types";
 import { metricValue, stamp, type Variant } from "./model";
 import { PlatformChip } from "./platform-chip";
 import type { SocialsData } from "./socials-view";
-import { Badge } from "@/ui/badge";
+import { Badge } from "@/legacy-ui/badge";
 
 const METRICS: (keyof SocialMetrics)[] = ["views", "reach", "impressions", "likes", "comments", "shares", "saves"];
 export function PostsTable({ variants, posts, onOpen }: { variants: Variant[]; posts: SocialsData["board"]; onOpen(id: string): void }) {

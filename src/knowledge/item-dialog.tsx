@@ -4,10 +4,10 @@ import { useState } from "react";
 import { KIND_META, KNOWLEDGE_KINDS, KNOWLEDGE_LIMITS, type KnowledgeKind } from "@/lib/knowledge";
 import type { KnowledgeDetail } from "@/server/knowledge";
 import { saveKnowledgeAction, uploadKnowledgeAction } from "@/server/knowledge-actions";
-import { useShell } from "@/shell/shell-provider";
-import { Button } from "@/ui/button";
-import { Dialog } from "@/ui/dialog";
-import { Field, Input, Select, Textarea } from "@/ui/field";
+import { useShell } from "@/features/shell/shell-provider";
+import { Button } from "@/legacy-ui/button";
+import { Dialog } from "@/legacy-ui/dialog";
+import { Field, Input, Select, Textarea } from "@/legacy-ui/field";
 
 export function ItemDialog({ open, onClose, item, projects, defaultKind, onSaved }: {
   open: boolean; onClose: () => void; item: KnowledgeDetail | null; projects: { id: string; name: string }[]; defaultKind: KnowledgeKind; onSaved: (id: string) => void;

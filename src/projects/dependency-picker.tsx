@@ -3,11 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { addProjectDependencyAction, addTaskDependencyAction } from "@/server/project-actions";
-import { useShell } from "@/shell/shell-provider";
-import { Button } from "@/ui/button";
-import { Dialog } from "@/ui/dialog";
-import { Field, Select } from "@/ui/field";
-import { InlineError } from "@/ui/inline-error";
+import { useShell } from "@/features/shell/shell-provider";
+import { Button } from "@/legacy-ui/button";
+import { Dialog } from "@/legacy-ui/dialog";
+import { Field, Select } from "@/legacy-ui/field";
+import { InlineError } from "@/legacy-ui/inline-error";
 
 type Props = { open: boolean; kind: "task" | "project"; subjectId: string; options: { id: string; title: string }[]; onClose: () => void };
 

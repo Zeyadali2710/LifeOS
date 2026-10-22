@@ -1,7 +1,7 @@
 "use client";
 
 import { issuePayloadSchema, parseLabels, type IssuePayload } from "@/lib/issue-payload";
-import { Field, Input, Textarea } from "@/ui/field";
+import { Field, Input, Textarea } from "@/legacy-ui/field";
 
 export type Draft = { title: string; body: string; labels: string };
 export type DraftErrors = Partial<Record<"title" | "body" | "labels", string>>;

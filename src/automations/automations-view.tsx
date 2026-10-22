@@ -6,12 +6,12 @@ import { useRouter } from "next/navigation";
 import { describeTrigger, TRIGGER_EVENTS, WEEKDAYS, type Action, type AutomationInput, type Condition, type Trigger, type TriggerEvent } from "@/lib/automations";
 import type { AutomationsData } from "@/server/automations";
 import { deleteAutomationAction, saveAutomationAction, setAutomationEnabledAction } from "@/server/automation-actions";
-import { useShell } from "@/shell/shell-provider";
-import { Button } from "@/ui/button";
-import { Dialog } from "@/ui/dialog";
-import { EmptyState } from "@/ui/empty-state";
-import { Checkbox, Field, Input, Select, Textarea } from "@/ui/field";
-import { Icon } from "@/ui/icon";
+import { useShell } from "@/features/shell/shell-provider";
+import { Button } from "@/legacy-ui/button";
+import { Dialog } from "@/legacy-ui/dialog";
+import { EmptyState } from "@/legacy-ui/empty-state";
+import { Checkbox, Field, Input, Select, Textarea } from "@/legacy-ui/field";
+import { Icon } from "@/legacy-ui/icon";
 
 type Row = AutomationsData["automations"][number];
 const STATUS: Record<string, string> = { done: "text-green", failed: "text-red", skipped: "text-amber", running: "text-cyan" };

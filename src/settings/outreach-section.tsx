@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { saveInterestsAction } from "@/server/outreach-actions";
-import { useShell } from "@/shell/shell-provider";
-import { Button } from "@/ui/button";
-import { Input } from "@/ui/field";
-import { Icon } from "@/ui/icon";
+import { useShell } from "@/features/shell/shell-provider";
+import { Button } from "@/legacy-ui/button";
+import { Input } from "@/legacy-ui/field";
+import { Icon } from "@/legacy-ui/icon";
 
 const label = "font-mono text-[11px] font-medium tracking-[0.12em] text-text-3 uppercase";
 

@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { PLATFORMS, type SocialPlatform } from "@/lib/social-types";
 import { createPost, moveStage, togglePlatform } from "@/server/socials-actions";
-import { useShell } from "@/shell/shell-provider";
-import { Button } from "@/ui/button";
-import { Dialog } from "@/ui/dialog";
-import { Checkbox, Field, Input, Select, Textarea } from "@/ui/field";
+import { useShell } from "@/features/shell/shell-provider";
+import { Button } from "@/legacy-ui/button";
+import { Dialog } from "@/legacy-ui/dialog";
+import { Checkbox, Field, Input, Select, Textarea } from "@/legacy-ui/field";
 import { PLATFORM } from "./platform";
 import type { SocialsData } from "./socials-view";
 

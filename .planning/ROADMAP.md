@@ -351,6 +351,42 @@ Built 2026-10-17 (autonomous run).
 - Mobile: Knowledge sections as a horizontal row and the open item first; Goals horizon tabs as a 4-column grid; briefings list stacks headline under the name.
 - Motion: existing global `prefers-reduced-motion` rule covers all new UI (no new animation added).
 
+### Phase 12: Almanac redesign
+Source of truth: `design/handoff/` (README, components.md, tokens.css, checklist.md, prototype in `design/handoff/design/`). Base rebuild of the whole UI layer; backend (schema, actions, queries, agents, approvals, jobs, auth, route URLs) is the contract. Branch `redesign/almanac`, merged to `main` once the full gate passes.
+
+Goal: every signed-in screen is the Almanac design (paper/ink/terracotta, Newsreader + Instrument Sans + JetBrains Mono), built from a fresh `src/ui/` library and `src/features/<route>/` views, with no old UI component left.
+
+Approach
+- Styling: `src/ui/tokens.css` (copied verbatim) + a small reset in `globals.css`; CSS Modules per component/feature, values only via tokens. Tailwind and the dark glass theme are removed when the last old screen is gone.
+- Fonts: `next/font/google` for the three families; Material Symbols subset regenerated from the new icon list (`scripts/fetch-symbols.mjs`).
+- Transition: old `src/ui` moves to `src/legacy-ui` and old shell logic (live SSE provider, chat hook, palette search, shortcuts) moves into `src/features/shell/` unchanged in behaviour, so old screens still compile while each route is replaced. Each route commit deletes that route's old components. `src/legacy-ui` and Tailwind go in the last commit.
+- Data: pages stay RSC and call the existing queries; client views get typed props. New read queries only where the design needs data the server lacks (event discovery filters/feed, GitHub repo detail: tree root, README, PRs, issues, CI runs, weekly commits, contributors via the read-only token). Each addition listed in the phase notes.
+- Approvals: `/approvals` redirects to `/agents?view=approvals`; nav badge, Agents status line and Approvals tab badge read one count.
+- Office: `pixelkit.js` ported to a typed canvas module (Codex generates, Claude reviews); DOM button per desk.
+
+Tasks (one commit each)
+1. Import bundle, tokens, fonts, reset, icon subset; move old ui/shell logic.
+2. `src/ui/` primitives (components.md table) + Status, Section, Card, Alert, Menu, Drawer, Toast, EmptyState, PageState (loading/empty/error/disconnected with copy from `APP.states`).
+3. Shell: masthead + More, tablet/mobile nav, tab bar + More sheet, ⌘K palette (scopes), ⌘J Ask drawer (real chat), notifications drawer, toasts, shortcuts, `/approvals` redirect.
+4. Home. 5. Agents (Office, Approvals tab, Table, Runs, inspector, run trace). 6. Projects (list + detail). 7. Organization. 8. Outreach (mail 3-pane, Discover, Pipeline, Follow-ups). 9. Socials. 10. Finances. 11. Career (list + `/career/[owner]/[repo]` with tabs). 12. Knowledge. 13. Goals. 14. Briefings. 15. Automations. 16. Settings.
+17. Remove legacy UI + Tailwind; e2e specs updated to the new markup; axe audit stays green; visual QA at 390/768/924/1280/1680.
+
+Risks
+- Volume: ~14 screens; keep each route's commit self-contained and green (typecheck/lint/unit) before the next.
+- E2E specs are tied to old markup; they are rewritten per route against the same behaviours (never weakened).
+- next/font downloads at build time (already the case today).
+- Repo detail data needs extra GitHub calls; cache in the existing github sync tables or fetch on page load with the read-only token, never write.
+
+Codex critique resolutions (2026-10-22)
+- URLs: existing route URLs are the contract, so the repo page stays `/career/[owner]/[repo]` (handoff's `/career/[repo]` is read as "repo page"). GitHub stays read-only: no mutations; local caching of fetched data is fine.
+- Only hooks/providers/pure logic move out of `src/shell` (live SSE, chat, palette search, shortcuts); every component is new.
+- `src/ui/` gets an owner-only `/ui-kit` page showing every primitive (the handoff's "story or test page").
+- One approval list + detail implementation, mounted compact on Home and full in Agents → Approvals; one pending-count source refreshed by live approval events drives the nav badge, status line and tab badge. Every old `/approvals` link changes to `/agents?view=approvals[&id=…]`.
+- URL state: Agents `view`/`id`, Outreach `box`/`tab`, Career `tab`, Discover `when`/`cat`/`free`/`sort`/`q`.
+- README/HTML from GitHub and event feeds rendered as text/sanitised; external links via `safe-url`.
+- E2E specs are rewritten with each route; the full Playwright suite runs at the end (it builds the app and shares one DB).
+- Contrast: `--ink-3` on `--wash` is 4.497 and `--accent` on `--accent-wash` 4.07; text never uses those pairs (event-card reached state keeps the accent icon/fill, label in `--ink`).
+
 ## Credentials & external access needed
 | When | What |
 |---|---|

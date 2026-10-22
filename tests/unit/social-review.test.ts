@@ -6,8 +6,8 @@ import type { ApprovalDTO } from "@/lib/agent-types";
 import { ApprovalList } from "@/approvals/approval-list";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
-vi.mock("@/shell/live-provider", () => ({ useLiveEvents: vi.fn() }));
-vi.mock("@/shell/shell-provider", () => ({ useShell: () => ({ toast: vi.fn() }) }));
+vi.mock("@/features/shell/live-provider", () => ({ useLiveEvents: vi.fn() }));
+vi.mock("@/features/shell/shell-provider", () => ({ useShell: () => ({ toast: vi.fn() }) }));
 vi.mock("@/server/socials-actions", () => ({ socialReviewFacts: vi.fn(), saveToken: vi.fn(), confirmInstagramSmoke: vi.fn(), disconnect: vi.fn(), saveTikTokCredentials: vi.fn() }));
 vi.mock("@/server/approval-actions", () => ({ approveAction: vi.fn(), rejectAction: vi.fn(), saveEditAction: vi.fn() }));
 vi.mock("@/server/settings-actions", () => ({ removeTokenAction: vi.fn(), saveTokenAction: vi.fn(), saveOpenRouterKeyAction: vi.fn() }));

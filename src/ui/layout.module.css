@@ -1,0 +1,35 @@
+/* Page container: full width up to 1680, centred. */
+.page { max-width: var(--content-max); margin: 0 auto; padding: var(--page-pad-mobile); }
+@media (min-width: 720px) { .page { padding: 28px 24px 56px; } }
+@media (min-width: 1100px) { .page { padding: var(--page-pad-desktop); } }
+@media (min-width: 720px) { .home { padding: 28px 28px 56px; } }
+@media (min-width: 1100px) { .home { padding: 36px 56px 64px; } }
+
+.header { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.title { font-family: var(--font-display); font-weight: 400; font-size: var(--text-h1); letter-spacing: -.015em; line-height: 1.15; }
+.sub { margin-top: 6px; font-size: 14.5px; color: var(--ink-2); }
+.actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* Section: 2px ink top rule + mono label */
+.section { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.sectionHead { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; border-top: var(--section-rule); padding-top: 10px; }
+.sectionLabel { font-family: var(--font-mono); font-weight: 500; font-size: var(--text-label); letter-spacing: var(--label-tracking); text-transform: uppercase; color: var(--ink); }
+.sectionMeta { font-size: var(--text-xs); color: var(--ink-3); white-space: nowrap; }
+
+/* Card */
+.card { background: var(--paper-3); border: 1px solid var(--rule); border-radius: var(--radius-lg); min-width: 0; }
+.cardPad { padding: 16px 18px; }
+.cardHead { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--paper); border-bottom: 1px solid var(--rule); padding: 11px 16px; font-size: var(--text-small); border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+.cardHeadTitle { font-weight: 600; font-size: 15px; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.rows > * + * { border-top: 1px solid var(--rule-faint); }
+
+/* Stat tile */
+.stat { background: var(--paper); border-radius: var(--radius-menu); padding: 9px 10px; min-width: 0; }
+.statValue { font-family: var(--font-display); font-size: 22px; line-height: 1; }
+.statKey { margin-top: 4px; font-size: 11.5px; color: var(--ink-3); }
+
+/* Columns: flex rows with ratios, wrap to stack. */
+.cols { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 28px; }
+.cols > * { min-width: 0; }
+@media (min-width: 1100px) { .cols { gap: 40px; } }
+.stack { display: flex; flex-direction: column; gap: 28px; min-width: 0; }

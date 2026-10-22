@@ -212,7 +212,7 @@ export async function callTool(
         detail: `${agent.name} · ${tool.label}`,
         tone: "amber",
       },
-      { category: "APPROVAL", title: s.title || `Approval waiting: ${tool.label}`, body: s.body, actionUrl: `/approvals?id=${approvalId}` },
+      { category: "APPROVAL", title: s.title || `Approval waiting: ${tool.label}`, body: s.body, actionUrl: `/agents?view=approvals&id=${approvalId}` },
       h,
     );
     await notifyLive(h, "approval", approvalId!);

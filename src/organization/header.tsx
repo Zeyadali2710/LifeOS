@@ -2,9 +2,9 @@
 
 import { useRef, useState } from "react";
 import { syncCalendarsNowAction } from "@/server/calendar-actions";
-import { useShell } from "@/shell/shell-provider";
-import { Button } from "@/ui/button";
-import { Icon } from "@/ui/icon";
+import { useShell } from "@/features/shell/shell-provider";
+import { Button } from "@/legacy-ui/button";
+import { Icon } from "@/legacy-ui/icon";
 
 export type ViewKey = "day" | "week" | "month";
 const VIEWS: { key: ViewKey; label: string }[] = [

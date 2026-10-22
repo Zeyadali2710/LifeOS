@@ -7,11 +7,11 @@ import type { MilestoneDTO } from "@/lib/project-types";
 import { TaskDialog } from "@/organization/task-dialog";
 import { setMilestoneDoneAction } from "@/server/project-actions";
 import { toggleTaskAction } from "@/server/task-actions";
-import { useShell } from "@/shell/shell-provider";
-import { Badge } from "@/ui/badge";
-import { Button } from "@/ui/button";
-import { Checkbox, Select } from "@/ui/field";
-import { Icon } from "@/ui/icon";
+import { useShell } from "@/features/shell/shell-provider";
+import { Badge } from "@/legacy-ui/badge";
+import { Button } from "@/legacy-ui/button";
+import { Checkbox, Select } from "@/legacy-ui/field";
+import { Icon } from "@/legacy-ui/icon";
 import { MilestoneDialog } from "./milestone-dialog";
 
 const DAY = 86400000;

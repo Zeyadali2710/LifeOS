@@ -2,8 +2,8 @@
 
 import type { Ref } from "react";
 import type { MailMessageDTO } from "@/lib/outreach-types";
-import { Badge } from "@/ui/badge";
-import { Icon } from "@/ui/icon";
+import { Badge } from "@/legacy-ui/badge";
+import { Icon } from "@/legacy-ui/icon";
 import { dateShort, hhmm, sydneyYmd } from "./fmt";
 
 export const IMPORTANCE_TONE = { HIGH: "red", MEDIUM: "amber", LOW: "neutral" } as const;

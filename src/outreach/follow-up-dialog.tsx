@@ -4,12 +4,12 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import type { OutreachEventDTO } from "@/lib/outreach-types";
 import { createFollowUpsAction } from "@/server/outreach-pipeline-actions";
-import { useShell } from "@/shell/shell-provider";
-import { Badge } from "@/ui/badge";
-import { Button } from "@/ui/button";
-import { Dialog } from "@/ui/dialog";
-import { Field, Input } from "@/ui/field";
-import { Icon } from "@/ui/icon";
+import { useShell } from "@/features/shell/shell-provider";
+import { Badge } from "@/legacy-ui/badge";
+import { Button } from "@/legacy-ui/button";
+import { Dialog } from "@/legacy-ui/dialog";
+import { Field, Input } from "@/legacy-ui/field";
+import { Icon } from "@/legacy-ui/icon";
 import { followUpDue } from "./fmt";
 
 type Ev = Pick<OutreachEventDTO, "id" | "title" | "startAt" | "endAt" | "allDay">;

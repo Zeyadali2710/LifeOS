@@ -3,9 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import { border, CATEGORY, fill } from "@/lib/calendar-categories";
 import { sydneyInstant, sydneyParts } from "@/server/time";
-import { Button } from "@/ui/button";
-import { EmptyState } from "@/ui/empty-state";
-import { Icon } from "@/ui/icon";
+import { Button } from "@/legacy-ui/button";
+import { EmptyState } from "@/legacy-ui/empty-state";
+import { Icon } from "@/legacy-ui/icon";
 import { EventBlock } from "./event-block";
 import { blockGeometry, earlierCount, HOUR_PX, packLanes, START_HOUR } from "./layout";
 import type { OrgInstance } from "./organization-view";

@@ -10,12 +10,12 @@ import { approveAction, rejectAction, retryApprovalAction, saveEditAction } from
 import { saveReplyToDraftsAction } from "@/server/mail-actions";
 import { getAgent } from "@/server/agents/registry";
 import { formatHM } from "@/server/time";
-import { useShell } from "@/shell/shell-provider";
-import { Badge } from "@/ui/badge";
-import { Button } from "@/ui/button";
-import { Disclosure } from "@/ui/disclosure";
-import { Icon } from "@/ui/icon";
-import type { IconName } from "@/ui/icon-names";
+import { useShell } from "@/features/shell/shell-provider";
+import { Badge } from "@/legacy-ui/badge";
+import { Button } from "@/legacy-ui/button";
+import { Disclosure } from "@/legacy-ui/disclosure";
+import { Icon } from "@/legacy-ui/icon";
+import type { IconName } from "@/legacy-ui/icon-names";
 import { ApprovalEditForm, toDraft, toPayload, validateDraft, type Draft, type DraftErrors } from "./approval-edit-form";
 import { stamp } from "./approval-list";
 import { ProjectApprovalBody, projectOf, projectResolved, sameProject, toProjectDraft, validateProjectDraft, type ProjectDraft, type ProjectErrors, type ProjectPayload } from "./project-approval";

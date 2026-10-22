@@ -4,10 +4,10 @@ import { useState } from "react";
 import { GOAL_COLORS } from "@/lib/goals";
 import type { GoalNode, GoalObjective } from "@/server/goals";
 import { deleteGoalAction, deleteObjectiveAction, saveGoalAction, saveObjectiveAction } from "@/server/goals-actions";
-import { useShell } from "@/shell/shell-provider";
-import { Button } from "@/ui/button";
-import { Dialog } from "@/ui/dialog";
-import { Field, Input, Select } from "@/ui/field";
+import { useShell } from "@/features/shell/shell-provider";
+import { Button } from "@/legacy-ui/button";
+import { Dialog } from "@/legacy-ui/dialog";
+import { Field, Input, Select } from "@/legacy-ui/field";
 
 type Saved = (id: string | null) => void;
 const COLOR_NAMES: Record<string, string> = { "#0a84ff": "Blue", "#ff9f0a": "Orange", "#ff6482": "Pink", "#30d158": "Green", "#64d2ff": "Cyan", "#bf5af2": "Purple" };

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300,0..1,0&display=block" rel="stylesheet">
+<script src="pixelkit.js"></script><script src="lifeos-data.js"></script><script src="lifeos-app.js"></script>
+<style>body{margin:0;background:#f5f2eb;color:#1f1c18;font-family:'Instrument Sans',system-ui,sans-serif}*{box-sizing:border-box}button,input,select,textarea{font-family:inherit;color:inherit}:focus-visible{outline:2px solid #b5502f;outline-offset:2px}@keyframes pIn{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:none}}</style>
+</helmet>
+<div data-screen-label="Projects" style="padding:{{ pad }};max-width:1680px;margin:0 auto">
+  <sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+      <div><h1 style="margin:0;font-family:'Newsreader',serif;font-weight:400;font-size:34px;letter-spacing:-.015em">Projects</h1><p style="margin:6px 0 0;font-size:14.5px;color:#575047">{{ activeN }} active · {{ riskN }} at risk · next milestone 0.9 on Fri 23 Oct</p></div>
+      <button onClick="{{ openNew }}" style="display:flex;align-items:center;gap:6px;background:#1f1c18;color:#f5f2eb;border:0;border-radius:6px;padding:9px 16px;font-size:14px;font-weight:500;cursor:pointer"><span style="font-family:'Material Symbols Outlined';line-height:1;font-size:18px">add</span>New project</button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:12px;margin-top:20px">
+      <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+        <div style="background:#fffdf9;border:1px solid #dcd4c6;border-radius:10px;padding:18px;padding:16px;display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;align-items:center;gap:8px"><span style="width:30px;height:30px;border-radius:8px;background:{{ k.chip }};color:{{ k.chipFg }};display:grid;place-items:center;font-family:'Material Symbols Outlined';line-height:1;font-size:18px">{{ k.icon }}</span><span style="font-size:13.5px;font-weight:500">{{ k.label }}</span></div>
+          <div style="font-family:'Newsreader',serif;font-size:32px;line-height:1;letter-spacing:-.01em">{{ k.value }}</div>
+          <div style="font-size:12.5px;color:#6e675c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ k.sub }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;align-items:stretch">
+      <section style="flex:2 1 560px;min-width:0;background:#fffdf9;border:1px solid #dcd4c6;border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap"><div style="display:flex;gap:10px;align-items:flex-start"><span style="width:32px;height:32px;border-radius:8px;background:#ece6da;display:grid;place-items:center;font-family:'Material Symbols Outlined';line-height:1;font-size:19px">view_timeline</span><div><h2 style="margin:0;font-size:15px;font-weight:600">Timeline</h2><div style="font-size:12.5px;color:#6e675c;margin-top:2px">Active and paused projects · milestones as dots · click a bar to open</div></div></div><div style="display:flex;gap:12px;font-size:12px;color:#575047;align-items:center;flex-wrap:wrap"><span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:50%;background:#1f1c18"></span>Milestone done</span><span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:50%;border:2px solid #b5502f;background:#fffdf9"></span>Current</span></div></div>
+        <div style="position:relative">
+          <div aria-hidden="true" style="position:absolute;top:0;bottom:0;left:{{ tlLabelW }};right:0;pointer-events:none">
+            <sc-for list="{{ months }}" as="mo" hint-placeholder-count="4"><div style="position:absolute;top:0;bottom:0;left:{{ mo.left }};border-left:1px dashed #e0d8ca"><span style="position:absolute;top:0;left:6px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6e675c">{{ mo.label }}</span></div></sc-for>
+            <div style="position:absolute;top:0;bottom:0;left:{{ todayLeft }};border-left:1.5px solid #b5502f"><span style="position:absolute;top:0;left:0;transform:translateX(-50%);background:#b5502f;color:#fffdf9;border-radius:9px;padding:1px 7px;font-family:'JetBrains Mono',monospace;font-size:10px;white-space:nowrap">Today 22 Oct</span></div>
+          </div>
+          <div style="position:relative;display:flex;flex-direction:column;padding-top:28px">
+            <sc-for list="{{ tl }}" as="r" hint-placeholder-count="4">
+              <div style="display:grid;grid-template-columns:{{ tlLabelW }} minmax(0,1fr);align-items:center;padding:9px 0;border-top:1px solid #efe9de">
+                <button onClick="{{ r.open }}" style="border:0;background:none;padding:0 12px 0 0;text-align:left;cursor:pointer;min-width:0"><span style="display:block;font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span><span style="display:block;font-size:12px;color:{{ r.hc }};margin-top:2px">{{ r.sub }}</span></button>
+                <div style="position:relative;height:28px">
+                  <button onClick="{{ r.open }}" title="{{ r.title }}" style="position:absolute;top:4px;left:{{ r.left }};width:{{ r.width }};height:20px;border:1px solid {{ r.hc }};border-radius:10px;background:{{ r.bg }};padding:0;cursor:pointer;overflow:visible">
+                    <span style="position:absolute;left:0;top:0;bottom:0;width:{{ r.pct }}%;background:{{ r.hc }};opacity:.85;border-radius:9px"></span>
+                    <sc-for list="{{ r.ms }}" as="m" hint-placeholder-count="0"><span title="{{ m.title }}" style="position:absolute;top:50%;left:{{ m.left }};width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:{{ m.bg }};border:2px solid {{ m.ring }};box-shadow:0 0 0 2px #fffdf9"></span></sc-for>
+                  </button>
+                  <sc-if value="{{ r.over }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;right:0;top:-10px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#575047;background:#fffdf9;padding:0 4px">→ {{ r.target }}</span></sc-if>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+
+      <div style="flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:12px">
+        <section style="background:#fffdf9;border:1px solid #dcd4c6;border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:12px">
+          <div style="display:flex;gap:10px;align-items:flex-start"><span style="width:32px;height:32px;border-radius:8px;background:#ece6da;display:grid;place-items:center;font-family:'Material Symbols Outlined';line-height:1;font-size:19px">donut_large</span><div><h2 style="margin:0;font-size:15px;font-weight:600">Overall progress</h2><div style="font-size:12.5px;color:#6e675c;margin-top:2px">Tasks across active and paused projects</div></div></div>
+          <div style="position:relative;width:min(100%,240px);margin:0 auto">
+            <svg viewBox="0 0 200 112" width="100%" style="display:block" aria-hidden="true">
+              <path d="M20,100 A80,80 0 0 1 180,100" fill="none" stroke="#ece6da" stroke-width="22"></path>
+              <path d="M20,100 A80,80 0 0 1 180,100" fill="none" stroke="#cfc6b6" stroke-width="22" stroke-dasharray="{{ g.pDash }}" stroke-dashoffset="{{ g.pOff }}"></path>
+              <path d="M20,100 A80,80 0 0 1 180,100" fill="none" stroke="#b5502f" stroke-width="22" stroke-dasharray="{{ g.oDash }}" stroke-dashoffset="{{ g.oOff }}"></path>
+              <path d="M20,100 A80,80 0 0 1 180,100" fill="none" stroke="#1f1c18" stroke-width="22" stroke-dasharray="{{ g.dDash }}"></path>
+            </svg>
+            <div style="position:absolute;left:0;right:0;bottom:2px;text-align:center"><div style="font-family:'Newsreader',serif;font-size:34px;line-height:1">{{ g.pct }}%</div><div style="font-size:12px;color:#575047;margin-top:2px">tasks done</div></div>
+          </div>
+          <div style="display:flex;justify-content:center;gap:14px;flex-wrap:wrap;font-size:12.5px;color:#575047"><sc-for list="{{ g.legend }}" as="lg" hint-placeholder-count="3"><span style="display:flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:50%;background:{{ lg.color }}"></span>{{ lg.label }} <strong style="color:#1f1c18;font-weight:600">{{ lg.n }}</strong></span></sc-for></div>
+        </section>
+        <section style="background:#fffdf9;border:1px solid #dcd4c6;border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:6px;flex:1">
+          <div style="display:flex;gap:10px;align-items:flex-start"><span style="width:32px;height:32px;border-radius:8px;background:#ece6da;display:grid;place-items:center;font-family:'Material Symbols Outlined';line-height:1;font-size:19px">checklist</span><div><h2 style="margin:0;font-size:15px;font-weight:600">Next up</h2><div style="font-size:12.5px;color:#6e675c;margin-top:2px">Unblocked tasks, soonest first</div></div></div>
+          <div style="display:flex;flex-direction:column;margin-top:6px">
+            <sc-for list="{{ nextUp }}" as="t" hint-placeholder-count="4">
+              <div style="display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:8px;align-items:center;padding:9px 0;border-top:1px solid #efe9de">
+                <button onClick="{{ t.toggle }}" role="checkbox" aria-checked="{{ t.done }}" aria-label="{{ t.title }}" style="width:20px;height:20px;border:1.5px solid #1f1c18;border-radius:4px;background:{{ t.fill }};cursor:pointer;color:#f5f2eb;font-size:13px;line-height:1;padding:0">{{ t.check }}</button>
+                <span style="min-width:0"><span style="display:block;font-size:13.5px;text-decoration:{{ t.strike }};color:{{ t.fg }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.title }}</span><button onClick="{{ t.open }}" style="border:0;background:none;padding:0;font-size:12px;color:#6e675c;cursor:pointer">{{ t.project }}</button></span>
+                <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:{{ t.dueFg }};white-space:nowrap">{{ t.pri }} · {{ t.due }}</span>
+              </div>
+            </sc-for>
+            <sc-if value="{{ nextEmpty }}" hint-placeholder-val="{{ false }}"><p style="margin:0;padding:12px 0;font-size:13.5px;color:#575047">Nothing unblocked. Nice.</p></sc-if>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <section style="margin-top:12px;background:#fffdf9;border:1px solid #dcd4c6;border-radius:10px;padding:18px;padding:0;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:16px 18px 0">
+        <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+          <h2 style="margin:0;font-size:15px;font-weight:600">All projects</h2>
+          <div role="tablist" aria-label="View" style="display:flex;background:#ece6da;border-radius:7px;padding:3px;gap:2px"><sc-for list="{{ views }}" as="vw" hint-placeholder-count="2"><button role="tab" aria-selected="{{ vw.on }}" onClick="{{ vw.pick }}" style="display:flex;align-items:center;gap:5px;border:0;border-radius:5px;padding:5px 11px;font-size:13px;cursor:pointer;background:{{ vw.bg }};box-shadow:{{ vw.shadow }};font-weight:{{ vw.w }}"><span style="font-family:'Material Symbols Outlined';line-height:1;font-size:16px">{{ vw.icon }}</span>{{ vw.label }}</button></sc-for></div>
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;border:1px solid #cfc6b6;border-radius:6px;padding:0 10px;height:34px;background:#fbf9f4;min-width:min(100%,240px)"><span style="font-family:'Material Symbols Outlined';line-height:1;font-size:18px;color:#6e675c">search</span><input value="{{ q }}" onChange="{{ setQ }}" placeholder="Search projects" aria-label="Search projects" style="border:0;background:transparent;outline:none;font-size:13.5px;flex:1;min-width:0"></label>
+      </div>
+      <sc-if value="{{ isTable }}" hint-placeholder-val="{{ true }}">
+        <div role="tablist" style="display:flex;gap:4px;margin-top:10px;padding:0 14px;border-bottom:1px solid #dcd4c6;overflow-x:auto"><sc-for list="{{ filters }}" as="f" hint-placeholder-count="5"><button role="tab" aria-selected="{{ f.on }}" onClick="{{ f.pick }}" style="border:0;background:none;padding:9px 8px 10px;font-size:13.5px;cursor:pointer;box-shadow:{{ f.line }};font-weight:{{ f.w }};white-space:nowrap">{{ f.label }} <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c">{{ f.n }}</span></button></sc-for></div>
+        <sc-if value="{{ notMobile }}" hint-placeholder-val="{{ true }}"><div style="display:grid;grid-template-columns:{{ rowCols }};gap:8px 20px;padding:10px 18px;background:#fbf9f4;border-bottom:1px solid #e6dfd2;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.08em;color:#6e675c"><span>NAME</span><span>STATUS</span><span>NEXT TASK</span><span>PROGRESS</span><span style="text-align:right">TARGET</span></div></sc-if>
+        <div role="list">
+          <sc-for list="{{ rows }}" as="p" hint-placeholder-count="4">
+            <button role="listitem" onClick="{{ p.open }}" style="width:100%;display:grid;grid-template-columns:{{ rowCols }};gap:8px 20px;align-items:center;padding:13px 18px;border:0;border-bottom:1px solid #efe9de;background:none;text-align:left;cursor:pointer" style-hover="background:#f5f2eb">
+              <span style="min-width:0;display:flex;gap:10px;align-items:center"><span style="flex:none;width:34px;height:34px;border-radius:8px;background:{{ p.tint }};color:{{ p.tintFg }};display:grid;place-items:center;font-size:12.5px;font-weight:600">{{ p.initials }}</span><span style="min-width:0"><span style="display:block;font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name }}</span><span style="display:block;font-size:12.5px;color:#6e675c;margin-top:1px">{{ p.category }} · {{ p.priority }} · <span style="color:{{ p.hc }}">{{ p.mark }} {{ p.healthLabel }}</span></span></span></span>
+              <span><span style="background:{{ p.pillBg }};color:{{ p.pillFg }};border-radius:10px;padding:2px 9px;font-size:12px;font-weight:600">{{ p.statusLabel }}</span></span>
+              <span style="font-size:13.5px;color:#575047;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.next }}</span>
+              <span style="display:flex;align-items:center;gap:10px"><span style="flex:1;height:6px;background:#e9e2d5;border-radius:3px;display:block"><span style="display:block;height:6px;width:{{ p.pct }}%;background:{{ p.hc }};border-radius:3px"></span></span><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#575047;min-width:34px;text-align:right">{{ p.pct }}%</span></span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#575047;text-align:right">{{ p.target }}</span>
+            </button>
+          </sc-for>
+          <sc-if value="{{ rowsEmpty }}" hint-placeholder-val="{{ false }}"><p style="font-family:'Newsreader',serif;font-style:italic;font-size:18px;color:#575047;padding:24px 18px;margin:0">No {{ filterName }} projects.</p></sc-if>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isBoard }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;padding:14px 18px 18px">
+          <sc-for list="{{ board }}" as="col" hint-placeholder-count="3">
+            <div style="background:#f5f2eb;border-radius:9px;padding:10px;display:flex;flex-direction:column;gap:8px;min-width:0">
+              <div style="display:flex;align-items:center;gap:8px;padding:2px 4px"><span style="width:8px;height:8px;border-radius:50%;background:{{ col.dot }}"></span><span style="font-size:13.5px;font-weight:600">{{ col.label }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c">{{ col.n }}</span></div>
+              <sc-for list="{{ col.items }}" as="p" hint-placeholder-count="2">
+                <button onClick="{{ p.open }}" style="text-align:left;border:1px solid #e6dfd2;background:#fffdf9;border-radius:8px;padding:12px;cursor:pointer;display:flex;flex-direction:column;gap:9px" style-hover="border-color:#b9ae9b">
+                  <div style="display:flex;gap:9px;align-items:center"><span style="flex:none;width:28px;height:28px;border-radius:7px;background:{{ p.tint }};color:{{ p.tintFg }};display:grid;place-items:center;font-size:11.5px;font-weight:600">{{ p.initials }}</span><span style="min-width:0;flex:1;font-size:14px;font-weight:600;line-height:1.25">{{ p.name }}</span></div>
+                  <div style="font-size:12.5px;color:#575047;line-height:1.4">Next: {{ p.next }}</div>
+                  <div style="display:flex;align-items:center;gap:8px"><span style="flex:1;height:5px;background:#e9e2d5;border-radius:3px;display:block"><span style="display:block;height:5px;width:{{ p.pct }}%;background:{{ p.hc }};border-radius:3px"></span></span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#575047">{{ p.done }}/{{ p.total }}</span></div>
+                  <div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:{{ p.hc }}">{{ p.mark }} {{ p.healthLabel }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c">{{ p.target }}</span></div>
+                </button>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </section>
+  </sc-if>
+
+  <sc-if value="{{ isDetail }}" hint-placeholder-val="{{ false }}">
+    <button onClick="{{ back }}" style="border:0;background:none;padding:0;font-size:13.5px;color:#b5502f;cursor:pointer">← Projects</button>
+    <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-top:12px">
+      <div><h1 style="margin:0;font-family:'Newsreader',serif;font-weight:400;font-size:36px;letter-spacing:-.015em">{{ p.name }}</h1><div style="font-size:14px;color:#575047;margin-top:6px">{{ p.statusLabel }} · {{ p.priority }} · {{ p.category }} · Objective: <button onClick="{{ goGoals }}" style="border:0;background:none;padding:0;font-size:14px;color:#b5502f;cursor:pointer">{{ p.objective }}</button></div></div>
+      <div style="display:flex;gap:8px"><button onClick="{{ edit }}" style="border:1px solid #cfc6b6;background:transparent;border-radius:6px;padding:8px 14px;font-size:14px;cursor:pointer">Edit</button><button onClick="{{ archive }}" style="border:1px solid #cfc6b6;background:transparent;border-radius:6px;padding:8px 14px;font-size:14px;cursor:pointer">Archive</button><button onClick="{{ askDelete }}" style="border:0;background:none;padding:8px 8px;font-size:14px;cursor:pointer;color:#a8321f">Delete</button></div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:40px 64px;margin-top:28px;align-items:flex-start">
+      <div style="flex:2 1 520px;min-width:0;display:flex;flex-direction:column;gap:36px">
+        <section aria-labelledby="pt"><div style="display:flex;justify-content:space-between;align-items:baseline;border-top:2px solid #1f1c18;padding-top:10px"><h2 id="pt" style="margin:0;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:11.5px;letter-spacing:.12em">TASKS · {{ openN }} OPEN</h2><button onClick="{{ addTask }}" style="border:0;background:none;padding:0;font-size:13px;color:#b5502f;cursor:pointer">+ Add task</button></div>
+          <sc-for list="{{ tasks }}" as="t" hint-placeholder-count="5">
+            <div style="display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:10px;align-items:center;padding:11px 0;border-bottom:1px solid #e6dfd2">
+              <button onClick="{{ t.toggle }}" role="checkbox" aria-checked="{{ t.done }}" aria-disabled="{{ t.blocked }}" aria-label="{{ t.title }}" style="width:20px;height:20px;border:1.5px solid {{ t.box }};border-radius:4px;background:{{ t.fill }};cursor:{{ t.cursor }};color:#f5f2eb;font-size:13px;line-height:1;padding:0">{{ t.check }}</button>
+              <span style="min-width:0"><span style="display:block;font-size:14.5px;text-decoration:{{ t.strike }};color:{{ t.fg }}">{{ t.title }}</span><sc-if value="{{ t.blocked }}" hint-placeholder-val="{{ false }}"><span style="display:block;font-size:12.5px;color:#92560a;margin-top:2px">Blocked by “{{ t.by }}”</span></sc-if></span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#575047;white-space:nowrap">{{ t.pri }} · {{ t.due }}</span>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noTasks }}" hint-placeholder-val="{{ false }}"><p style="margin:0;padding:16px 0;color:#575047;font-size:14px">No tasks yet. Add one or ask Projects to draft a plan from the repo.</p></sc-if>
+        </section>
+        <section aria-labelledby="pm"><div style="border-top:2px solid #1f1c18;padding-top:10px"><h2 id="pm" style="margin:0;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:11.5px;letter-spacing:.12em">MILESTONES AND TIMELINE</h2></div>
+          <div style="position:relative;margin:26px 0 8px;height:58px"><div style="position:absolute;left:0;right:0;top:7px;height:2px;background:#dcd4c6"></div>
+            <sc-for list="{{ ms }}" as="m" hint-placeholder-count="3"><div style="position:absolute;left:{{ m.left }}%;top:0;transform:translateX({{ m.tx }});display:flex;flex-direction:column;align-items:{{ m.align }};gap:6px"><span style="width:16px;height:16px;border-radius:50%;background:{{ m.dot }};border:2px solid {{ m.ring }}"></span><span style="font-size:13px;font-weight:{{ m.w }};white-space:nowrap">{{ m.name }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c">{{ m.date }}</span></div></sc-for>
+          </div>
+          <sc-if value="{{ noMs }}" hint-placeholder-val="{{ false }}"><p style="margin:0;color:#575047;font-size:14px">No milestones.</p></sc-if>
+        </section>
+        <section aria-labelledby="pa"><div style="border-top:2px solid #1f1c18;padding-top:10px"><h2 id="pa" style="margin:0;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:11.5px;letter-spacing:.12em">RECENT ACTIVITY</h2></div>
+          <sc-for list="{{ act }}" as="a" hint-placeholder-count="3"><div style="display:grid;grid-template-columns:64px minmax(0,1fr);gap:8px;padding:9px 0;border-bottom:1px solid #e6dfd2;font-size:14px;color:#575047"><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#6e675c">{{ a.t }}</span><span>{{ a.text }}</span></div></sc-for>
+          <sc-if value="{{ noAct }}" hint-placeholder-val="{{ false }}"><p style="margin:0;padding:12px 0;color:#575047;font-size:14px">No activity yet. Link a repository or complete a task.</p></sc-if>
+        </section>
+      </div>
+      <aside style="flex:1 1 300px;max-width:460px;min-width:0;display:flex;flex-direction:column;gap:28px">
+        <div><div style="font-family:'Newsreader',serif;font-size:44px;line-height:1">{{ p.pct }}%</div><div style="font-size:13.5px;color:#575047;margin-top:4px">{{ p.done }} of {{ p.total }} tasks done · target {{ p.target }}</div></div>
+        <div style="display:flex;flex-direction:column;gap:6px"><div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;color:#6e675c">HEALTH</div><div style="font-size:15px;font-weight:600;color:{{ p.hc }}">{{ p.mark }} {{ p.healthLabel }}</div><div style="font-size:13.5px;color:#575047;line-height:1.5">{{ p.healthReason }}</div></div>
+        <div style="display:flex;flex-direction:column;gap:6px"><div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;color:#6e675c"><span>LINKED REPOSITORIES</span><button onClick="{{ link }}" style="border:0;background:none;padding:0;font:inherit;color:#b5502f;cursor:pointer">+ LINK</button></div>
+          <sc-for list="{{ repos }}" as="r" hint-placeholder-count="1"><button onClick="{{ r.open }}" style="border:0;background:none;padding:6px 0;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:2px"><span style="font-family:'JetBrains Mono',monospace;font-size:13px">{{ r.name }}</span><span style="font-size:12.5px;color:{{ r.color }}">{{ r.note }}</span></button></sc-for>
+          <sc-if value="{{ noRepos }}" hint-placeholder-val="{{ false }}"><span style="font-size:13.5px;color:#6e675c">None linked.</span></sc-if>
+        </div>
+        <sc-if value="{{ hasWs }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:6px"><div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;color:#6e675c">WORKSPACE · OWNER ONLY</div><div style="font-family:'JetBrains Mono',monospace;font-size:12.5px;background:#fbf9f4;border:1px solid #dcd4c6;border-radius:4px;padding:10px 12px;line-height:1.7">{{ ws.path }} · {{ ws.machine }}<br>$ {{ ws.launch }}</div><button onClick="{{ copy }}" style="align-self:flex-start;border:1px solid #cfc6b6;background:transparent;border-radius:6px;padding:5px 11px;font-size:13px;cursor:pointer">Copy launch command</button><span style="font-size:12px;color:#6e675c">Never sent to agents.</span></div></sc-if>
+        <sc-if value="{{ hasCtx }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:6px"><div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;color:#6e675c">CONTEXT BRIEF</div><p style="margin:0;font-family:'Newsreader',serif;font-size:16px;line-height:1.5">{{ p.context }}</p></div></sc-if>
+      </aside>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ dialog }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeDialog }}" style="position:fixed;inset:0;background:rgba(31,28,24,.3);z-index:50"></div>
+    <div role="dialog" aria-modal="true" aria-labelledby="dlg-t" style="position:fixed;left:50%;top:14vh;transform:translateX(-50%);width:min(520px,calc(100% - 32px));z-index:51;background:#fbf9f4;border:1px solid #cfc6b6;border-radius:10px;box-shadow:0 30px 80px rgba(40,30,10,.25);padding:22px;display:flex;flex-direction:column;gap:14px;animation:pIn .16s ease-out">
+      <h2 id="dlg-t" style="margin:0;font-family:'Newsreader',serif;font-weight:400;font-size:26px">{{ dlgTitle }}</h2>
+      <sc-if value="{{ isNew }}" hint-placeholder-val="{{ false }}">
+        <label style="display:flex;flex-direction:column;gap:5px;font-size:13px;color:#575047">Name<input value="{{ newName }}" onChange="{{ setNewName }}" placeholder="e.g. Conference talk" style="height:40px;border:1px solid {{ nameBorder }};border-radius:6px;padding:0 12px;font-size:15px;background:#fff;color:#1f1c18"></label>
+        <sc-if value="{{ nameError }}" hint-placeholder-val="{{ false }}"><span role="alert" style="font-size:13px;color:#a8321f;margin-top:-8px">Give the project a name.</span></sc-if>
+        <div style="display:flex;gap:12px;flex-wrap:wrap"><label style="flex:1 1 160px;display:flex;flex-direction:column;gap:5px;font-size:13px;color:#575047">Category<select style="height:40px;border:1px solid #cfc6b6;border-radius:6px;padding:0 10px;font-size:14.5px;background:#fff"><option>Product</option><option>Career</option><option>Health</option><option>Side project</option></select></label><label style="flex:1 1 160px;display:flex;flex-direction:column;gap:5px;font-size:13px;color:#575047">Target date<input type="date" style="height:40px;border:1px solid #cfc6b6;border-radius:6px;padding:0 10px;font-size:14.5px;background:#fff"></label></div>
+        <label style="display:flex;flex-direction:column;gap:5px;font-size:13px;color:#575047">Objective (optional)<select style="height:40px;border:1px solid #cfc6b6;border-radius:6px;padding:0 10px;font-size:14.5px;background:#fff"><option>None</option><option>Speak at two events</option><option>1.0 public write-up</option></select></label>
+      </sc-if>
+      <sc-if value="{{ isDelete }}" hint-placeholder-val="{{ false }}"><p style="margin:0;font-size:15px;line-height:1.55;color:#3d3830">{{ deleteCopy }}</p></sc-if>
+      <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:4px"><button onClick="{{ closeDialog }}" style="border:1px solid #cfc6b6;background:transparent;border-radius:6px;padding:8px 14px;font-size:14px;cursor:pointer">Cancel</button><button onClick="{{ confirm }}" style="border:0;background:{{ confirmBg }};color:#f5f2eb;border-radius:6px;padding:9px 16px;font-size:14px;font-weight:500;cursor:pointer">{{ confirmLabel }}</button></div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { ready: false, dialog: null, newName: '', tried: false, view: 'table', q: '' };
+  componentDidMount() { const w = () => (window.APP && APP.ready) ? (this.un = APP.sub(() => this.forceUpdate()), this.setState({ ready: true })) : setTimeout(w, 30); w(); }
+  componentWillUnmount() { this.un && this.un(); }
+  nav = (r, p) => this.props.nav ? this.props.nav(r, p) : (p && APP.set(p), APP.toast('Opens ' + r + ' in the LifeOS shell.'));
+  renderVals() {
+    if (!this.state.ready) return {};
+    const S = APP.state, st = this.state, bp = this.props.bp || 'desktop';
+    const HC = { on_track: '#2f6f55', at_risk: '#92560a', paused: '#6e675c', done: '#1f1c18' }, HM = { on_track: '●', at_risk: '▲', paused: 'II', done: '✓' };
+    const dec = p => { const done = p.done + p.tasks.filter(t => !t[5] && S.taskDone[t[0]] && t[4] !== 'done').length; return Object.assign({}, p, { done, hc: HC[p.health], mark: HM[p.health], pct: Math.round(done / p.total * 100), statusLabel: p.status[0].toUpperCase() + p.status.slice(1), open: () => APP.set({ projSel: p.id }) }); };
+    const f = S.projFilter || 'active';
+    const cnt = k => APP.projects.filter(p => k === 'all' || p.status === k).length;
+    const p0 = APP.projects.find(p => p.id === S.projSel);
+    const p = p0 ? dec(p0) : null;
+    const doneTitles = p ? p.tasks.filter(t => t[4] === 'done' || S.taskDone[t[0]]).map(t => t[1]) : [];
+    const tasks = p ? p.tasks.map(t => { const done = t[4] === 'done' || !!S.taskDone[t[0]]; const blocked = !done && t[4] && t[4] !== 'done' && !doneTitles.includes(t[4]);
+      return { title: t[1], pri: t[2], due: t[3] || 'Done', done, blocked, by: t[4], check: done ? '✓' : '', fill: done ? '#1f1c18' : 'transparent', box: blocked ? '#cfc6b6' : '#1f1c18', cursor: blocked ? 'not-allowed' : 'pointer', strike: done ? 'line-through' : 'none', fg: done ? '#6e675c' : '#1f1c18',
+        toggle: () => { if (blocked) { APP.toast('Blocked: finish “' + t[4] + '” first.'); return; } if (t[4] === 'done') return; APP.set({ taskDone: Object.assign({}, S.taskDone, { [t[0]]: !S.taskDone[t[0]] }) }); if (!done) APP.toast('Task done. Logged in Activity.'); } }; }) : [];
+    const ms = p ? p.milestones.map((m, i, a) => ({ name: m[0], date: m[1], left: a.length > 1 ? i / (a.length - 1) * 100 : 0, tx: i === 0 ? '0' : i === a.length - 1 ? '-100%' : '-50%', align: i === 0 ? 'flex-start' : i === a.length - 1 ? 'flex-end' : 'center', dot: m[2] === 'done' ? '#1f1c18' : m[2] === 'current' ? '#f5f2eb' : '#f5f2eb', ring: m[2] === 'next' ? '#cfc6b6' : m[2] === 'current' ? '#b5502f' : '#1f1c18', w: m[2] === 'current' ? 600 : 400 })) : [];
+    const D = st.dialog;
+    const MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const dnum = s => { const m = /(\d+)\s+([A-Za-z]{3})/.exec(s || ''); if (!m) return null; const mi = MN.indexOf(m[2]); return (Date.UTC(mi < 6 ? 2027 : 2026, mi, +m[1]) - Date.UTC(2026, 8, 1)) / 864e5; };
+    const SPAN = 106, pos = d => Math.max(0, Math.min(100, d / SPAN * 100));
+    const STARTS = { lifeos: '1 Sep', harbour: '28 Sep', portfolio: '7 Sep', half: '1 Sep' }, ENDS = { portfolio: '26 Sep' };
+    const LIGHT = { on_track: '#dbe8df', at_risk: '#f2e3c6', paused: 'repeating-linear-gradient(135deg,#ece6da 0 5px,#e3dbcc 5px 10px)', done: '#ece6da' };
+    const live = APP.projects.filter(x => x.status === 'active' || x.status === 'paused').map(dec);
+    const tl = live.map(x => { const s0 = dnum(STARTS[x.id] || '1 Sep'), eT = dnum(ENDS[x.id] || x.target), mD = x.milestones.map(m => dnum(m[1])).filter(d => d != null), e0 = eT == null && !mD.length ? null : Math.max(eT ?? -1, ...mD); const e = e0 == null ? SPAN : e0, over = e > SPAN;
+      return { name: x.name, sub: x.mark + ' ' + x.healthLabel + ' · ' + x.pct + '%', hc: x.hc, bg: LIGHT[x.health], pct: x.health === 'paused' ? 0 : x.pct, left: pos(s0) + '%', width: Math.max(2, pos(e) - pos(s0)) + '%', over, target: x.target, title: x.name + ' · ' + x.pct + '% · target ' + x.target, open: x.open,
+        ms: x.milestones.map(m => ({ left: ((dnum(m[1]) - s0) / (Math.min(e, SPAN) - s0) * 100) + '%', bg: m[2] === 'done' ? '#1f1c18' : '#fffdf9', ring: m[2] === 'current' ? '#b5502f' : '#1f1c18', title: m[0] + ' · ' + m[1] })) }; });
+    const gDone = live.reduce((a, x) => a + x.done, 0), gTot = live.reduce((a, x) => a + x.total, 0), gPaused = live.filter(x => x.status === 'paused').reduce((a, x) => a + x.total - x.done, 0), gOpen = gTot - gDone - gPaused;
+    const L = 251.33, seg = n => (n / gTot * L).toFixed(2);
+    const g = { pct: Math.round(gDone / gTot * 100), dDash: seg(gDone) + ' ' + L, oDash: seg(gOpen) + ' ' + L, oOff: '-' + seg(gDone), pDash: seg(gPaused) + ' ' + L, pOff: '-' + seg(gDone + gOpen),
+      legend: [['Done', gDone, '#1f1c18'], ['Open', gOpen, '#b5502f'], ['Paused', gPaused, '#cfc6b6']].map(x => ({ label: x[0], n: x[1], color: x[2] })) };
+    const DUE = { Today: 0, Fri: 1, Sat: 2, Sun: 3 };
+    const nextUp = [];
+    live.forEach(x => { const dt = x.tasks.filter(t => t[4] === 'done' || S.taskDone[t[0]]).map(t => t[1]);
+      x.tasks.forEach(t => { if (t[4] === 'done') return; const done = !!S.taskDone[t[0]]; if (t[4] && !dt.includes(t[4])) return;
+        nextUp.push({ k: DUE[t[3]] ?? 9, title: t[1], project: x.name, pri: t[2], due: t[3], dueFg: t[3] === 'Today' ? '#b5502f' : '#575047', done, check: done ? '✓' : '', fill: done ? '#1f1c18' : 'transparent', strike: done ? 'line-through' : 'none', fg: done ? '#6e675c' : '#1f1c18', open: x.open,
+          toggle: () => { APP.set({ taskDone: Object.assign({}, S.taskDone, { [t[0]]: !S.taskDone[t[0]] }) }); if (!done) APP.toast('Task done. Logged in Activity.'); } }); }); });
+    nextUp.sort((a, b) => a.k - b.k);
+    const TINT = { Product: ['#f3dcd5', '#b5502f'], Career: ['#dbe8df', '#2f6f55'], Health: ['#f2e3c6', '#92560a'], 'Side project': ['#e6e0d3', '#1f1c18'] };
+    const PILL = { active: ['#dbe8df', '#2f6f55'], paused: ['#f2e3c6', '#92560a'], done: ['#e6e0d3', '#1f1c18'], archived: ['#ece6da', '#6e675c'] };
+    const dec2 = x => { const d = dec(x), tn = TINT[x.category] || TINT['Side project'], pl = PILL[x.status] || PILL.archived; return Object.assign(d, { tint: tn[0], tintFg: tn[1], pillBg: pl[0], pillFg: pl[1], initials: x.name.split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase() }); };
+    const q = st.q.trim().toLowerCase(), qm = x => !q || (x.name + ' ' + x.category + ' ' + x.next).toLowerCase().includes(q);
+    const rows = APP.projects.filter(x => (f === 'all' || x.status === f) && qm(x)).map(dec2);
+    const msNext = APP.projects.find(x => x.id === 'lifeos');
+    const kpis = [
+      { icon: 'folder_open', label: 'Active projects', value: String(cnt('active')), sub: APP.projects.filter(x => x.status === 'active' && x.health === 'on_track').length + ' on track · ' + APP.projects.filter(x => x.health === 'at_risk').length + ' at risk', chip: '#ece6da', chipFg: '#1f1c18' },
+      { icon: 'task_alt', label: 'Tasks done', value: String(gDone), sub: 'of ' + gTot + ' in active and paused projects', chip: '#dbe8df', chipFg: '#2f6f55' },
+      { icon: 'event_upcoming', label: 'Due this week', value: String(nextUp.filter(t => !t.done && t.k < 9).length), sub: nextUp.filter(t => !t.done && t.k === 0).length + ' due today', chip: '#f3dcd5', chipFg: '#b5502f' },
+      { icon: 'flag', label: 'Next milestone', value: '23 Oct', sub: (msNext ? msNext.name + ' · ' : '') + '0.9 Briefings + automations', chip: '#f2e3c6', chipFg: '#92560a' }
+    ];
+    const segOn = on => ({ bg: on ? '#fffdf9' : 'transparent', shadow: on ? '0 1px 2px rgba(31,28,24,.12)' : 'none', w: on ? 600 : 400 });
+    const listVals = {
+      kpis, tl, g, nextUp: nextUp.slice(0, 5), nextEmpty: nextUp.length === 0,
+      tlLabelW: bp === 'mobile' ? '118px' : '190px', todayLeft: pos(dnum('22 Oct')) + '%',
+      months: [['Sep', '1 Sep'], ['Oct', '1 Oct'], ['Nov', '1 Nov'], ['Dec', '1 Dec']].map(m => ({ label: m[0], left: pos(dnum(m[1])) + '%' })),
+      views: [['table', 'Table', 'table_rows'], ['board', 'Board', 'view_kanban']].map(v => Object.assign({ label: v[1], icon: v[2], on: st.view === v[0], pick: () => this.setState({ view: v[0] }) }, segOn(st.view === v[0]))),
+      isTable: st.view === 'table', isBoard: st.view === 'board', notMobile: bp !== 'mobile', q: st.q, setQ: e => this.setState({ q: e.target.value }),
+      board: [['active', 'Active', '#2f6f55'], ['paused', 'Paused', '#92560a'], ['done', 'Done', '#1f1c18']].map(c => { const items = APP.projects.filter(x => x.status === c[0] && qm(x)).map(dec2); return { label: c[1], dot: c[2], n: items.length, items }; })
+    };
+    return Object.assign(listVals, {
+      pad: bp === 'mobile' ? '20px 16px 40px' : bp === 'tablet' ? '28px 28px 56px' : '28px 40px 64px', rowCols: bp === 'mobile' ? 'minmax(0,1fr) 120px' : 'minmax(0,1.5fr) 90px minmax(0,1.2fr) 170px 80px',
+      isList: !p, isDetail: !!p, activeN: cnt('active'), riskN: APP.projects.filter(x => x.health === 'at_risk').length,
+      filters: [['active', 'Active'], ['paused', 'Paused'], ['done', 'Done'], ['archived', 'Archived'], ['all', 'All']].map(x => ({ label: x[1], n: cnt(x[0]), on: f === x[0], line: f === x[0] ? 'inset 0 -2px 0 #1f1c18' : 'none', w: f === x[0] ? 600 : 400, pick: () => APP.set({ projFilter: x[0] }) })),
+      rows, rowsEmpty: rows.length === 0, filterName: q ? 'matching' : f,
+      openNew: () => this.setState({ dialog: 'new', newName: '', tried: false }),
+      p: p || {}, back: () => APP.set({ projSel: null }), goGoals: () => this.nav('goals'), tasks, openN: tasks.filter(t => !t.done).length, noTasks: tasks.length === 0, ms, noMs: ms.length === 0,
+      act: p ? p.activity.map(a => ({ t: a[0], text: a[1] })) : [], noAct: !p || p.activity.length === 0,
+      repos: p ? p.repos.map(r => ({ name: r[0], note: r[1], color: r[1].indexOf('failed') >= 0 ? '#a8321f' : '#6e675c', open: () => this.nav('career', { repoSel: APP.repos.find(x => x.name === r[0]) ? APP.repos.find(x => x.name === r[0]).id : null }) })) : [], noRepos: !p || p.repos.length === 0,
+      hasWs: !!(p && p.workspace), ws: (p && p.workspace) || {}, hasCtx: !!(p && p.context),
+      copy: () => APP.toast('Copied launch command.'), link: () => APP.toast('Link dialog: pick a synced GitHub repository.'), addTask: () => APP.toast('Inline task row opens here (title, priority, due, blocked by).'),
+      edit: () => APP.toast('Edit opens the project dialog with workspace and context fields.'), archive: () => APP.toast('Archived. Restore from the Archived tab.'), askDelete: () => this.setState({ dialog: 'delete' }),
+      dialog: !!D, isNew: D === 'new', isDelete: D === 'delete', dlgTitle: D === 'new' ? 'New project' : 'Delete project?', closeDialog: () => this.setState({ dialog: null }),
+      deleteCopy: p ? 'Delete “' + p.name + '”? Its ' + p.tasks.length + ' tasks stay in your task list without a project, and ' + p.milestones.length + ' milestones and ' + p.repos.length + ' links are removed. This can’t be undone.' : '',
+      newName: st.newName, setNewName: e => this.setState({ newName: e.target.value }), nameError: st.tried && !st.newName.trim(), nameBorder: st.tried && !st.newName.trim() ? '#a8321f' : '#cfc6b6',
+      confirmLabel: D === 'delete' ? 'Delete project' : 'Create project', confirmBg: D === 'delete' ? '#a8321f' : '#1f1c18',
+      confirm: () => { if (D === 'new') { if (!st.newName.trim()) { this.setState({ tried: true }); return; } APP.toast('Created “' + st.newName.trim() + '”.'); } else { APP.set({ projSel: null }); APP.toast('Deleted. Tasks kept in your task list.'); } this.setState({ dialog: null }); }
+    });
+  }
+}
+</script>
+</body>
+</html>

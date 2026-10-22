@@ -77,7 +77,7 @@ describe("callTool", () => {
     expect(ap!.expiresAt.getTime()).toBe(NOW.getTime() + 7 * 86_400_000);
     expect(ap!.payloadHash).toMatch(/^[0-9a-f]{64}$/);
     expect((await rows())[0]!.status).toBe("waiting_approval");
-    const [n] = await t.handle().select().from(notifications).where(eq(notifications.actionUrl, `/approvals?id=${id}`));
+    const [n] = await t.handle().select().from(notifications).where(eq(notifications.actionUrl, `/agents?view=approvals&id=${id}`));
     expect(n).toMatchObject({ category: "APPROVAL", title: "Approval waiting: create GitHub issue" });
     expect(n!.body).toContain('o/r: "Bug". Expires');
 

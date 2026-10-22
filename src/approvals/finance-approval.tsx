@@ -5,10 +5,10 @@ import type { ApprovalDTO } from "@/lib/agent-types";
 import { aud, FINANCE_KINDS, money } from "@/lib/finance";
 import { financeChangePayload, type FinanceChangePayload, type FinanceChangePlan } from "@/lib/finance-payload";
 import { approveAction, rejectAction, retryApprovalAction, reviewFinanceAction, saveEditAction } from "@/server/approval-actions";
-import { useShell } from "@/shell/shell-provider";
-import { Button } from "@/ui/button";
-import { Checkbox, Field, Input, Select } from "@/ui/field";
-import { Disclosure } from "@/ui/disclosure";
+import { useShell } from "@/features/shell/shell-provider";
+import { Button } from "@/legacy-ui/button";
+import { Checkbox, Field, Input, Select } from "@/legacy-ui/field";
+import { Disclosure } from "@/legacy-ui/disclosure";
 
 export function FinanceApprovalShell({ approval: a, onChange }: { approval: ApprovalDTO; onChange: (a: ApprovalDTO) => void }) {
   const parsed = financeChangePayload.safeParse(a.edited ?? a.original);

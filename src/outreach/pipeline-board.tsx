@@ -5,11 +5,11 @@ import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 import { prevStage, nextStage, STAGE, STAGES, type OutreachEventDTO, type Stage } from "@/lib/outreach-types";
 import { moveStageAction } from "@/server/outreach-pipeline-actions";
-import { useShell } from "@/shell/shell-provider";
-import { Badge } from "@/ui/badge";
-import { Button } from "@/ui/button";
-import { EmptyState } from "@/ui/empty-state";
-import { Icon } from "@/ui/icon";
+import { useShell } from "@/features/shell/shell-provider";
+import { Badge } from "@/legacy-ui/badge";
+import { Button } from "@/legacy-ui/button";
+import { EmptyState } from "@/legacy-ui/empty-state";
+import { Icon } from "@/legacy-ui/icon";
 import { dateShort, hhmm, scoreColor } from "./fmt";
 import { FollowUpDialog } from "./follow-up-dialog";
 

@@ -1,8 +1,8 @@
 "use client";
 
-import { useShell } from "@/shell/shell-provider";
-import { Button } from "@/ui/button";
-import { Icon } from "@/ui/icon";
+import { useShell } from "@/features/shell/shell-provider";
+import { Button } from "@/legacy-ui/button";
+import { Icon } from "@/legacy-ui/icon";
 
 export function SignOut() {
   const { signOut } = useShell();

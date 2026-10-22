@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-const css = readFileSync("src/app/globals.css", "utf8");
+const css = readFileSync("src/ui/tokens.css", "utf8");
 const root = css.slice(css.indexOf(":root"), css.indexOf("@media"));
 const token = (name: string) => {
   const m = root.match(new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`));
@@ -22,35 +22,36 @@ const ratio = (a: RGB, b: RGB) => {
   const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x) as [number, number];
   return (hi + 0.05) / (lo + 0.05);
 };
+const on = (fg: string, bg: string) => ratio(hex(token(fg)), hex(token(bg)));
 
-// Backdrops from 04.1-UI-SPEC "Text tiers"
-const card = hex("#202022");
-const panelWorst: RGB = [34, 40, 50];
-const chromeWorst: RGB = [49, 70, 92]; // rgb(49,70,92)
-const solidMenu = hex("#232326");
+// README accessibility bar: text contrast >= 4.5:1 on every surface text sits on.
+describe("Almanac token contrast (WCAG 2.x)", () => {
+  const surfaces = ["paper", "paper-2", "paper-3"];
+  const text = ["ink", "ink-body", "ink-2", "ink-3", "accent", "status-working", "status-approval", "status-failed", "status-merged"];
+  it.each(surfaces.flatMap((bg) => text.map((fg) => [fg, bg])))("%s on %s >= 4.5", (fg, bg) => {
+    expect(on(fg!, bg!)).toBeGreaterThanOrEqual(4.5);
+  });
 
-const on = (fg: string, bg: RGB) => ratio(hex(token(fg)), bg);
-
-describe("Glass token contrast (WCAG 2.x)", () => {
-  it.each([
-    ["text", card], ["text-soft", card], ["text-2", card], ["text-3", card],
-    ["text", panelWorst], ["text-soft", panelWorst], ["text-2", panelWorst], ["text-3", panelWorst],
-    ["text", chromeWorst], ["text-soft", chromeWorst], ["cyan", chromeWorst], ["amber", chromeWorst], ["green", chromeWorst],
-    ["text-3", solidMenu],
-  ] as [string, RGB][])("%s on %j >= 4.5", (fg, bg) => {
+  // Wash (tracks, tags, hover) only carries ink and ink-2 text; ink-3 (4.497) and accent (4.07) stay off it.
+  it.each([["ink", "wash"], ["ink-2", "wash"]])("%s on %s >= 4.5", (fg, bg) => {
     expect(on(fg, bg)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it("white on accent-solid >= 4.5", () => {
-    expect(ratio([255, 255, 255], hex(token("accent-solid")))).toBeGreaterThanOrEqual(4.5);
+  it.each([
+    ["status-working", "status-working-bg"],
+    ["status-approval", "status-approval-bg"],
+    ["status-failed", "status-failed-bg"],
+    ["status-merged", "status-merged-bg"],
+    ["paper", "ink"],
+  ])("%s on %s >= 4.5", (fg, bg) => {
+    expect(on(fg, bg)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it("cyan focus ring on chrome worst >= 3", () => {
-    expect(on("cyan", chromeWorst)).toBeGreaterThanOrEqual(3);
+  it("white on the approval badge >= 4.5", () => {
+    expect(ratio([255, 255, 255], hex(token("status-approval")))).toBeGreaterThanOrEqual(4.5);
   });
 
-  it("text-2 and text-3 fail on chrome worst (banned inside pills)", () => {
-    expect(on("text-2", chromeWorst)).toBeLessThan(4.5);
-    expect(on("text-3", chromeWorst)).toBeLessThan(4.5);
+  it("accent focus ring on paper >= 3", () => {
+    expect(on("accent", "paper")).toBeGreaterThanOrEqual(3);
   });
 });

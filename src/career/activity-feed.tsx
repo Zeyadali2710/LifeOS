@@ -1,8 +1,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { ActivityItemDTO } from "@/lib/project-types";
-import { Icon } from "@/ui/icon";
-import type { IconName } from "@/ui/icon-names";
+import { Icon } from "@/legacy-ui/icon";
+import type { IconName } from "@/legacy-ui/icon-names";
 import { relativeTime } from "./repo-card";
 
 const CI_COLOR = { passing: "text-green", failing: "text-red", running: "text-amber", none: "text-text-3" } as const;

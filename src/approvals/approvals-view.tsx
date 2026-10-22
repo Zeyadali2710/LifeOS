@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import type { ApprovalDTO } from "@/lib/agent-types";
-import { useLiveEvents } from "@/shell/live-provider";
-import { Icon } from "@/ui/icon";
-import { InlineError } from "@/ui/inline-error";
+import { useLiveEvents } from "@/features/shell/live-provider";
+import { Icon } from "@/legacy-ui/icon";
+import { InlineError } from "@/legacy-ui/inline-error";
 import { ApprovalDetail, type WriteFacts } from "./approval-detail";
 import { ApprovalList, stateLabel } from "./approval-list";
 

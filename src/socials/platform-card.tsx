@@ -2,8 +2,8 @@ import Link from "next/link";
 import type { SocialPlatform } from "@/lib/social-types";
 import { expiryState } from "@/lib/social-types";
 import type { listBoard, platformCards } from "@/server/socials/queries";
-import { Badge } from "@/ui/badge";
-import { StatusDot } from "@/ui/status-dot";
+import { Badge } from "@/legacy-ui/badge";
+import { StatusDot } from "@/legacy-ui/status-dot";
 import { formatCount, PLATFORM } from "./platform";
 
 export type PlatformCardData = Awaited<ReturnType<typeof platformCards>>[number];

@@ -4,10 +4,10 @@ import { useId } from "react";
 import { payloadSchemaFor } from "@/lib/approval-kinds";
 import type { ApprovalDTO } from "@/lib/agent-types";
 import type { MailReplyPayload } from "@/lib/mail-payload";
-import { Badge } from "@/ui/badge";
-import { Disclosure } from "@/ui/disclosure";
-import { Field, Input, Textarea } from "@/ui/field";
-import { Icon } from "@/ui/icon";
+import { Badge } from "@/legacy-ui/badge";
+import { Disclosure } from "@/legacy-ui/disclosure";
+import { Field, Input, Textarea } from "@/legacy-ui/field";
+import { Icon } from "@/legacy-ui/icon";
 import { Fact } from "./event-approval";
 
 // mail_reply approval body (D-30..D-32) and its edit form. Client-safe. All third-party text is rendered as text nodes.

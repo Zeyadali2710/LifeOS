@@ -3,9 +3,9 @@ import type { ReactNode } from "react";
 import type { RepoDetailDTO } from "@/lib/project-types";
 import { isSafeGithubUrl } from "@/lib/safe-url";
 import { CiChipView } from "@/projects/status";
-import { Badge } from "@/ui/badge";
-import { Icon } from "@/ui/icon";
-import { SectionHeader } from "@/ui/section-header";
+import { Badge } from "@/legacy-ui/badge";
+import { Icon } from "@/legacy-ui/icon";
+import { SectionHeader } from "@/legacy-ui/section-header";
 import { LanguageBar } from "./language-bar";
 import { relativeTime } from "./repo-card";
 

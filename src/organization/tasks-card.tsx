@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import type { TaskDTO } from "@/lib/calendar-types";
 import { quickAddTaskAction, toggleTaskAction } from "@/server/task-actions";
 import { sydneyParts } from "@/server/time";
-import { useShell } from "@/shell/shell-provider";
-import { Badge } from "@/ui/badge";
-import { Checkbox, Input } from "@/ui/field";
-import { Icon } from "@/ui/icon";
+import { useShell } from "@/features/shell/shell-provider";
+import { Badge } from "@/legacy-ui/badge";
+import { Checkbox, Input } from "@/legacy-ui/field";
+import { Icon } from "@/legacy-ui/icon";
 import { TaskDialog } from "./task-dialog";
 
 const DAY = 86400000;

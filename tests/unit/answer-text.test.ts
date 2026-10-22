@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseAnswer } from "@/shell/ai/answer-text";
+import { parseAnswer } from "@/features/shell/answer";
 
 describe("parseAnswer", () => {
   it("parses paragraph, list, citation and inline code", () => {

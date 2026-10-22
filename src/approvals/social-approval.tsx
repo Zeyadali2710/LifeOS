@@ -7,12 +7,12 @@ import { socialPublishPayload } from "@/lib/approval-kinds";
 import { checkVariant } from "@/lib/social-types";
 import { approveAction, rejectAction, saveEditAction } from "@/server/approval-actions";
 import { socialReviewFacts } from "@/server/socials-actions";
-import { useLiveEvents } from "@/shell/live-provider";
-import { useShell } from "@/shell/shell-provider";
-import { Badge } from "@/ui/badge";
-import { Button } from "@/ui/button";
-import { Disclosure } from "@/ui/disclosure";
-import { Field, Input, Textarea } from "@/ui/field";
+import { useLiveEvents } from "@/features/shell/live-provider";
+import { useShell } from "@/features/shell/shell-provider";
+import { Badge } from "@/legacy-ui/badge";
+import { Button } from "@/legacy-ui/button";
+import { Disclosure } from "@/legacy-ui/disclosure";
+import { Field, Input, Textarea } from "@/legacy-ui/field";
 import { Fact } from "./event-approval";
 
 export type SocialPayload = z.infer<typeof socialPublishPayload>;

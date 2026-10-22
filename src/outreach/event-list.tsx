@@ -3,9 +3,9 @@
 import Link from "next/link";
 import type { OutreachEventDTO } from "@/lib/outreach-types";
 import type { SourceStatus } from "@/server/outreach/queries";
-import { Button } from "@/ui/button";
-import { EmptyState } from "@/ui/empty-state";
-import { Icon } from "@/ui/icon";
+import { Button } from "@/legacy-ui/button";
+import { EmptyState } from "@/legacy-ui/empty-state";
+import { Icon } from "@/legacy-ui/icon";
 import type { CalendarOption } from "./add-to-calendar-dialog";
 import { EventCard } from "./event-card";
 

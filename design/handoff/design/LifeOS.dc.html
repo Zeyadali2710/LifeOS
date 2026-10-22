@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300,0..1,0&display=block" rel="stylesheet">
+<script src="pixelkit.js"></script>
+<script src="lifeos-data.js"></script>
+<script src="lifeos-app.js"></script>
+<style>
+html,body{margin:0;height:100%;background:#f5f2eb;color:#1f1c18;font-family:'Instrument Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:#b5502f}a:hover{color:#1f1c18}
+*{box-sizing:border-box}
+button,input,textarea,select{font-family:inherit;color:inherit}
+:focus-visible{outline:2px solid #b5502f;outline-offset:2px}
+.ms{font-family:'Material Symbols Outlined';font-weight:300;font-style:normal;font-size:20px;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;font-feature-settings:'liga';-webkit-font-smoothing:antialiased}
+@keyframes lIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+@keyframes lDrawer{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+@keyframes lPal{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:none}}
+@keyframes lPulse{0%,100%{opacity:.45}50%{opacity:1}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+
+<div ref="{{ rootRef }}" style="position:relative;height:100vh;min-height:560px;display:flex;flex-direction:column;overflow:hidden;background:#f5f2eb">
+  <header style="height:56px;flex:none;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 {{ padX }}px;border-bottom:1px solid #dcd4c6;background:#f5f2eb;position:relative;z-index:5">
+    <div style="display:flex;align-items:center;gap:28px;min-width:0">
+      <button onClick="{{ goHome }}" aria-label="LifeOS home" style="border:0;background:none;padding:0;cursor:pointer;font-family:'Newsreader',serif;font-style:italic;font-size:23px;letter-spacing:-.01em;color:#1f1c18">LifeOS</button>
+      <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.1em;color:#6e675c">{{ titleUpper }}</span></sc-if>
+      <sc-if value="{{ notMobile }}" hint-placeholder-val="{{ true }}">
+        <nav aria-label="Primary" style="display:flex;gap:2px;font-size:14px;align-items:center">
+          <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="9">
+            <button onClick="{{ n.go }}" aria-current="{{ n.current }}" title="{{ n.hint }}" style="border:0;background:none;padding:8px 9px;cursor:pointer;color:{{ n.fg }};font-weight:{{ n.weight }};font-size:14px;display:flex;gap:6px;align-items:center;box-shadow:{{ n.line }}" style-hover="color:#1f1c18">{{ n.label }}<sc-if value="{{ n.hasCount }}" hint-placeholder-val="{{ false }}"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;background:#92560a;color:#fff;border-radius:9px;padding:0 6px;line-height:17px">{{ n.count }}</span></sc-if></button>
+          </sc-for>
+          <div style="position:relative">
+            <button onClick="{{ toggleMore }}" aria-expanded="{{ more }}" aria-haspopup="menu" style="border:0;background:none;padding:8px 9px;cursor:pointer;color:{{ moreFg }};font-size:14px;display:flex;align-items:center;gap:2px">More<span class="ms" style="font-size:18px">expand_more</span></button>
+            <sc-if value="{{ more }}" hint-placeholder-val="{{ false }}">
+              <div role="menu" style="position:absolute;top:40px;left:0;min-width:200px;background:#fbf9f4;border:1px solid #dcd4c6;border-radius:8px;box-shadow:0 18px 40px rgba(50,40,20,.14);padding:6px;display:flex;flex-direction:column;animation:lPal .16s ease-out">
+                <sc-for list="{{ moreItems }}" as="m" hint-placeholder-count="5"><button role="menuitem" onClick="{{ m.go }}" style="border:0;background:{{ m.bg }};text-align:left;padding:8px 10px;border-radius:5px;cursor:pointer;font-size:14px;display:flex;justify-content:space-between" style-hover="background:#ece6da">{{ m.label }}<span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c">{{ m.hint }}</span></button></sc-for>
+              </div>
+            </sc-if>
+          </div>
+        </nav>
+      </sc-if>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex:none">
+      <sc-if value="{{ isDesktop }}" hint-placeholder-val="{{ true }}"><button onClick="{{ openPal }}" style="width:200px;height:34px;display:flex;align-items:center;justify-content:space-between;padding:0 10px 0 12px;border:1px solid #dcd4c6;background:#fbf9f4;border-radius:6px;color:#6e675c;font-size:13.5px;cursor:pointer">Search or jump<span style="font-family:'JetBrains Mono',monospace;font-size:11px">⌘K</span></button></sc-if>
+      <sc-if value="{{ notDesktop }}" hint-placeholder-val="{{ false }}"><button onClick="{{ openPal }}" aria-label="Search (⌘K)" style="width:40px;height:40px;border:0;background:none;border-radius:6px;cursor:pointer;display:grid;place-items:center"><span class="ms">search</span></button></sc-if>
+      <sc-if value="{{ notMobile }}" hint-placeholder-val="{{ true }}"><button onClick="{{ openAi }}" style="height:34px;border:0;background:#1f1c18;color:#f5f2eb;border-radius:6px;padding:0 12px;font-size:13.5px;font-weight:500;cursor:pointer;display:flex;gap:8px;align-items:center">Ask LifeOS<span style="font-family:'JetBrains Mono',monospace;font-size:11px;opacity:.7">⌘J</span></button></sc-if>
+      <button onClick="{{ openNotif }}" aria-label="Notifications, {{ unread }} unread" style="position:relative;width:40px;height:40px;border:0;background:none;border-radius:6px;cursor:pointer;display:grid;place-items:center" style-hover="background:#ece6da"><span class="ms">notifications</span><sc-if value="{{ hasUnread }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:6px;right:5px;min-width:16px;height:16px;border-radius:8px;background:#b5502f;color:#fff;font-family:'JetBrains Mono',monospace;font-size:10px;display:grid;place-items:center;padding:0 4px">{{ unread }}</span></sc-if></button>
+      <sc-if value="{{ notMobile }}" hint-placeholder-val="{{ true }}"><div aria-label="Account: Alex Morgan" style="width:30px;height:30px;border-radius:50%;background:#d8cdb9;display:grid;place-items:center;font-size:12px;font-weight:600">AM</div></sc-if>
+    </div>
+  </header>
+
+  <main id="lifeos-main" style="flex:1;min-height:0;overflow:auto;position:relative">
+    <sc-if value="{{ live }}" hint-placeholder-val="{{ true }}">
+      <sc-if value="{{ r.home }}" hint-placeholder-val="{{ true }}"><dc-import name="Home" nav="{{ go }}" bp="{{ bp }}" hint-size="100%,900px"></dc-import></sc-if>
+      <sc-if value="{{ r.agents }}" hint-placeholder-val="{{ false }}"><dc-import name="Agents" nav="{{ go }}" bp="{{ bp }}" hint-size="100%,100%"></dc-import></sc-if>
+      <sc-if value="{{ r.projects }}" hint-placeholder-val="{{ false }}"><dc-import name="Projects" nav="{{ go }}" bp="{{ bp }}" hint-size="100%,800px"></dc-import></sc-if>
+      <sc-if value="{{ r.organization }}" hint-placeholder-val="{{ false }}"><dc-import name="Organization" nav="{{ go }}" bp="{{ bp }}" hint-size="100%,800px"></dc-import></sc-if>
+      <sc-if value="{{ r.outreach }}" hint-placeholder-val="{{ false }}"><dc-import name="Outreach" nav="{{ go }}" bp="{{ bp }}" hint-size="100%,800px"></dc-import></sc-if>
+      <sc-if value="{{ r.socials }}" hint-placeholder-val="{{ false }}"><dc-import name="Socials" nav="{{ go }}" bp="{{ bp }}" hint-size="100%,800px"></dc-import></sc-if>
+      <sc-if value="{{ r.finances }}" hint-placeholder-val="{{ false }}"><dc-import name="Finances" nav="{{ go }}" bp="{{ bp }}" hint-size="100%,800px"></dc-import></sc-if>
+      <sc-if value="{{ r.career }}" hint-placeholder-val="{{ false }}"><dc-import name="Career" nav="{{ go }}" bp="{{ bp }}" hint-size="100%,800px"></dc-import></sc-if>
+      <sc-if value="{{ r.knowledge }}" hint-placeholder-val="{{ false }}"><dc-import name="Knowledge" nav="{{ go }}" bp="{{ bp }}" hint-size="100%,800px"></dc-import></sc-if>
+      <sc-if value="{{ r.goals }}" hint-placeholder-val="{{ false }}"><dc-import name="Goals" nav="{{ go }}" bp="{{ bp }}" hint-size="100%,800px"></dc-import></sc-if>
+      <sc-if value="{{ r.briefings }}" hint-placeholder-val="{{ false }}"><dc-import name="Briefings" nav="{{ go }}" bp="{{ bp }}" hint-size="100%,800px"></dc-import></sc-if>
+      <sc-if value="{{ r.automations }}" hint-placeholder-val="{{ false }}"><dc-import name="Automations" nav="{{ go }}" bp="{{ bp }}" hint-size="100%,800px"></dc-import></sc-if>
+      <sc-if value="{{ r.settings }}" hint-placeholder-val="{{ false }}"><dc-import name="Settings" nav="{{ go }}" bp="{{ bp }}" hint-size="100%,800px"></dc-import></sc-if>
+    </sc-if>
+
+    <sc-if value="{{ notLive }}" hint-placeholder-val="{{ false }}">
+      <div data-screen-label="State · {{ title }}" style="padding:28px {{ padX }}px 64px;max-width:1328px;margin:0 auto">
+        <h1 style="margin:0;font-family:'Newsreader',serif;font-weight:400;font-size:34px;letter-spacing:-.015em">{{ title }}</h1>
+        <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ false }}">
+          <div role="status" aria-label="Loading {{ title }}" style="margin-top:28px;display:flex;flex-direction:column;gap:14px;max-width:760px">
+            <div style="display:flex;gap:12px;align-items:center"><canvas data-pk-avatar="{{ stateAgent }}" data-pk-state="working" data-pk-pal="day" data-pk-bg="#ebe4d6" style="width:42px;height:42px;image-rendering:pixelated;border-radius:6px"></canvas><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#6e675c">LOADING {{ titleUpper }}…</span></div>
+            <sc-for list="{{ skel }}" as="s" hint-placeholder-count="6"><div style="height:{{ s.h }}px;width:{{ s.w }};background:#e9e3d7;border-radius:4px;animation:lPulse 1.4s ease-in-out infinite"></div></sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ isMessage }}" hint-placeholder-val="{{ false }}">
+          <div role="{{ stateRole }}" style="margin-top:40px;display:grid;grid-template-columns:72px minmax(0,560px);gap:20px;align-items:start">
+            <canvas data-pk-avatar="{{ stateAgent }}" data-pk-state="{{ statePose }}" data-pk-pal="day" data-pk-bg="#ebe4d6" style="width:70px;height:70px;image-rendering:pixelated;border-radius:8px"></canvas>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;color:{{ stateColor }}">{{ stateLabel }}</div>
+              <div style="font-family:'Newsreader',serif;font-size:26px;line-height:1.2">{{ stateTitle }}</div>
+              <p style="margin:0;font-size:15px;line-height:1.55;color:#575047">{{ stateBody }}</p>
+              <div style="display:flex;gap:8px;margin-top:6px"><button onClick="{{ stateAction }}" style="background:#1f1c18;color:#f5f2eb;border:0;border-radius:6px;padding:9px 16px;font-size:14px;font-weight:500;cursor:pointer">{{ stateCta }}</button><button onClick="{{ backLive }}" style="background:transparent;border:1px solid #cfc6b6;border-radius:6px;padding:8px 14px;font-size:14px;cursor:pointer">Show live data</button></div>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+  </main>
+
+  <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
+    <nav aria-label="Primary" style="flex:none;height:64px;border-top:1px solid #dcd4c6;background:#f5f2eb;display:grid;grid-template-columns:repeat(5,1fr);z-index:5">
+      <sc-for list="{{ tabItems }}" as="t" hint-placeholder-count="5"><button onClick="{{ t.go }}" aria-current="{{ t.current }}" style="border:0;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11.5px;color:{{ t.fg }};font-weight:{{ t.weight }};cursor:pointer;position:relative"><span class="ms" style="font-size:22px;font-variation-settings:'FILL' {{ t.fill }}">{{ t.icon }}</span>{{ t.label }}<sc-if value="{{ t.hasCount }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;top:6px;left:calc(50% + 6px);background:#92560a;color:#fff;font-family:'JetBrains Mono',monospace;font-size:10px;border-radius:8px;padding:0 5px;line-height:15px">{{ t.count }}</span></sc-if></button></sc-for>
+    </nav>
+  </sc-if>
+
+  <sc-if value="{{ more }}" hint-placeholder-val="{{ false }}"><sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;background:rgba(31,28,24,.3);z-index:20" onClick="{{ toggleMore }}"></div>
+    <div role="menu" aria-label="More" style="position:absolute;left:0;right:0;bottom:0;z-index:21;background:#fbf9f4;border-radius:16px 16px 0 0;padding:10px 16px 28px;display:grid;grid-template-columns:1fr 1fr;gap:6px;animation:lIn .2s ease-out">
+      <span style="grid-column:1/-1;justify-self:center;width:40px;height:4px;border-radius:2px;background:#cfc6b6;margin-bottom:6px"></span>
+      <sc-for list="{{ allItems }}" as="m" hint-placeholder-count="10"><button role="menuitem" onClick="{{ m.go }}" style="height:48px;border:1px solid #dcd4c6;background:{{ m.bg }};border-radius:8px;font-size:15px;text-align:left;padding:0 14px;cursor:pointer">{{ m.label }}</button></sc-for>
+    </div>
+  </sc-if></sc-if>
+
+  <sc-if value="{{ pal }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeAll }}" style="position:absolute;inset:0;background:rgba(31,28,24,.28);z-index:30"></div>
+    <div role="dialog" aria-modal="true" aria-label="Command palette" onKeyDown="{{ palKey }}" style="position:absolute;left:50%;top:{{ palTop }}px;transform:translateX(-50%);width:{{ palW }};max-width:640px;max-height:70vh;z-index:31;background:#fbf9f4;border:1px solid #cfc6b6;border-radius:10px;box-shadow:0 30px 80px rgba(40,30,10,.25);display:flex;flex-direction:column;overflow:hidden;animation:lPal .16s ease-out">
+      <div style="flex:none;display:flex;align-items:center;gap:10px;padding:0 14px;border-bottom:1px solid #e6dfd2"><span class="ms" style="color:#6e675c">search</span><input ref="{{ palInputRef }}" value="{{ q }}" onChange="{{ setQ }}" placeholder="Search LifeOS or ask a question" aria-label="Search" style="flex:1;height:52px;border:0;background:transparent;font-size:16px;outline:none"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c">ESC</span></div>
+      <div role="tablist" aria-label="Scope" style="flex:none;display:flex;gap:2px;padding:8px 10px;border-bottom:1px solid #e6dfd2;overflow-x:auto">
+        <sc-for list="{{ scopes }}" as="s" hint-placeholder-count="9"><button role="tab" aria-selected="{{ s.on }}" onClick="{{ s.pick }}" style="border:0;border-radius:5px;padding:4px 9px;font-size:12.5px;cursor:pointer;white-space:nowrap;background:{{ s.bg }};color:{{ s.fg }}">{{ s.label }}</button></sc-for>
+      </div>
+      <div role="listbox" style="flex:1;min-height:0;overflow:auto;padding:6px">
+        <sc-for list="{{ palGroups }}" as="g" hint-placeholder-count="2">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.1em;color:#6e675c;padding:10px 10px 4px">{{ g.label }}</div>
+          <sc-for list="{{ g.items }}" as="it" hint-placeholder-count="3"><button role="option" aria-selected="{{ it.on }}" onClick="{{ it.run }}" onMouseEnter="{{ it.hover }}" style="width:100%;display:flex;justify-content:space-between;gap:12px;align-items:center;border:0;border-radius:6px;padding:9px 10px;text-align:left;cursor:pointer;background:{{ it.bg }};font-size:14px"><span style="display:flex;gap:10px;align-items:center;min-width:0"><span class="ms" style="font-size:18px;color:#6e675c">{{ it.icon }}</span><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ it.label }}</span></span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c;white-space:nowrap">{{ it.hint }}</span></button></sc-for>
+        </sc-for>
+      </div>
+      <div style="flex:none;display:flex;gap:16px;padding:8px 14px;border-top:1px solid #e6dfd2;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6e675c"><span>↑↓ MOVE</span><span>↵ OPEN</span><span>TAB SCOPE</span><span style="margin-left:auto">⌘J ASK</span></div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{ ai }}" hint-placeholder-val="{{ false }}">
+    <aside role="dialog" aria-label="Ask LifeOS" style="position:absolute;top:0;right:0;bottom:0;width:{{ drawerW }};z-index:25;background:#fbf9f4;border-left:1px solid #cfc6b6;box-shadow:-20px 0 60px rgba(40,30,10,.12);display:flex;flex-direction:column;animation:lDrawer .2s ease-out">
+      <div style="height:56px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid #dcd4c6">
+        <div style="display:flex;gap:10px;align-items:center"><canvas data-pk-avatar="orchestrator" data-pk-state="{{ aiPose }}" data-pk-pal="day" data-pk-bg="#ebe4d6" style="width:28px;height:28px;image-rendering:pixelated;border-radius:4px"></canvas><div><div style="font-size:14.5px;font-weight:600">Ask LifeOS</div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6e675c">ORCHESTRATOR · OPUS · {{ aiStatus }}</div></div></div>
+        <button onClick="{{ closeAll }}" aria-label="Close" style="width:36px;height:36px;border:0;background:none;border-radius:6px;cursor:pointer;display:grid;place-items:center" style-hover="background:#ece6da"><span class="ms">close</span></button>
+      </div>
+      <div role="log" aria-live="polite" style="flex:1;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:18px">
+        <sc-for list="{{ aiMsgs }}" as="m" hint-placeholder-count="2">
+          <sc-if value="{{ m.user }}" hint-placeholder-val="{{ false }}"><div style="align-self:flex-end;max-width:85%;background:#1f1c18;color:#f5f2eb;border-radius:10px 10px 2px 10px;padding:10px 14px;font-size:14.5px;line-height:1.45">{{ m.text }}</div></sc-if>
+          <sc-if value="{{ m.bot }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;flex-direction:column;border-left:1px solid #cfc6b6;padding-left:12px;gap:4px">
+                <sc-for list="{{ m.trace }}" as="t" hint-placeholder-count="3"><div style="display:flex;justify-content:space-between;gap:10px;font-family:'JetBrains Mono',monospace;font-size:11px;color:{{ t.fg }}"><span>{{ t.mark }} {{ t.label }}</span><span>{{ t.dur }}</span></div></sc-for>
+              </div>
+              <sc-if value="{{ m.done }}" hint-placeholder-val="{{ false }}">
+                <div style="font-size:14.5px;line-height:1.55">{{ m.text }}</div>
+                <sc-if value="{{ m.hasList }}" hint-placeholder-val="{{ false }}"><div style="border:1px solid #dcd4c6;border-radius:8px;background:#fff;display:flex;flex-direction:column"><sc-for list="{{ m.list }}" as="li" hint-placeholder-count="2"><div style="display:flex;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid #eee7da;font-size:14px"><span>{{ li.a }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c">{{ li.b }}</span></div></sc-for></div></sc-if>
+                <div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ m.follow }}" as="f" hint-placeholder-count="2"><button onClick="{{ f.run }}" style="border:1px solid #cfc6b6;background:transparent;border-radius:14px;padding:4px 11px;font-size:12.5px;cursor:pointer">{{ f.label }}</button></sc-for></div>
+              </sc-if>
+            </div>
+          </sc-if>
+        </sc-for>
+      </div>
+      <div style="padding:12px 14px 16px;border-top:1px solid #dcd4c6;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;gap:8px"><input value="{{ aiInput }}" onChange="{{ setAiInput }}" onKeyDown="{{ aiKey }}" placeholder="Ask about your day, projects, mail…" aria-label="Message" style="flex:1;height:40px;border:1px solid #cfc6b6;border-radius:6px;padding:0 12px;font-size:14.5px;background:#fff"><button onClick="{{ aiSend }}" disabled="{{ aiBusy }}" style="height:40px;border:0;background:#1f1c18;color:#f5f2eb;border-radius:6px;padding:0 14px;font-size:14px;cursor:pointer">Send</button></div>
+        <div style="font-size:12px;color:#6e675c">Anything that writes outside LifeOS is proposed, then waits in Approvals.</div>
+      </div>
+    </aside>
+  </sc-if>
+
+  <sc-if value="{{ notif }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ closeAll }}" style="position:absolute;inset:0;z-index:24"></div>
+    <aside role="dialog" aria-label="Notifications" style="position:absolute;top:0;right:0;bottom:0;width:{{ drawerW }};z-index:25;background:#fbf9f4;border-left:1px solid #cfc6b6;box-shadow:-20px 0 60px rgba(40,30,10,.12);display:flex;flex-direction:column;animation:lDrawer .2s ease-out">
+      <div style="height:56px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid #dcd4c6"><span style="font-size:15px;font-weight:600">Notifications <span style="font-family:'JetBrains Mono',monospace;font-weight:400;font-size:12px;color:#6e675c">{{ unread }} unread</span></span><div style="display:flex;gap:4px;align-items:center"><button onClick="{{ markAll }}" style="border:0;background:none;color:#b5502f;font-size:13px;cursor:pointer;padding:6px">Mark all read</button><button onClick="{{ closeAll }}" aria-label="Close" style="width:36px;height:36px;border:0;background:none;border-radius:6px;cursor:pointer;display:grid;place-items:center"><span class="ms">close</span></button></div></div>
+      <div style="flex:1;overflow:auto;padding:4px 18px 18px">
+        <sc-if value="{{ noNotifs }}" hint-placeholder-val="{{ false }}"><p style="font-family:'Newsreader',serif;font-style:italic;font-size:18px;color:#575047;padding:24px 0">You're all caught up.</p></sc-if>
+        <sc-for list="{{ notifGroups }}" as="g" hint-placeholder-count="3">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.12em;color:#6e675c;padding:16px 0 6px;border-bottom:1px solid #1f1c18">{{ g.label }}</div>
+          <sc-for list="{{ g.items }}" as="n" hint-placeholder-count="2">
+            <div style="padding:12px 0;border-bottom:1px solid #e6dfd2;display:flex;flex-direction:column;gap:6px;background:{{ n.bg }}">
+              <div style="display:flex;justify-content:space-between;gap:10px"><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.08em;color:{{ n.catColor }}">{{ n.cat }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6e675c">{{ n.readLabel }}</span></div>
+              <div style="font-size:14.5px;font-weight:{{ n.weight }};line-height:1.35">{{ n.title }}</div>
+              <div style="font-size:13px;color:#575047">{{ n.detail }}</div>
+              <div style="display:flex;gap:6px;align-items:center;margin-top:2px"><button onClick="{{ n.act }}" style="border:1px solid #cfc6b6;background:transparent;border-radius:5px;padding:4px 10px;font-size:12.5px;cursor:pointer">{{ n.action }}</button><button onClick="{{ n.toggle }}" style="border:0;background:none;font-size:12.5px;cursor:pointer;color:#575047;padding:4px 6px">{{ n.toggleLabel }}</button><button onClick="{{ n.snooze }}" style="border:0;background:none;font-size:12.5px;cursor:pointer;color:#575047;padding:4px 6px">Snooze 1h</button><button onClick="{{ n.dismiss }}" aria-label="Dismiss" style="margin-left:auto;border:0;background:none;font-size:12.5px;cursor:pointer;color:#6e675c;padding:4px 6px">Dismiss</button></div>
+            </div>
+          </sc-for>
+        </sc-for>
+      </div>
+    </aside>
+  </sc-if>
+
+  <sc-if value="{{ hasToast }}" hint-placeholder-val="{{ false }}"><div role="status" style="position:absolute;left:50%;bottom:{{ toastBottom }}px;transform:translateX(-50%);z-index:40;background:#1f1c18;color:#f5f2eb;font-size:14px;padding:10px 16px;border-radius:6px;box-shadow:0 10px 30px rgba(0,0,0,.2);animation:lIn .18s ease-out;max-width:calc(100% - 32px)">{{ toast }}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;demoState&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;live&quot;,&quot;loading&quot;,&quot;empty&quot;,&quot;error&quot;,&quot;disconnected&quot;],&quot;default&quot;:&quot;live&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;States&quot;},&quot;route&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;agents&quot;,&quot;approvals&quot;,&quot;projects&quot;,&quot;organization&quot;,&quot;outreach&quot;,&quot;socials&quot;,&quot;finances&quot;,&quot;career&quot;,&quot;knowledge&quot;,&quot;goals&quot;,&quot;briefings&quot;,&quot;automations&quot;,&quot;settings&quot;],&quot;default&quot;:&quot;home&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Start&quot;}}">
+class Component extends DCLogic {
+  state = { ready: false, route: 'home', pal: false, ai: false, notif: false, more: false, bp: 'desktop', q: '', palIdx: 0, scope: 'All', aiInput: '', aiBusy: false, aiMsgs: null, demo: null, dismissed: {} };
+  ROUTES = [['home', 'Home', 'Alt+1'], ['agents', 'Agents', 'Alt+2'], ['projects', 'Projects', 'Alt+3'], ['organization', 'Organization', 'Alt+4'], ['outreach', 'Outreach', 'Alt+5'], ['socials', 'Socials', 'Alt+6'], ['finances', 'Finances', 'Alt+7'], ['career', 'Career', 'Alt+8']];
+  MORE = [['knowledge', 'Knowledge'], ['goals', 'Goals'], ['briefings', 'Briefings'], ['automations', 'Automations'], ['settings', 'Settings', '⌘,']];
+  rootRef = el => {
+    if (!el || this.ro) return;
+    this.ro = new ResizeObserver(e => { const w = e[0].contentRect.width; const bp = w < 720 ? 'mobile' : w < 1100 ? 'tablet' : 'desktop'; if (bp !== this.state.bp) this.setState({ bp }); });
+    this.ro.observe(el);
+  };
+  palInputRef = el => { if (el) setTimeout(() => el.focus(), 0); };
+  componentDidMount() {
+    const q = new URLSearchParams(location.search);
+    const r = q.get('route') || this.props.route; if (r === 'approvals') { this.__pendingView = 'approvals'; this.setState({ route: 'agents' }); } else if (r) this.setState({ route: r });
+    if (q.get('state')) this.setState({ demo: q.get('state') });
+    const w = () => (window.APP && window.APP.ready && window.PixelKit) ? (this.un = APP.sub(() => this.forceUpdate()), this.__pendingView && (APP.state.agentsView = this.__pendingView), this.setState({ ready: true })) : setTimeout(w, 30);
+    w();
+    if (this.props.keys !== 'off' && q.get('keys') !== 'off') {
+      this.onKey = e => {
+        const mod = e.metaKey || e.ctrlKey;
+        if (mod && e.key.toLowerCase() === 'k') { e.preventDefault(); this.setState({ pal: !this.state.pal, ai: false, notif: false, q: '', palIdx: 0 }); }
+        else if (mod && e.key.toLowerCase() === 'j') { e.preventDefault(); this.setState({ ai: !this.state.ai, pal: false, notif: false }); }
+        else if (mod && e.key === ',') { e.preventDefault(); this.go('settings'); }
+        else if (e.key === 'Escape') this.closeAll();
+        else if (e.altKey && /^[1-9]$/.test(e.key)) { const rr = this.ROUTES[+e.key - 1]; if (rr) { e.preventDefault(); this.go(rr[0]); } }
+      };
+      window.addEventListener('keydown', this.onKey);
+    }
+  }
+  componentWillUnmount() { this.un && this.un(); this.onKey && window.removeEventListener('keydown', this.onKey); this.ro && this.ro.disconnect(); }
+  go = (route, params) => {
+    if (route === 'approvals') { route = 'agents'; params = Object.assign({}, params || {}, { agentsView: 'approvals' }); }
+    if (params && window.APP) APP.set(params);
+    this.setState({ route, pal: false, ai: false, notif: false, more: false });
+    const m = document.getElementById('lifeos-main'); if (m) m.scrollTop = 0;
+  };
+  closeAll = () => this.setState({ pal: false, ai: false, notif: false, more: false });
+  aiAsk(text) {
+    const msgs = (this.state.aiMsgs || this.seedMsgs()).concat([{ user: true, text }, { bot: true, done: false, trace: [['Queued', '', 'q']], text: '', list: [], follow: [] }]);
+    this.setState({ aiMsgs: msgs, aiInput: '', aiBusy: true });
+    const upd = (trace, done) => this.setState(s => { const m = s.aiMsgs.slice(); m[m.length - 1] = Object.assign({}, m[m.length - 1], { trace, done, text: done ? 'Simulated answer. In the product this is the orchestrator run summary with links to the entities it read.' : '' }); return { aiMsgs: m, aiBusy: !done }; });
+    setTimeout(() => upd([['Queued', '0.1s', 'd'], ['Reading context · READ', '', 'r']], false), 400);
+    setTimeout(() => upd([['Queued', '0.1s', 'd'], ['Reading context · READ', '0.8s', 'd'], ['Done', '1.4s', 'ok']], true), 1500);
+  }
+  seedMsgs() {
+    return [{ user: true, text: 'What’s left before 0.9 ships?' },
+      { bot: true, done: true, trace: [['Delegated to Projects · simple → free model', '0.2s', 'd'], ['projects.get · READ', '0.4s', 'd'], ['github.list_tree · READ', '0.6s', 'd'], ['Done · FREE', '3.1s', 'ok']],
+        text: 'Two tasks remain, both due Friday. One draft is waiting on you.', list: [['Write the 0.9 release notes', 'P1 · today'], ['Fix briefing retry on Gmail 429', 'P1 · Fri'], ['LinkedIn post “Shipping LifeOS 0.9”', 'awaiting approval']], follow: ['Open LifeOS project', 'Review the LinkedIn post'] }];
+  }
+  renderVals() {
+    const st = this.state, bp = st.bp, D = st.demo || this.props.demoState || 'live';
+    const route = st.route, titles = {}; this.ROUTES.concat(this.MORE).forEach(r => titles[r[0]] = r[1]);
+    const ready = st.ready && window.APP;
+    const appr = ready ? APP.ctl().approvalCount : 3;
+    const navCount = { agents: appr };
+    const tabletKeys = ['home', 'agents', 'projects', 'outreach', 'socials'];
+    const primary = bp === 'tablet' ? this.ROUTES.filter(r => tabletKeys.includes(r[0])) : this.ROUTES;
+    const overflow = bp === 'tablet' ? this.ROUTES.filter(r => !tabletKeys.includes(r[0])).concat(this.MORE) : this.MORE;
+    const item = r => ({ label: r[1], hint: r[2] || '', current: route === r[0], go: () => this.go(r[0]), fg: route === r[0] ? '#1f1c18' : '#575047', weight: route === r[0] ? 600 : 400, line: route === r[0] ? 'inset 0 -2px 0 #b5502f' : 'none', bg: route === r[0] ? '#ece6da' : 'transparent', hasCount: !!navCount[r[0]], count: navCount[r[0]] });
+    const r = {}; this.ROUTES.concat(this.MORE).forEach(x => r[x[0]] = route === x[0]);
+    // notifications
+    const readN = ready ? APP.state.readN : {};
+    const ns = ready ? APP.notifications.filter(n => !st.dismissed[n.id]) : [];
+    const isUnread = n => readN[n.id] === undefined ? n.unread : !readN[n.id];
+    const CC = { URGENT: '#a8321f', IMPORTANT: '#b5502f', APPROVAL: '#92560a', AGENT: '#2f6f55', REMINDER: '#1f1c18', FYI: '#6e675c' };
+    const notifGroups = ['Now', 'Today', 'Earlier'].map(g => ({ label: g.toUpperCase(), items: ns.filter(n => n.group === g).map(n => {
+      const u = isUnread(n);
+      return Object.assign({}, n, { catColor: CC[n.cat], weight: u && n.important ? 600 : u ? 500 : 400, bg: u && n.important ? 'rgba(181,80,47,.05)' : 'transparent', readLabel: u ? 'UNREAD' : '', toggleLabel: u ? 'Mark read' : 'Mark unread',
+        toggle: () => APP.set({ readN: Object.assign({}, APP.state.readN, { [n.id]: u }) }), snooze: () => { this.setState({ dismissed: Object.assign({}, st.dismissed, { [n.id]: true }) }); APP.toast('Snoozed until 10:41.'); },
+        dismiss: () => this.setState({ dismissed: Object.assign({}, st.dismissed, { [n.id]: true }) }), act: () => { APP.set({ readN: Object.assign({}, APP.state.readN, { [n.id]: true }) }); this.go(n.route[0], n.route[1] ? { agentSel: n.route[1] } : null); } }); }) })).filter(g => g.items.length);
+    const unread = ns.filter(isUnread).length;
+    // palette
+    const scopes = ['All', 'Projects', 'Tasks', 'Events', 'Emails', 'People', 'Notes', 'GitHub', 'Agents'];
+    const q = st.q.trim().toLowerCase(), m = s => !q || s.toLowerCase().indexOf(q) >= 0;
+    let groups = [];
+    if (ready) {
+      const S = st.scope, ok = k => S === 'All' || S === k;
+      const g = (label, items) => { const f = items.filter(i => m(i[0])); if (f.length) groups.push({ label, items: f.slice(0, S === 'All' ? 4 : 12) }); };
+      if (q && S === 'All') groups.push({ label: 'ASK', items: [['Ask LifeOS: “' + st.q.trim() + '”', '⌘J', 'auto_awesome', () => { this.setState({ pal: false, ai: true }); this.aiAsk(st.q.trim()); }]] });
+      if (S === 'All') g('COMMANDS', [['New task', 'T', 'add_task', () => { this.go('organization'); APP.toast('New task dialog (Organization).'); }], ['New post', 'N', 'edit_square', () => this.go('socials', { compose: true, sheet: true })], ['Import CSV', '', 'upload', () => this.go('finances', { finImport: true })], ['Build a briefing now', '', 'event_note', () => this.go('briefings')], ['Pause all agents', '', 'pause_circle', () => APP.toast('Pause all: confirm in Agents.')]]);
+      if (S === 'All') g('JUMP TO', this.ROUTES.concat(this.MORE).map(x => [x[1], x[2] || '', 'arrow_forward', () => this.go(x[0])]));
+      if (ok('Projects')) g('PROJECTS', APP.projects.map(p => [p.name, p.healthLabel, 'deployed_code', () => this.go('projects', { projSel: p.id })]));
+      if (ok('Tasks')) g('TASKS', APP.tasks.map(t => [t[1], t[3], 'task_alt', () => this.go('organization')]));
+      if (ok('Events')) g('EVENTS', APP.events.map(e => [e.title, e.when, 'event', () => this.go('outreach', { outTab: 'events' })]));
+      if (ok('Emails')) g('EMAILS', APP.mail.map(x => [x.subject, x.from, 'mail', () => this.go('outreach', { outTab: 'inbox', mailSel: x.id })]));
+      if (ok('People')) g('PEOPLE', [['Jordan Lee', 'Sydney Startup Week'], ['Priya Natarajan', 'Lumen Health'], ['Mia Chen', 'Harbour Transit'], ['Sam Okafor', ''], ['Lena Ho', 'Follow up']].map(p => [p[0], p[1], 'person', () => this.go('outreach')]));
+      if (ok('Notes')) g('NOTES', APP.knowledge.map(k => [k.title, k.kind, 'description', () => this.go('knowledge', { kSel: k.id })]));
+      if (ok('GitHub')) g('GITHUB', APP.repos.map(x => [x.name, 'CI ' + x.ci, 'code', () => this.go('career', { repoSel: x.id })]));
+      if (ok('Agents')) g('AGENTS', LOS.agents.map(a => [a.name, LOS.STATE[a.state].label, 'smart_toy', () => this.go('agents', { agentSel: a.id })]));
+    }
+    let k = 0; const flat = [];
+    const palGroups = groups.map(gr => ({ label: gr.label, items: gr.items.map(it => { const idx = k++; flat.push(it[3]); return { label: it[0], hint: it[1], icon: it[2], run: it[3], on: idx === st.palIdx, bg: idx === st.palIdx ? '#ece6da' : 'transparent', hover: () => this.setState({ palIdx: idx }) }; }) }));
+    const palKey = e => {
+      if (e.key === 'ArrowDown') { e.preventDefault(); this.setState({ palIdx: Math.min(flat.length - 1, st.palIdx + 1) }); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); this.setState({ palIdx: Math.max(0, st.palIdx - 1) }); }
+      else if (e.key === 'Enter') { e.preventDefault(); const f = flat[st.palIdx]; if (f) f(); else if (q) { this.setState({ pal: false, ai: true }); this.aiAsk(st.q.trim()); } }
+      else if (e.key === 'Tab') { e.preventDefault(); const i = scopes.indexOf(st.scope); this.setState({ scope: scopes[(i + (e.shiftKey ? scopes.length - 1 : 1)) % scopes.length], palIdx: 0 }); }
+    };
+    // ai
+    const msgs = (st.aiMsgs || this.seedMsgs()).map(mm => mm.user ? mm : Object.assign({}, mm, {
+      trace: mm.trace.map(t => ({ label: t[0], dur: t[1], mark: t[2] === 'ok' ? '✓' : t[2] === 'r' ? '…' : t[2] === 'q' ? '○' : '·', fg: t[2] === 'ok' ? '#2f6f55' : '#6e675c' })),
+      list: (mm.list || []).map(x => ({ a: x[0], b: x[1] })), hasList: (mm.list || []).length > 0, follow: (mm.follow || []).map(f => ({ label: f, run: () => f.indexOf('LinkedIn') >= 0 ? this.go('socials', { varSel: 'p1-linkedin' }) : this.go('projects', { projSel: 'lifeos' }) })) }));
+    // states
+    const ST = ready ? (APP.states[route] || APP.states.home) : null;
+    const agentFor = { home: 'orchestrator', agents: 'orchestrator', approvals: 'orchestrator', projects: 'projects', organization: 'organization', outreach: 'outreach', socials: 'social', career: 'projects', finances: 'finance', knowledge: 'knowledge', goals: 'goals', briefings: 'automations', automations: 'automations', settings: 'orchestrator' };
+    const tabs = [['home', 'Home', 'home'], ['agents', 'Agents', 'smart_toy'], ['outreach', 'Outreach', 'mail'], ['socials', 'Socials', 'public']];
+    const isMore = !tabs.some(t => t[0] === route);
+    const tabItems = tabs.map(t => ({ label: t[1], icon: t[2], current: route === t[0], fg: route === t[0] ? '#1f1c18' : '#6e675c', weight: route === t[0] ? 600 : 400, fill: route === t[0] ? 1 : 0, hasCount: t[0] === 'agents' && appr > 0, count: appr, go: () => this.go(t[0]) }))
+      .concat([{ label: 'More', icon: 'menu', current: isMore, fg: isMore ? '#1f1c18' : '#6e675c', weight: isMore ? 600 : 400, fill: 0, hasCount: false, go: () => this.setState({ more: !st.more }) }]);
+    return {
+      rootRef: this.rootRef, palInputRef: this.palInputRef, bp, isMobile: bp === 'mobile', notMobile: bp !== 'mobile', isDesktop: bp === 'desktop', notDesktop: bp !== 'desktop',
+      padX: bp === 'mobile' ? 16 : bp === 'tablet' ? 24 : 40, r, go: this.go, goHome: () => this.go('home'),
+      title: titles[route], titleUpper: (titles[route] || '').toUpperCase(),
+      navItems: primary.map(item), moreItems: overflow.map(x => item(x)), allItems: this.ROUTES.concat(this.MORE).map(item), tabItems,
+      more: st.more, toggleMore: () => this.setState({ more: !st.more }), moreFg: overflow.some(x => x[0] === route) ? '#1f1c18' : '#575047',
+      openPal: () => this.setState({ pal: true, ai: false, notif: false, q: '', palIdx: 0 }), openAi: () => this.setState({ ai: true, pal: false, notif: false }), openNotif: () => this.setState({ notif: true, ai: false, pal: false }), closeAll: this.closeAll,
+      pal: st.pal, ai: st.ai, notif: st.notif, q: st.q, setQ: e => this.setState({ q: e.target.value, palIdx: 0 }), palKey, palGroups,
+      scopes: scopes.map(s => ({ label: s, on: st.scope === s, bg: st.scope === s ? '#1f1c18' : 'transparent', fg: st.scope === s ? '#f5f2eb' : '#575047', pick: () => this.setState({ scope: s, palIdx: 0 }) })),
+      palTop: bp === 'mobile' ? 12 : 96, palW: bp === 'mobile' ? 'calc(100% - 24px)' : '640px', drawerW: bp === 'mobile' ? '100%' : '440px',
+      aiMsgs: msgs, aiInput: st.aiInput, setAiInput: e => this.setState({ aiInput: e.target.value }), aiBusy: st.aiBusy, aiStatus: st.aiBusy ? 'WORKING' : 'ONLINE', aiPose: st.aiBusy ? 'working' : 'idle',
+      aiSend: () => st.aiInput.trim() && this.aiAsk(st.aiInput.trim()), aiKey: e => { if (e.key === 'Enter' && st.aiInput.trim()) this.aiAsk(st.aiInput.trim()); },
+      notifGroups, unread, hasUnread: unread > 0, noNotifs: notifGroups.length === 0, markAll: () => { const o = {}; APP.notifications.forEach(n => o[n.id] = true); APP.set({ readN: o }); },
+      live: D === 'live', notLive: D !== 'live', isLoading: D === 'loading', isMessage: D !== 'live' && D !== 'loading',
+      stateTitle: ST && ST[D] ? ST[D][0] : '', stateBody: ST && ST[D] ? ST[D][1] : '', stateAgent: agentFor[route] || 'orchestrator', statePose: D === 'error' ? 'failed' : D === 'disconnected' ? 'offline' : 'idle',
+      stateLabel: D === 'error' ? '× ERROR' : D === 'disconnected' ? '○ NOT CONNECTED' : '– EMPTY', stateColor: D === 'error' ? '#a8321f' : '#6e675c', stateRole: D === 'error' ? 'alert' : 'status',
+      stateCta: D === 'error' ? 'Try again' : D === 'disconnected' ? 'Open Connections' : 'Get started', stateAction: () => D === 'disconnected' ? (this.setState({ demo: 'live' }), this.go('settings')) : this.setState({ demo: 'live' }), backLive: () => this.setState({ demo: 'live' }),
+      skel: [{ h: 34, w: '40%' }, { h: 16, w: '70%' }, { h: 64, w: '100%' }, { h: 64, w: '100%' }, { h: 64, w: '100%' }, { h: 64, w: '86%' }],
+      hasToast: ready && !!APP.state.toast, toast: ready ? APP.state.toast : '', toastBottom: bp === 'mobile' ? 80 : 28
+    };
+  }
+}
+</script>
+</body>
+</html>

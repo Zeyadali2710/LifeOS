@@ -5,9 +5,9 @@ import type { ApprovalDTO, ApprovalStatus } from "@/lib/agent-types";
 import type { ApprovalKind } from "@/lib/approval-kinds";
 import { getAgent } from "@/server/agents/registry";
 import { formatHM, sydneyParts } from "@/server/time";
-import { Badge } from "@/ui/badge";
-import { EmptyState } from "@/ui/empty-state";
-import { Icon } from "@/ui/icon";
+import { Badge } from "@/legacy-ui/badge";
+import { EmptyState } from "@/legacy-ui/empty-state";
+import { Icon } from "@/legacy-ui/icon";
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 export const stamp = (iso: string) => {

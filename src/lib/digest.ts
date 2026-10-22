@@ -32,7 +32,7 @@ export function rankPriorities(d: Digest, limit = 5): Priority[] {
     const pri = t.priority === 1 ? 25 : t.priority === 2 ? 10 : 0;
     out.push({ key: `task:${t.id}`, label: t.title, detail: t.overdue ? "Overdue task" : "Due today", href: t.projectId ? `/projects/${t.projectId}` : "/organization", weight: base + pri, tone: t.overdue ? "red" : "amber" });
   }
-  if (d.approvalsWaiting) out.push({ key: "approvals", label: `${d.approvalsWaiting} approval${d.approvalsWaiting === 1 ? "" : "s"} waiting`, detail: "Agents are paused on your decision", href: "/approvals", weight: 80, tone: "amber" });
+  if (d.approvalsWaiting) out.push({ key: "approvals", label: `${d.approvalsWaiting} approval${d.approvalsWaiting === 1 ? "" : "s"} waiting`, detail: "Agents are paused on your decision", href: "/agents?view=approvals", weight: 80, tone: "amber" });
   for (const m of d.importantMail.slice(0, 3)) out.push({ key: `mail:${m.id}`, label: m.subject || "(no subject)", detail: `Important email · ${m.from}`, href: `/outreach?tab=email&mail=${m.id}`, weight: 60, tone: "cyan" });
   for (const c of d.conflicts.slice(0, 2)) out.push({ key: `conflict:${c.a}:${c.b}`, label: `${c.a} overlaps ${c.b}`, detail: "Calendar conflict today", href: "/organization", weight: 65, tone: "red" });
   for (const f of d.ciFailures.slice(0, 2)) out.push({ key: `ci:${f.at}:${f.title}`, label: f.title, detail: "CI failed", href: "/career", weight: 55, tone: "red" });

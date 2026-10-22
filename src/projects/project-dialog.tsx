@@ -6,10 +6,10 @@ import { projectInput } from "@/lib/project-payload";
 import { CATEGORY_LABEL, PROJECT_CATEGORIES, PROJECT_STATUSES, STATUS_LABEL } from "@/lib/project-types";
 import type { ProjectCategory, ProjectDTO, ProjectStatus } from "@/lib/project-types";
 import { createProjectAction, updateProjectAction } from "@/server/project-actions";
-import { useShell } from "@/shell/shell-provider";
-import { Button } from "@/ui/button";
-import { Dialog } from "@/ui/dialog";
-import { Field, Input, Select, Textarea } from "@/ui/field";
+import { useShell } from "@/features/shell/shell-provider";
+import { Button } from "@/legacy-ui/button";
+import { Dialog } from "@/legacy-ui/dialog";
+import { Field, Input, Select, Textarea } from "@/legacy-ui/field";
 
 export function ProjectDialog({ open, project, focus, onClose }: { open: boolean; project?: ProjectDTO; focus?: "workspacePath" | "context"; onClose: () => void }) {
   if (!open) return null;

@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { formatDuration } from "@/lib/format";
-import { Icon } from "@/ui/icon";
-import type { IconName } from "@/ui/icon-names";
-import { StatusDot } from "@/ui/status-dot";
+import { Icon } from "@/legacy-ui/icon";
+import type { IconName } from "@/legacy-ui/icon-names";
+import { StatusDot } from "@/legacy-ui/status-dot";
 import type { AgentsOverview } from "./command-centre";
 
 type A = AgentsOverview["agents"][number];

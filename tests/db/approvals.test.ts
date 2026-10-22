@@ -154,7 +154,7 @@ describe("expireDue and lists", () => {
     expect(n).toMatchObject({
       category: "FYI",
       body: 'The issue "Bug" was not created. Nothing ran after the request expired.',
-      actionUrl: `/approvals?id=${id}`,
+      actionUrl: `/agents?view=approvals&id=${id}`,
     });
     expect(await decide(h(), id, "approve", { enqueue: async () => {} })).toEqual({ ok: false, reason: "not_pending" });
   });

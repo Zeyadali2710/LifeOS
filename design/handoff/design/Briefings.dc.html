@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="pixelkit.js"></script><script src="lifeos-data.js"></script><script src="lifeos-app.js"></script>
+<style>body{margin:0;background:#f5f2eb;color:#1f1c18;font-family:'Instrument Sans',system-ui,sans-serif}*{box-sizing:border-box}button{font-family:inherit;color:inherit}:focus-visible{outline:2px solid #b5502f;outline-offset:2px}</style>
+</helmet>
+<div data-screen-label="Briefings" style="padding:{{ pad }};max-width:1680px;margin:0 auto">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+    <div><h1 style="margin:0;font-family:'Newsreader',serif;font-weight:400;font-size:34px;letter-spacing:-.015em">Briefings</h1><p style="margin:6px 0 0;font-size:14.5px;color:#575047">Morning 7:00 · Evening 18:00 · Weekly Sunday 18:00 · built from local data, no model call</p></div>
+    <button onClick="{{ build }}" style="background:#1f1c18;color:#f5f2eb;border:0;border-radius:6px;padding:8px 14px;font-size:13.5px;font-weight:500;cursor:pointer">{{ buildLabel }}</button>
+  </div>
+  <div style="display:flex;flex-wrap:wrap;gap:32px 56px;margin-top:24px;align-items:flex-start">
+    <div role="list" style="flex:1 1 300px;max-width:380px;min-width:0;border-top:2px solid #1f1c18">
+      <sc-for list="{{ list }}" as="b" hint-placeholder-count="5"><button role="listitem" onClick="{{ b.pick }}" aria-pressed="{{ b.on }}" style="width:100%;display:flex;flex-direction:column;gap:3px;padding:12px 6px;border:0;border-bottom:1px solid #dcd4c6;background:{{ b.bg }};text-align:left;cursor:pointer" style-hover="background:#ece6da"><span style="display:flex;justify-content:space-between"><span style="font-size:14.5px;font-weight:600">{{ b.kind }} · {{ b.period }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:{{ b.atColor }}">{{ b.at }}</span></span><span style="font-size:13px;color:#575047">{{ b.counts }}</span></button></sc-for>
+    </div>
+    <article style="flex:2 1 480px;max-width:900px;min-width:0">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:#6e675c">{{ cur.kindUpper }} BRIEFING · {{ cur.at }}</div>
+      <h2 style="margin:6px 0 0;font-family:'Newsreader',serif;font-weight:400;font-size:32px">{{ cur.period }}</h2>
+      <p style="margin:8px 0 0;font-size:15px;color:#575047">{{ cur.counts }}</p>
+      <sc-for list="{{ cur.secs }}" as="s" hint-placeholder-count="4"><section style="margin-top:24px"><h3 style="margin:0;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:11.5px;letter-spacing:.12em;border-top:1px solid #1f1c18;padding-top:8px">{{ s.title }}</h3><ul style="margin:8px 0 0;padding-left:18px;font-size:15px;line-height:1.7">{{ s.none }}<sc-for list="{{ s.items }}" as="i" hint-placeholder-count="2"><li>{{ i }}</li></sc-for></ul></section></sc-for>
+      <sc-if value="{{ cur.noSecs }}" hint-placeholder-val="{{ false }}"><p style="margin:24px 0 0;font-family:'Newsreader',serif;font-style:italic;font-size:18px;color:#575047">{{ cur.emptyCopy }}</p></sc-if>
+      <p style="margin:28px 0 0;font-size:12.5px;color:#6e675c">Notifications carry counts only. Sections, which can include email subjects, appear only on this owner-only page.</p>
+    </article>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { ready: false, building: false };
+  componentDidMount() { const w = () => (window.APP && APP.ready) ? (this.un = APP.sub(() => this.forceUpdate()), this.setState({ ready: true })) : setTimeout(w, 30); w(); }
+  componentWillUnmount() { this.un && this.un(); }
+  renderVals() {
+    if (!this.state.ready) return {};
+    const S = APP.state, bp = this.props.bp || 'desktop';
+    const sel = APP.briefings.find(b => b.id === S.briefSel) || APP.briefings[0];
+    return {
+      pad: bp === 'mobile' ? '20px 16px 40px' : '28px 40px 64px',
+      list: APP.briefings.map(b => Object.assign({}, b, { on: b.id === sel.id, bg: b.id === sel.id ? '#ece6da' : 'transparent', atColor: b.failed ? '#a8321f' : '#6e675c', pick: () => APP.set({ briefSel: b.id }) })),
+      cur: Object.assign({}, sel, { kindUpper: sel.kind.toUpperCase(), secs: sel.sections.map(s => ({ title: s[0].toUpperCase(), items: s[1] })), noSecs: !sel.sections.length, emptyCopy: sel.failed ? 'This briefing failed and was rebuilt on the next tick.' : 'Sections are kept for the 7 most recent briefings.' }),
+      build: () => { this.setState({ building: true }); setTimeout(() => { this.setState({ building: false }); APP.toast('Midday briefing built.'); }, 1200); }, buildLabel: this.state.building ? 'Building…' : 'Build one now'
+    };
+  }
+}
+</script>
+</body>
+</html>

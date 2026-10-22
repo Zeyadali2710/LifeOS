@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { Sparkline } from "@/career/sparkline";
 import type { ProjectCardDTO } from "@/lib/project-types";
-import { EmptyState } from "@/ui/empty-state";
-import { SectionHeader } from "@/ui/section-header";
+import { EmptyState } from "@/legacy-ui/empty-state";
+import { SectionHeader } from "@/legacy-ui/section-header";
 import { ProgressRing } from "./progress-ring";
 import { HealthDot, PriorityTag } from "./status";
 

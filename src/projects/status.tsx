@@ -1,6 +1,6 @@
 import { HEALTH_LABEL, STATUS_LABEL, type CiChip, type Health, type ProjectStatus } from "@/lib/project-types";
-import { Badge } from "@/ui/badge";
-import { Icon } from "@/ui/icon";
+import { Badge } from "@/legacy-ui/badge";
+import { Icon } from "@/legacy-ui/icon";
 
 // Single status map: Career, Projects and Home all render from here.
 export const HEALTH: Record<Health, { label: string; dot: string; text: string }> = {

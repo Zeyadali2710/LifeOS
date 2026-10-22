@@ -1,0 +1,86 @@
+/* LifeOS · Almanac tokens — the only source of visual values for the new UI */
+:root {
+  /* Surfaces */
+  --paper: #f5f2eb;        /* app background */
+  --paper-2: #fbf9f4;      /* inputs, menus */
+  --paper-3: #fffdf9;      /* cards, selected segment */
+  --wash: #ece6da;         /* segmented track, tags, hover */
+  --rule: #dcd4c6;         /* card border, dividers */
+  --rule-soft: #e6dfd2;
+  --rule-faint: #efe9de;   /* row separators inside cards */
+  --border: #cfc6b6;       /* control borders */
+  --avatar: #d8cdb9;
+
+  /* Ink */
+  --ink: #1f1c18;
+  --ink-body: #3d3830;     /* long-form body text */
+  --ink-2: #575047;
+  --ink-3: #6e675c;
+  --neutral: #8a8377;
+  --disabled: #b9ae9b;
+
+  /* Accent */
+  --accent: #b5502f;
+  --accent-wash: #f3e7df;
+  --accent-strong: #c2462b; /* pixel selection ring only */
+
+  /* Status (glyph + word + colour) */
+  --status-working: #2f6f55;   --status-working-bg: #dbe8df;
+  --status-approval: #92560a;  --status-approval-bg: #f2e3c6;
+  --status-failed: #a8321f;    --status-failed-bg: #f8e6e0;
+  --status-idle: #6e675c;
+  --status-offline: #8a8377;
+  --status-merged: #6b3f8a;    --status-merged-bg: #efe2f5;
+
+  /* Type */
+  --font-display: "Newsreader", Georgia, serif;
+  --font-ui: "Instrument Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --text-display: 40px; --text-h1: 34px; --text-title: 28px; --text-card-title: 20px;
+  --text-body: 15px; --text-row: 16px; --text-ui: 14px; --text-small: 13.5px; --text-xs: 12.5px;
+  --text-label: 11.5px; --text-meta: 12px; --text-mono-xs: 10.5px;
+  --label-tracking: .12em;
+  --leading-body: 1.6; --leading-ui: 1.4; --leading-tight: 1.15;
+
+  /* Space */
+  --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 20px;
+  --space-6: 24px; --space-7: 28px; --space-8: 32px; --space-10: 40px; --space-14: 56px; --space-16: 64px;
+
+  /* Radius */
+  --radius-xs: 3px; --radius-sm: 4px; --radius-seg-item: 5px; --radius-md: 6px; --radius-seg: 7px;
+  --radius-menu: 8px; --radius-lg: 10px; --radius-xl: 12px; --radius-pill: 999px;
+
+  /* Elevation */
+  --shadow-seg: 0 1px 2px rgba(31, 28, 24, .12);
+  --shadow-chip: 0 2px 8px rgba(31, 28, 24, .12);
+  --shadow-card-hover: 0 10px 26px rgba(40, 30, 10, .10);
+  --shadow-menu: 0 18px 40px rgba(50, 40, 20, .14);
+  --shadow-dialog: 0 30px 80px rgba(40, 30, 10, .25);
+  --section-rule: 2px solid var(--ink);
+
+  /* Focus */
+  --focus-ring: 2px solid var(--accent);
+  --focus-offset: 2px;
+
+  /* Motion */
+  --dur-fast: 140ms; --dur-base: 200ms; --dur-scene: 320ms;
+  --ease-out: cubic-bezier(.2, .7, .2, 1);
+
+  /* Layout */
+  --bp-tablet: 720px; --bp-desktop: 1100px;
+  --content-max: 1680px;
+  --reading-max: 900px;
+  --page-pad-desktop: 28px 40px 64px;
+  --page-pad-tablet: 28px 28px 56px;
+  --page-pad-mobile: 20px 16px 40px;
+  --masthead-h: 56px; --toolbar-h: 72px;
+  --inspector-w: 440px; --inspector-w-tablet: 380px; --drawer-w: 440px;
+  --mail-sidebar-w: 248px; --mail-list-min: 320px; --mail-list-max: 400px;
+  --event-card-min: 290px;
+
+  /* Pixel art */
+  --pixel-tile-w: 32px; --pixel-tile-h: 16px; --pixel-char-w: 10px; --pixel-char-h: 16px;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-fast: 0ms; --dur-base: 0ms; --dur-scene: 0ms; }
+}

@@ -1,0 +1,56 @@
+/* Native <dialog> gives focus trapping, Esc and aria-modal for free. */
+.dialog {
+  position: fixed; inset: 14vh auto auto 50%; transform: translateX(-50%); margin: 0;
+  width: min(520px, calc(100% - 32px)); max-height: 80vh; overflow: auto;
+  background: var(--paper-2); color: var(--ink); border: 1px solid var(--border); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-dialog); padding: 22px;
+}
+.dialog.wide { width: min(600px, calc(100% - 32px)); top: 10vh; }
+.dialog[open] { display: flex; flex-direction: column; gap: 14px; animation: los-pal var(--dur-base) var(--ease-out); }
+.dialog::backdrop { background: color-mix(in srgb, var(--ink) 30%, transparent); }
+.dialogTitle { font-family: var(--font-display); font-weight: 400; font-size: 26px; line-height: 1.2; }
+.dialogFoot { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+.dialogText { font-size: var(--text-body); line-height: 1.55; color: var(--ink-body); }
+
+.drawer {
+  position: fixed; inset: 0 0 0 auto; margin: 0; height: 100%; max-height: 100%;
+  width: min(var(--drawer-w), 100%); max-width: 100%;
+  background: var(--paper-2); color: var(--ink); border: 0; border-left: 1px solid var(--border);
+  box-shadow: var(--shadow-dialog); padding: 0;
+}
+.drawer[open] { display: flex; flex-direction: column; animation: los-drawer var(--dur-base) var(--ease-out); }
+.drawer::backdrop { background: transparent; }
+.drawer.dim::backdrop { background: color-mix(in srgb, var(--ink) 28%, transparent); }
+@media (max-width: 719.98px) { .drawer { width: 100%; border-left: 0; } }
+.drawerHead { height: var(--masthead-h); flex: none; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 0 12px 0 18px; border-bottom: 1px solid var(--rule); }
+.drawerActions { display: flex; align-items: center; gap: 2px; flex: none; }
+.drawerTitle { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 10px; min-width: 0; }
+
+.menuWrap { position: relative; display: inline-flex; }
+.menu {
+  position: absolute; top: calc(100% + 4px); left: 0; z-index: 40; min-width: 200px;
+  background: var(--paper-2); border: 1px solid var(--rule); border-radius: var(--radius-menu);
+  box-shadow: var(--shadow-menu); padding: 6px; display: flex; flex-direction: column;
+  animation: los-pal var(--dur-fast) var(--ease-out);
+}
+.menu.right { left: auto; right: 0; }
+.menuItem {
+  display: flex; justify-content: space-between; align-items: center; gap: 16px; width: 100%;
+  border: 0; background: transparent; text-align: left; padding: 8px 10px; border-radius: var(--radius-seg-item);
+  font-size: var(--text-ui); color: var(--ink); text-decoration: none; white-space: nowrap;
+}
+.menuItem:hover, .menuItem:focus-visible { background: var(--wash); color: var(--ink); }
+.menuItem[aria-current="page"] { background: var(--wash); }
+.menuItem.danger { color: var(--status-failed); }
+.menuHint { font-family: var(--font-mono); font-size: 11px; color: var(--ink-3); }
+.menuSep { height: 1px; background: var(--rule-faint); margin: 4px 2px; }
+
+.toast {
+  position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); z-index: 60;
+  max-width: calc(100% - 32px); background: var(--ink); color: var(--paper); font-size: var(--text-ui);
+  padding: 10px 16px; border-radius: var(--radius-md); box-shadow: var(--shadow-menu);
+  animation: los-in var(--dur-base) var(--ease-out); display: flex; align-items: center; gap: 12px;
+}
+.toast.error { background: var(--status-failed); }
+.toastAction { border: 0; background: none; color: var(--paper); text-decoration: underline; font-size: var(--text-small); padding: 0; }
+@media (max-width: 719.98px) { .toast { bottom: calc(80px + env(safe-area-inset-bottom)); } }

@@ -42,6 +42,12 @@ export function formatHM(d: Date) {
   return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
 }
 
+/** Almanac clock: "9:41", "18:00" (no leading zero). */
+export function clock(d: Date) {
+  const { hour, minute } = sydneyParts(d);
+  return `${hour}:${String(minute).padStart(2, "0")}`;
+}
+
 export function tzLabel(d: Date) {
   return fmt(d, { timeZoneName: "short" }).timeZoneName;
 }

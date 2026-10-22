@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { milestoneInput } from "@/lib/project-payload";
 import type { MilestoneDTO } from "@/lib/project-types";
 import { createMilestoneAction, deleteMilestoneAction, setMilestoneDoneAction, updateMilestoneAction } from "@/server/project-actions";
-import { useShell } from "@/shell/shell-provider";
-import { Button } from "@/ui/button";
-import { Dialog } from "@/ui/dialog";
-import { Checkbox, Field, Input } from "@/ui/field";
+import { useShell } from "@/features/shell/shell-provider";
+import { Button } from "@/legacy-ui/button";
+import { Dialog } from "@/legacy-ui/dialog";
+import { Checkbox, Field, Input } from "@/legacy-ui/field";
 
 export function MilestoneDialog({ open, projectId, milestone, onClose }: { open: boolean; projectId: string; milestone?: MilestoneDTO; onClose: () => void }) {
   if (!open) return null;

@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
-import { Button } from "@/ui/button";
+import { Button } from "@/legacy-ui/button";
 
 const field =
   "mt-1.5 block h-11 w-full rounded-full border border-white/[.10] bg-white/[.03] px-4 text-[14px] text-text outline-none transition placeholder:text-text-3 focus:border-[rgba(100,210,255,.55)] focus:shadow-[var(--ring-input)]";

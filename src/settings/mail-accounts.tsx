@@ -4,9 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { mailAccounts } from "@/server/mail/accounts";
 import { disconnectMailAccountAction, syncMailNowAction } from "@/server/mail-actions";
-import { useShell } from "@/shell/shell-provider";
-import { Button } from "@/ui/button";
-import { Dialog } from "@/ui/dialog";
+import { useShell } from "@/features/shell/shell-provider";
+import { Button } from "@/legacy-ui/button";
+import { Dialog } from "@/legacy-ui/dialog";
 
 export function MailAccounts({ accounts, configured }: { accounts: Awaited<ReturnType<typeof mailAccounts>>; configured: boolean }) {
   const router = useRouter();

@@ -3,8 +3,8 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import type { SocialPlatform } from "@/lib/social-types";
-import { Checkbox } from "@/ui/field";
-import { SectionHeader } from "@/ui/section-header";
+import { Checkbox } from "@/legacy-ui/field";
+import { SectionHeader } from "@/legacy-ui/section-header";
 import { dayKey } from "./model";
 import { FollowersChart } from "./followers-chart";
 import { PostsTable } from "./posts-table";

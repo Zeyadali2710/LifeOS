@@ -6,13 +6,13 @@ import type { TaskDTO } from "@/lib/calendar-types";
 import { taskInput } from "@/lib/task-payload";
 import type { TaskDialogOptions } from "@/lib/project-types";
 import { addTaskDependencyAction, removeTaskDependencyAction, taskDialogOptionsAction } from "@/server/project-actions";
-import { Icon } from "@/ui/icon";
+import { Icon } from "@/legacy-ui/icon";
 import { createTaskAction, deleteTaskAction, toggleTaskAction, updateTaskAction } from "@/server/task-actions";
 import { sydneyInstant, sydneyParts } from "@/server/time";
-import { useShell } from "@/shell/shell-provider";
-import { Button } from "@/ui/button";
-import { Dialog } from "@/ui/dialog";
-import { Checkbox, Field, Input, Select, Textarea } from "@/ui/field";
+import { useShell } from "@/features/shell/shell-provider";
+import { Button } from "@/legacy-ui/button";
+import { Dialog } from "@/legacy-ui/dialog";
+import { Checkbox, Field, Input, Select, Textarea } from "@/legacy-ui/field";
 
 type Remind = "none" | "at" | "15m" | "1h" | "morning" | "custom";
 const p2 = (n: number) => String(n).padStart(2, "0");

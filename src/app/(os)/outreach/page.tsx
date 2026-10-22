@@ -7,7 +7,7 @@ import { requireOwner } from "@/server/session";
 import { followUpCount, listFollowUps, loadMailView, mailCatOf, mailStatus, pendingReplyFor } from "@/server/mail/queries";
 import { MAIL_CATEGORIES, type MailCat } from "@/lib/outreach-types";
 import type { MailData } from "@/outreach/outreach-view";
-import { PageHeader } from "@/ui/page-header";
+import { PageHeader } from "@/legacy-ui/page-header";
 
 export const metadata = { title: "Outreach · LifeOS" };
 export const dynamic = "force-dynamic";

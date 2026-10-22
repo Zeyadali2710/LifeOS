@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { BRIEFING_KINDS, BRIEFING_LABEL, type BriefingSchedule } from "@/lib/digest";
 import { saveBriefingScheduleAction } from "@/server/briefing-actions";
-import { useShell } from "@/shell/shell-provider";
-import { Button } from "@/ui/button";
-import { Checkbox, Input } from "@/ui/field";
+import { useShell } from "@/features/shell/shell-provider";
+import { Button } from "@/legacy-ui/button";
+import { Checkbox, Input } from "@/legacy-ui/field";
 
 const WHEN = { morning: "Today's events, tasks and priorities", midday: "What's left today", evening: "Done today, still open, tomorrow", weekly: "Sundays: goals, budgets, the week ahead" };
 

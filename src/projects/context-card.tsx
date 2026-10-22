@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Button } from "@/ui/button";
-import { Icon } from "@/ui/icon";
+import { Button } from "@/legacy-ui/button";
+import { Icon } from "@/legacy-ui/icon";
 
 export function ContextCard({ context, onEdit }: { context: string; onEdit?: () => void }) {
   const ref = useRef<HTMLParagraphElement>(null);

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { BlockerDTO } from "@/lib/project-types";
-import { Icon } from "@/ui/icon";
+import { Icon } from "@/legacy-ui/icon";
 
 const ROW = "flex items-center gap-2.5 rounded-16 px-3 py-2.5 text-[13px]";
 

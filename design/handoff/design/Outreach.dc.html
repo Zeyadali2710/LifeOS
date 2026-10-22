@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300,0..1,0&display=block" rel="stylesheet">
+<script src="pixelkit.js"></script><script src="lifeos-data.js"></script><script src="lifeos-app.js"></script>
+<style>body{margin:0;background:#f5f2eb;color:#1f1c18;font-family:'Instrument Sans',system-ui,sans-serif}*{box-sizing:border-box}button,input,textarea{font-family:inherit;color:inherit}a{color:#b5502f}a:hover{color:#1f1c18}:focus-visible{outline:2px solid #b5502f;outline-offset:2px}@keyframes oIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}@keyframes oUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}@media (prefers-reduced-motion: reduce){*{animation:none!important}}</style>
+</helmet>
+<div data-screen-label="Outreach" style="position:relative;height:{{ h }};min-height:560px;display:grid;grid-template-columns:{{ cols }};background:#f5f2eb;overflow:hidden">
+
+  <aside aria-label="Mailboxes" style="display:{{ sideDisplay }};position:{{ sidePos }};left:0;top:0;bottom:0;width:{{ sideW }};z-index:12;box-shadow:{{ sideShadow }};flex-direction:column;gap:18px;min-height:0;overflow:auto;padding:16px 10px 16px 12px;background:#efe9dd;border-right:1px solid #dcd4c6;animation:{{ sideAnim }}">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:0 6px">
+      <h1 style="margin:0;font-family:'Newsreader',serif;font-weight:400;font-size:26px;letter-spacing:-.01em">Outreach</h1>
+      <button onClick="{{ newMessage }}" aria-label="New message" title="New message" style="width:34px;height:34px;border:1px solid #cfc6b6;background:#f5f2eb;border-radius:6px;cursor:pointer;display:grid;place-items:center"><span style="font-family:'Material Symbols Outlined';font-size:19px;font-weight:300">edit_square</span></button>
+    </div>
+    <sc-for list="{{ groups }}" as="g" hint-placeholder-count="4">
+      <nav aria-label="{{ g.label }}" style="display:flex;flex-direction:column;gap:1px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.12em;color:#6e675c;padding:0 8px 5px">{{ g.upper }}</div>
+        <sc-for list="{{ g.items }}" as="b" hint-placeholder-count="3">
+          <button onClick="{{ b.pick }}" aria-current="{{ b.on }}" title="{{ b.title }}" style="display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:8px;align-items:center;padding:6px 8px 6px {{ b.indent }}px;border:0;border-radius:6px;background:{{ b.bg }};text-align:left;cursor:pointer;font-size:14px;font-weight:{{ b.w }}" style-hover="background:#e6dfd2">
+            <span style="display:grid;place-items:center;width:20px;height:20px"><sc-if value="{{ b.isAcct }}" hint-placeholder-val="{{ false }}"><span style="width:9px;height:9px;border-radius:50%;background:{{ b.color }}"></span></sc-if><sc-if value="{{ b.isIcon }}" hint-placeholder-val="{{ true }}"><span style="font-family:'Material Symbols Outlined';font-size:18px;font-weight:300;color:#575047">{{ b.icon }}</span></sc-if></span>
+            <span style="min-width:0;display:flex;flex-direction:column"><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.label }}</span><sc-if value="{{ b.hasSub }}" hint-placeholder-val="{{ false }}"><span style="font-size:11.5px;font-weight:400;color:{{ b.subColor }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.sub }}</span></sc-if></span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:{{ b.countColor }}">{{ b.count }}</span>
+          </button>
+        </sc-for>
+      </nav>
+    </sc-for>
+    <div style="margin-top:auto;border-top:1px solid #dcd4c6;padding:12px 8px 0;display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:#575047;line-height:1.45">
+      <span>{{ acctCount }} of {{ acctMax }} email accounts linked · <button onClick="{{ manage }}" style="border:0;background:none;padding:0;color:#b5502f;cursor:pointer;font-size:12.5px">Manage</button></span>
+      <span style="color:#6e675c">Triage reads new mail in batches of 10. Bulk mail is classified by rule and never sent to a model.</span>
+    </div>
+  </aside>
+  <sc-if value="{{ sideScrim }}" hint-placeholder-val="{{ false }}"><div onClick="{{ closeSide }}" style="position:absolute;inset:0;background:rgba(31,28,24,.25);z-index:11"></div></sc-if>
+
+  <section aria-label="Messages" style="display:{{ listDisplay }};flex-direction:column;min-height:0;min-width:0;border-right:1px solid #dcd4c6;background:#f5f2eb">
+    <div style="flex:none;padding:14px 16px 10px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid #dcd4c6">
+      <div style="display:flex;align-items:center;gap:10px">
+        <sc-if value="{{ showMenuBtn }}" hint-placeholder-val="{{ false }}"><button onClick="{{ openSide }}" aria-label="Mailboxes" style="width:36px;height:36px;border:1px solid #cfc6b6;background:transparent;border-radius:6px;cursor:pointer;display:grid;place-items:center;flex:none"><span style="font-family:'Material Symbols Outlined';font-size:20px;font-weight:300">menu</span></button></sc-if>
+        <div style="min-width:0;flex:1"><h2 style="margin:0;font-family:'Newsreader',serif;font-weight:400;font-size:24px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ boxLabel }}</h2><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c;margin-top:3px">{{ boxMeta }}</div></div>
+        <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}"><button onClick="{{ newMessage }}" aria-label="New message" style="width:40px;height:40px;border:1px solid #cfc6b6;background:transparent;border-radius:6px;cursor:pointer;display:grid;place-items:center"><span style="font-family:'Material Symbols Outlined';font-size:20px;font-weight:300">edit_square</span></button></sc-if>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;height:36px;border:1px solid #cfc6b6;border-radius:6px;padding:0 10px;background:#fbf9f4"><span style="font-family:'Material Symbols Outlined';font-size:18px;font-weight:300;color:#6e675c">search</span><input value="{{ q }}" onChange="{{ setQ }}" placeholder="{{ searchPh }}" aria-label="Search mail" style="flex:1;min-width:0;border:0;background:transparent;font-size:14px;outline:none"></label>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+        <div role="radiogroup" aria-label="Show" style="display:flex;border:1px solid #cfc6b6;border-radius:6px;overflow:hidden"><sc-for list="{{ readFilters }}" as="f" hint-placeholder-count="2"><button role="radio" aria-checked="{{ f.on }}" onClick="{{ f.pick }}" style="border:0;border-left:{{ f.sep }};padding:4px 11px;font-size:12.5px;cursor:pointer;background:{{ f.bg }};font-weight:{{ f.w }}">{{ f.label }}</button></sc-for></div>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6e675c">↑↓ · E ARCHIVE · S FLAG · R REPLY</span>
+      </div>
+      <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:6px;overflow-x:auto;margin:0 -16px;padding:0 16px 2px"><sc-for list="{{ chips }}" as="c" hint-placeholder-count="5"><button onClick="{{ c.pick }}" aria-pressed="{{ c.on }}" style="flex:none;display:flex;gap:6px;align-items:center;height:34px;border:1px solid {{ c.border }};background:{{ c.bg }};border-radius:17px;padding:0 12px;font-size:13.5px;cursor:pointer;white-space:nowrap"><sc-if value="{{ c.isAcct }}" hint-placeholder-val="{{ false }}"><span style="width:8px;height:8px;border-radius:50%;background:{{ c.color }}"></span></sc-if>{{ c.label }}<span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c">{{ c.count }}</span></button></sc-for></div></sc-if>
+    </div>
+    <sc-if value="{{ boxAcctError }}" hint-placeholder-val="{{ false }}"><div role="alert" style="flex:none;display:flex;gap:10px;align-items:flex-start;padding:10px 16px;background:rgba(168,50,31,.06);border-bottom:1px solid #e9c9c0;font-size:13px;line-height:1.45"><span style="color:#a8321f;font-family:'JetBrains Mono',monospace">×</span><span style="flex:1">{{ boxAcct.label }} is signed out. Showing mail from before 9:12.</span><button onClick="{{ reconnect }}" style="border:0;background:#1f1c18;color:#f5f2eb;border-radius:5px;padding:4px 10px;font-size:12.5px;cursor:pointer;white-space:nowrap">Reconnect</button></div></sc-if>
+    <div role="listbox" tabindex="0" aria-label="{{ boxLabel }} messages" onKeyDown="{{ listKey }}" style="flex:1;min-height:0;overflow:auto;outline-offset:-2px">
+      <sc-for list="{{ rows }}" as="m" hint-placeholder-count="8">
+        <button role="option" aria-selected="{{ m.on }}" onClick="{{ m.pick }}" data-mail-row="{{ m.id }}" style="width:100%;display:grid;grid-template-columns:12px minmax(0,1fr);gap:8px;padding:12px 16px 12px 10px;border:0;border-bottom:1px solid #e6dfd2;background:{{ m.bg }};text-align:left;cursor:pointer;position:relative" style-hover="background:#ece6da">
+          <span style="padding-top:6px"><span aria-label="{{ m.unreadLabel }}" style="display:block;width:8px;height:8px;border-radius:50%;background:{{ m.dot }}"></span></span>
+          <span style="min-width:0;display:flex;flex-direction:column;gap:2px">
+            <span style="display:flex;justify-content:space-between;gap:10px;align-items:baseline"><span style="font-size:14.5px;font-weight:{{ m.w }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.from }}</span><span style="display:flex;gap:6px;align-items:center;flex:none"><sc-if value="{{ m.isFlagged }}" hint-placeholder-val="{{ false }}"><span aria-label="Flagged" style="font-family:'Material Symbols Outlined';font-size:15px;color:#b5502f;font-variation-settings:'FILL' 1">flag</span></sc-if><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c">{{ m.time }}</span></span></span>
+            <span style="font-size:13.5px;font-weight:{{ m.sw }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ m.subject }}</span>
+            <span style="font-size:13px;line-height:1.4;color:#575047;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ m.snippet }}</span>
+            <span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:3px">
+              <sc-if value="{{ m.showAcct }}" hint-placeholder-val="{{ false }}"><span style="display:flex;gap:5px;align-items:center;font-size:11.5px;color:#575047"><span style="width:7px;height:7px;border-radius:50%;background:{{ m.acctColor }}"></span>{{ m.acctLabel }}</span></sc-if>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:{{ m.catColor }}">{{ m.catLabel }}</span>
+              <sc-if value="{{ m.hasTag }}" hint-placeholder-val="{{ false }}"><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:{{ m.tagColor }}">{{ m.tag }}</span></sc-if>
+            </span>
+          </span>
+        </button>
+      </sc-for>
+      <sc-if value="{{ rowsEmpty }}" hint-placeholder-val="{{ false }}"><div style="padding:40px 20px;text-align:center;display:flex;flex-direction:column;gap:8px;align-items:center"><canvas data-pk-avatar="outreach" data-pk-state="idle" data-pk-pal="day" data-pk-bg="#ebe4d6" style="width:42px;height:42px;image-rendering:pixelated;border-radius:6px"></canvas><span style="font-family:'Newsreader',serif;font-style:italic;font-size:18px;color:#575047">{{ emptyCopy }}</span></div></sc-if>
+    </div>
+  </section>
+
+  <article aria-label="Message" style="display:{{ readDisplay }};flex-direction:column;min-height:0;min-width:0;background:#fbf9f4">
+    <sc-if value="{{ hasCur }}" hint-placeholder-val="{{ true }}">
+      <div role="toolbar" aria-label="Message actions" style="flex:none;height:52px;display:flex;align-items:center;gap:4px;padding:0 {{ readPadX }}px;border-bottom:1px solid #dcd4c6">
+        <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}"><button onClick="{{ backToList }}" style="display:flex;align-items:center;gap:2px;height:40px;border:0;background:none;padding:0 8px 0 0;font-size:14.5px;color:#b5502f;cursor:pointer"><span style="font-family:'Material Symbols Outlined';font-size:22px">chevron_left</span>{{ boxLabel }}</button></sc-if>
+        <sc-for list="{{ tools }}" as="t" hint-placeholder-count="4"><button onClick="{{ t.run }}" aria-label="{{ t.label }}" title="{{ t.title }}" aria-pressed="{{ t.pressed }}" style="height:36px;min-width:36px;display:flex;align-items:center;gap:6px;border:0;background:none;border-radius:6px;padding:0 9px;font-size:13.5px;cursor:pointer;color:{{ t.fg }}" style-hover="background:#ece6da"><span style="font-family:'Material Symbols Outlined';font-size:19px;font-weight:300;font-variation-settings:'FILL' {{ t.fill }}">{{ t.icon }}</span><sc-if value="{{ t.showLabel }}" hint-placeholder-val="{{ true }}"><span>{{ t.label }}</span></sc-if></button></sc-for>
+        <span style="flex:1"></span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c;margin-right:4px">{{ pos }}</span>
+        <button onClick="{{ prev }}" aria-label="Previous message" disabled="{{ noPrev }}" style="width:36px;height:36px;border:0;background:none;border-radius:6px;cursor:pointer;opacity:{{ prevOp }}" style-hover="background:#ece6da"><span style="font-family:'Material Symbols Outlined';font-size:20px">keyboard_arrow_up</span></button>
+        <button onClick="{{ next }}" aria-label="Next message" disabled="{{ noNext }}" style="width:36px;height:36px;border:0;background:none;border-radius:6px;cursor:pointer;opacity:{{ nextOp }}" style-hover="background:#ece6da"><span style="font-family:'Material Symbols Outlined';font-size:20px">keyboard_arrow_down</span></button>
+      </div>
+      <div style="flex:1;min-height:0;overflow:auto">
+        <div style="max-width:760px;padding:24px {{ readPadX }}px 32px;display:flex;flex-direction:column;gap:18px;animation:oUp .16s ease-out">
+          <sc-if value="{{ curAcctError }}" hint-placeholder-val="{{ false }}"><div role="alert" style="display:flex;gap:12px;align-items:flex-start;border:1px solid #e9c9c0;background:rgba(168,50,31,.05);border-radius:6px;padding:12px 14px;font-size:13.5px;line-height:1.5"><span style="color:#a8321f;font-family:'JetBrains Mono',monospace;padding-top:1px">×</span><span style="flex:1">{{ cur.acctErrorText }}</span><button onClick="{{ reconnect }}" style="border:0;background:#1f1c18;color:#f5f2eb;border-radius:6px;padding:6px 12px;font-size:13px;cursor:pointer;white-space:nowrap">Reconnect</button></div></sc-if>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.06em"><span style="color:{{ cur.catColor }}">{{ cur.catUpper }}</span><span style="color:#6e675c">{{ cur.impUpper }} IMPORTANCE</span></div>
+            <h2 style="margin:0;font-family:'Newsreader',serif;font-weight:400;font-size:{{ subjSize }}px;line-height:1.2;text-wrap:pretty">{{ cur.subject }}</h2>
+          </div>
+          <div style="display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding-bottom:16px;border-bottom:1px solid #e6dfd2">
+            <div aria-hidden="true" style="grid-row:span 2;width:40px;height:40px;border-radius:50%;background:#e3dccf;display:grid;place-items:center;font-size:13px;font-weight:600">{{ cur.initials }}</div>
+            <div style="min-width:0;font-size:14.5px"><strong style="font-weight:600">{{ cur.from }}</strong> <span style="color:#575047;font-size:13.5px">&lt;{{ cur.addr }}&gt;</span><span style="color:#575047;font-size:13.5px">{{ cur.orgLine }}</span></div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#6e675c;white-space:nowrap">{{ cur.time }}</div>
+            <div style="display:flex;gap:6px;align-items:center;font-size:13px;color:#575047;grid-column:2 / -1;flex-wrap:wrap">to <span style="display:inline-flex;gap:5px;align-items:center;border:1px solid #dcd4c6;border-radius:12px;padding:1px 9px 1px 7px;background:#f5f2eb"><span style="width:7px;height:7px;border-radius:50%;background:{{ cur.acctColor }}"></span><span style="font-weight:500;color:#1f1c18">{{ cur.acctLabel }}</span><span>{{ cur.acctEmail }}</span></span></div>
+          </div>
+          <section aria-label="AI summary" style="background:#f5f2eb;border:1px solid #dcd4c6;border-radius:6px;padding:14px 16px;display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;gap:8px;align-items:center"><canvas data-pk-avatar="outreach" data-pk-pal="day" data-pk-bg="#ebe4d6" style="width:20px;height:20px;image-rendering:pixelated;border-radius:3px"></canvas><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.1em;color:#6e675c">SUMMARY · OUTREACH AGENT</span></div>
+            <p style="margin:0;font-size:15px;line-height:1.55">{{ cur.summary }}</p>
+            <sc-if value="{{ cur.hasActions }}" hint-placeholder-val="{{ false }}"><ul style="margin:0;padding-left:18px;font-size:14px;line-height:1.6;color:#3d3830"><sc-for list="{{ cur.actions }}" as="a" hint-placeholder-count="2"><li>{{ a }}</li></sc-for></ul></sc-if>
+          </section>
+          <div style="font-size:15.5px;line-height:1.65;color:#1f1c18;white-space:pre-line">{{ cur.snippet }}</div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:#6e675c"><span>Full message loads live from Gmail; bodies are never stored.</span><button onClick="{{ openGmail }}" style="border:0;background:none;padding:0;color:#b5502f;cursor:pointer;font-size:12.5px">Open in Gmail ↗</button></div>
+          <sc-if value="{{ cur.hasDraft }}" hint-placeholder-val="{{ false }}"><div style="border-left:2px solid {{ cur.draftColor }};padding:2px 0 2px 14px;display:flex;flex-direction:column;gap:8px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:{{ cur.draftColor }}">{{ cur.draftLabel }}</span><span style="font-family:'Newsreader',serif;font-size:16.5px;line-height:1.55;color:#3d3830">“{{ cur.draftBody }}”</span><sc-if value="{{ cur.draftPending }}" hint-placeholder-val="{{ false }}"><span style="display:flex;gap:8px;flex-wrap:wrap"><button onClick="{{ approveDraft }}" style="background:#1f1c18;color:#f5f2eb;border:0;border-radius:6px;padding:8px 14px;font-size:13.5px;cursor:pointer">Approve &amp; send</button><button onClick="{{ reviewDraft }}" style="border:1px solid #cfc6b6;background:transparent;border-radius:6px;padding:7px 12px;font-size:13.5px;cursor:pointer">Edit in Approvals</button></span></sc-if></div></sc-if>
+        </div>
+      </div>
+      <div style="flex:none;border-top:1px solid #dcd4c6;padding:12px {{ readPadX }}px 14px;background:#f5f2eb">
+        <sc-if value="{{ composing }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:8px;max-width:760px;animation:oUp .14s ease-out">
+            <div style="display:flex;gap:8px;align-items:center;font-size:13px;color:#575047;flex-wrap:wrap"><span>From</span><span style="display:inline-flex;gap:5px;align-items:center;border:1px solid #cfc6b6;border-radius:12px;padding:2px 10px 2px 8px;background:#fbf9f4"><span style="width:7px;height:7px;border-radius:50%;background:{{ cur.acctColor }}"></span><span style="color:#1f1c18">{{ cur.acctEmail }}</span></span><span>to {{ cur.addr }}</span></div>
+            <textarea ref="{{ replyRef }}" value="{{ reply }}" onChange="{{ setReply }}" rows="4" placeholder="Write a reply…" aria-label="Reply" style="font-size:15px;line-height:1.55;border:1px solid #cfc6b6;border-radius:6px;padding:10px 12px;background:#fff;resize:vertical"></textarea>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button onClick="{{ saveGmailDraft }}" style="background:#1f1c18;color:#f5f2eb;border:0;border-radius:6px;padding:8px 14px;font-size:13.5px;cursor:pointer">Save to Gmail drafts</button><button onClick="{{ askOutreach }}" style="background:transparent;border:1px solid #cfc6b6;border-radius:6px;padding:7px 12px;font-size:13.5px;cursor:pointer">Ask Outreach to draft</button><button onClick="{{ cancelReply }}" style="background:transparent;border:0;padding:7px 8px;font-size:13.5px;cursor:pointer;color:#575047">Cancel</button></div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ notComposing }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button onClick="{{ startReply }}" disabled="{{ replyDisabled }}" style="display:flex;gap:6px;align-items:center;height:38px;background:{{ replyBg }};color:#f5f2eb;border:0;border-radius:6px;padding:0 14px;font-size:14px;font-weight:500;cursor:pointer"><span style="font-family:'Material Symbols Outlined';font-size:18px">reply</span>Reply</button>
+            <button onClick="{{ askOutreach }}" disabled="{{ replyDisabled }}" style="height:38px;background:transparent;border:1px solid #cfc6b6;border-radius:6px;padding:0 13px;font-size:14px;cursor:pointer;opacity:{{ replyOp }}">Draft with Outreach</button>
+            <span style="font-size:12.5px;color:#6e675c">{{ replyNote }}</span>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+    <sc-if value="{{ noCur }}" hint-placeholder-val="{{ false }}"><div style="flex:1;display:grid;place-items:center;padding:40px;text-align:center"><span style="font-family:'Newsreader',serif;font-style:italic;font-size:20px;color:#575047">No message selected</span></div></sc-if>
+  </article>
+
+  <sc-if value="{{ isPipeline }}" hint-placeholder-val="{{ false }}">
+    <section aria-label="{{ boxLabel }}" style="grid-column:{{ spanCol }};min-height:0;overflow:auto;padding:{{ pipePad }}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap">
+        <div style="display:flex;gap:10px;align-items:center"><sc-if value="{{ showMenuBtn }}" hint-placeholder-val="{{ false }}"><button onClick="{{ openSide }}" aria-label="Mailboxes" style="width:36px;height:36px;border:1px solid #cfc6b6;background:transparent;border-radius:6px;cursor:pointer;display:grid;place-items:center"><span style="font-family:'Material Symbols Outlined';font-size:20px;font-weight:300">menu</span></button></sc-if><div><h2 style="margin:0;font-family:'Newsreader',serif;font-weight:400;font-size:30px">{{ boxLabel }}</h2><p style="margin:4px 0 0;font-size:13.5px;color:#575047">{{ pipeSub }}</p></div></div>
+        <sc-if value="{{ showImport }}" hint-placeholder-val="{{ false }}"><button onClick="{{ importUrl }}" style="white-space:nowrap;flex:none;background:transparent;border:1px solid #cfc6b6;border-radius:6px;padding:8px 13px;font-size:13.5px;cursor:pointer">Import event URL</button></sc-if>
+      </div>
+      <sc-if value="{{ isMobile }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:6px;overflow-x:auto;margin:14px -16px 0;padding:0 16px 2px"><sc-for list="{{ chips }}" as="c" hint-placeholder-count="5"><button onClick="{{ c.pick }}" aria-pressed="{{ c.on }}" style="flex:none;display:flex;gap:6px;align-items:center;height:34px;border:1px solid {{ c.border }};background:{{ c.bg }};border-radius:17px;padding:0 12px;font-size:13.5px;cursor:pointer;white-space:nowrap"><sc-if value="{{ c.isAcct }}" hint-placeholder-val="{{ false }}"><span style="width:8px;height:8px;border-radius:50%;background:{{ c.color }}"></span></sc-if>{{ c.label }}</button></sc-for></div></sc-if>
+      <sc-if value="{{ isDiscover }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:18px">
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <label style="flex:1 1 260px;max-width:420px;display:flex;align-items:center;gap:8px;height:38px;border:1px solid #cfc6b6;border-radius:6px;padding:0 10px;background:#fbf9f4"><span style="font-family:'Material Symbols Outlined';line-height:1;font-size:18px;color:#6e675c">search</span><input value="{{ dq }}" onChange="{{ setDq }}" placeholder="Search events, venues, organisers" aria-label="Search events" style="flex:1;min-width:0;border:0;background:transparent;font-size:14px;outline:none"></label>
+            <div role="radiogroup" aria-label="When" style="display:flex;background:#ece6da;border-radius:7px;padding:3px;gap:2px"><sc-for list="{{ dWhens }}" as="w" hint-placeholder-count="4"><button role="radio" aria-checked="{{ w.on }}" onClick="{{ w.pick }}" style="border:0;border-radius:5px;padding:6px 11px;font-size:13px;cursor:pointer;white-space:nowrap;background:{{ w.bg }};box-shadow:{{ w.shadow }};font-weight:{{ w.w }}">{{ w.label }}</button></sc-for></div>
+            <button onClick="{{ toggleFree }}" aria-pressed="{{ dfree }}" style="white-space:nowrap;flex:none;display:flex;align-items:center;gap:6px;height:36px;border:1px solid {{ freeBorder }};background:{{ freeBg }};border-radius:18px;padding:0 13px;font-size:13px;cursor:pointer"><span style="font-family:'Material Symbols Outlined';line-height:1;font-size:16px">{{ freeIcon }}</span>Free only</button>
+            <label style="margin-left:auto;display:flex;align-items:center;gap:6px;font-size:13px;color:#575047">Sort<select value="{{ dsort }}" onChange="{{ setDsort }}" style="height:34px;border:1px solid #cfc6b6;border-radius:6px;padding:0 8px;font-size:13px;background:#fbf9f4"><option value="score">Best match</option><option value="date">Soonest</option><option value="popular">Most going</option></select></label>
+          </div>
+          <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:2px"><sc-for list="{{ dCats }}" as="c" hint-placeholder-count="8"><button onClick="{{ c.pick }}" aria-pressed="{{ c.on }}" style="flex:none;height:32px;border:1px solid {{ c.border }};background:{{ c.bg }};color:{{ c.fg }};border-radius:16px;padding:0 13px;font-size:13px;cursor:pointer;display:flex;gap:6px;align-items:center">{{ c.label }}<span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;opacity:.75">{{ c.n }}</span></button></sc-for></div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:#575047;border:1px solid #dcd4c6;background:#fbf9f4;border-radius:8px;padding:9px 12px"><span style="font-family:'Material Symbols Outlined';line-height:1;font-size:18px;color:#2f6f55">travel_explore</span><span style="flex:1;min-width:200px">{{ dSummary }} Sources: Luma Sydney iCal · Eventbrite (mock) · Meetup and Humanitix by URL.</span><button onClick="{{ addFeed }}" style="border:0;background:none;padding:0;color:#b5502f;cursor:pointer;font-size:12.5px">Add a feed</button></div>
+          <sc-if value="{{ dEmpty }}" hint-placeholder-val="{{ false }}"><div style="padding:48px 20px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center"><span style="font-family:'Material Symbols Outlined';line-height:1;font-size:34px;color:#8a8377">event_busy</span><span style="font-family:'Newsreader',serif;font-size:22px">No events match these filters.</span><button onClick="{{ clearD }}" style="border:1px solid #cfc6b6;background:transparent;border-radius:6px;padding:7px 13px;font-size:13.5px;cursor:pointer">Clear filters</button></div></sc-if>
+          <div role="list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr));gap:16px">
+            <sc-for list="{{ dEvents }}" as="e" hint-placeholder-count="8">
+              <article role="listitem" style="background:#fffdf9;border:1px solid #dcd4c6;border-radius:12px;overflow:hidden;display:flex;flex-direction:column;transition:transform .15s,box-shadow .15s" style-hover="transform:translateY(-2px);box-shadow:0 10px 26px rgba(40,30,10,.10);border-color:#b9ae9b">
+                <div style="position:relative;aspect-ratio:16 / 9;background:repeating-linear-gradient(135deg,{{ e.t1 }} 0 9px,{{ e.t2 }} 9px 18px);display:grid;place-items:center">
+                  <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6e675c">EVENT IMAGE</span>
+                  <div style="position:absolute;left:10px;top:10px;width:48px;background:#fffdf9;border-radius:8px;box-shadow:0 2px 8px rgba(31,28,24,.12);display:flex;flex-direction:column;align-items:center;padding:5px 0 6px"><span style="font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.1em;color:#b5502f">{{ e.wdU }}</span><span style="font-family:'Newsreader',serif;font-size:22px;line-height:1">{{ e.dn }}</span><span style="font-size:10px;color:#6e675c">{{ e.mon }}</span></div>
+                  <div title="Relevance {{ e.score }} of 100" style="position:absolute;right:10px;top:10px;width:42px;height:42px;border-radius:50%;background:conic-gradient({{ e.scoreC }} {{ e.scoreDeg }}deg,#e6dfd2 0);display:grid;place-items:center"><span style="width:34px;height:34px;border-radius:50%;background:#fffdf9;display:grid;place-items:center;font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500">{{ e.score }}</span></div>
+                  <sc-if value="{{ e.hasStage }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:10px;bottom:10px;background:{{ e.stageBg }};color:{{ e.stageFg }};border-radius:10px;padding:2px 9px;font-size:11.5px;font-weight:600">{{ e.stageLabel }}</span></sc-if>
+                </div>
+                <div style="padding:14px 14px 12px;display:flex;flex-direction:column;gap:8px;flex:1">
+                  <button onClick="{{ e.open }}" style="border:0;background:none;padding:0;text-align:left;cursor:pointer;font-family:'Newsreader',serif;font-size:20px;line-height:1.15;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ e.title }}</button>
+                  <div style="font-size:13px;color:#1f1c18;font-weight:500">{{ e.dateLine }} · <span style="color:{{ e.priceFg }}">{{ e.price }}</span></div>
+                  <div style="display:flex;flex-direction:column;gap:3px;font-size:12.5px;color:#575047"><span style="display:flex;gap:5px;align-items:center"><span style="font-family:'Material Symbols Outlined';line-height:1;font-size:15px;color:#6e675c">location_on</span>{{ e.where }}</span><span style="display:flex;gap:5px;align-items:center"><span style="font-family:'Material Symbols Outlined';line-height:1;font-size:15px;color:#6e675c">groups</span>{{ e.org }} · {{ e.going }} going</span></div>
+                  <div style="display:flex;gap:5px;flex-wrap:wrap"><sc-for list="{{ e.cats }}" as="ct" hint-placeholder-count="0"><span style="font-size:11.5px;background:#ece6da;border-radius:4px;padding:2px 7px">{{ ct }}</span></sc-for><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;border:1px solid #dcd4c6;border-radius:4px;padding:2px 6px;color:#575047">{{ e.src }}</span></div>
+                  <sc-if value="{{ e.hasWhy }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:6px;align-items:flex-start;font-size:12.5px;line-height:1.4;color:#3d3830;background:#f5f2eb;border-radius:6px;padding:7px 9px;margin-top:auto"><span style="font-family:'Material Symbols Outlined';line-height:1;font-size:15px;color:#2f6f55">auto_awesome</span>{{ e.why }}</div></sc-if>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid #e6dfd2">
+                  <sc-for list="{{ e.acts }}" as="x" hint-placeholder-count="4"><button onClick="{{ x.run }}" aria-pressed="{{ x.on }}" disabled="{{ x.off }}" title="{{ x.tip }}" style="height:42px;border:0;border-right:1px solid #efe9de;background:{{ x.bg }};color:{{ x.fg }};display:flex;align-items:center;justify-content:center;gap:5px;font-size:12.5px;cursor:{{ x.cursor }}"><span style="font-family:'Material Symbols Outlined';line-height:1;font-size:16px;font-variation-settings:'FILL' {{ x.fill }}">{{ x.icon }}</span>{{ x.label }}</button></sc-for>
+                </div>
+              </article>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isEvents }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid;grid-auto-flow:column;grid-auto-columns:minmax(230px,1fr);gap:16px;margin-top:18px;overflow-x:auto;padding-bottom:8px">
+          <sc-for list="{{ columns }}" as="col" hint-placeholder-count="6">
+            <section aria-label="{{ col.label }}" style="display:flex;flex-direction:column;gap:10px;min-width:0">
+              <div style="display:flex;justify-content:space-between;border-top:2px solid {{ col.rule }};padding-top:8px"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em">{{ col.upper }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c">{{ col.n }}</span></div>
+              <sc-for list="{{ col.items }}" as="e" hint-placeholder-count="1">
+                <article style="background:#fbf9f4;border:1px solid #dcd4c6;border-radius:6px;padding:12px;display:flex;flex-direction:column;gap:6px">
+                  <div style="display:flex;justify-content:space-between;gap:8px"><span style="font-size:14px;font-weight:600;line-height:1.3">{{ e.title }}</span><span title="Match score" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#575047">{{ e.score }}</span></div>
+                  <span style="font-size:12.5px;color:#575047">{{ e.when }} · {{ e.where }}</span>
+                  <sc-if value="{{ e.hasWhy }}" hint-placeholder-val="{{ false }}"><span style="font-size:12.5px;color:#3d3830;line-height:1.4">{{ e.why }}</span></sc-if>
+                  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px"><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6e675c">{{ e.src }}</span><span style="display:flex;gap:4px"><button onClick="{{ e.back }}" disabled="{{ e.noBack }}" aria-label="Move back to {{ e.prevLabel }}" style="width:30px;height:28px;border:1px solid #cfc6b6;background:transparent;border-radius:5px;cursor:pointer;opacity:{{ e.backOp }}">←</button><button onClick="{{ e.fwd }}" disabled="{{ e.noFwd }}" aria-label="Move to {{ e.nextLabel }}" style="height:28px;border:1px solid #cfc6b6;background:transparent;border-radius:5px;cursor:pointer;padding:0 8px;font-size:12px;opacity:{{ e.fwdOp }}">{{ e.nextLabel }} →</button></span></div>
+                </article>
+              </sc-for>
+              <sc-if value="{{ col.empty }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:#8a8377;padding:8px 0">Nothing here</span></sc-if>
+            </section>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isFollow }}" hint-placeholder-val="{{ false }}">
+        <div style="max-width:720px;margin-top:18px;border-top:2px solid #1f1c18">
+          <sc-for list="{{ follows }}" as="f" hint-placeholder-count="2"><div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:14px 0;border-bottom:1px solid #dcd4c6"><span><span style="display:block;font-size:15px;font-weight:600">{{ f.who }}</span><span style="display:block;font-size:13.5px;color:#575047">{{ f.what }} · <span style="color:{{ f.dueColor }}">{{ f.due }}</span></span></span><span style="display:flex;gap:6px"><button onClick="{{ f.draft }}" style="border:1px solid #cfc6b6;background:transparent;border-radius:6px;padding:6px 11px;font-size:13px;cursor:pointer">Draft with Outreach</button><button onClick="{{ f.done }}" style="background:#1f1c18;color:#f5f2eb;border:0;border-radius:6px;padding:7px 12px;font-size:13px;cursor:pointer">Done</button></span></div></sc-for>
+          <sc-if value="{{ followEmpty }}" hint-placeholder-val="{{ false }}"><p style="font-family:'Newsreader',serif;font-style:italic;font-size:18px;color:#575047;padding:20px 0;margin:0">No follow-ups due.</p></sc-if>
+        </div>
+      </sc-if>
+    </section>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { ready: false, q: '', unreadOnly: false, sideOpen: false, pane: 'list', composing: false, reply: '', doneF: {}, dq: '', dcat: 'All', dwhen: 'any', dfree: false, dsort: 'score' };
+  componentDidMount() { const w = () => (window.APP && APP.ready) ? (this.un = APP.sub(() => this.forceUpdate()), this.setState({ ready: true })) : setTimeout(w, 30); w(); }
+  componentWillUnmount() { this.un && this.un(); }
+  nav = (r, p) => this.props.nav ? this.props.nav(r, p) : (p && APP.set(p), APP.toast('Opens ' + r + ' in the LifeOS shell.'));
+  replyRef = el => { if (el && this.__focusReply) { this.__focusReply = false; setTimeout(() => el.focus(), 0); } };
+  renderVals() {
+    if (!this.state.ready) return {};
+    const S = APP.state, st = this.state, v = APP.ctl(), bp = this.props.bp || 'desktop', mob = bp === 'mobile', tab = bp === 'tablet';
+    const ACC = APP.mailAccounts, accBy = {}; ACC.forEach(a => accBy[a.id] = a);
+    const CC = { IMPORTANT: '#b5502f', OPPORTUNITIES: '#92560a', NETWORKING: '#2f6f55', EVENTS: '#575047', 'FOLLOW-UP': '#92560a', OTHER: '#6e675c' };
+    const CATS = [['IMPORTANT', 'Important', 'priority_high'], ['OPPORTUNITIES', 'Opportunities', 'work'], ['NETWORKING', 'Networking', 'group'], ['EVENTS', 'Event mail', 'confirmation_number'], ['OTHER', 'Other', 'label']];
+    const read = S.mailRead || {}, flg = S.mailFlagged || {};
+    const isUnread = m => read[m.id] !== undefined ? !read[m.id] : m.unread;
+    const isFlag = m => flg[m.id] !== undefined ? flg[m.id] : !!m.flagged;
+    const isArch = m => !!S.mailArchived[m.id];
+    const outreach = v.agents.find(a => a.id === 'outreach');
+    const draftState = outreach.isApproval ? 'pending' : (S.agentOv.outreach && (S.agentOv.outreach.step || '').match(/Rejected/)) ? 'rejected' : (S.agentOv.outreach ? 'sent' : 'pending');
+    const needsReply = m => !!m.draft || m.actions.some(a => /^(Reply|Send|Offer|Confirm)/.test(a));
+    const box = S.outTab === 'discover' ? 'discover' : S.outTab === 'events' ? 'events' : S.outTab === 'follow' ? 'follow' : (S.outBox || 'all');
+    const inBox = (m, b) => b === 'all' ? !isArch(m) : accBy[b] ? m.acct === b && !isArch(m) : b === 'flagged' ? isFlag(m) && !isArch(m) : b === 'reply' ? needsReply(m) && !isArch(m) : b === 'archive' ? isArch(m) : b.indexOf('cat:') === 0 ? m.cat === b.slice(4) && !isArch(m) : false;
+    const unreadIn = b => APP.mail.filter(m => inBox(m, b) && isUnread(m)).length;
+    const pick = b => { APP.set({ outBox: ['events', 'follow', 'discover'].includes(b) ? (S.outBox || 'all') : b, outTab: ['events', 'follow', 'discover'].includes(b) ? b : 'inbox', mailSel: null }); this.setState({ sideOpen: false, pane: 'list', composing: false }); };
+    const evs = APP.events.map(e => Object.assign({}, e, { stage: S.stageOv[e.id] !== undefined ? S.stageOv[e.id] : e.stage }));
+    const follows0 = APP.followUps.map((f, i) => ({ f, i })).filter(x => !st.doneF[x.i]);
+    const item = (id, label, o) => Object.assign({ id, label, on: box === id, bg: box === id ? '#e0d8c9' : 'transparent', w: box === id ? 600 : 400, indent: 8, isAcct: false, isIcon: true, icon: 'inbox', hasSub: false, sub: '', subColor: '#6e675c', count: '', countColor: '#575047', title: label, pick: () => pick(id) }, o || {});
+    const groups = [
+      { label: 'Inboxes', items: [item('all', 'All inboxes', { icon: 'all_inbox', count: unreadIn('all') || '' })].concat(ACC.map(a => { const u = unreadIn(a.id), err = a.status === 'error';
+        return item(a.id, a.label, { isAcct: true, isIcon: false, color: a.color, indent: 22, hasSub: true, sub: err ? '× Signed out · reconnect' : a.email, subColor: err ? '#a8321f' : '#6e675c', count: u || '', title: a.label + ' · ' + a.email + (err ? ' · needs reconnecting' : '') }); })) },
+      { label: 'Mailboxes', items: [item('flagged', 'Flagged', { icon: 'flag', count: APP.mail.filter(m => inBox(m, 'flagged')).length || '' }), item('reply', 'Needs reply', { icon: 'reply', count: APP.mail.filter(m => inBox(m, 'reply')).length || '' }), item('archive', 'Archive', { icon: 'archive' })] },
+      { label: 'Sorted by Outreach', items: CATS.map(c => item('cat:' + c[0], c[1], { icon: c[2], count: unreadIn('cat:' + c[0]) || '' })) },
+      { label: 'Networking', items: [item('discover', 'Discover events', { icon: 'travel_explore', count: evs.filter(e => e.d >= 0 && e.stage === null).length }), item('events', 'Event pipeline', { icon: 'event', count: evs.filter(e => e.stage === 'ATTENDING' || e.stage === null).length }), item('follow', 'Follow-ups', { icon: 'person_check', count: follows0.length || '', countColor: '#b5502f' })] }
+    ].map(g => Object.assign(g, { upper: g.label.toUpperCase() }));
+    const labelOf = b => b === 'all' ? 'All inboxes' : accBy[b] ? accBy[b].label : b === 'flagged' ? 'Flagged' : b === 'reply' ? 'Needs reply' : b === 'archive' ? 'Archive' : b === 'discover' ? 'Discover events' : b === 'events' ? 'Event pipeline' : b === 'follow' ? 'Follow-ups' : (CATS.find(c => 'cat:' + c[0] === b) || [0, ''])[1];
+    const q = st.q.trim().toLowerCase();
+    const base = APP.mail.filter(m => inBox(m, box));
+    const list = base.filter(m => (!st.unreadOnly || isUnread(m) || m.id === S.mailSel) && (!q || (m.from + ' ' + m.subject + ' ' + m.snippet + ' ' + (m.org || '')).toLowerCase().indexOf(q) >= 0));
+    const curM = list.find(m => m.id === S.mailSel) || (mob ? null : list[0]);
+    const idx = curM ? list.indexOf(curM) : -1;
+    const select = m => { APP.set({ mailSel: m.id, mailRead: Object.assign({}, APP.state.mailRead || {}, { [m.id]: true }) }); this.setState({ pane: 'read', composing: false, reply: '' }); };
+    if (curM && isUnread(curM) && !mob && this.__autoRead !== curM.id) { this.__autoRead = curM.id; setTimeout(() => APP.set({ mailRead: Object.assign({}, APP.state.mailRead || {}, { [curM.id]: true }) }), 600); }
+    const showAcct = !accBy[box];
+    const rows = list.map(m => { const a = accBy[m.acct], u = isUnread(m), on = !!(curM && m.id === curM.id), dtag = m.draft ? (draftState === 'pending' ? '! REPLY AWAITING APPROVAL' : draftState === 'sent' ? '✓ REPLIED 9:42' : '') : '';
+      return { id: m.id, from: m.from, time: m.time, subject: m.subject, snippet: m.snippet, w: u ? 600 : 500, sw: u ? 500 : 400, dot: u ? '#b5502f' : 'transparent', unreadLabel: u ? 'Unread' : '', isFlagged: isFlag(m), on, bg: on ? '#e6dfd2' : 'transparent',
+        showAcct, acctColor: a.color, acctLabel: a.label, catLabel: m.cat, catColor: CC[m.cat], hasTag: !!dtag, tag: dtag, tagColor: draftState === 'pending' ? '#92560a' : '#2f6f55', pick: () => select(m) }; });
+    const archive = m => { if (!m) return; const was = isArch(m); APP.set({ mailArchived: Object.assign({}, S.mailArchived, { [m.id]: !was }), mailSel: list[idx + 1] ? list[idx + 1].id : (list[idx - 1] ? list[idx - 1].id : null) }); APP.toast(was ? 'Moved back to the inbox.' : 'Archived in ' + accBy[m.acct].label + ' (Gmail).'); if (mob) this.setState({ pane: 'list' }); };
+    const flag = m => { if (m) APP.set({ mailFlagged: Object.assign({}, flg, { [m.id]: !isFlag(m) }) }); };
+    const toggleRead = m => { if (m) { APP.set({ mailRead: Object.assign({}, read, { [m.id]: isUnread(m) }) }); this.__autoRead = m.id; } };
+    const curAcct = curM ? accBy[curM.acct] : null, curErr = !!(curAcct && curAcct.status === 'error');
+    const startReply = () => { if (!curM || curErr) return; this.__focusReply = true; this.setState({ composing: true }); };
+    const go = d => { const n = list[idx + d]; if (n) select(n); };
+    const listKey = e => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      const k = e.key.toLowerCase();
+      if (k === 'arrowdown' || k === 'j') { e.preventDefault(); if (idx < 0) { if (list[0]) select(list[0]); } else go(1); }
+      else if (k === 'arrowup' || k === 'k') { e.preventDefault(); go(-1); }
+      else if (k === 'e') archive(curM);
+      else if (k === 's') flag(curM);
+      else if (k === 'u') toggleRead(curM);
+      else if (k === 'r') { e.preventDefault(); startReply(); }
+    };
+    const STG = [[null, 'Discovered'], ['SAVED', 'Saved'], ['INTERESTED', 'Interested'], ['ATTENDING', 'Attending'], ['ATTENDED', 'Attended'], ['FOLLOW_UP', 'Follow up']];
+    const move = (e, d) => { const i = STG.findIndex(s => s[0] === e.stage) + d; if (i < 0 || i >= STG.length) return; APP.set({ stageOv: Object.assign({}, S.stageOv, { [e.id]: STG[i][0] }) }); APP.toast('Moved “' + e.title + '” to ' + STG[i][1] + '.'); };
+    const columns = STG.map((s, si) => { const items = evs.filter(e => e.stage === s[0]).map(e => ({ title: e.title, when: e.when, where: e.where, src: e.src, score: e.score, why: e.why, hasWhy: !!e.why, noBack: si === 0, noFwd: si === STG.length - 1, backOp: si === 0 ? 0.35 : 1, fwdOp: si === STG.length - 1 ? 0.35 : 1, prevLabel: si > 0 ? STG[si - 1][1] : '', nextLabel: si < STG.length - 1 ? STG[si + 1][1] : 'Done', back: () => move(e, -1), fwd: () => move(e, 1) }));
+      return { label: s[1], upper: s[1].toUpperCase(), n: items.length, items, empty: items.length === 0, rule: s[0] === 'ATTENDING' ? '#b5502f' : '#1f1c18' }; });
+    const follows = follows0.map(x => ({ who: x.f[0], what: x.f[1], due: x.f[2], dueColor: x.f[2].indexOf('today') >= 0 ? '#b5502f' : '#575047', draft: () => APP.toast('Outreach is drafting a follow-up; it will wait in Approvals.'), done: () => this.setState({ doneF: Object.assign({}, st.doneF, { [x.i]: true }) }) }));
+    const pipeline = box === 'events' || box === 'follow' || box === 'discover';
+    const SO = [null, 'SAVED', 'INTERESTED', 'ATTENDING'], SL = { SAVED: ['Saved', '#ece6da', '#1f1c18'], INTERESTED: ['Interested', '#f2e3c6', '#92560a'], ATTENDING: ['Attending', '#dbe8df', '#2f6f55'] };
+    const TINT = { AI: ['#e3e6dc', '#d9ddd0'], Startups: ['#efe7d3', '#e7dcc2'], Design: ['#efe2d9', '#e8d6ca'], Fintech: ['#dfe4e6', '#d3dadd'], Engineering: ['#e6e0ec', '#ddd5e5'], Cybersecurity: ['#e2e2df', '#d6d6d2'], Networking: ['#ece3d6', '#e2d6c4'] };
+    const upcoming = evs.filter(e => e.d >= 0 && SO.includes(e.stage));
+    const dqq = st.dq.trim().toLowerCase();
+    const WH = { any: e => true, week: e => e.d <= 3, weekend: e => e.weekend && e.d <= 10, month: e => e.d <= 30 };
+    const base0 = upcoming.filter(e => WH[st.dwhen](e) && (!st.dfree || e.price === 'Free') && (!dqq || (e.title + ' ' + e.where + ' ' + e.org + ' ' + e.cats.join(' ')).toLowerCase().includes(dqq)));
+    const dList = base0.filter(e => st.dcat === 'All' || e.cats.includes(st.dcat)).sort((a, b) => st.dsort === 'date' ? a.d - b.d : st.dsort === 'popular' ? b.going - a.going : b.score - a.score);
+    const setStage = (e, s) => { APP.set({ stageOv: Object.assign({}, S.stageOv, { [e.id]: s }) }); APP.toast(s ? '“' + e.title + '” marked ' + SL[s][0].toLowerCase() + '.' : 'Removed from your pipeline.'); };
+    const dEvents = dList.map(e => { const idx = SO.indexOf(e.stage), tn = TINT[e.cats[0]] || TINT.Networking;
+      const acts = [['bookmark', 'Save', 1], ['star', 'Interested', 2], ['check_circle', 'Attend', 3]].map(a => { const reached = idx >= a[2], next = idx === a[2] - 1;
+        return { icon: a[0], label: a[1], on: reached, off: !reached && !next, fill: reached ? 1 : 0, bg: reached ? '#f3e7df' : 'transparent', fg: reached ? '#b5502f' : !reached && !next ? '#b9ae9b' : '#1f1c18', cursor: !reached && !next ? 'not-allowed' : 'pointer', tip: !reached && !next ? (a[2] === 2 ? 'Save it first' : 'Mark Interested first') : reached ? 'Undo' : '', run: () => reached ? setStage(e, SO[a[2] - 1]) : next && setStage(e, SO[a[2]]) }; });
+      acts.push({ icon: 'event', label: 'Calendar', on: false, off: idx < 3, fill: 0, bg: 'transparent', fg: idx < 3 ? '#b9ae9b' : '#1f1c18', cursor: idx < 3 ? 'not-allowed' : 'pointer', tip: idx < 3 ? 'Mark Attending first' : 'Add to calendar', run: () => idx >= 3 && APP.toast('Added “' + e.title + '” to your Personal calendar.') });
+      return { title: e.title, wdU: e.wd.toUpperCase(), dn: e.dn, mon: e.mon, dateLine: (e.d === 0 ? 'Tonight' : e.wd + ' ' + e.dn + ' ' + e.mon) + ' · ' + e.time, price: e.price, priceFg: e.price === 'Free' ? '#2f6f55' : '#1f1c18', where: e.where, org: e.org, going: e.going, cats: e.cats, src: e.src, score: e.score, scoreDeg: Math.round(e.score * 3.6), scoreC: e.score >= 80 ? '#2f6f55' : e.score >= 65 ? '#92560a' : '#8a8377',
+        why: e.why, hasWhy: !!e.why, hasStage: !!e.stage, stageLabel: e.stage ? SL[e.stage][0] : '', stageBg: e.stage ? SL[e.stage][1] : '', stageFg: e.stage ? SL[e.stage][2] : '', t1: tn[0], t2: tn[1], acts, open: () => APP.toast(e.title + ' · ' + e.org + '. Full event page opens here.') }; });
+    const catList = ['All', 'AI', 'Startups', 'Design', 'Fintech', 'Engineering', 'Cybersecurity', 'Networking'];
+    const segD = on => ({ bg: on ? '#fffdf9' : 'transparent', shadow: on ? '0 1px 2px rgba(31,28,24,.12)' : 'none', w: on ? 600 : 400 });
+    const discoverVals = {
+      isDiscover: box === 'discover', showImport: box === 'events' || box === 'discover', dq: st.dq, setDq: ev => this.setState({ dq: ev.target.value }), dEvents, dEmpty: dEvents.length === 0,
+      dWhens: [['any', 'Any time'], ['week', 'This week'], ['weekend', 'This weekend'], ['month', 'Next 30 days']].map(w => Object.assign({ label: w[1], on: st.dwhen === w[0], pick: () => this.setState({ dwhen: w[0] }) }, segD(st.dwhen === w[0]))),
+      dCats: catList.map(c => ({ label: c, n: c === 'All' ? base0.length : base0.filter(e => e.cats.includes(c)).length, on: st.dcat === c, bg: st.dcat === c ? '#1f1c18' : 'transparent', fg: st.dcat === c ? '#f5f2eb' : '#1f1c18', border: st.dcat === c ? '#1f1c18' : '#cfc6b6', pick: () => this.setState({ dcat: c }) })),
+      dfree: st.dfree, toggleFree: () => this.setState({ dfree: !st.dfree }), freeBg: st.dfree ? '#dbe8df' : 'transparent', freeBorder: st.dfree ? '#2f6f55' : '#cfc6b6', freeIcon: st.dfree ? 'check' : 'sell',
+      dsort: st.dsort, setDsort: ev => this.setState({ dsort: ev.target.value }), clearD: () => this.setState({ dq: '', dcat: 'All', dwhen: 'any', dfree: false }),
+      dSummary: dEvents.length + ' of ' + upcoming.length + ' upcoming Sydney events, scored against your interests.', addFeed: () => this.nav('settings', { setSec: 'connections' })
+    };
+    const cur = curM ? Object.assign({}, curM, { orgLine: curM.org ? ' · ' + curM.org : '', initials: curM.from.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase(), catUpper: curM.cat, impUpper: curM.imp, catColor: CC[curM.cat], hasActions: curM.actions.length > 0,
+      acctColor: curAcct.color, acctLabel: curAcct.label, acctEmail: curAcct.email, acctErrorText: curAcct.error || '', hasDraft: !!curM.draft,
+      draftPending: !!curM.draft && draftState === 'pending', draftLabel: draftState === 'pending' ? '! REPLY DRAFTED BY OUTREACH · AWAITING YOUR APPROVAL' : draftState === 'sent' ? '✓ REPLY SENT 9:42 · APPROVED BY YOU' : '– DRAFT REJECTED', draftColor: draftState === 'pending' ? '#92560a' : draftState === 'sent' ? '#2f6f55' : '#6e675c',
+      draftBody: LOS.agents.find(a => a.id === 'outreach').approval.body }) : {};
+    const T = (icon, label, run, o) => Object.assign({ icon, label, title: label, run, fill: 0, pressed: false, fg: '#1f1c18', showLabel: !mob }, o || {});
+    const tools = curM ? [T('archive', isArch(curM) ? 'Unarchive' : 'Archive', () => archive(curM), { title: 'Archive (E)' }), T('flag', isFlag(curM) ? 'Flagged' : 'Flag', () => flag(curM), { fill: isFlag(curM) ? 1 : 0, pressed: isFlag(curM), fg: isFlag(curM) ? '#b5502f' : '#1f1c18', title: 'Flag (S)' }),
+      T('mark_email_unread', 'Unread', () => toggleRead(curM), { title: 'Mark unread (U)', showLabel: false }), T('person_check', 'Follow up', () => APP.toast('Follow-up: person, note, due date.'), { showLabel: bp === 'desktop' })]
+      .concat(curM.cat === 'EVENTS' ? [T('event', 'Add to calendar', () => APP.toast('Event added to your calendar.'), { showLabel: bp === 'desktop' })] : []) : [];
+    const acctRows = ACC.length;
+    const chips = [{ id: 'all', label: 'All', count: unreadIn('all') || '' }].concat(ACC.map(a => ({ id: a.id, label: a.label, count: unreadIn(a.id) || '', isAcct: true, color: a.color }))).concat([{ id: 'flagged', label: 'Flagged' }, { id: 'reply', label: 'Needs reply' }, { id: 'discover', label: 'Discover' }, { id: 'events', label: 'Pipeline' }, { id: 'follow', label: 'Follow-ups' }, { id: 'archive', label: 'Archive' }])
+      .map(c => Object.assign({ isAcct: false, color: '', count: '' }, c, { on: box === c.id, bg: box === c.id ? '#1f1c18' : 'transparent', border: box === c.id ? '#1f1c18' : '#cfc6b6', pick: () => pick(c.id) }));
+    const boxA = accBy[box];
+    const sideOverlay = tab || mob;
+    return Object.assign(discoverVals, {
+      h: this.props.nav ? (mob ? 'calc(100vh - 120px)' : 'calc(100vh - 56px)') : '100vh',
+      cols: bp === 'desktop' ? '248px minmax(320px,400px) minmax(0,1fr)' : tab ? 'minmax(300px,360px) minmax(0,1fr)' : 'minmax(0,1fr)',
+      sideDisplay: bp === 'desktop' || st.sideOpen ? 'flex' : 'none', sidePos: sideOverlay ? 'absolute' : 'relative', sideW: sideOverlay ? '280px' : 'auto', sideShadow: sideOverlay ? '0 20px 60px rgba(40,30,10,.2)' : 'none', sideAnim: sideOverlay ? 'oIn .18s ease-out' : 'none',
+      sideScrim: sideOverlay && st.sideOpen, openSide: () => this.setState({ sideOpen: true }), closeSide: () => this.setState({ sideOpen: false }), showMenuBtn: tab,
+      groups, acctCount: acctRows, acctMax: APP.mailMax, manage: () => this.nav('settings', { setSec: 'connections' }), newMessage: () => APP.toast('New message: pick From (one of your 3 accounts), To, subject. Saved to that account’s Gmail drafts.'),
+      isMobile: mob, listDisplay: pipeline ? 'none' : mob ? (st.pane === 'list' || !curM ? 'flex' : 'none') : 'flex', readDisplay: pipeline ? 'none' : mob ? (st.pane === 'read' && curM ? 'flex' : 'none') : 'flex',
+      boxLabel: labelOf(box), boxMeta: (boxA ? boxA.email + ' · ' + boxA.synced + ' · ' : '') + base.length + ' messages · ' + base.filter(isUnread).length + ' unread',
+      q: st.q, setQ: e => this.setState({ q: e.target.value }), searchPh: 'Search ' + labelOf(box).toLowerCase(),
+      readFilters: [['all', 'All'], ['unread', 'Unread']].map((f, i) => ({ label: f[1], on: (f[0] === 'unread') === st.unreadOnly, bg: (f[0] === 'unread') === st.unreadOnly ? '#ece6da' : 'transparent', w: (f[0] === 'unread') === st.unreadOnly ? 600 : 400, sep: i ? '1px solid #cfc6b6' : '0', pick: () => this.setState({ unreadOnly: f[0] === 'unread' }) })),
+      chips, boxAcctError: !!(boxA && boxA.status === 'error'), boxAcct: boxA || {}, reconnect: () => APP.toast('Reconnect Studio: opens Google sign-in for studio@alexmorgan.design.'),
+      listKey, rows, rowsEmpty: rows.length === 0, emptyCopy: q ? 'No messages match “' + st.q + '”.' : box === 'archive' ? 'Nothing archived yet.' : st.unreadOnly ? 'No unread mail here.' : 'Nothing in ' + labelOf(box) + '.',
+      hasCur: !!curM, noCur: !curM, cur, curAcctError: curErr, tools, readPadX: mob ? 16 : 28, subjSize: mob ? 24 : 28, backToList: () => this.setState({ pane: 'list' }),
+      pos: idx >= 0 ? (idx + 1) + ' of ' + list.length : '', prev: () => go(-1), next: () => go(1), noPrev: idx <= 0, noNext: idx < 0 || idx >= list.length - 1, prevOp: idx <= 0 ? 0.35 : 1, nextOp: idx < 0 || idx >= list.length - 1 ? 0.35 : 1,
+      openGmail: () => APP.toast('Opens this thread in Gmail for ' + (curAcct ? curAcct.email : '') + '.'),
+      approveDraft: () => { const a = v.approvals.find(x => x.id === 'outreach'); if (a) a.approve(); }, reviewDraft: () => this.nav('approvals', { apprSel: 'outreach' }),
+      composing: st.composing, notComposing: !st.composing, replyRef: this.replyRef, reply: st.reply, setReply: e => this.setState({ reply: e.target.value }), startReply, cancelReply: () => this.setState({ composing: false, reply: '' }),
+      saveGmailDraft: () => { if (!st.reply.trim()) { APP.toast('Write something first.'); return; } this.setState({ composing: false, reply: '' }); APP.toast('Saved to ' + curAcct.label + ' Gmail drafts.'); },
+      askOutreach: () => { if (curErr) return; this.setState({ composing: false }); APP.toast('Outreach is drafting from ' + (curAcct ? curAcct.email : '') + '. It will wait in Approvals.'); },
+      replyDisabled: curErr, replyBg: curErr ? '#a8a093' : '#1f1c18', replyOp: curErr ? 0.5 : 1,
+      replyNote: curErr ? 'Replies are paused until ' + curAcct.label + ' is reconnected.' : curAcct ? 'Replies send from ' + curAcct.email : '',
+      isPipeline: pipeline, isEvents: box === 'events', isFollow: box === 'follow', spanCol: bp === 'desktop' ? '2 / -1' : '1 / -1', pipePad: mob ? '18px 16px 32px' : '24px 32px 40px',
+      pipeSub: box === 'discover' ? 'Events around Sydney in the next 30 days. Save the ones you like; they move into your pipeline.' : box === 'events' ? 'Move events one stage at a time. Scores combine your keywords, past attendance and who’s going.' : 'People you said you’d get back to.',
+      importUrl: () => APP.toast('Import an event from a Luma, Eventbrite, Meetup or Humanitix URL.'), columns, follows, followEmpty: follows.length === 0
+    });
+  }
+}
+</script>
+</body>
+</html>

@@ -5,11 +5,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { aud, FINANCE_KINDS, merchantText, type FinanceKind } from "@/lib/finance";
 import type { loadFinance } from "@/server/finance";
 import { categoriseFinanceAction, deleteFinanceRuleAction, removeFinanceImportAction, saveFinanceBudgetAction, saveFinanceCategoryAction, saveFinanceRuleAction } from "@/server/finance-actions";
-import { useShell } from "@/shell/shell-provider";
-import { useLiveEvents } from "@/shell/live-provider";
-import { Button } from "@/ui/button";
-import { Checkbox, Field, Input, Select } from "@/ui/field";
-import { Dialog } from "@/ui/dialog";
+import { useShell } from "@/features/shell/shell-provider";
+import { useLiveEvents } from "@/features/shell/live-provider";
+import { Button } from "@/legacy-ui/button";
+import { Checkbox, Field, Input, Select } from "@/legacy-ui/field";
+import { Dialog } from "@/legacy-ui/dialog";
 import { CashflowChart, SpendingChart, TrendChart } from "./charts";
 import { ImportDialog } from "./import-dialog";
 

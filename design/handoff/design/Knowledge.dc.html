@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="pixelkit.js"></script><script src="lifeos-data.js"></script><script src="lifeos-app.js"></script>
+<style>body{margin:0;background:#f5f2eb;color:#1f1c18;font-family:'Instrument Sans',system-ui,sans-serif}*{box-sizing:border-box}button,input,textarea{font-family:inherit;color:inherit}:focus-visible{outline:2px solid #b5502f;outline-offset:2px}</style>
+</helmet>
+<div data-screen-label="Knowledge" style="padding:{{ pad }};max-width:1680px;margin:0 auto">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+    <div><h1 style="margin:0;font-family:'Newsreader',serif;font-weight:400;font-size:34px;letter-spacing:-.015em">Knowledge</h1><p style="margin:6px 0 0;font-size:14.5px;color:#575047">{{ total }} items · {{ semLine }}</p></div>
+    <div style="display:flex;gap:8px"><button onClick="{{ upload }}" style="background:transparent;border:1px solid #cfc6b6;border-radius:6px;padding:7px 12px;font-size:13.5px;cursor:pointer">Upload .md</button><button onClick="{{ newItem }}" style="background:#1f1c18;color:#f5f2eb;border:0;border-radius:6px;padding:8px 14px;font-size:13.5px;font-weight:500;cursor:pointer">New item</button></div>
+  </div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:18px">
+    <label style="flex:1 1 320px;max-width:560px;display:flex;align-items:center;gap:8px;height:40px;border:1px solid #cfc6b6;border-radius:6px;padding:0 12px;background:#fbf9f4"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c">{{ modeShort }}</span><input value="{{ q }}" onChange="{{ setQ }}" placeholder="Search titles, text and #tags" aria-label="Search knowledge" style="flex:1;border:0;background:transparent;font-size:15px;outline:none"></label>
+    <div role="radiogroup" aria-label="Search mode" style="display:flex;border:1px solid #cfc6b6;border-radius:6px;overflow:hidden"><sc-for list="{{ modes }}" as="m" hint-placeholder-count="2"><button role="radio" aria-checked="{{ m.on }}" onClick="{{ m.pick }}" style="border:0;border-left:{{ m.sep }};padding:8px 12px;font-size:13.5px;cursor:pointer;background:{{ m.bg }}">{{ m.label }}</button></sc-for></div>
+    <button onClick="{{ ask }}" style="border:0;background:none;padding:8px 6px;font-size:13.5px;color:#b5502f;cursor:pointer">Ask Knowledge →</button>
+  </div>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px"><sc-for list="{{ kinds }}" as="k" hint-placeholder-count="6"><button onClick="{{ k.pick }}" aria-pressed="{{ k.on }}" style="border:1px solid {{ k.border }};background:{{ k.bg }};border-radius:14px;padding:4px 11px;font-size:12.5px;cursor:pointer">{{ k.label }} <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c">{{ k.n }}</span></button></sc-for></div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:32px 56px;margin-top:20px;align-items:flex-start">
+    <div role="list" style="flex:1 1 340px;max-width:560px;min-width:0;border-top:2px solid #1f1c18">
+      <sc-for list="{{ items }}" as="it" hint-placeholder-count="6">
+        <button role="listitem" onClick="{{ it.pick }}" aria-pressed="{{ it.on }}" style="width:100%;display:flex;flex-direction:column;gap:4px;padding:12px 6px;border:0;border-bottom:1px solid #dcd4c6;background:{{ it.bg }};text-align:left;cursor:pointer" style-hover="background:#ece6da">
+          <span style="display:flex;justify-content:space-between;gap:10px"><span style="font-size:15px;font-weight:600">{{ it.title }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c;white-space:nowrap">{{ it.updated }}</span></span>
+          <span style="font-size:13px;color:#575047;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden">{{ it.body }}</span>
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6e675c">{{ it.kindUpper }} · {{ it.tagLine }}{{ it.score }}</span>
+        </button>
+      </sc-for>
+      <sc-if value="{{ noItems }}" hint-placeholder-val="{{ false }}"><p style="font-family:'Newsreader',serif;font-style:italic;font-size:18px;color:#575047;padding:20px 6px;margin:0">No items match “{{ q }}”. Keyword search needs every word to match; try fewer words or semantic mode.</p></sc-if>
+    </div>
+    <sc-if value="{{ hasSel }}" hint-placeholder-val="{{ true }}">
+      <article style="flex:2 1 440px;max-width:920px;min-width:0;display:flex;flex-direction:column;gap:14px">
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:#6e675c">{{ sel.kindUpper }} · UPDATED {{ sel.updatedUpper }}</div>
+        <input value="{{ sel.title }}" onChange="{{ editTitle }}" aria-label="Title" maxlength="200" style="font-family:'Newsreader',serif;font-size:30px;border:0;border-bottom:1px solid transparent;background:transparent;padding:2px 0;outline:none" style-focus="border-bottom-color:#cfc6b6">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><sc-for list="{{ sel.tagList }}" as="t" hint-placeholder-count="2"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;border:1px solid #cfc6b6;border-radius:12px;padding:2px 9px">#{{ t }}</span></sc-for><sc-if value="{{ sel.hasProject }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:#575047">· Linked to <button onClick="{{ openProject }}" style="border:0;background:none;padding:0;color:#b5502f;font-size:13px;cursor:pointer">{{ sel.project }}</button></span></sc-if></div>
+        <sc-if value="{{ sel.isBookmark }}" hint-placeholder-val="{{ false }}"><div style="font-family:'JetBrains Mono',monospace;font-size:13px;background:#fbf9f4;border:1px solid #dcd4c6;border-radius:4px;padding:10px 12px">{{ sel.link }} · LifeOS never fetches this page</div></sc-if>
+        <textarea value="{{ sel.body }}" onChange="{{ editBody }}" rows="12" aria-label="Text" style="font-family:'Newsreader',serif;font-size:17px;line-height:1.6;border:1px solid #dcd4c6;border-radius:6px;padding:16px 18px;background:#fbf9f4;resize:vertical"></textarea>
+        <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:12.5px;color:#6e675c"><span>{{ sel.chars }} / 200,000 characters · saved automatically</span><button onClick="{{ del }}" style="border:0;background:none;padding:0;font-size:12.5px;color:#a8321f;cursor:pointer">Delete item</button></div>
+      </article>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { ready: false, edits: {} };
+  componentDidMount() { const w = () => (window.APP && APP.ready) ? (this.un = APP.sub(() => this.forceUpdate()), this.setState({ ready: true })) : setTimeout(w, 30); w(); }
+  componentWillUnmount() { this.un && this.un(); }
+  nav = (r, p) => this.props.nav ? this.props.nav(r, p) : (p && APP.set(p), APP.toast('Opens ' + r + ' in the LifeOS shell.'));
+  renderVals() {
+    if (!this.state.ready) return {};
+    const S = APP.state, st = this.state, bp = this.props.bp || 'desktop';
+    const all = APP.knowledge.map(k => Object.assign({}, k, st.edits[k.id] || {}));
+    const q = (S.kQuery || '').trim().toLowerCase(), words = q.split(/\s+/).filter(Boolean), sem = S.kMode === 'semantic';
+    const match = k => !words.length || (sem ? words.some(w => (k.title + ' ' + k.body + ' ' + k.tags.join(' ')).toLowerCase().indexOf(w.slice(0, 4)) >= 0) : words.every(w => w[0] === '#' ? k.tags.includes(w.slice(1)) : (k.title + ' ' + k.body).toLowerCase().indexOf(w) >= 0));
+    const kindF = S.kKind || 'all';
+    const list = all.filter(k => match(k) && (kindF === 'all' || k.kind === kindF));
+    const sel = list.find(k => k.id === S.kSel) || list[0];
+    const dec = (k, i) => Object.assign({}, k, { kindUpper: k.kind.toUpperCase(), tagLine: k.tags.map(t => '#' + t).join(' '), score: sem && words.length ? ' · ' + (0.91 - i * 0.07).toFixed(2) + ' match' : '', on: sel && sel.id === k.id, bg: sel && sel.id === k.id ? '#ece6da' : 'transparent', pick: () => APP.set({ kSel: k.id }) });
+    const kinds = ['all', 'note', 'document', 'bookmark', 'idea', 'research'];
+    const ed = (f, val) => this.setState({ edits: Object.assign({}, st.edits, { [sel.id]: Object.assign({}, st.edits[sel.id] || {}, { [f]: val }) }) });
+    return {
+      pad: bp === 'mobile' ? '20px 16px 40px' : bp === 'tablet' ? '28px 24px 56px' : '28px 40px 64px', total: all.length,
+      semLine: sem ? 'Semantic index 212/214 · queries go to OpenRouter embeddings' : 'Keyword search runs inside LifeOS', modeShort: sem ? 'SEM' : 'KEY',
+      q: S.kQuery || '', setQ: e => APP.set({ kQuery: e.target.value }),
+      modes: [['keyword', 'Keyword'], ['semantic', 'Semantic']].map((m, i) => ({ label: m[1], on: S.kMode === m[0], bg: S.kMode === m[0] ? '#ece6da' : 'transparent', sep: i ? '1px solid #cfc6b6' : '0', pick: () => { APP.set({ kMode: m[0] }); if (m[0] === 'semantic') APP.toast('Semantic search sends item text and queries to OpenRouter embeddings.'); } })),
+      kinds: kinds.map(k => ({ label: k === 'all' ? 'All' : k[0].toUpperCase() + k.slice(1), n: k === 'all' ? all.length : all.filter(x => x.kind === k).length, on: kindF === k, bg: kindF === k ? '#ece6da' : 'transparent', border: kindF === k ? '#1f1c18' : '#cfc6b6', pick: () => APP.set({ kKind: k }) })),
+      items: list.map(dec), noItems: list.length === 0, hasSel: !!sel,
+      sel: sel ? Object.assign(dec(sel, 0), { updatedUpper: sel.updated.toUpperCase(), tagList: sel.tags, hasProject: !!sel.project, isBookmark: sel.kind === 'bookmark', chars: sel.body.length.toLocaleString() }) : {},
+      editTitle: e => ed('title', e.target.value), editBody: e => ed('body', e.target.value), openProject: () => this.nav('projects', { projSel: sel.project === 'LifeOS' ? 'lifeos' : sel.project.indexOf('Harbour') >= 0 ? 'harbour' : 'half' }),
+      del: () => APP.toast('Delete “' + sel.title + '”? (Confirm dialog.)'), newItem: () => APP.toast('New item: kind, title, text, tags (up to 12), linked project.'), upload: () => APP.toast('Upload a UTF-8 .md or .txt up to 500 KB. The first # heading becomes the title.'),
+      ask: () => APP.toast('Ask Knowledge: retrieved items go to Anthropic via the Knowledge agent, never a free model.')
+    };
+  }
+}
+</script>
+</body>
+</html>

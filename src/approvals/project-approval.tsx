@@ -6,11 +6,11 @@ import type { ApprovalDTO } from "@/lib/agent-types";
 import { draftCounts, type DraftLink, type ProjectCreatePayload, type ProjectUpdatePayload } from "@/lib/project-payload";
 import { CATEGORY_LABEL, PROJECT_CATEGORIES } from "@/lib/project-types";
 import { PriorityTag } from "@/projects/status";
-import { Badge } from "@/ui/badge";
-import { Button } from "@/ui/button";
-import { Disclosure } from "@/ui/disclosure";
-import { Field, Input, Select, Textarea } from "@/ui/field";
-import { Icon } from "@/ui/icon";
+import { Badge } from "@/legacy-ui/badge";
+import { Button } from "@/legacy-ui/button";
+import { Disclosure } from "@/legacy-ui/disclosure";
+import { Field, Input, Select, Textarea } from "@/legacy-ui/field";
+import { Icon } from "@/legacy-ui/icon";
 
 // Project approval bodies (create preview, update diff) and their edit form. Client-safe.
 // Repo-derived text is untrusted: every string below renders as a React text node, never as HTML or Markdown.

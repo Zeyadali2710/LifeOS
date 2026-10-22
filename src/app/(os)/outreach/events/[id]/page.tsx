@@ -5,7 +5,7 @@ import { pickDefaultCalendar, writableCalendars } from "@/server/calendar/querie
 import { db } from "@/server/db/client";
 import { loadEvent } from "@/server/outreach/queries";
 import { requireOwner } from "@/server/session";
-import { EmptyState } from "@/ui/empty-state";
+import { EmptyState } from "@/legacy-ui/empty-state";
 
 export const metadata = { title: "Event · Outreach · LifeOS" };
 export const dynamic = "force-dynamic";

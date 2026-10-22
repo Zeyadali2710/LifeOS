@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="pixelkit.js"></script><script src="lifeos-data.js"></script><script src="lifeos-app.js"></script>
+<style>body{margin:0;background:#f5f2eb;color:#1f1c18;font-family:'Instrument Sans',system-ui,sans-serif}*{box-sizing:border-box}button{font-family:inherit;color:inherit}:focus-visible{outline:2px solid #b5502f;outline-offset:2px}</style>
+</helmet>
+<div data-screen-label="Organization" onKeyDown="{{ keys }}" style="padding:{{ pad }};max-width:1680px;margin:0 auto">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+    <div><h1 style="margin:0;font-family:'Newsreader',serif;font-weight:400;font-size:34px;letter-spacing:-.015em">Organization</h1><p style="margin:6px 0 0;font-size:14.5px;color:#575047">{{ rangeLabel }} · Google Calendar synced 2 min ago · 1 conflict today</p></div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div style="display:flex;gap:2px"><button onClick="{{ prev }}" aria-label="Previous" style="width:34px;height:34px;border:1px solid #cfc6b6;background:transparent;border-radius:6px;cursor:pointer">‹</button><button onClick="{{ todayBtn }}" style="height:34px;border:1px solid #cfc6b6;background:transparent;border-radius:6px;padding:0 12px;font-size:13.5px;cursor:pointer">Today</button><button onClick="{{ next }}" aria-label="Next" style="width:34px;height:34px;border:1px solid #cfc6b6;background:transparent;border-radius:6px;cursor:pointer">›</button></div>
+      <div role="tablist" aria-label="View (D, W, M)" style="display:flex;border:1px solid #cfc6b6;border-radius:6px;overflow:hidden"><sc-for list="{{ views }}" as="vw" hint-placeholder-count="3"><button role="tab" aria-selected="{{ vw.on }}" onClick="{{ vw.pick }}" title="{{ vw.key }}" style="border:0;border-left:{{ vw.sep }};padding:7px 13px;font-size:13.5px;cursor:pointer;background:{{ vw.bg }};font-weight:{{ vw.w }}">{{ vw.label }}</button></sc-for></div>
+      <button onClick="{{ newEvent }}" style="background:#1f1c18;color:#f5f2eb;border:0;border-radius:6px;padding:8px 14px;font-size:13.5px;font-weight:500;cursor:pointer">New event</button>
+      <button onClick="{{ newTask }}" style="background:transparent;border:1px solid #cfc6b6;border-radius:6px;padding:7px 12px;font-size:13.5px;cursor:pointer">New task</button>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:32px 40px;margin-top:22px;align-items:flex-start">
+    <section aria-label="Calendar" style="flex:1 1 640px;min-width:0;overflow-x:auto">
+      <sc-if value="{{ isWeek }}" hint-placeholder-val="{{ true }}">
+        <div style="min-width:{{ gridMin }}px">
+          <div style="display:grid;grid-template-columns:48px repeat({{ nDays }},minmax(0,1fr));border-bottom:1px solid #1f1c18">
+            <span></span>
+            <sc-for list="{{ dayHeads }}" as="d" hint-placeholder-count="7"><button onClick="{{ d.open }}" style="border:0;background:none;padding:8px 6px;text-align:left;cursor:pointer;font-size:13px;font-weight:{{ d.w }};color:{{ d.fg }}">{{ d.label }}</button></sc-for>
+          </div>
+          <div style="position:relative;display:grid;grid-template-columns:48px repeat({{ nDays }},minmax(0,1fr));height:{{ gridH }}px">
+            <div style="position:relative"><sc-for list="{{ hours }}" as="h" hint-placeholder-count="15"><span style="position:absolute;top:{{ h.top }}px;right:8px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6e675c;transform:translateY(-6px)">{{ h.label }}</span></sc-for></div>
+            <sc-for list="{{ cols }}" as="c" hint-placeholder-count="7">
+              <div style="position:relative;border-left:1px solid #e6dfd2;background:{{ c.bg }}">
+                <sc-for list="{{ hours }}" as="h" hint-placeholder-count="15"><span style="position:absolute;left:0;right:0;top:{{ h.top }}px;border-top:1px solid #eee7da"></span></sc-for>
+                <sc-for list="{{ c.events }}" as="e" hint-placeholder-count="0"><button onClick="{{ e.open }}" style="position:absolute;left:3px;right:3px;top:{{ e.top }}px;height:{{ e.h }}px;background:{{ e.bg }};border:1px solid {{ e.border }};border-radius:4px;padding:3px 6px;text-align:left;cursor:pointer;overflow:hidden;font-size:12px;line-height:1.25;outline:{{ e.ring }}"><span style="display:block;font-weight:600">{{ e.title }}</span><span style="display:block;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#575047">{{ e.start }}</span></button></sc-for>
+                <sc-if value="{{ c.today }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;left:0;right:0;top:{{ nowTop }}px;border-top:2px solid #b5502f"><span style="position:absolute;left:-4px;top:-5px;width:8px;height:8px;border-radius:50%;background:#b5502f"></span></span></sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isMonth }}" hint-placeholder-val="{{ false }}">
+        <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border-top:1px solid #1f1c18;border-left:1px solid #e6dfd2">
+          <sc-for list="{{ monthHeads }}" as="d" hint-placeholder-count="7"><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6e675c;padding:6px;border-right:1px solid #e6dfd2;border-bottom:1px solid #e6dfd2">{{ d }}</span></sc-for>
+          <sc-for list="{{ monthCells }}" as="m" hint-placeholder-count="35"><button onClick="{{ m.open }}" style="height:96px;border:0;border-right:1px solid #e6dfd2;border-bottom:1px solid #e6dfd2;background:{{ m.bg }};text-align:left;padding:6px;cursor:pointer;display:flex;flex-direction:column;gap:3px;color:{{ m.fg }}"><span style="font-size:13px;font-weight:{{ m.w }}">{{ m.n }}</span><sc-for list="{{ m.items }}" as="it" hint-placeholder-count="0"><span style="font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;border-left:3px solid {{ it.border }};padding-left:4px">{{ it.title }}</span></sc-for><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6e675c">{{ m.more }}</span></button></sc-for>
+        </div>
+      </sc-if>
+      <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:12.5px;color:#575047"><sc-for list="{{ legend }}" as="l" hint-placeholder-count="6"><span style="display:flex;gap:6px;align-items:center"><span style="width:10px;height:10px;border-radius:2px;background:{{ l.bg }};border:1px solid {{ l.border }}"></span>{{ l.label }}</span></sc-for><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c">D · W · M switch views</span></div>
+    </section>
+
+    <aside style="flex:1 1 320px;max-width:400px;min-width:0;display:flex;flex-direction:column;gap:32px">
+      <sc-if value="{{ hasEvent }}" hint-placeholder-val="{{ false }}">
+        <section aria-label="Event" style="background:#fbf9f4;border:1px solid #dcd4c6;border-radius:6px;padding:16px;display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;justify-content:space-between"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:#6e675c">{{ ev.kindUpper }}</span><button onClick="{{ closeEvent }}" style="border:0;background:none;font-size:13px;cursor:pointer;color:#575047">Close</button></div>
+          <div style="font-family:'Newsreader',serif;font-size:22px;line-height:1.2">{{ ev.title }}</div>
+          <div style="font-size:14px;color:#575047">{{ ev.day }} · {{ ev.start }}–{{ ev.end }} · Personal calendar</div>
+          <div style="display:flex;gap:8px;margin-top:6px"><button onClick="{{ editEvent }}" style="border:1px solid #cfc6b6;background:transparent;border-radius:6px;padding:6px 12px;font-size:13px;cursor:pointer">Edit</button><button onClick="{{ deleteEvent }}" style="border:0;background:none;padding:6px 8px;font-size:13px;cursor:pointer;color:#a8321f">Delete…</button></div>
+        </section>
+      </sc-if>
+      <section aria-labelledby="o-plan">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;border-top:2px solid #1f1c18;padding-top:10px"><h2 id="o-plan" style="margin:0;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:11.5px;letter-spacing:.12em">TODAY'S PLAN</h2><span style="display:flex;gap:6px;align-items:center;font-size:12.5px;color:#6e675c"><canvas data-pk-avatar="organization" data-pk-pal="day" data-pk-bg="#ebe4d6" style="width:20px;height:20px;image-rendering:pixelated;border-radius:3px"></canvas>Suggested by Organization</span></div>
+        <sc-for list="{{ conflicts }}" as="c" hint-placeholder-count="1"><div role="alert" style="margin-top:12px;border-left:2px solid #92560a;padding:2px 0 2px 12px;display:flex;flex-direction:column;gap:6px"><span style="font-size:14px;line-height:1.45">▲ {{ c.text }}</span><span style="display:flex;gap:8px"><button onClick="{{ c.fix }}" style="border:1px solid #cfc6b6;background:transparent;border-radius:6px;padding:5px 11px;font-size:13px;cursor:pointer">{{ c.fixLabel }}</button><button onClick="{{ c.ignore }}" style="border:0;background:none;font-size:13px;cursor:pointer;color:#575047">Keep both</button></span></div></sc-for>
+        <sc-for list="{{ plan }}" as="p" hint-placeholder-count="4"><div style="display:grid;grid-template-columns:52px minmax(0,1fr);gap:8px;padding:10px 0;border-bottom:1px solid #e6dfd2"><span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;color:#575047">{{ p.t }}</span><span><span style="display:block;font-size:14.5px;font-weight:500">{{ p.title }}</span><span style="display:block;font-size:12.5px;color:#6e675c">{{ p.note }}</span></span></div></sc-for>
+        <p style="margin:10px 0 0;font-size:12.5px;line-height:1.5;color:#6e675c">A suggestion only. Moving an event creates an approval for Organization.</p>
+      </section>
+      <section aria-labelledby="o-tasks">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;border-top:2px solid #1f1c18;padding-top:10px"><h2 id="o-tasks" style="margin:0;font-family:'JetBrains Mono',monospace;font-weight:500;font-size:11.5px;letter-spacing:.12em">TASKS · {{ openTasks }} OPEN</h2><button onClick="{{ newTask }}" style="border:0;background:none;padding:0;font-size:13px;color:#b5502f;cursor:pointer">+ Add</button></div>
+        <sc-for list="{{ tasks }}" as="t" hint-placeholder-count="6">
+          <div style="display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:8px;align-items:center;padding:9px 0;border-bottom:1px solid #e6dfd2">
+            <button onClick="{{ t.toggle }}" role="checkbox" aria-checked="{{ t.done }}" aria-label="{{ t.title }}" style="width:20px;height:20px;border:1.5px solid #1f1c18;border-radius:4px;background:{{ t.fill }};color:#f5f2eb;font-size:13px;cursor:pointer;padding:0">{{ t.check }}</button>
+            <span style="min-width:0"><span style="display:block;font-size:14px;text-decoration:{{ t.strike }}">{{ t.title }}</span><span style="display:block;font-size:12px;color:#6e675c">{{ t.project }}</span></span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:{{ t.dueColor }};white-space:nowrap">{{ t.pri }} · {{ t.due }}</span>
+          </div>
+        </sc-for>
+      </section>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { ready: false, view: 'week', ev: null, conflictDone: false, done: {} };
+  componentDidMount() { const w = () => (window.APP && APP.ready) ? (this.un = APP.sub(() => this.forceUpdate()), this.setState({ ready: true, view: (this.props.bp === 'mobile') ? 'day' : 'week' })) : setTimeout(w, 30); w(); }
+  componentWillUnmount() { this.un && this.un(); }
+  renderVals() {
+    if (!this.state.ready) return {};
+    const st = this.state, bp = this.props.bp || 'desktop', W = APP.week;
+    const CAT = { focus: ['#ece6da', '#cfc6b6', 'Focus'], work: ['#e2eaf0', '#b2c6d4', 'Work'], people: ['#f0e4d6', '#d6bc9f', 'People'], health: ['#e2ede4', '#afccb6', 'Health'], outreach: ['#f3e1d9', '#dcb3a1', 'Outreach'], social: ['#efe0ea', '#d3b1c6', 'Socials'] };
+    const H0 = 7, H1 = 22, PX = 40, y = t => { const [h, m] = t.split(':').map(Number); return (h - H0 + m / 60) * PX; };
+    const view = st.view, dayIdx = view === 'day' ? [W.today] : [0, 1, 2, 3, 4, 5, 6];
+    const cols = dayIdx.map(d => ({ today: d === W.today, bg: d === W.today ? 'rgba(181,80,47,.035)' : 'transparent',
+      events: W.events.filter(e => e[0] === d).map(e => { const c = CAT[e[4]]; return { title: e[3], start: e[1] + '–' + e[2], top: y(e[1]) + 1, h: Math.max(22, y(e[2]) - y(e[1]) - 2), bg: c[0], border: c[1], ring: st.ev && st.ev[3] === e[3] ? '2px solid #1f1c18' : 'none', open: () => this.setState({ ev: e }) }; }) }));
+    const conflicts = st.conflictDone ? [] : APP.conflicts.map(c => ({ text: c[0], fixLabel: c[1], fix: () => { this.setState({ conflictDone: true }); APP.toast('Proposed: move Gym to Fri 7:00. Waiting in Approvals.'); }, ignore: () => this.setState({ conflictDone: true }) }));
+    const tasks = APP.tasks.map(t => { const d = !!st.done[t[0]]; return { title: t[1], pri: t[2], due: t[3], project: t[4], done: d, check: d ? '✓' : '', fill: d ? '#1f1c18' : 'transparent', strike: d ? 'line-through' : 'none', dueColor: t[3].indexOf('Overdue') >= 0 ? '#a8321f' : t[3].indexOf('Today') >= 0 ? '#b5502f' : '#575047', toggle: () => this.setState({ done: Object.assign({}, st.done, { [t[0]]: !d }) }) }; });
+    const monthHeads = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const monthCells = Array.from({ length: 35 }, (_, i) => { const n = i - 2; const inM = n >= 1 && n <= 31; const wi = n - 19; const evs = wi >= 0 && wi < 7 ? W.events.filter(e => e[0] === wi) : [];
+      return { n: inM ? n : '', bg: n === 22 ? 'rgba(181,80,47,.06)' : 'transparent', fg: inM ? '#1f1c18' : '#a8a093', w: n === 22 ? 600 : 400, items: evs.slice(0, 2).map(e => ({ title: e[3], border: CAT[e[4]][1] })), more: evs.length > 2 ? '+' + (evs.length - 2) + ' more' : '', open: () => wi >= 0 && wi < 7 && this.setState({ view: 'day' }) }; });
+    const ev = st.ev;
+    const keys = e => { if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return; const k = e.key.toLowerCase(); if (k === 'd') this.setState({ view: 'day' }); if (k === 'w') this.setState({ view: 'week' }); if (k === 'm') this.setState({ view: 'month' }); };
+    return {
+      pad: bp === 'mobile' ? '20px 16px 40px' : bp === 'tablet' ? '28px 24px 56px' : '28px 40px 64px', keys,
+      rangeLabel: view === 'day' ? 'Thursday 22 October' : view === 'month' ? 'October 2026' : '19–25 October 2026',
+      views: [['day', 'Day', 'D'], ['week', 'Week', 'W'], ['month', 'Month', 'M']].map((x, i) => ({ label: x[1], key: x[2], on: view === x[0], bg: view === x[0] ? '#ece6da' : 'transparent', w: view === x[0] ? 600 : 400, sep: i ? '1px solid #cfc6b6' : '0', pick: () => this.setState({ view: x[0] }) })),
+      isWeek: view !== 'month', isMonth: view === 'month', nDays: dayIdx.length, gridMin: view === 'day' ? 280 : 720, gridH: (H1 - H0) * PX,
+      dayHeads: dayIdx.map(d => ({ label: W.days[d] + (d === W.today ? ' · today' : ''), w: d === W.today ? 600 : 400, fg: d === W.today ? '#b5502f' : '#1f1c18', open: () => this.setState({ view: 'day' }) })),
+      hours: Array.from({ length: H1 - H0 }, (_, i) => ({ label: (H0 + i) + ':00', top: i * PX })), cols, nowTop: Math.round(y('9:41')),
+      legend: Object.keys(CAT).map(k => ({ label: CAT[k][2], bg: CAT[k][0], border: CAT[k][1] })), monthHeads, monthCells,
+      prev: () => APP.toast('Previous ' + view + '.'), next: () => APP.toast('Next ' + view + '.'), todayBtn: () => this.setState({ view: view === 'month' ? 'week' : view }),
+      newEvent: () => APP.toast('Event dialog: title, time, calendar (default Personal), category. Recurring events are created in Google Calendar.'), newTask: () => APP.toast('Task dialog: title, project, priority, due, blocked by.'),
+      hasEvent: !!ev, ev: ev ? { title: ev[3], start: ev[1], end: ev[2], day: W.days[ev[0]], kindUpper: CAT[ev[4]][2].toUpperCase() } : {}, closeEvent: () => this.setState({ ev: null }),
+      editEvent: () => APP.toast('Edit writes directly to your calendar; agent edits need approval.'), deleteEvent: () => APP.toast('Delete asks for confirmation. Agents deleting events is HIGH_RISK.'),
+      conflicts, plan: APP.plan.map(p => ({ t: p[0], title: p[1], note: p[2] })), tasks, openTasks: tasks.filter(t => !t.done).length
+    };
+  }
+}
+</script>
+</body>
+</html>

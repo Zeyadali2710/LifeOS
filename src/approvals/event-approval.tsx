@@ -3,10 +3,10 @@
 import { payloadSchemaFor } from "@/lib/approval-kinds";
 import type { ApprovalDTO } from "@/lib/agent-types";
 import { formatHM, sydneyInstant, sydneyParts } from "@/server/time";
-import { Badge } from "@/ui/badge";
-import { Checkbox, Field, Input, Select, Textarea } from "@/ui/field";
-import { Disclosure } from "@/ui/disclosure";
-import { Icon } from "@/ui/icon";
+import { Badge } from "@/legacy-ui/badge";
+import { Checkbox, Field, Input, Select, Textarea } from "@/legacy-ui/field";
+import { Disclosure } from "@/legacy-ui/disclosure";
+import { Icon } from "@/legacy-ui/icon";
 
 // Calendar approval bodies (create preview, edit diff, delete warning) and their edit form. Client-safe.
 export type EventPayload = {

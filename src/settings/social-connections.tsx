@@ -4,11 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { socialConnectionStatus } from "@/server/socials/connections";
 import { confirmInstagramSmoke, disconnect, saveTikTokCredentials } from "@/server/socials-actions";
-import { useLiveEvents } from "@/shell/live-provider";
-import { useShell } from "@/shell/shell-provider";
-import { Button } from "@/ui/button";
-import { Dialog } from "@/ui/dialog";
-import { Checkbox, Field, Input } from "@/ui/field";
+import { useLiveEvents } from "@/features/shell/live-provider";
+import { useShell } from "@/features/shell/shell-provider";
+import { Button } from "@/legacy-ui/button";
+import { Dialog } from "@/legacy-ui/dialog";
+import { Checkbox, Field, Input } from "@/legacy-ui/field";
 import { ConnectionRow, type RowStatus } from "./connection-row";
 
 export type SocialConnectionsData = Awaited<ReturnType<typeof socialConnectionStatus>>;

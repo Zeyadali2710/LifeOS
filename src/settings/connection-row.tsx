@@ -5,10 +5,10 @@ import { disconnect } from "@/server/socials-actions";
 import type { ReactNode } from "react";
 import { removeEventKeyAction } from "@/server/outreach-actions";
 import { removeTokenAction } from "@/server/settings-actions";
-import { useShell } from "@/shell/shell-provider";
-import { Button } from "@/ui/button";
-import { Dialog } from "@/ui/dialog";
-import { StatusDot } from "@/ui/status-dot";
+import { useShell } from "@/features/shell/shell-provider";
+import { Button } from "@/legacy-ui/button";
+import { Dialog } from "@/legacy-ui/dialog";
+import { StatusDot } from "@/legacy-ui/status-dot";
 import { TokenForm } from "./token-form";
 
 export type RowStatus = "connected" | "none" | "error" | "syncing";

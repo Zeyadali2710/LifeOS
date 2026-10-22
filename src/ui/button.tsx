@@ -1,49 +1,119 @@
-import type { ButtonHTMLAttributes } from "react";
+import Link from "next/link";
+import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { Icon } from "./icon";
+import type { IconName } from "./icon-names";
+import s from "./button.module.css";
 
-type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: "primary" | "secondary" | "ghost" | "destructive" | "ai" | "inverse";
-  size?: "xs" | "sm" | "md" | "touch";
-  loading?: boolean;
+export type ButtonVariant = "primary" | "secondary" | "danger" | "ghost" | "text";
+
+type Common = {
+  variant?: ButtonVariant;
+  size?: "md" | "sm" | "lg";
+  icon?: IconName;
+  iconRight?: IconName;
+  /** Shortcut hint shown after the label (decorative; pass aria-keyshortcuts for the accessible form). */
+  hint?: string;
+  raised?: boolean;
+  destructive?: boolean;
+  block?: boolean;
+  className?: string;
+  children?: ReactNode;
 };
 
-const variants = {
-  primary: "bg-accent-solid text-white border border-transparent hover:bg-[#0066cc] active:bg-[#005bb8]",
-  secondary: "bg-white/[.03] text-text border border-white/10 hover:border-white/20 hover:bg-white/[.06]",
-  ghost: "bg-transparent text-text-2 border border-transparent hover:bg-white/[.06] hover:text-text",
-  destructive: "bg-transparent text-red border border-[rgba(255,105,97,.3)] hover:bg-[rgba(255,105,97,.08)] hover:border-[rgba(255,105,97,.5)]",
-  ai: "bg-[rgba(10,132,255,.2)] text-cyan-soft border border-transparent hover:bg-[rgba(10,132,255,.3)]",
-  inverse: "bg-text text-on-accent font-semibold border border-transparent hover:bg-white",
-};
+export function buttonClass({
+  variant = "secondary",
+  size = "md",
+  raised,
+  destructive,
+  block,
+  className,
+}: Pick<Common, "variant" | "size" | "raised" | "destructive" | "block" | "className">): string {
+  return [s.btn, s[variant], size !== "md" && s[size], raised && s.raised, destructive && s.destructive, block && s.block, className]
+    .filter(Boolean)
+    .join(" ");
+}
 
-const sizes = {
-  xs: "h-[26px] px-2.5 rounded-full text-[12px]",
-  sm: "h-[30px] px-3 rounded-full text-[12.5px]",
-  md: "h-8 px-3.5 rounded-full text-[13px] font-medium",
-  touch: "h-11 px-4 rounded-full text-[13px]",
-};
-
-const spinner: Record<string, string> = {
-  primary: "border-white/30 border-t-white",
-  inverse: "border-[rgba(11,12,16,.25)] border-t-on-accent",
-  destructive: "border-[rgba(255,105,97,.25)] border-t-red",
-};
-
-export function Button({ variant = "primary", size = "md", loading = false, type = "button", disabled, className = "", children, ...props }: Props) {
+function Inner({ icon, iconRight, hint, children, size }: Pick<Common, "icon" | "iconRight" | "hint" | "children" | "size">) {
+  const px = size === "sm" ? 16 : 17;
   return (
-    <button
-      type={type}
-      disabled={disabled || loading}
-      aria-busy={loading || undefined}
-      className={`inline-flex items-center justify-center gap-2 font-medium transition active:scale-[.98] disabled:cursor-not-allowed disabled:border-white/[.06] disabled:bg-white/[.06] disabled:text-text-3 disabled:hover:bg-white/[.06] ${loading ? "opacity-85" : ""} ${sizes[size]} ${variants[variant]} ${className}`}
-      {...props}
-    >
-      {loading && (
-        <span
-          aria-hidden="true"
-          className={`size-3 shrink-0 animate-[lo-spin_.7s_linear_infinite] rounded-full border-2 ${spinner[variant] ?? "border-white/20 border-t-text"}`}
-        />
-      )}
+    <>
+      {icon && <Icon name={icon} size={px} />}
       {children}
+      {hint && <span className={`${s.hint} kbd-hint`} data-hint={hint} aria-hidden="true" />}
+      {iconRight && <Icon name={iconRight} size={px} />}
+    </>
+  );
+}
+
+export function Button({
+  variant,
+  size,
+  icon,
+  iconRight,
+  hint,
+  raised,
+  destructive,
+  block,
+  className,
+  children,
+  type = "button",
+  ...rest
+}: Common & ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button type={type} className={buttonClass({ variant, size, raised, destructive, block, className })} {...rest}>
+      <Inner icon={icon} iconRight={iconRight} hint={hint} size={size}>
+        {children}
+      </Inner>
+    </button>
+  );
+}
+
+export function ButtonLink({
+  href,
+  variant,
+  size,
+  icon,
+  iconRight,
+  hint,
+  raised,
+  block,
+  className,
+  children,
+  external,
+  ...rest
+}: Common & { href: string; external?: boolean; "aria-label"?: string; title?: string; "aria-current"?: "page" | undefined }) {
+  const cls = buttonClass({ variant, size, raised, block, className });
+  const inner = (
+    <Inner icon={icon} iconRight={iconRight} hint={hint} size={size}>
+      {children}
+    </Inner>
+  );
+  if (external)
+    return (
+      <a href={href} className={cls} target="_blank" rel="noopener noreferrer" {...rest}>
+        {inner}
+      </a>
+    );
+  return (
+    <Link href={href} className={cls} {...rest}>
+      {inner}
+    </Link>
+  );
+}
+
+export function IconButton({
+  icon,
+  label,
+  size = 20,
+  small,
+  fill,
+  className,
+  type = "button",
+  ...rest
+}: { icon: IconName; label: string; size?: number; small?: boolean; fill?: boolean } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "aria-label">) {
+  return (
+    <button type={type} aria-label={label} title={rest.title ?? label} className={[s.icon, small && s.small, className].filter(Boolean).join(" ")} {...rest}>
+      <Icon name={icon} size={size} fill={fill} />
     </button>
   );
 }

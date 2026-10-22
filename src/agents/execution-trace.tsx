@@ -5,7 +5,7 @@ import type { StepDTO } from "@/lib/agent-types";
 import { formatDuration } from "@/lib/format";
 import { getAgent } from "@/server/agents/registry";
 import { formatHM } from "@/server/time";
-import { Icon } from "@/ui/icon";
+import { Icon } from "@/legacy-ui/icon";
 
 type Tone = "text-3" | "indigo" | "amber" | "red";
 

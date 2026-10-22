@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { OutreachEventDTO } from "@/lib/outreach-types";
 import { addToCalendarAction } from "@/server/outreach-pipeline-actions";
-import { useShell } from "@/shell/shell-provider";
-import { Button } from "@/ui/button";
-import { Dialog } from "@/ui/dialog";
-import { Field, Select } from "@/ui/field";
+import { useShell } from "@/features/shell/shell-provider";
+import { Button } from "@/legacy-ui/button";
+import { Dialog } from "@/legacy-ui/dialog";
+import { Field, Select } from "@/legacy-ui/field";
 import { dateShort, hhmm } from "./fmt";
 
 export type CalendarOption = { id: string; name: string };

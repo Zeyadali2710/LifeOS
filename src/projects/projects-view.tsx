@@ -3,9 +3,9 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { CATEGORY_LABEL, PROJECT_CATEGORIES, type ProjectCardDTO, type ProjectCategory } from "@/lib/project-types";
-import { Button } from "@/ui/button";
-import { EmptyState } from "@/ui/empty-state";
-import { Icon } from "@/ui/icon";
+import { Button } from "@/legacy-ui/button";
+import { EmptyState } from "@/legacy-ui/empty-state";
+import { Icon } from "@/legacy-ui/icon";
 import { ProjectCard } from "./project-card";
 import { ProjectDialog } from "./project-dialog";
 

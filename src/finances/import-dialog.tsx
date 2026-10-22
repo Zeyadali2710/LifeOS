@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { aud, MAX_CSV_BYTES } from "@/lib/finance";
 import type { FinancePreview } from "@/server/finance";
 import { importFinanceAction, previewFinanceAction } from "@/server/finance-actions";
-import { Button } from "@/ui/button";
-import { Dialog } from "@/ui/dialog";
-import { Checkbox, Field, Input } from "@/ui/field";
-import { useShell } from "@/shell/shell-provider";
+import { Button } from "@/legacy-ui/button";
+import { Dialog } from "@/legacy-ui/dialog";
+import { Checkbox, Field, Input } from "@/legacy-ui/field";
+import { useShell } from "@/features/shell/shell-provider";
 
 export function ImportDialog({ onClose, accounts }: { onClose(): void; accounts: string[] }) {
   const router = useRouter(); const { toast } = useShell();

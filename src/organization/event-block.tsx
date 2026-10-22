@@ -1,7 +1,7 @@
 "use client";
 
 import { border, CATEGORY, fill } from "@/lib/calendar-categories";
-import { Icon } from "@/ui/icon";
+import { Icon } from "@/legacy-ui/icon";
 import { hmOf, shortDate } from "./layout";
 import type { OrgInstance } from "./organization-view";
 

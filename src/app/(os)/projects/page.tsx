@@ -5,7 +5,7 @@ import { db } from "@/server/db/client";
 import { listProjects } from "@/server/project-queries";
 import { sydneyYmd } from "@/server/calendar/free-slots";
 import { requireOwner } from "@/server/session";
-import { PageHeader } from "@/ui/page-header";
+import { PageHeader } from "@/legacy-ui/page-header";
 
 export const metadata = { title: "Projects · LifeOS" };
 export const dynamic = "force-dynamic";

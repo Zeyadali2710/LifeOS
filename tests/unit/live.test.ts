@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applySnapshot, healthFromActivity, isActivity, isApproval, isRun, isNotification, mergeById, nextBackoff, parseSnapshot, restoreItem, unreadOf, wakeDelay } from "@/shell/live";
+import { applySnapshot, healthFromActivity, isActivity, isApproval, isRun, isNotification, mergeById, nextBackoff, parseSnapshot, restoreItem, unreadOf, wakeDelay } from "@/features/shell/live";
 import type { ActivityDTO, NotificationDTO } from "@/lib/live-types";
 
 const n = (id: string, readAt: string | null = null): NotificationDTO => ({

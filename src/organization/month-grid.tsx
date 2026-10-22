@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { border, CATEGORY, fill } from "@/lib/calendar-categories";
 import { sydneyInstant } from "@/server/time";
-import { Icon } from "@/ui/icon";
+import { Icon } from "@/legacy-ui/icon";
 import { hmOf } from "./layout";
 import type { OrgInstance } from "./organization-view";
 

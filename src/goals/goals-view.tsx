@@ -7,11 +7,11 @@ import { HORIZON_LABEL, HORIZONS, type Horizon, type Momentum } from "@/lib/goal
 import type { GoalNode, GoalObjective, GoalProject, GoalsData } from "@/server/goals";
 import { linkProjectAction, saveVisionAction, unlinkProjectAction } from "@/server/goals-actions";
 import { toggleTaskAction } from "@/server/task-actions";
-import { useShell } from "@/shell/shell-provider";
-import { Button } from "@/ui/button";
-import { EmptyState } from "@/ui/empty-state";
-import { Select, Textarea } from "@/ui/field";
-import { Icon } from "@/ui/icon";
+import { useShell } from "@/features/shell/shell-provider";
+import { Button } from "@/legacy-ui/button";
+import { EmptyState } from "@/legacy-ui/empty-state";
+import { Select, Textarea } from "@/legacy-ui/field";
+import { Icon } from "@/legacy-ui/icon";
 import { GoalDialog, ObjectiveDialog } from "./goal-dialogs";
 
 const MOMENTUM: Record<Momentum, { label: string; cls: string }> = {

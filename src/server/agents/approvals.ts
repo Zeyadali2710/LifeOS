@@ -307,7 +307,7 @@ export async function expireDue(h: DB, now: Date = new Date(), opts: { enqueue?:
             : kind === "project_create" || kind === "project_update"
               ? `The project request "${titleOf(a)}" expired. ${nothingText(kind)} Nothing ran after the request expired.`
               : `The calendar request "${titleOf(a)}" expired. ${nothingText(kind)} Nothing ran after the request expired.`,
-        actionUrl: `/approvals?id=${a.id}`,
+        actionUrl: `/agents?view=approvals&id=${a.id}`,
       },
       h,
     );

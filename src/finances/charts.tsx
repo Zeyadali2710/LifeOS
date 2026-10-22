@@ -3,8 +3,8 @@
 import { useId, useState, type ReactNode } from "react";
 import { aud } from "@/lib/finance";
 import type { loadFinance } from "@/server/finance";
-import { Checkbox } from "@/ui/field";
-import { Button } from "@/ui/button";
+import { Checkbox } from "@/legacy-ui/field";
+import { Button } from "@/legacy-ui/button";
 
 type Summary = Awaited<ReturnType<typeof loadFinance>>["summary"];
 type Months = Summary["monthly"];

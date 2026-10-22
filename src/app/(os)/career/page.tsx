@@ -2,7 +2,7 @@ import { CareerView } from "@/career/career-view";
 import { loadCareer } from "@/server/career";
 import { db } from "@/server/db/client";
 import { requireOwner } from "@/server/session";
-import { PageHeader } from "@/ui/page-header";
+import { PageHeader } from "@/legacy-ui/page-header";
 
 export const metadata = { title: "Career · LifeOS" };
 export const dynamic = "force-dynamic";

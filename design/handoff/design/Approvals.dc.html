@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="pixelkit.js"></script><script src="lifeos-data.js"></script><script src="lifeos-app.js"></script>
+<style>body{margin:0;background:#f5f2eb;color:#1f1c18;font-family:'Instrument Sans',system-ui,sans-serif}*{box-sizing:border-box}button,input,textarea{font-family:inherit;color:inherit}:focus-visible{outline:2px solid #b5502f;outline-offset:2px}</style>
+</helmet>
+<div data-screen-label="Approvals" style="padding:{{ pad }};max-width:1680px;margin:0 auto">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+    <div><sc-if value="{{ standalone }}" hint-placeholder-val="{{ true }}"><h1 style="margin:0 0 6px;font-family:'Newsreader',serif;font-weight:400;font-size:34px;letter-spacing:-.015em">Approvals</h1></sc-if><p style="margin:0;font-size:14.5px;color:#575047;max-width:640px">Agents propose; nothing writes to the outside world until you approve the exact content shown. Approvals expire after 7 days and cancel the run.</p></div>
+    <div role="tablist" style="display:flex;gap:4px;border-bottom:1px solid #dcd4c6"><sc-for list="{{ tabs }}" as="t" hint-placeholder-count="2"><button role="tab" aria-selected="{{ t.on }}" onClick="{{ t.pick }}" style="border:0;background:none;padding:9px 10px 10px;font-size:14px;cursor:pointer;white-space:nowrap;display:flex;align-items:baseline;gap:6px;box-shadow:{{ t.line }};font-weight:{{ t.w }}">{{ t.label }}<span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c">{{ t.n }}</span></button></sc-for></div>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:32px 48px;margin-top:24px;align-items:flex-start">
+    <div role="listbox" tabindex="0" aria-label="Approvals. Arrow keys move, A approves, R rejects." onKeyDown="{{ listKey }}" style="flex:1 1 340px;max-width:520px;min-width:0;border-top:2px solid #1f1c18">
+      <sc-for list="{{ list }}" as="it" hint-placeholder-count="3">
+        <button role="option" aria-selected="{{ it.on }}" onClick="{{ it.pick }}" style="width:100%;display:grid;grid-template-columns:36px minmax(0,1fr);gap:12px;padding:14px 8px;border:0;border-bottom:1px solid #dcd4c6;background:{{ it.bg }};text-align:left;cursor:pointer" style-hover="background:#ece6da">
+          <canvas data-pk-avatar="{{ it.agentId }}" data-pk-pal="day" data-pk-bg="#e9e1d1" style="width:28px;height:28px;image-rendering:pixelated;border-radius:4px"></canvas>
+          <span style="min-width:0;display:flex;flex-direction:column;gap:3px"><span style="font-size:14.5px;font-weight:600;line-height:1.35">{{ it.title }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:{{ it.color }}">{{ it.meta }}</span></span>
+        </button>
+      </sc-for>
+      <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}"><div style="padding:28px 8px;display:flex;gap:14px;align-items:center"><canvas data-pk-avatar="orchestrator" data-pk-state="idle" data-pk-pal="day" data-pk-bg="#e9e1d1" style="width:42px;height:42px;image-rendering:pixelated;border-radius:6px"></canvas><span style="font-family:'Newsreader',serif;font-style:italic;font-size:18px;color:#575047">Nothing is waiting on you.</span></div></sc-if>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6e675c;padding:10px 8px">↑↓ MOVE · A APPROVE · R REJECT · E EDIT</div>
+    </div>
+
+    <section aria-label="Approval detail" style="flex:2 1 440px;min-width:0">
+      <sc-if value="{{ hasCur }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;flex-direction:column;gap:18px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:{{ cur.color }}">{{ cur.stateLine }}</div>
+          <h2 style="margin:0;font-family:'Newsreader',serif;font-weight:400;font-size:28px;line-height:1.2;text-wrap:pretty">{{ cur.title }}</h2>
+          <div style="display:grid;grid-template-columns:120px minmax(0,1fr);gap:8px 16px;font-size:14px;border-top:1px solid #dcd4c6;border-bottom:1px solid #dcd4c6;padding:14px 0">
+            <span style="color:#6e675c">Requested by</span><span>{{ cur.who }} agent · {{ cur.since }} ago</span>
+            <span style="color:#6e675c">Tool · tier</span><span style="font-family:'JetBrains Mono',monospace;font-size:12.5px">{{ cur.tool }} · {{ cur.tier }}</span>
+            <span style="color:#6e675c">Target</span><span>{{ cur.target }}</span>
+            <span style="color:#6e675c">Expires</span><span>{{ cur.expires }}</span>
+          </div>
+          <sc-if value="{{ cur.pending }}" hint-placeholder-val="{{ true }}">
+            <label style="display:flex;flex-direction:column;gap:6px"><span style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c"><span>{{ cur.fieldLabel }} · YOU CAN EDIT BEFORE APPROVING</span><span>{{ cur.editedLabel }}</span></span>
+              <textarea value="{{ cur.text }}" onChange="{{ editText }}" rows="7" style="font-family:'Newsreader',serif;font-size:17px;line-height:1.55;border:1px solid #cfc6b6;border-radius:6px;padding:14px 16px;background:#fbf9f4;resize:vertical"></textarea></label>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button onClick="{{ approve }}" style="background:#1f1c18;color:#f5f2eb;border:0;border-radius:6px;padding:10px 18px;font-size:14.5px;font-weight:500;cursor:pointer">{{ approveLabel }}</button><button onClick="{{ reject }}" style="background:transparent;border:1px solid #cfc6b6;border-radius:6px;padding:9px 14px;font-size:14.5px;cursor:pointer;color:#a8321f">Reject</button><button onClick="{{ openSource }}" style="background:transparent;border:0;padding:9px 8px;font-size:14px;cursor:pointer;color:#b5502f">{{ cur.sourceLabel }} →</button></div>
+            <p style="margin:0;font-size:13px;line-height:1.5;color:#6e675c">{{ cur.next }}</p>
+          </sc-if>
+          <sc-if value="{{ cur.resolved }}" hint-placeholder-val="{{ false }}">
+            <blockquote style="margin:0;font-family:'Newsreader',serif;font-size:17px;line-height:1.55;color:#3d3830;border-left:2px solid #dcd4c6;padding-left:16px">{{ cur.text }}</blockquote>
+            <p style="margin:0;font-size:13.5px;color:#575047">{{ cur.outcome }}</p>
+          </sc-if>
+        </div>
+      </sc-if>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { ready: false, idx: 0, edits: {} };
+  componentDidMount() { const w = () => (window.APP && APP.ready) ? (this.un = APP.sub(() => this.forceUpdate()), this.setState({ ready: true })) : setTimeout(w, 30); w(); }
+  componentWillUnmount() { this.un && this.un(); }
+  nav = (r, p) => this.props.nav ? this.props.nav(r, p) : (p && APP.set(p), APP.toast('Opens ' + r + ' in the LifeOS shell.'));
+  renderVals() {
+    if (!this.state.ready) return {};
+    const v = APP.ctl(), S = APP.state, st = this.state, bp = this.props.bp || 'desktop';
+    const tab = S.apprTab || 'pending';
+    const meta = { outreach: ['Message', 'Outreach sends this reply once, then records it in Activity.', 'Open email', () => this.nav('outreach', { outTab: 'inbox', mailSel: 'm1' })],
+      projects: ['Issue body', 'Projects creates the issue once (idempotency key), then resumes the run.', 'Open project', () => this.nav('projects', { projSel: 'lifeos' })],
+      post: ['Post text', 'Scheduled for the time shown; publishing uses exactly this text.', 'Open in Socials', () => this.nav('socials', { varSel: 'p1-linkedin', sheet: true })] };
+    const pending = v.approvals.map(ap => { const k = ap.kind === 'post' ? 'post' : ap.agentId; const m = meta[k];
+      return { id: ap.id, agentId: ap.agentId, title: ap.title, who: ap.who, since: ap.since, tool: ap.tool, tier: ap.kind === 'post' ? 'APPROVE' : 'APPROVE', target: ap.target, expires: ap.expires, orig: ap.body, fieldLabel: m[0].toUpperCase(), next: m[1], sourceLabel: m[2], openSrc: m[3], approveFn: ap.approve, rejectFn: ap.reject, pending: true, resolved: false,
+        meta: ap.who + ' · ' + ap.tool + ' · ' + ap.since, color: '#92560a', stateLine: '! AWAITING YOUR APPROVAL' }; });
+    const derived = [];
+    LOS.agents.filter(a => a.approval).forEach(a => { const o = S.agentOv[a.id]; if (o && (o.step || '').match(/Approved|Rejected|Completed/)) { const ok = !(o.step || '').match(/Rejected/); derived.push({ id: 'r-' + a.id, agentId: a.id, title: a.approval.title, who: a.name, since: 'just now', tool: a.approval.tool, tier: a.approval.tier, target: a.approval.target, expires: '—', orig: a.approval.body, meta: (ok ? '✓ Approved' : '– Rejected') + ' · just now', color: ok ? '#2f6f55' : '#6e675c', stateLine: ok ? '✓ APPROVED BY YOU' : '– REJECTED BY YOU', outcome: ok ? (o.state === 'idle' ? a.approval.done + '.' : 'Run resuming…') : 'Run cancelled. Nothing was sent.' }); } });
+    const seed = [['organization', 'Move deep work to 14:00', 'calendar.update_event', 'APPROVE', '✓ Approved · Wed 17:31', 'Event moved on Google Calendar.'], ['finance', '3 new categories, 41 reassignments', 'finance.update', 'HIGH_RISK', '✓ Approved · 14 Oct', 'Applied atomically; 41 rows changed, 0 fallback.'], ['organization', 'Create event: Coffee with Sam Okafor', 'calendar.create_event', 'APPROVE', '✓ Approved · Tue', 'Event created.'], ['outreach', 'Reply to a recruiter cold email', 'mail.send_reply', 'APPROVE', '– Rejected · Mon', 'Nothing was sent.'], ['projects', 'Issue: flaky e2e test', 'github.create_issue', 'APPROVE', '○ Expired · 9 Oct', 'Expired after 7 days; the run was cancelled.']]
+      .map((x, i) => ({ id: 's' + i, agentId: x[0], title: x[1], who: x[0][0].toUpperCase() + x[0].slice(1), since: x[4].split('· ')[1], tool: x[2], tier: x[3], target: '—', expires: '—', orig: x[1], meta: x[4], color: x[4][0] === '✓' ? '#2f6f55' : '#6e675c', stateLine: x[4].split(' ·')[0].toUpperCase(), outcome: x[5] }));
+    const resolved = derived.concat(seed).map(x => Object.assign(x, { pending: false, resolved: true }));
+    const list0 = tab === 'pending' ? pending : resolved;
+    let idx = Math.min(st.idx, Math.max(0, list0.length - 1));
+    if (S.apprSel && tab === 'pending') { const f = list0.findIndex(x => x.id === S.apprSel || x.agentId === S.apprSel); if (f >= 0) { idx = f; setTimeout(() => { APP.state.apprSel = null; this.setState({ idx: f }); }, 0); } }
+    const cur0 = list0[idx];
+    const edited = cur0 && st.edits[cur0.id] != null && st.edits[cur0.id] !== cur0.orig;
+    const cur = cur0 ? Object.assign({}, cur0, { text: cur0 && st.edits[cur0.id] != null ? st.edits[cur0.id] : cur0.orig, editedLabel: edited ? 'EDITED · RE-VALIDATED ON APPROVE' : '' }) : null;
+    const approve = () => { if (!cur) return; cur.approveFn(); if (edited) APP.toast('Approved with your edits. Re-validated and resuming.'); };
+    const list = list0.map((x, i) => Object.assign({}, x, { on: i === idx, bg: i === idx ? '#ece6da' : 'transparent', pick: () => this.setState({ idx: i }) }));
+    const listKey = e => {
+      if (e.key === 'ArrowDown') { e.preventDefault(); this.setState({ idx: Math.min(list.length - 1, idx + 1) }); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); this.setState({ idx: Math.max(0, idx - 1) }); }
+      else if (tab === 'pending' && cur && (e.key === 'a' || e.key === 'A')) approve();
+      else if (tab === 'pending' && cur && (e.key === 'r' || e.key === 'R')) cur.rejectFn();
+      else if (e.key === 'e' || e.key === 'E') { const t = document.querySelector('textarea'); if (t) t.focus(); }
+    };
+    return {
+      pad: this.props.embedded ? (bp === 'mobile' ? '16px 16px 32px' : '20px 24px 40px') : bp === 'mobile' ? '20px 16px 40px' : bp === 'tablet' ? '28px 28px 56px' : '28px 40px 64px', standalone: !this.props.embedded,
+      tabs: [['pending', 'Pending', pending.length], ['resolved', 'Resolved', resolved.length]].map(t => ({ label: t[1], n: t[2], on: tab === t[0], line: tab === t[0] ? 'inset 0 -2px 0 #1f1c18' : 'none', w: tab === t[0] ? 600 : 400, pick: () => { APP.set({ apprTab: t[0] }); this.setState({ idx: 0 }); } })),
+      list, empty: list.length === 0, listKey, hasCur: !!cur, cur: cur || {},
+      editText: e => this.setState({ edits: Object.assign({}, st.edits, { [cur.id]: e.target.value }) }),
+      approve, reject: () => cur && cur.rejectFn(), openSource: () => cur && cur.openSrc(), approveLabel: edited ? 'Approve with edits' : 'Approve'
+    };
+  }
+}
+</script>
+</body>
+</html>

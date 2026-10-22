@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { connectIcloudAction } from "@/server/calendar-settings-actions";
-import { Button } from "@/ui/button";
-import { Field, Input } from "@/ui/field";
+import { Button } from "@/legacy-ui/button";
+import { Field, Input } from "@/legacy-ui/field";
 
 const ERRORS: Record<string, string> = {
   rejected: "Apple rejected this sign-in. Check the Apple ID and app-specific password (not your Apple ID password) and try again.",

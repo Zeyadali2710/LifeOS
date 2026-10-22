@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { matchShortcut } from "@/shell/shortcuts";
-import { NAV_ITEMS } from "@/shell/nav";
+import { matchShortcut } from "@/features/shell/shortcuts";
+import { NAV_ITEMS } from "@/features/shell/nav";
 
 const base = { key: "", code: "", ctrlKey: false, metaKey: false, altKey: false, shiftKey: false, isComposing: false, repeat: false };
 const k = (o: Partial<typeof base>) => matchShortcut({ ...base, ...o });
@@ -15,8 +15,9 @@ describe("matchShortcut", () => {
     expect(k({ code: "Comma", key: ",", ctrlKey: true })).toEqual({ type: "nav", href: "/settings" });
   });
   it("alt+digit navigation", () => {
-    expect(k({ code: "Digit2", altKey: true })).toEqual({ type: "nav", href: "/career" });
-    expect(k({ code: "Digit9", altKey: true })).toEqual({ type: "nav", href: "/agents" });
+    expect(k({ code: "Digit2", altKey: true })).toEqual({ type: "nav", href: "/agents" });
+    expect(k({ code: "Digit8", altKey: true })).toEqual({ type: "nav", href: "/career" });
+    expect(k({ code: "Digit9", altKey: true })).toBeNull();
     expect(k({ code: "Digit2", altKey: true, ctrlKey: true })).toBeNull();
     expect(k({ code: "Digit2", altKey: true, shiftKey: true })).toBeNull();
   });
@@ -27,7 +28,7 @@ describe("matchShortcut", () => {
     expect(at(field, { code: "Digit2", altKey: true })).toBeNull();
     expect(at(field, { code: "Comma", key: ",", ctrlKey: true })).toBeNull();
     expect(at(field, { key: "k", ctrlKey: true })).toEqual({ type: "palette" });
-    expect(at(page, { code: "Digit2", altKey: true })).toEqual({ type: "nav", href: "/career" });
+    expect(at(page, { code: "Digit2", altKey: true })).toEqual({ type: "nav", href: "/agents" });
   });
   it("escape, composition, repeat", () => {
     expect(k({ key: "Escape" })).toEqual({ type: "escape" });
@@ -40,7 +41,8 @@ describe("matchShortcut", () => {
 });
 
 describe("nav", () => {
-  it("9 items with Alt+1..9", () => {
-    expect(NAV_ITEMS.filter((n) => n.shortcut).map((n) => n.shortcut)).toEqual(Array.from({ length: 9 }, (_, i) => `Alt+${i + 1}`));
+  it("8 masthead routes with Alt+1..8 in order", () => {
+    expect(NAV_ITEMS.map((n) => n.label)).toEqual(["Home", "Agents", "Projects", "Organization", "Outreach", "Socials", "Finances", "Career"]);
+    expect(NAV_ITEMS.map((n) => n.shortcut)).toEqual(Array.from({ length: 8 }, (_, i) => `Alt+${i + 1}`));
   });
 });

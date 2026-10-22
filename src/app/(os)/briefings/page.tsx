@@ -4,7 +4,7 @@ import { BuildNow } from "@/briefings/briefing-view";
 import { listBriefings } from "@/server/briefings";
 import { db } from "@/server/db/client";
 import { requireOwner } from "@/server/session";
-import { EmptyState } from "@/ui/empty-state";
+import { EmptyState } from "@/legacy-ui/empty-state";
 
 export const metadata = { title: "Briefings · LifeOS" };
 export const dynamic = "force-dynamic";

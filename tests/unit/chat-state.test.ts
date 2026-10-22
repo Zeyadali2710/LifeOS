@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { RunDTO, StepDTO, TurnDTO } from "@/lib/agent-types";
-import { applyChatEvent, PENDING_TURN, splitNdjson } from "@/shell/ai/chat-state";
+import { applyChatEvent, PENDING_TURN, splitNdjson } from "@/features/shell/chat-state";
 
 const run = { id: "r1", prompt: "hi", status: "running", answer: null, startedAt: null } as unknown as RunDTO;
 const step = (id: string, seq: number) => ({ id, runId: "r1", seq }) as unknown as StepDTO;

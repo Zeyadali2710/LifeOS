@@ -1,78 +1,61 @@
 import { describe, expect, it } from "vitest";
-import { buildPalette } from "@/shell/palette-items";
+import type { PaletteData } from "@/lib/palette-types";
+import { buildPalette } from "@/features/shell/palette-items";
+
+const empty: PaletteData = { events: [], outreach: [], tasks: [], projects: [], posts: [], emails: [], people: [], notes: [], repos: [], agents: [] };
+const hit = (n: number, title = `Gym ${n}`) => ({ id: `h${n}`, title, subtitle: "Thu 8 Oct 18:00 · Work", href: `/x${n}` });
 
 describe("buildPalette", () => {
-  it("empty query: Commands then Jump to", () => {
-    const { groups, noMatch } = buildPalette("", {});
+  it("empty query: five commands then every route", () => {
+    const groups = buildPalette("", {});
     expect(groups.map((g) => g.label)).toEqual(["Commands", "Jump to"]);
-    expect(noMatch).toBe(false);
-    const cmds = groups[0]!.items;
-    expect(cmds.map((i) => i.label)).toEqual(["Open notifications", "Open approvals", "View agent activity", "New event", "New task", "New project", "New post", "Import event URL", "Ask LifeOS", "Sign out"]);
-    expect(cmds[1]!.hint).toBe("0 waiting");
-    expect(cmds[8]!.hint).toBe("Ctrl J");
-    const jump = groups[1]!.items;
-    expect(jump.map((i) => i.label)).toEqual(["Home", "Career", "Socials", "Outreach", "Organization", "Projects", "Knowledge", "Goals", "Agents", "Finances", "Approvals", "Briefings", "Automations", "Settings"]);
-    expect(jump[0]!.hint).toBe("Alt 1");
-    expect(jump[8]!.hint).toBe("Alt 9");
-    expect(jump.find((i) => i.label === "Settings")!.hint).toBe("Ctrl ,");
+    expect(groups[0]!.items.map((i) => i.label)).toEqual(["New task", "New post", "Import CSV", "Build a briefing now", "Open approvals"]);
+    expect(groups[0]!.items[4]!.hint).toBe("0 waiting");
+    expect(groups[1]!.items.map((i) => i.label)).toEqual(["Home", "Agents", "Projects", "Organization", "Outreach", "Socials", "Finances", "Career", "Knowledge", "Goals", "Briefings", "Automations", "Settings"]);
+    expect(groups[1]!.items[1]!.hint).toBe("Alt+2");
+    expect(groups[1]!.items.at(-1)!.hint).toBe("Ctrl+,");
   });
 
-  it("approvals hint carries the live count", () => {
-    const cmds = buildPalette("", { approvalsWaiting: 3 }).groups[0]!.items;
-    expect(cmds[1]!.hint).toBe("3 waiting");
+  it("approvals hint carries the live count and opens the Agents Approvals tab", () => {
+    const cmd = buildPalette("", { approvalsWaiting: 3 })[0]!.items.find((i) => i.id === "cmd-approvals")!;
+    expect(cmd.hint).toBe("3 waiting");
+    expect(cmd.run).toEqual({ type: "nav", href: "/agents?view=approvals" });
   });
 
-
-  it("query adds Ask row first and filters case-insensitively", () => {
-    const { groups, noMatch } = buildPalette("CAR", {});
-    expect(groups[0]!.label).toBe("Ask LifeOS");
-    expect(groups[0]!.items).toHaveLength(1);
-    expect(groups[0]!.items[0]!.label).toBe('Ask LifeOS: "CAR"');
-    expect(groups[0]!.items[0]!.run).toEqual({ type: "ai", prompt: "CAR" });
+  it("a query leads with the Ask row and filters case-insensitively", () => {
+    const groups = buildPalette("CAR", {});
+    expect(groups[0]).toMatchObject({ label: "Ask", items: [{ label: "Ask LifeOS: “CAR”", run: { type: "ai", prompt: "CAR" } }] });
     expect(groups.some((g) => g.items.some((i) => i.label === "Career"))).toBe(true);
-    expect(noMatch).toBe(false);
   });
 
-  it("caps groups at 4 items", () => {
-    const { groups } = buildPalette("o", {});
-    for (const g of groups.slice(1)) expect(g.items.length).toBeLessThanOrEqual(4);
-  });
-
-  it("data adds Events and Tasks groups, capped at 4, and scope narrows them", () => {
-    const hit = (n: number) => ({ id: `h${n}`, title: `Gym ${n}`, subtitle: "Thu 8 Oct 18:00 · Work", href: `/x${n}` });
-    const data = { events: [1, 2, 3, 4, 5].map(hit), outreach: [], tasks: [hit(9)], projects: [hit(7)] };
+  it("All caps hit groups at 4; a single scope lists up to 12 and drops commands and the Ask row", () => {
+    const data = { ...empty, events: Array.from({ length: 14 }, (_, i) => hit(i)), tasks: [hit(99)], projects: [hit(7)], posts: [hit(5, "Gym post")] };
     const all = buildPalette("gym", { data });
-    expect(all.groups.map((g) => g.label)).toEqual(["Ask LifeOS", "Events", "Tasks", "Projects"]);
-    expect(buildPalette("gym", { data, scope: "projects" }).groups.map((g) => g.label)).toEqual(["Ask LifeOS", "Projects"]);
-    expect(buildPalette("gym", { data, scope: "events" }).groups.map((g) => g.label)).toEqual(["Ask LifeOS", "Events"]);
-    expect(all.groups[1]!.items).toHaveLength(4);
-    expect(all.groups[1]!.items[0]!.run).toEqual({ type: "nav", href: "/x1" });
-    expect(buildPalette("gym", { data, scope: "tasks" }).groups.map((g) => g.label)).toEqual(["Ask LifeOS", "Tasks"]);
-    expect(buildPalette("gym", { data }).noMatch).toBe(false);
+    expect(all.map((g) => g.label)).toEqual(["Ask", "Projects", "Tasks", "Events", "Posts"]);
+    expect(all.find((g) => g.label === "Events")!.items).toHaveLength(4);
+    const events = buildPalette("gym", { data, scope: "events" });
+    expect(events.map((g) => g.label)).toEqual(["Events"]);
+    expect(events[0]!.items).toHaveLength(12);
+    expect(events[0]!.items[0]!.run).toEqual({ type: "nav", href: "/x0" });
   });
 
-  it("creation commands navigate to the organization page", () => {
-    const cmds = buildPalette("", {}).groups[0]!.items;
-    expect(cmds.find((i) => i.id === "cmd-new-event")!.run).toEqual({ type: "nav", href: "/organization?new=event" });
+  it("new scopes map to their groups", () => {
+    const data = { ...empty, emails: [hit(1, "Panel invite")], people: [hit(2, "Jordan Lee")], notes: [hit(3, "Pricing")], repos: [hit(4, "me/lifeos")], agents: [hit(5, "Outreach")] };
+    expect(buildPalette("", { data, scope: "emails" }).map((g) => g.label)).toEqual(["Emails"]);
+    expect(buildPalette("", { data, scope: "people" })[0]!.items[0]!.label).toBe("Jordan Lee");
+    expect(buildPalette("", { data, scope: "notes" })[0]!.label).toBe("Notes");
+    expect(buildPalette("", { data, scope: "github" })[0]!.label).toBe("GitHub");
+    expect(buildPalette("", { data, scope: "agents" })[0]!.label).toBe("Agents");
+  });
+
+  it("creation commands keep their routes", () => {
+    const cmds = buildPalette("new", {}).flatMap((g) => g.items);
     expect(cmds.find((i) => i.id === "cmd-new-task")!.run).toEqual({ type: "nav", href: "/organization?new=task" });
     expect(cmds.find((i) => i.id === "cmd-new-project")!.run).toEqual({ type: "nav", href: "/projects?new=project" });
-  });
-
-  it("Import event URL command and a distinct Outreach events scope", () => {
-    const cmds = buildPalette("", {}).groups[0]!.items;
-    expect(cmds.find((i) => i.id === "cmd-import-event")).toMatchObject({ label: "Import event URL", run: { type: "nav", href: "/outreach?import=1" } });
-    const hit = { id: "e1", title: "AI Night", subtitle: "Tue 20 Oct � Saved � Mock", href: "/outreach/events/e1" };
-    const data = { events: [{ ...hit, id: "c1", href: "/organization" }], outreach: [hit], tasks: [], projects: [] };
-    const all = buildPalette("night", { data });
-    expect(all.groups.map((g) => g.label)).toEqual(["Ask LifeOS", "Events", "Outreach events"]);
-    const only = buildPalette("night", { data, scope: "outreach" });
-    expect(only.groups.map((g) => g.label)).toEqual(["Ask LifeOS", "Outreach events"]);
-    expect(only.groups[1]!.items[0]).toMatchObject({ label: "AI Night", hint: "Tue 20 Oct � Saved � Mock", run: { type: "nav", href: "/outreach/events/e1" } });
+    expect(cmds.find((i) => i.id === "cmd-new-post")!.run).toEqual({ type: "nav", href: "/socials?new=1" });
   });
 
   it("no match leaves only the Ask group", () => {
-    const { groups, noMatch } = buildPalette("zzzz", {});
-    expect(groups.map((g) => g.label)).toEqual(["Ask LifeOS"]);
-    expect(noMatch).toBe(true);
+    expect(buildPalette("zzzz", {}).map((g) => g.label)).toEqual(["Ask"]);
   });
 });

@@ -6,11 +6,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { KIND_META, KNOWLEDGE_KINDS, KNOWLEDGE_LIMITS, type KnowledgeKind } from "@/lib/knowledge";
 import type { KnowledgeData } from "@/server/knowledge";
 import { deleteKnowledgeAction, markKnowledgeViewedAction, setKnowledgeSemanticAction } from "@/server/knowledge-actions";
-import { useShell } from "@/shell/shell-provider";
-import { Button } from "@/ui/button";
-import { Dialog } from "@/ui/dialog";
-import { EmptyState } from "@/ui/empty-state";
-import { Icon } from "@/ui/icon";
+import { useShell } from "@/features/shell/shell-provider";
+import { Button } from "@/legacy-ui/button";
+import { Dialog } from "@/legacy-ui/dialog";
+import { EmptyState } from "@/legacy-ui/empty-state";
+import { Icon } from "@/legacy-ui/icon";
 import { ItemDialog, UploadDialog } from "./item-dialog";
 
 const when = (iso: string) => {

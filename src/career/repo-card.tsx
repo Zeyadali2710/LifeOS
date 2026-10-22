@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { RepoCardDTO } from "@/lib/project-types";
 import { CiChipView } from "@/projects/status";
-import { Badge } from "@/ui/badge";
+import { Badge } from "@/legacy-ui/badge";
 import { LanguageBar } from "./language-bar";
 import { Sparkline } from "./sparkline";
 

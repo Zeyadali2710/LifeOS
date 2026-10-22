@@ -5,11 +5,11 @@ import { useRouter } from "next/navigation";
 import type { CalendarDTO, ConflictDTO, PlanItemDTO } from "@/lib/calendar-types";
 import { addPlanItemAction, type EventActionResult } from "@/server/calendar-actions";
 import { formatHM, sydneyParts } from "@/server/time";
-import { useShell } from "@/shell/shell-provider";
-import { Button } from "@/ui/button";
-import { Disclosure } from "@/ui/disclosure";
-import { Select } from "@/ui/field";
-import { Icon } from "@/ui/icon";
+import { useShell } from "@/features/shell/shell-provider";
+import { Button } from "@/legacy-ui/button";
+import { Disclosure } from "@/legacy-ui/disclosure";
+import { Select } from "@/legacy-ui/field";
+import { Icon } from "@/legacy-ui/icon";
 import { skip, skippedFor, unskip } from "./plan-skips";
 
 const MAX = 6;

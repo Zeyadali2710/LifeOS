@@ -1,4 +1,4 @@
-import { Skeleton } from "@/ui/skeleton";
+import { Skeleton } from "@/legacy-ui/skeleton";
 
 export default function Loading() {
   return <div aria-busy="true" aria-label="Loading Socials" className="mx-auto flex max-w-[1480px] flex-col gap-8">

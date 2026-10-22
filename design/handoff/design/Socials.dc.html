@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300,0..1,0&display=block" rel="stylesheet">
+<script src="pixelkit.js"></script><script src="lifeos-data.js"></script><script src="lifeos-app.js"></script>
+<style>body{margin:0;background:#f5f2eb;color:#1f1c18;font-family:'Instrument Sans',system-ui,sans-serif}*{box-sizing:border-box}button,input,textarea{font-family:inherit;color:inherit}:focus-visible{outline:2px solid #b5502f;outline-offset:2px}a{color:#b5502f}a:hover{color:#8f3c22}</style>
+</helmet>
+<div data-screen-label="Socials" style="padding:{{ pad }};max-width:1680px;margin:0 auto">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+    <div>
+      <h1 style="margin:0;font-family:'Newsreader',serif;font-weight:400;font-size:34px;letter-spacing:-.015em">Socials</h1>
+      <p style="margin:6px 0 0;font-size:14px;color:#575047">Reach, engagement and the posting pipeline across your accounts.</p>
+    </div>
+    <button onClick="{{ newPost }}" style="display:flex;align-items:center;gap:6px;background:#1f1c18;color:#f5f2eb;border:0;border-radius:6px;padding:9px 16px;font-size:14px;font-weight:500;cursor:pointer"><span style="font-family:'Material Symbols Outlined';font-size:18px;line-height:1">edit_square</span>New post</button>
+  </div>
+
+  <div role="tablist" style="display:flex;gap:4px;margin-top:18px;border-bottom:1px solid #dcd4c6">
+    <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="2"><button role="tab" aria-selected="{{ t.on }}" onClick="{{ t.pick }}" style="border:0;background:none;padding:9px 12px 10px;font-size:14px;cursor:pointer;box-shadow:{{ t.line }};font-weight:{{ t.w }};display:flex;gap:6px;align-items:center">{{ t.label }}<span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c">{{ t.n }}</span></button></sc-for>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px">
+    <div role="tablist" aria-label="Platform" style="display:flex;background:#ece6da;border-radius:8px;padding:3px;gap:2px;flex-wrap:wrap">
+      <sc-for list="{{ platTabs }}" as="pf" hint-placeholder-count="5"><button role="tab" aria-selected="{{ pf.on }}" onClick="{{ pf.pick }}" style="border:0;border-radius:6px;padding:6px 13px;font-size:13.5px;cursor:pointer;background:{{ pf.bg }};box-shadow:{{ pf.shadow }};font-weight:{{ pf.w }}">{{ pf.label }}</button></sc-for>
+    </div>
+    <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="display:flex;align-items:center;gap:6px;font-size:13.5px;color:#575047"><span style="font-family:'Material Symbols Outlined';font-size:18px;line-height:1">calendar_today</span>{{ rangeLabel }}</span>
+        <div role="tablist" aria-label="Range" style="display:flex;border:1px solid #cfc6b6;border-radius:6px;overflow:hidden"><sc-for list="{{ ranges }}" as="r" hint-placeholder-count="2"><button role="tab" aria-selected="{{ r.on }}" onClick="{{ r.pick }}" style="border:0;border-left:{{ r.sep }};padding:6px 12px;font-size:13px;cursor:pointer;background:{{ r.bg }};font-weight:{{ r.w }}">{{ r.label }}</button></sc-for></div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ isFeed }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;gap:4px;flex-wrap:wrap"><sc-for list="{{ filters }}" as="f" hint-placeholder-count="5"><button onClick="{{ f.pick }}" aria-pressed="{{ f.on }}" style="border:1px solid {{ f.border }};background:{{ f.bg }};border-radius:14px;padding:4px 11px;font-size:12.5px;cursor:pointer;display:flex;gap:5px;align-items:center">{{ f.label }}<span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6e675c">{{ f.n }}</span></button></sc-for></div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:16px">
+      <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="5">
+        <div role="{{ k.role }}" tabindex="{{ k.tab }}" onClick="{{ k.pick }}" style="background:#fffdf9;border:1px solid #dcd4c6;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px;cursor:{{ k.cursor }}">
+          <div style="display:flex;align-items:center;gap:8px"><span style="width:30px;height:30px;border-radius:8px;background:{{ k.chip }};color:{{ k.chipFg }};display:grid;place-items:center;font-family:'Material Symbols Outlined';font-size:18px;line-height:1">{{ k.icon }}</span><span style="font-size:13.5px;font-weight:500">{{ k.label }}</span></div>
+          <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><span style="font-family:'Newsreader',serif;font-size:32px;line-height:1;letter-spacing:-.01em">{{ k.value }}</span><span style="font-size:12.5px;font-weight:600;color:{{ k.deltaFg }}">{{ k.delta }}</span></div>
+          <div style="font-size:12.5px;color:#6e675c">{{ k.sub }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;align-items:stretch">
+      <section style="flex:2 1 560px;min-width:0;background:#fffdf9;border:1px solid #dcd4c6;border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+          <div style="display:flex;gap:10px;align-items:flex-start"><span style="width:32px;height:32px;border-radius:8px;background:#ece6da;display:grid;place-items:center;font-family:'Material Symbols Outlined';font-size:19px;line-height:1">monitoring</span><div><h2 style="margin:0;font-size:15px;font-weight:600">Performance</h2><div style="font-size:12.5px;color:#6e675c;margin-top:2px">{{ chartSub }}</div></div></div>
+          <div role="tablist" aria-label="Metric" style="display:flex;background:#ece6da;border-radius:7px;padding:3px;gap:2px;flex-wrap:wrap"><sc-for list="{{ metrics }}" as="m" hint-placeholder-count="4"><button role="tab" aria-selected="{{ m.on }}" onClick="{{ m.pick }}" style="border:0;border-radius:5px;padding:5px 11px;font-size:13px;cursor:pointer;background:{{ m.bg }};color:{{ m.fg }};font-weight:{{ m.w }}">{{ m.label }}</button></sc-for></div>
+        </div>
+        <div style="display:grid;grid-template-columns:44px minmax(0,1fr);gap:8px">
+          <div style="height:240px;display:flex;flex-direction:column;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6e675c;text-align:right;transform:translateY(-6px)"><sc-for list="{{ yTicks }}" as="y" hint-placeholder-count="5"><span>{{ y }}</span></sc-for></div>
+          <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+            <div onMouseMove="{{ onMove }}" onMouseLeave="{{ onLeave }}" role="img" aria-label="{{ chartAria }}" style="position:relative;height:240px;cursor:crosshair">
+              {{ chartSvg }}
+              <sc-if value="{{ hasHi }}" hint-placeholder-val="{{ false }}">
+                <div style="position:absolute;top:0;bottom:0;left:{{ hi.left }};width:0;border-left:1px dashed #8a8377;pointer-events:none"></div>
+                <sc-for list="{{ hi.dots }}" as="d" hint-placeholder-count="0"><span style="position:absolute;left:{{ hi.left }};top:{{ d.top }};width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;background:#fffdf9;border:2px solid {{ d.color }};pointer-events:none"></span></sc-for>
+                <div style="position:absolute;top:8px;left:{{ hi.left }};transform:{{ hi.shift }};background:#fffdf9;border:1px solid #cfc6b6;border-radius:8px;padding:9px 11px;box-shadow:0 6px 18px rgba(31,28,24,.12);pointer-events:none;min-width:150px;display:flex;flex-direction:column;gap:5px">
+                  <div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6e675c">{{ hi.label }}</div>
+                  <sc-for list="{{ hi.items }}" as="it" hint-placeholder-count="1"><div style="display:flex;align-items:center;gap:7px;font-size:13px"><span style="width:8px;height:8px;border-radius:50%;background:{{ it.color }}"></span><span style="flex:1;color:#575047">{{ it.name }}</span><strong style="font-weight:600">{{ it.val }}</strong></div></sc-for>
+                </div>
+              </sc-if>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6e675c"><sc-for list="{{ xTicks }}" as="x" hint-placeholder-count="7"><span>{{ x }}</span></sc-for></div>
+          </div>
+        </div>
+        <sc-if value="{{ multi }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap"><sc-for list="{{ legend }}" as="lg" hint-placeholder-count="4"><span style="display:flex;align-items:center;gap:6px;border:1px solid #dcd4c6;border-radius:14px;padding:3px 10px;font-size:12.5px"><span style="width:8px;height:8px;border-radius:50%;background:{{ lg.color }}"></span>{{ lg.name }} <span style="color:#6e675c">{{ lg.total }}</span></span></sc-for></div>
+        </sc-if>
+      </section>
+
+      <section style="flex:1 1 320px;min-width:0;background:#fffdf9;border:1px solid #dcd4c6;border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+          <div style="display:flex;gap:10px;align-items:flex-start"><span style="width:32px;height:32px;border-radius:8px;background:#ece6da;display:grid;place-items:center;font-family:'Material Symbols Outlined';font-size:19px;line-height:1">event_note</span><div><h2 style="margin:0;font-size:15px;font-weight:600">Pipeline</h2><div style="font-size:12.5px;color:#6e675c;margin-top:2px">{{ pipeSummary }}</div></div></div>
+          <button onClick="{{ openPosts }}" style="border:0;background:none;color:#b5502f;font-size:13px;cursor:pointer;padding:4px 0">All posts</button>
+        </div>
+        <sc-if value="{{ pipeEmpty }}" hint-placeholder-val="{{ false }}"><p style="margin:0;padding:24px 0;font-family:'Newsreader',serif;font-style:italic;font-size:17px;color:#575047">Nothing queued for this platform.</p></sc-if>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <sc-for list="{{ pipe }}" as="p" hint-placeholder-count="4">
+            <button onClick="{{ p.open }}" style="text-align:left;border:1px solid #e6dfd2;background:#fffdf9;border-radius:8px;padding:11px 12px;cursor:pointer;display:flex;flex-direction:column;gap:6px" style-hover="border-color:#b9ae9b">
+              <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><span style="font-size:14px;font-weight:600;line-height:1.3">{{ p.title }}</span><span style="flex:none;background:{{ p.pillBg }};color:{{ p.pillFg }};border-radius:10px;padding:2px 8px;font-size:11.5px;font-weight:600">{{ p.statusLabel }}</span></div>
+              <div style="display:flex;gap:8px;align-items:center;font-size:12.5px;color:#575047"><span style="width:20px;height:20px;border-radius:4px;background:#1f1c18;color:#f5f2eb;display:grid;place-items:center;font-family:'JetBrains Mono',monospace;font-size:9.5px">{{ p.platShort }}</span>{{ p.platName }} · {{ p.when }}</div>
+            </button>
+          </sc-for>
+        </div>
+      </section>
+    </div>
+
+    <section style="margin-top:12px;background:#fffdf9;border:1px solid #dcd4c6;border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;gap:10px;align-items:flex-start"><span style="width:32px;height:32px;border-radius:8px;background:#ece6da;display:grid;place-items:center;font-family:'Material Symbols Outlined';font-size:19px;line-height:1">trending_up</span><div><h2 style="margin:0;font-size:15px;font-weight:600">Top performing posts</h2><div style="font-size:12.5px;color:#6e675c;margin-top:2px">Ranked by engagements. Reuse what worked.</div></div></div>
+      <div style="display:grid;grid-auto-flow:column;grid-auto-columns:minmax(230px,260px);gap:12px;overflow-x:auto;padding-bottom:4px">
+        <sc-for list="{{ top }}" as="t" hint-placeholder-count="4">
+          <button onClick="{{ t.open }}" style="text-align:left;border:1px solid #e6dfd2;background:#fffdf9;border-radius:9px;padding:0;cursor:pointer;display:flex;flex-direction:column;overflow:hidden" style-hover="border-color:#b9ae9b">
+            <div style="padding:12px 12px 14px;display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6e675c"><span>{{ t.date }}</span><span>{{ t.platName }}</span></div>
+              <div style="font-size:14px;font-weight:600;line-height:1.3;min-height:36px">{{ t.title }}</div>
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;text-align:center">
+                <sc-for list="{{ t.stats }}" as="s" hint-placeholder-count="4"><div style="display:flex;flex-direction:column;align-items:center;gap:3px"><span style="width:28px;height:28px;border-radius:50%;background:{{ s.bg }};color:{{ s.fg }};display:grid;place-items:center;font-family:'Material Symbols Outlined';font-size:16px;line-height:1">{{ s.icon }}</span><span style="font-size:11px;color:#6e675c">{{ s.k }}</span><span style="font-size:13px;font-weight:600">{{ s.v }}</span></div></sc-for>
+              </div>
+            </div>
+            <div style="aspect-ratio:4 / 3;background:repeating-linear-gradient(135deg,#ebe4d6 0 8px,#e3dbcc 8px 16px);display:grid;place-items:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:#575047">PLACEHOLDER · {{ t.media }}</div>
+          </button>
+        </sc-for>
+      </div>
+    </section>
+  </sc-if>
+
+  <sc-if value="{{ isFeed }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-wrap:wrap;gap:32px 56px;margin-top:20px;align-items:flex-start">
+      <div style="flex:1 1 420px;max-width:640px;min-width:0;display:flex;flex-direction:column;gap:26px">
+        <sc-if value="{{ feedEmpty }}" hint-placeholder-val="{{ false }}"><p style="margin:0;padding:36px 0;font-family:'Newsreader',serif;font-style:italic;font-size:18px;color:#575047">No posts match this filter.</p></sc-if>
+        <sc-for list="{{ feed }}" as="v" hint-placeholder-count="3">
+          <article style="display:flex;flex-direction:column;gap:8px">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.05em;color:{{ v.color }}">{{ v.glyph }} {{ v.statusUpper }} · {{ v.platName }} · {{ v.when }}</div>
+            <div role="button" tabindex="0" onClick="{{ v.pick }}" aria-pressed="{{ v.selected }}" style="background:#fffdf9;border:1px solid #dcd4c6;outline:{{ v.ring }};border-radius:8px;padding:16px;cursor:pointer;display:flex;flex-direction:column;gap:12px" style-hover="border-color:#b9ae9b">
+              <div style="display:flex;gap:10px;align-items:center"><div style="width:40px;height:40px;border-radius:50%;background:#d8cdb9;display:grid;place-items:center;font-size:13px;font-weight:600;flex:none">AM</div><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600">{{ v.handle }}</div><div style="font-size:12.5px;color:#6e675c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ v.sub }} · {{ v.title }}</div></div><span title="{{ v.platName }}" style="width:24px;height:24px;border-radius:5px;background:#1f1c18;color:#f5f2eb;display:grid;place-items:center;font-family:'JetBrains Mono',monospace;font-size:10.5px">{{ v.platShort }}</span></div>
+              <div style="font-size:14.5px;line-height:1.5;white-space:pre-line;display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden">{{ v.text }}</div>
+              <sc-if value="{{ v.hasMedia }}" hint-placeholder-val="{{ false }}"><div style="width:{{ v.mediaW }};max-width:100%;aspect-ratio:{{ v.aspect }};max-height:420px;background:repeating-linear-gradient(135deg,#ebe4d6 0 8px,#e3dbcc 8px 16px);border-radius:4px;display:grid;place-items:center;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#575047;text-align:center;padding:8px">PLACEHOLDER · {{ v.media }}</div></sc-if>
+              <sc-if value="{{ v.needsMedia }}" hint-placeholder-val="{{ false }}"><div style="height:110px;border:1px dashed #b9ae9b;border-radius:4px;display:grid;place-items:center;font-size:13.5px;color:#575047;text-align:center;padding:8px">No media attached · {{ v.platName }} needs a photo or 9:16 video</div></sc-if>
+              <sc-if value="{{ v.hasMetrics }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:16px;flex-wrap:wrap;border-top:1px solid #e6dfd2;padding-top:10px;font-size:13px;color:#575047"><sc-for list="{{ v.metricRows }}" as="m" hint-placeholder-count="3"><span><strong style="color:#1f1c18;font-weight:600">{{ m.v }}</strong> {{ m.k }}</span></sc-for><span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6e675c">SAMPLE</span></div></sc-if>
+            </div>
+          </article>
+        </sc-for>
+      </div>
+
+      <aside aria-label="Review" style="flex:1.3 1 380px;min-width:0;position:sticky;top:16px;display:flex;flex-direction:column;gap:18px">
+        <sc-if value="{{ compose }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;color:#6e675c">NEW POST · DRAFT</div>
+            <input value="{{ draft.title }}" onChange="{{ draftTitle }}" placeholder="Working title" aria-label="Title" style="font-family:'Newsreader',serif;font-size:26px;border:0;border-bottom:1px solid #cfc6b6;background:transparent;padding:6px 0;outline:none">
+            <div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ draftPlats }}" as="dp" hint-placeholder-count="4"><button onClick="{{ dp.toggle }}" aria-pressed="{{ dp.on }}" style="border:1px solid {{ dp.border }};background:{{ dp.bg }};color:{{ dp.fg }};border-radius:14px;padding:5px 12px;font-size:13px;cursor:pointer">{{ dp.name }}</button></sc-for></div>
+            <textarea value="{{ draft.text }}" onChange="{{ draftText }}" rows="9" placeholder="Write the post. Tailor each platform after saving, or ask Social to draft variants." aria-label="Post text" style="font-size:15px;line-height:1.55;border:1px solid #cfc6b6;border-radius:6px;padding:12px 14px;background:#fffdf9;resize:vertical"></textarea>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button onClick="{{ saveDraft }}" style="background:#1f1c18;color:#f5f2eb;border:0;border-radius:6px;padding:9px 16px;font-size:14px;cursor:pointer">Save draft</button><button onClick="{{ askSocial }}" style="background:transparent;border:1px solid #cfc6b6;border-radius:6px;padding:8px 14px;font-size:14px;cursor:pointer">Ask Social to draft variants</button><button onClick="{{ cancelCompose }}" style="background:transparent;border:0;padding:8px 10px;font-size:14px;cursor:pointer;color:#575047">Cancel</button><span style="margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c">{{ draftCount }}</span></div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ notCompose }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;flex-direction:column;gap:18px">
+            <div><div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c">{{ sv.source }} · by {{ sv.by }}</div><div style="font-family:'Newsreader',serif;font-size:28px;line-height:1.15;margin-top:6px">{{ sv.title }}</div></div>
+            <div role="tablist" aria-label="Platform variants" style="display:flex;border-bottom:1px solid #dcd4c6;flex-wrap:wrap"><sc-for list="{{ sv.siblings }}" as="sb" hint-placeholder-count="2"><button role="tab" aria-selected="{{ sb.on }}" onClick="{{ sb.pick }}" style="border:0;background:none;padding:8px 14px 10px 0;margin-right:16px;cursor:pointer;text-align:left;box-shadow:{{ sb.line }}"><div style="font-size:14px;font-weight:600">{{ sb.name }}</div><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6e675c;margin-top:2px">{{ sb.status }}</div></button></sc-for></div>
+            <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;letter-spacing:.05em;color:{{ sv.color }}">{{ sv.glyph }} {{ sv.statusUpper }}</span><span style="font-size:13.5px;color:#575047">{{ sv.when }}</span></div>
+            <sc-if value="{{ sv.isFailed }}" hint-placeholder-val="{{ false }}"><div role="alert" style="border-left:2px solid #a8321f;padding:2px 0 2px 14px;font-size:14px;line-height:1.5">{{ sv.error }}</div></sc-if>
+            <label style="display:flex;flex-direction:column;gap:6px"><span style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c"><span>TEXT · EDITS UPDATE THE PREVIEW</span><span>{{ sv.count }}</span></span><textarea value="{{ sv.text }}" onChange="{{ editText }}" rows="8" style="font-size:15px;line-height:1.55;border:1px solid #cfc6b6;border-radius:6px;padding:12px 14px;background:#fffdf9;resize:vertical;max-width:600px"></textarea></label>
+            <div style="display:grid;grid-template-columns:72px minmax(0,1fr);gap:8px 12px;font-size:13.5px"><span style="color:#6e675c">Media</span><span>{{ sv.mediaLabel }}</span><span style="color:#6e675c">When</span><span>{{ sv.when }} <button onClick="{{ changeTime }}" style="border:0;background:none;color:#b5502f;cursor:pointer;font-size:13.5px;padding:0 0 0 6px">Change</button></span><span style="color:#6e675c">Account</span><span>{{ sv.platName }} · {{ sv.handle }}</span></div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <sc-if value="{{ sv.isPending }}" hint-placeholder-val="{{ false }}"><button onClick="{{ approveV }}" style="background:#1f1c18;color:#f5f2eb;border:0;border-radius:6px;padding:9px 16px;font-size:14px;cursor:pointer">Approve &amp; schedule</button><button onClick="{{ backToDraft }}" style="background:transparent;border:1px solid #cfc6b6;border-radius:6px;padding:8px 14px;font-size:14px;cursor:pointer">Back to draft</button></sc-if>
+              <sc-if value="{{ sv.isDraft }}" hint-placeholder-val="{{ false }}"><button onClick="{{ sendV }}" style="background:#1f1c18;color:#f5f2eb;border:0;border-radius:6px;padding:9px 16px;font-size:14px;cursor:pointer">Send for approval</button><button onClick="{{ manualV }}" style="background:transparent;border:1px solid #cfc6b6;border-radius:6px;padding:8px 14px;font-size:14px;cursor:pointer">Mark posted manually</button></sc-if>
+              <sc-if value="{{ sv.isScheduled }}" hint-placeholder-val="{{ false }}"><button onClick="{{ unschedule }}" style="background:transparent;border:1px solid #cfc6b6;border-radius:6px;padding:8px 14px;font-size:14px;cursor:pointer">Unschedule</button></sc-if>
+              <sc-if value="{{ sv.isFailed }}" hint-placeholder-val="{{ false }}"><button onClick="{{ retryV }}" style="background:#1f1c18;color:#f5f2eb;border:0;border-radius:6px;padding:9px 16px;font-size:14px;cursor:pointer">Retry publish</button><button onClick="{{ manualV }}" style="background:transparent;border:1px solid #cfc6b6;border-radius:6px;padding:8px 14px;font-size:14px;cursor:pointer">Mark posted manually</button></sc-if>
+              <sc-if value="{{ sv.isPublishing }}" hint-placeholder-val="{{ false }}"><span role="status" style="font-size:14px;color:#575047">… Publishing to {{ sv.platName }}</span></sc-if>
+            </div>
+            <sc-if value="{{ sv.hasMetrics }}" hint-placeholder-val="{{ false }}"><div style="border-top:1px solid #dcd4c6;padding-top:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:12px"><sc-for list="{{ sv.metricRows }}" as="m" hint-placeholder-count="3"><div><div style="font-family:'Newsreader',serif;font-size:26px">{{ m.v }}</div><div style="font-size:12.5px;color:#6e675c">{{ m.k }} · sample</div></div></sc-for></div></sc-if>
+            <div style="display:flex;flex-direction:column;gap:4px;border-top:1px solid #dcd4c6;padding-top:12px"><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.1em;color:#6e675c">LIFECYCLE</div><sc-for list="{{ lifecycle }}" as="lc" hint-placeholder-count="4"><div style="display:grid;grid-template-columns:16px minmax(0,1fr);gap:8px;font-size:13px;color:{{ lc.fg }}"><span style="font-family:'JetBrains Mono',monospace">{{ lc.mark }}</span><span>{{ lc.label }}</span></div></sc-for></div>
+          </div>
+        </sc-if>
+      </aside>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { ready: false, tab: 'overview', range: 7, metric: 'imp', hi: null };
+  componentDidMount() { const w = () => (window.APP && APP.ready) ? (this.un = APP.sub(() => this.forceUpdate()), this.setState({ ready: true })) : setTimeout(w, 30); w(); }
+  componentWillUnmount() { this.un && this.un(); }
+  series(plat, metric, n, prev) {
+    const B = { linkedin: { imp: 1400, eng: 70, vis: 45, fol: 6 }, instagram: { imp: 900, eng: 85, vis: 30, fol: 2 }, tiktok: { imp: 2200, eng: 160, vis: 20, fol: 8 }, portfolio: { imp: 300, eng: 12, vis: 40, fol: 1 } };
+    const r7 = this.state.range === 7, base = B[plat][metric] * (r7 ? .25 : 1);
+    let s = 1 + plat.length * 131 + metric.charCodeAt(0) * 17 + metric.charCodeAt(1) * 7 + (prev ? 977 : 0) + this.state.range * 3;
+    const r = () => (s = (s * 16807) % 2147483647) / 2147483647; r(); r();
+    const ph = s % 7;
+    return Array.from({ length: n }, (_, i) => {
+      const day = r7 ? Math.sin((i % 4) / 4 * Math.PI * 2 - 1.2) * .3 : 0;
+      const v = base * ((prev ? .9 : 1) + i / n * .15 + Math.sin(i / n * Math.PI * 2.3 + ph) * .16 + (r() - .5) * .32 + day + (plat === 'tiktok' && r() > .92 ? 1 : 0));
+      return Math.max(0, v);
+    });
+  }
+  smooth(p) {
+    if (p.length < 2) return '';
+    let d = 'M' + p[0][0].toFixed(1) + ',' + p[0][1].toFixed(1);
+    for (let i = 0; i < p.length - 1; i++) {
+      const a = p[i - 1] || p[i], b = p[i], c = p[i + 1], e = p[i + 2] || c, t = 6;
+      d += ' C' + (b[0] + (c[0] - a[0]) / t).toFixed(1) + ',' + (b[1] + (c[1] - a[1]) / t).toFixed(1) + ' ' + (c[0] - (e[0] - b[0]) / t).toFixed(1) + ',' + (c[1] - (e[1] - b[1]) / t).toFixed(1) + ' ' + c[0].toFixed(1) + ',' + c[1].toFixed(1);
+    }
+    return d;
+  }
+  renderVals() {
+    if (!this.state.ready) return {};
+    const v = APP.ctl(), bp = this.props.bp || 'desktop', st = this.state, tab = st.tab, h = React.createElement;
+    const fmt = n => n >= 10000 ? (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K' : Math.round(n).toLocaleString();
+    const pct = (c, p) => { const d = p ? (c - p) / p * 100 : 0; return { t: (d >= 0 ? '↗ ' : '↘ ') + Math.abs(d).toFixed(1) + '%', fg: d >= 0 ? '#2f6f55' : '#a8321f' }; };
+    const COL = { linkedin: '#1f1c18', instagram: '#b5502f', tiktok: '#2f6f55', portfolio: '#92560a' };
+    const plat = v.plat || 'all', plats = plat === 'all' ? ['linkedin', 'instagram', 'tiktok', 'portfolio'] : [plat];
+    const n = st.range === 7 ? 28 : 30, sum = a => a.reduce((x, y) => x + y, 0);
+    const tot = (m, prev) => sum(plats.map(p => sum(this.series(p, m, n, prev))));
+
+    // decorated variants (feed / review)
+    const VC = { pending_approval: '#92560a', failed: '#a8321f', scheduled: '#2f6f55', publishing: '#2f6f55', draft: '#6e675c', published: '#1f1c18', posted_manually: '#1f1c18' };
+    const VG = { pending_approval: '!', failed: '×', scheduled: '◷', publishing: '…', draft: '–', published: '✓', posted_manually: '✓' };
+    const decV = x => Object.assign({}, x, { color: VC[x.status], glyph: VG[x.status], statusUpper: x.statusLabel.toUpperCase(), ring: x.selected ? '2px solid #1f1c18' : 'none', mediaLabel: x.media || (x.needsMedia ? 'Missing: required for ' + x.platName : 'None (text post)'), siblings: x.siblings.map(s => Object.assign({}, s, { line: s.on ? 'inset 0 -2px 0 #1f1c18' : 'none' })) });
+    const sv = decV(v.sv);
+    const order = ['draft', 'pending_approval', 'scheduled', 'published'];
+    const idx = sv.isFailed ? 2 : sv.isPublishing ? 2.5 : sv.status === 'posted_manually' ? 3 : order.indexOf(sv.status);
+    const lifecycle = [[sv.by === 'Social agent' ? 'Proposed by Social agent · 8:31' : 'Drafted by you', idx >= 0], ['Awaiting your approval', idx >= 1], [sv.isFailed ? 'Approved · publish failed' : 'Approved · scheduled ' + sv.when, idx >= 2], [sv.status === 'posted_manually' ? 'Posted manually' : 'Published', idx >= 3]]
+      .map((s, i) => ({ label: s[0], mark: s[1] ? (sv.isFailed && i === 2 ? '×' : '✓') : '○', fg: s[1] ? (sv.isFailed && i === 2 ? '#a8321f' : '#1f1c18') : '#8a8377' }));
+    const goPosts = x => { this.setState({ tab: 'posts', hi: null }); x && x.pick(); };
+
+    // KPIs
+    const imp = tot('imp'), impP = tot('imp', 1), eng = tot('eng'), engP = tot('eng', 1), vis = tot('vis'), visP = tot('vis', 1), fol = tot('fol');
+    const followers = sum(plats.map(p => parseInt(String(LOS.platforms[p].followers).replace(/,/g, '')) || 0));
+    const mine = v.variants.filter(x => plat === 'all' || x.platform === plat);
+    const needs = mine.filter(x => x.isPending || x.isFailed).length;
+    const rf = v.filters.find(f => f.key === 'review');
+    const d1 = pct(imp, impP), d2 = pct(eng / imp, engP / impP), d3 = pct(vis, visP);
+    const kpis = [
+      { icon: 'group', label: 'Followers', value: followers ? followers.toLocaleString() : '—', delta: followers ? '+' + Math.round(fol) : '', deltaFg: '#2f6f55', sub: followers ? 'new followers this period' : 'Portfolio has no followers', chip: '#ece6da', chipFg: '#1f1c18' },
+      { icon: 'visibility', label: 'Impressions', value: fmt(imp), delta: d1.t, deltaFg: d1.fg, sub: 'vs previous ' + st.range + ' days', chip: '#ece6da', chipFg: '#1f1c18' },
+      { icon: 'favorite', label: 'Engagement rate', value: (eng / imp * 100).toFixed(1) + '%', delta: d2.t, deltaFg: d2.fg, sub: fmt(eng) + ' engagements', chip: '#ece6da', chipFg: '#1f1c18' },
+      { icon: 'person_search', label: 'Profile visits', value: fmt(vis), delta: d3.t, deltaFg: d3.fg, sub: 'vs previous ' + st.range + ' days', chip: '#ece6da', chipFg: '#1f1c18' },
+      { icon: 'pending_actions', label: 'Needs you', value: String(needs), delta: '', deltaFg: '#92560a', sub: needs ? 'Approve or retry · open' : 'Nothing waiting', chip: needs ? '#f2e3c6' : '#ece6da', chipFg: needs ? '#92560a' : '#1f1c18', role: 'button', tab: '0', cursor: 'pointer', pick: () => { this.setState({ tab: 'posts', hi: null }); rf && rf.pick(); } }
+    ].map(k => Object.assign({ role: 'group', tab: '-1', cursor: 'default', pick: null }, k));
+
+    // chart
+    const MET = [['imp', 'Impressions'], ['eng', 'Engagements'], ['vis', 'Profile visits'], ['fol', 'New followers']];
+    const metName = MET.find(m => m[0] === st.metric)[1];
+    const lines = plats.map(p => ({ p, name: LOS.platforms[p].name, color: COL[p], vals: this.series(p, st.metric, n, 0) }));
+    const rawMax = Math.max(1, ...lines.flatMap(l => l.vals)) * 1.08, e = Math.pow(10, Math.floor(Math.log10(rawMax))), mm = rawMax / e;
+    const max = (mm <= 1 ? 1 : mm <= 2 ? 2 : mm <= 2.5 ? 2.5 : mm <= 5 ? 5 : 10) * e;
+    const W = 600, H = 240, multi = lines.length > 1;
+    const yv = val => H - val / max * H;
+    const svgKids = [0, .25, .5, .75].map(f => h('line', { key: 'g' + f, x1: 0, x2: W, y1: H * f, y2: H * f, stroke: '#e6dfd2', strokeWidth: 1, vectorEffect: 'non-scaling-stroke' }));
+    svgKids.push(h('line', { key: 'base', x1: 0, x2: W, y1: H, y2: H, stroke: '#cfc6b6', strokeWidth: 1, vectorEffect: 'non-scaling-stroke' }));
+    if (!multi) svgKids.push(h('defs', { key: 'df' }, h('linearGradient', { id: 'socArea', x1: 0, y1: 0, x2: 0, y2: 1 }, h('stop', { offset: '0%', stopColor: lines[0].color, stopOpacity: .18 }), h('stop', { offset: '100%', stopColor: lines[0].color, stopOpacity: 0 }))));
+    lines.forEach(l => {
+      const d = this.smooth(l.vals.map((y, i) => [i / (n - 1) * W, yv(y)]));
+      if (!multi) svgKids.push(h('path', { key: 'a' + l.p, d: d + ' L' + W + ',' + H + ' L0,' + H + ' Z', fill: 'url(#socArea)' }));
+      svgKids.push(h('path', { key: 'l' + l.p, d, fill: 'none', stroke: l.color, strokeWidth: 2, vectorEffect: 'non-scaling-stroke', strokeLinejoin: 'round' }));
+    });
+    const chartSvg = h('svg', { viewBox: '0 0 ' + W + ' ' + H, preserveAspectRatio: 'none', width: '100%', height: '100%', style: { display: 'block', overflow: 'visible' } }, svgKids);
+    const end = new Date(2026, 9, 22), DN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const dayOf = k => { const d = new Date(end); d.setDate(end.getDate() - k); return d; };
+    const ptDate = i => st.range === 7 ? dayOf(6 - Math.floor(i / 4)) : dayOf(29 - i);
+    const ptLabel = i => { const d = ptDate(i); return DN[d.getDay()] + ' ' + d.getDate() + ' ' + MN[d.getMonth()] + (st.range === 7 ? ', ' + String((i % 4) * 6).padStart(2, '0') + ':00' : ''); };
+    const xTicks = st.range === 7 ? [6, 5, 4, 3, 2, 1, 0].map(k => DN[dayOf(k).getDay()]) : [0, 5, 10, 15, 20, 25, 29].map(i => { const d = ptDate(i); return d.getDate() + ' ' + MN[d.getMonth()]; });
+    const s0 = dayOf(st.range - 1);
+    const rangeLabel = s0.getDate() + (s0.getMonth() !== end.getMonth() ? ' ' + MN[s0.getMonth()] : '') + ' – ' + end.getDate() + ' ' + MN[end.getMonth()] + ' 2026';
+    let hi = null;
+    if (st.hi != null && st.hi < n) {
+      const i = st.hi, f = i / (n - 1);
+      hi = { left: (f * 100) + '%', shift: f > .6 ? 'translateX(calc(-100% - 12px))' : 'translateX(12px)', label: ptLabel(i),
+        dots: lines.map(l => ({ top: (yv(l.vals[i]) / H * 100) + '%', color: l.color })),
+        items: lines.map(l => ({ name: multi ? l.name : metName, color: l.color, val: fmt(l.vals[i]) })) };
+    }
+
+    // pipeline
+    const PO = { failed: 0, pending_approval: 1, publishing: 2, scheduled: 3, draft: 4 };
+    const PILL = { failed: ['#f3dcd5', '#a8321f'], pending_approval: ['#f2e3c6', '#92560a'], publishing: ['#dbe8df', '#2f6f55'], scheduled: ['#dbe8df', '#2f6f55'], draft: ['#ece6da', '#575047'] };
+    const pipeRaw = mine.filter(x => PO[x.status] != null).sort((a, b) => PO[a.status] - PO[b.status]);
+    const cnt = k => pipeRaw.filter(x => k.includes(x.status)).length;
+    const pipeSummary = [[cnt(['failed', 'pending_approval']), 'need you'], [cnt(['scheduled', 'publishing']), 'scheduled'], [cnt(['draft']), 'drafts']].filter(c => c[0]).map(c => c[0] + ' ' + c[1]).join(' · ') || 'Nothing queued';
+
+    // top posts (sample history)
+    const HIST = [
+      ['tiktok', 'What an agent sees when it reads my inbox', '5 Oct', 31000, 2100, 140, 260, 2.4, '9:16 VIDEO'],
+      ['tiktok', 'Building a pixel office in a weekend', '24 Sep', 22500, 1600, 98, 190, 1.8, '9:16 VIDEO'],
+      ['linkedin', 'Running agents on a $20 monthly cap', '12 Oct', 18400, 612, 88, 41, 3.1, 'TEXT POST'],
+      ['instagram', 'Desk setup, autumn edition', '8 Oct', 9200, 840, 52, 30, 1.2, 'PHOTO'],
+      ['linkedin', 'Notes from a design crit with no slides', '1 Oct', 11200, 380, 64, 22, 2.2, 'DOCUMENT'],
+      ['instagram', 'Sketchbook pages: transit icons', '28 Sep', 6400, 520, 31, 18, 0.9, 'CAROUSEL'],
+      ['portfolio', 'Harbour Transit case study', '19 Oct', 4100, 96, 12, 34, 5.6, 'HERO IMAGE']
+    ];
+    const top = HIST.filter(t => plat === 'all' || t[0] === plat).sort((a, b) => (b[4] + b[5] + b[6]) - (a[4] + a[5] + a[6])).map(t => {
+      const match = v.variants.find(x => x.title === t[1] && x.platform === t[0]);
+      return { platName: LOS.platforms[t[0]].name, title: t[1], date: t[2], media: t[8],
+        stats: [['favorite', 'Likes', fmt(t[4]), '#f3dcd5', '#b5502f'], ['chat_bubble', 'Comments', fmt(t[5]), '#ece6da', '#1f1c18'], ['repeat', 'Shares', fmt(t[6]), '#dbe8df', '#2f6f55'], ['ads_click', 'CTR', t[7] + '%', '#f2e3c6', '#92560a']].map(s => ({ icon: s[0], k: s[1], v: s[2], bg: s[3], fg: s[4] })),
+        open: () => match ? goPosts(match) : APP.toast(t[1] + ' · ' + fmt(t[3]) + ' impressions (sample history).') };
+    });
+
+    const seg = on => ({ bg: on ? '#fffdf9' : 'transparent', shadow: on ? '0 1px 2px rgba(31,28,24,.12)' : 'none', w: on ? 600 : 400 });
+    return {
+      pad: bp === 'mobile' ? '20px 16px 40px' : bp === 'tablet' ? '28px 24px 56px' : '28px 40px 64px',
+      tabs: [['overview', 'Overview', ''], ['posts', 'Posts', String(v.variants.length)]].map(t => ({ label: t[1], n: t[2], on: tab === t[0], line: tab === t[0] ? 'inset 0 -2px 0 #1f1c18' : 'none', w: tab === t[0] ? 600 : 400, pick: () => this.setState({ tab: t[0], hi: null }) })),
+      isOverview: tab === 'overview', isFeed: tab === 'posts',
+      platTabs: v.platFilters.map(f => Object.assign({}, f, seg(f.on))),
+      ranges: [[7, '7 days'], [30, '30 days']].map((r, i) => ({ label: r[1], on: st.range === r[0], bg: st.range === r[0] ? '#ece6da' : 'transparent', w: st.range === r[0] ? 600 : 400, sep: i ? '1px solid #cfc6b6' : '0', pick: () => this.setState({ range: r[0], hi: null }) })),
+      rangeLabel, kpis,
+      metrics: MET.map(m => ({ label: m[1], on: st.metric === m[0], bg: st.metric === m[0] ? '#1f1c18' : 'transparent', fg: st.metric === m[0] ? '#f5f2eb' : '#1f1c18', w: st.metric === m[0] ? 600 : 400, pick: () => this.setState({ metric: m[0], hi: null }) })),
+      chartSub: metName + (multi ? ' by platform' : ' · ' + LOS.platforms[plat].name) + ' · ' + (st.range === 7 ? 'every 6 hours' : 'daily') + ' · sample',
+      chartAria: metName + ' over the last ' + st.range + ' days', chartSvg, multi,
+      yTicks: [1, .75, .5, .25, 0].map(f => fmt(max * f)), xTicks,
+      legend: lines.map(l => ({ name: l.name, color: l.color, total: fmt(sum(l.vals)) })),
+      hasHi: !!hi, hi: hi || { dots: [], items: [] },
+      onMove: ev => { const r = ev.currentTarget.getBoundingClientRect(); const i = Math.max(0, Math.min(n - 1, Math.round((ev.clientX - r.left) / r.width * (n - 1)))); if (i !== this.state.hi) this.setState({ hi: i }); },
+      onLeave: () => this.setState({ hi: null }),
+      pipe: pipeRaw.map(x => ({ title: x.title, statusLabel: x.statusLabel, platName: x.platName, platShort: x.platShort, when: x.when, pillBg: PILL[x.status][0], pillFg: PILL[x.status][1], open: () => goPosts(x) })),
+      pipeEmpty: pipeRaw.length === 0, pipeSummary, openPosts: () => goPosts(), top,
+      filters: v.filters.map(f => Object.assign({}, f, { bg: f.on ? '#ece6da' : 'transparent', border: f.on ? '#1f1c18' : '#cfc6b6' })),
+      feed: v.feed.map(decV), feedEmpty: v.feedEmpty, sv, lifecycle,
+      approveV: v.approveV, sendV: v.sendV, backToDraft: v.backToDraft, retryV: v.retryV, manualV: v.manualV, editText: v.editText, unschedule: v.unschedule,
+      compose: v.compose, notCompose: v.notCompose, newPost: () => { this.setState({ tab: 'posts' }); v.newPost(); }, cancelCompose: v.cancelCompose, draft: v.draft, draftTitle: v.draftTitle, draftText: v.draftText,
+      draftPlats: v.draftPlats.map(d => Object.assign({}, d, { bg: d.on ? '#1f1c18' : 'transparent', fg: d.on ? '#f5f2eb' : '#1f1c18', border: d.on ? '#1f1c18' : '#cfc6b6' })), draftCount: v.draftCount, saveDraft: v.saveDraft,
+      askSocial: () => APP.toast('Social is drafting variants. They arrive as proposals you can edit.'), changeTime: () => APP.toast('Date and time picker (Sydney time).')
+    };
+  }
+}
+</script>
+</body>
+</html>

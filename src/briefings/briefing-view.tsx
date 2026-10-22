@@ -5,8 +5,8 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { BRIEFING_KINDS, BRIEFING_LABEL, type BriefingBody, type BriefingKind } from "@/lib/digest";
 import { briefingNowAction, markBriefingReadAction } from "@/server/briefing-actions";
-import { useShell } from "@/shell/shell-provider";
-import { Button } from "@/ui/button";
+import { useShell } from "@/features/shell/shell-provider";
+import { Button } from "@/legacy-ui/button";
 
 export function BriefingSections({ id, body }: { id: string; body: BriefingBody }) {
   useEffect(() => { void markBriefingReadAction(id); }, [id]);

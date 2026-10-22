@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import type { SocialPlatform } from "@/lib/social-types";
 import { requestPublish, reschedule } from "@/server/socials-actions";
 import { formatHM } from "@/server/time";
-import { useShell } from "@/shell/shell-provider";
-import { Button } from "@/ui/button";
-import { Dialog } from "@/ui/dialog";
-import { Field, Input } from "@/ui/field";
+import { useShell } from "@/features/shell/shell-provider";
+import { Button } from "@/legacy-ui/button";
+import { Dialog } from "@/legacy-ui/dialog";
+import { Field, Input } from "@/legacy-ui/field";
 import { dayKey, scheduleInstant } from "./model";
 import { PLATFORM } from "./platform";
 

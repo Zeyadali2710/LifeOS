@@ -6,8 +6,8 @@ import type { RunDTO, RunStatus } from "@/lib/agent-types";
 import { formatDuration, formatTokens, formatUsd } from "@/lib/format";
 import { getAgent, modelLabel, modelShort } from "@/server/agents/registry";
 import { formatHM } from "@/server/time";
-import { Button } from "@/ui/button";
-import { EmptyState } from "@/ui/empty-state";
+import { Button } from "@/legacy-ui/button";
+import { EmptyState } from "@/legacy-ui/empty-state";
 
 export const shortId = (id: string) => `run_${id.slice(0, 4)}`;
 

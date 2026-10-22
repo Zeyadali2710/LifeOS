@@ -5,10 +5,10 @@ import { CATEGORY } from "@/lib/calendar-categories";
 import { whenText } from "@/approvals/event-approval";
 import { isSafeUrl } from "@/lib/safe-url";
 import { tzLabel } from "@/server/time";
-import { Badge } from "@/ui/badge";
-import { Button } from "@/ui/button";
-import { Dialog } from "@/ui/dialog";
-import { Icon } from "@/ui/icon";
+import { Badge } from "@/legacy-ui/badge";
+import { Button } from "@/legacy-ui/button";
+import { Dialog } from "@/legacy-ui/dialog";
+import { Icon } from "@/legacy-ui/icon";
 import { hmOf, shortDate } from "./layout";
 import type { OrgInstance } from "./organization-view";
 

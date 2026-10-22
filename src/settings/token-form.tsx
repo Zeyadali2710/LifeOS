@@ -4,8 +4,8 @@ import { useState } from "react";
 import { saveToken } from "@/server/socials-actions";
 import { saveEventKeyAction } from "@/server/outreach-actions";
 import { saveOpenRouterKeyAction, saveTokenAction } from "@/server/settings-actions";
-import { Button } from "@/ui/button";
-import { Field, Input } from "@/ui/field";
+import { Button } from "@/legacy-ui/button";
+import { Field, Input } from "@/legacy-ui/field";
 
 const ERRORS: Record<string, string> = {
   rejected: "GitHub rejected this token. It may be expired, revoked, or copied incompletely. Check it and try again.",

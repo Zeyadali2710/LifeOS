@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300,0..1,0&display=block" rel="stylesheet">
+<script src="pixelkit.js"></script><script src="lifeos-data.js"></script><script src="lifeos-app.js"></script>
+<style>body{margin:0;background:#f5f2eb;color:#1f1c18;font-family:'Instrument Sans',system-ui,sans-serif}*{box-sizing:border-box}button,input,select{font-family:inherit;color:inherit}:focus-visible{outline:2px solid #b5502f;outline-offset:2px}a{color:#b5502f}a:hover{color:#8f3c22}</style>
+</helmet>
+<div data-screen-label="Career" style="padding:{{ pad }};max-width:1680px;margin:0 auto">
+<sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap">
+    <div><h1 style="margin:0;font-family:'Newsreader',serif;font-weight:400;font-size:34px;letter-spacing:-.015em">Career</h1><p style="margin:6px 0 0;font-size:14.5px;color:#575047">GitHub · {{ repoN }} repositories · 3 open PRs · <span style="color:#a8321f">1 CI failure</span> · synced 6 min ago · read-only</p></div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><label style="display:flex;gap:6px;align-items:center;font-size:13.5px;color:#575047"><input type="checkbox" checked="{{ showArchived }}" onChange="{{ toggleArchived }}" style="accent-color:#1f1c18">Show archived</label><button onClick="{{ sync }}" style="display:flex;align-items:center;gap:6px;background:transparent;border:1px solid #cfc6b6;border-radius:6px;padding:7px 12px;font-size:13.5px;cursor:pointer"><span style="font-family:'Material Symbols Outlined';font-size:17px;line-height:1">sync</span>{{ syncLabel }}</button></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:12px;margin-top:20px">
+    <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="4">
+      <div style="background:#fffdf9;border:1px solid #dcd4c6;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;gap:8px"><span style="width:30px;height:30px;border-radius:8px;background:{{ k.chip }};color:{{ k.chipFg }};display:grid;place-items:center;font-family:'Material Symbols Outlined';font-size:18px;line-height:1">{{ k.icon }}</span><span style="font-size:13.5px;font-weight:500">{{ k.label }}</span></div>
+        <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><span style="font-family:'Newsreader',serif;font-size:32px;line-height:1;letter-spacing:-.01em">{{ k.value }}</span><span style="font-size:12px;font-weight:600;color:{{ k.deltaFg }};background:{{ k.deltaBg }};border-radius:9px;padding:1px 7px">{{ k.delta }}</span></div>
+        <div style="font-size:12.5px;color:#6e675c">{{ k.sub }}</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;align-items:stretch">
+    <section style="flex:2 1 620px;min-width:0;background:#fffdf9;border:1px solid #dcd4c6;border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+        <div style="display:flex;gap:10px;align-items:flex-start"><span style="width:32px;height:32px;border-radius:8px;background:#ece6da;display:grid;place-items:center;font-family:'Material Symbols Outlined';font-size:19px;line-height:1">calendar_view_month</span><div><h2 style="margin:0;font-size:15px;font-weight:600">{{ heatTotal }} contributions in the last year</h2><div style="font-size:12.5px;color:#6e675c;margin-top:2px">Commits, PRs and reviews · {{ heatScope }} · sample</div></div></div>
+        <select value="{{ heatRepo }}" onChange="{{ setHeatRepo }}" aria-label="Repository" style="height:32px;border:1px solid #cfc6b6;border-radius:6px;padding:0 8px;font-size:13px;background:#fbf9f4"><sc-for list="{{ heatOpts }}" as="o" hint-placeholder-count="0"><option value="{{ o.id }}">{{ o.label }}</option></sc-for></select>
+      </div>
+      <div style="overflow-x:auto;padding-bottom:2px">
+        <div style="min-width:640px;display:grid;grid-template-columns:28px minmax(0,1fr);gap:6px">
+          <span></span>
+          <div style="display:grid;grid-template-columns:repeat(53,minmax(0,1fr));gap:3px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6e675c"><sc-for list="{{ heatMonths }}" as="m" hint-placeholder-count="12"><span style="grid-column:{{ m.col }};white-space:nowrap">{{ m.label }}</span></sc-for></div>
+          <div style="display:grid;grid-template-rows:repeat(7,minmax(0,1fr));gap:3px;font-family:'JetBrains Mono',monospace;font-size:10px;color:#6e675c;align-items:center"><span></span><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span></div>
+          <div role="img" aria-label="{{ heatAria }}" style="display:grid;grid-template-columns:repeat(53,minmax(0,1fr));grid-template-rows:repeat(7,auto);grid-auto-flow:column;gap:3px">
+            <sc-for list="{{ heat }}" as="c" hint-placeholder-count="0"><span title="{{ c.title }}" style="aspect-ratio:1;border-radius:2px;background:{{ c.bg }};outline:{{ c.ring }};outline-offset:-1px"></span></sc-for>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:#6e675c">
+        <span>Longest streak <strong style="color:#1f1c18;font-weight:600">{{ streak }} days</strong> · Most active <strong style="color:#1f1c18;font-weight:600">{{ busiest }}</strong></span>
+        <span style="display:flex;align-items:center;gap:4px">Less<sc-for list="{{ heatLegend }}" as="l" hint-placeholder-count="5"><span style="width:11px;height:11px;border-radius:2px;background:{{ l }}"></span></sc-for>More</span>
+      </div>
+    </section>
+
+    <section aria-labelledby="c-act" style="flex:1 1 320px;min-width:0;background:#fffdf9;border:1px solid #dcd4c6;border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:6px">
+      <div style="display:flex;gap:10px;align-items:flex-start"><span style="width:32px;height:32px;border-radius:8px;background:#ece6da;display:grid;place-items:center;font-family:'Material Symbols Outlined';font-size:19px;line-height:1">bolt</span><div><h2 id="c-act" style="margin:0;font-size:15px;font-weight:600">Latest activity</h2><div style="font-size:12.5px;color:#6e675c;margin-top:2px">All repositories</div></div></div>
+      <sc-for list="{{ feed }}" as="g" hint-placeholder-count="3">
+        <div style="display:flex;flex-direction:column">
+          <div style="display:flex;align-items:center;gap:8px;margin:12px 0 4px;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.08em;color:#6e675c"><span style="width:8px;height:8px;border-radius:50%;border:2px solid #2f6f55"></span>{{ g.day }}</div>
+          <sc-for list="{{ g.items }}" as="e" hint-placeholder-count="2">
+            <div style="display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;padding:8px 0;border-top:1px solid #efe9de">
+              <span style="width:28px;height:28px;border-radius:50%;background:{{ e.bg }};color:{{ e.fg }};display:grid;place-items:center;font-family:'Material Symbols Outlined';font-size:16px;line-height:1">{{ e.icon }}</span>
+              <div style="min-width:0;display:flex;flex-direction:column;gap:5px">
+                <div style="font-size:13.5px;line-height:1.4">{{ e.verb }} <button onClick="{{ e.open }}" style="border:0;background:none;padding:0;font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:500;cursor:pointer">{{ e.repo }}</button></div>
+                <div style="display:flex;gap:5px;flex-wrap:wrap;align-items:center"><sc-for list="{{ e.chips }}" as="ch" hint-placeholder-count="0"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;background:#f5f2eb;border:1px solid #e6dfd2;border-radius:4px;padding:1px 6px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis">{{ ch }}</span></sc-for><span style="font-size:11.5px;color:#6e675c">{{ e.time }}</span></div>
+                <sc-if value="{{ e.hasAction }}" hint-placeholder-val="{{ false }}"><div style="display:flex;gap:6px"><button onClick="{{ askIssue }}" style="border:1px solid #cfc6b6;background:transparent;border-radius:5px;padding:3px 9px;font-size:12px;cursor:pointer">Draft issue</button><button onClick="{{ e.open }}" style="border:0;background:none;padding:3px 4px;font-size:12px;color:#b5502f;cursor:pointer">View run</button></div></sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+    </section>
+  </div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:12px;margin-top:12px;align-items:flex-start">
+    <section aria-labelledby="c-repos" style="flex:1 1 620px;min-width:0;background:#fffdf9;border:1px solid #dcd4c6;border-radius:10px;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:16px 18px">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap"><h2 id="c-repos" style="margin:0;font-size:15px;font-weight:600">Repositories</h2>
+          <div role="tablist" aria-label="Filter" style="display:flex;background:#ece6da;border-radius:7px;padding:3px;gap:2px;flex:none"><sc-for list="{{ repoFilters }}" as="f" hint-placeholder-count="3"><button role="tab" aria-selected="{{ f.on }}" onClick="{{ f.pick }}" style="border:0;border-radius:5px;padding:5px 10px;font-size:12.5px;cursor:pointer;white-space:nowrap;background:{{ f.bg }};box-shadow:{{ f.shadow }};font-weight:{{ f.w }};display:flex;gap:5px;align-items:center">{{ f.label }}<span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6e675c">{{ f.n }}</span></button></sc-for></div>
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;border:1px solid #cfc6b6;border-radius:6px;padding:0 10px;height:34px;background:#fbf9f4;min-width:min(100%,220px)"><span style="font-family:'Material Symbols Outlined';font-size:18px;line-height:1;color:#6e675c">search</span><input value="{{ q }}" onChange="{{ setQ }}" placeholder="Find a repository" aria-label="Find a repository" style="border:0;background:transparent;outline:none;font-size:13.5px;flex:1;min-width:0"></label>
+      </div>
+      <sc-if value="{{ notMobile }}" hint-placeholder-val="{{ true }}"><div style="display:grid;grid-template-columns:{{ cols }};gap:12px;padding:8px 18px;background:#fbf9f4;border-top:1px solid #e6dfd2;border-bottom:1px solid #e6dfd2;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.08em;color:#6e675c"><span>REPOSITORY</span><span>CI</span><span>COMMITS · 12 WK</span><span style="text-align:right">PRS</span><span style="text-align:right">STARS</span><span style="text-align:right">UPDATED</span></div></sc-if>
+      <div role="list">
+        <sc-for list="{{ repos }}" as="r" hint-placeholder-count="4">
+          <button role="listitem" onClick="{{ r.pick }}" aria-pressed="{{ r.on }}" style="width:100%;display:grid;grid-template-columns:{{ cols }};gap:8px 12px;align-items:center;padding:14px 18px;border:0;border-bottom:1px solid #efe9de;box-shadow:{{ r.bar }};background:{{ r.bg }};text-align:left;cursor:pointer" style-hover="background:#f5f2eb">
+            <span style="min-width:0;display:flex;flex-direction:column;gap:5px">
+              <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span style="font-family:'JetBrains Mono',monospace;font-size:13.5px;font-weight:500"><span style="color:#6e675c">alex-morgan/</span>{{ r.short }}</span><span style="display:flex;align-items:center;gap:3px;border:1px solid #cfc6b6;border-radius:9px;padding:0 7px;font-size:11px;color:#575047"><span style="font-family:'Material Symbols Outlined';font-size:12px;line-height:1">{{ r.visIcon }}</span>{{ r.vis }}</span></span>
+              <span style="font-size:12.5px;color:#575047;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.descT }}</span>
+              <span style="display:flex;align-items:center;gap:6px;font-size:12px;color:#575047"><span style="width:10px;height:10px;border-radius:50%;background:{{ r.topColor }}"></span>{{ r.topLang }}<span style="color:#b9ae9b">·</span>{{ r.branches }} branches</span>
+            </span>
+            <span style="display:flex;align-items:center;gap:5px;font-size:12.5px;color:{{ r.ciColor }}"><span style="font-family:'Material Symbols Outlined';font-size:16px;line-height:1">{{ r.ciIcon }}</span>{{ r.ciShort }}</span>
+            <span aria-label="{{ r.sparkAria }}" style="display:flex;align-items:flex-end;gap:2px;height:26px"><sc-for list="{{ r.spark }}" as="b" hint-placeholder-count="0"><span style="flex:1;max-width:8px;height:{{ b }}%;min-height:2px;background:#2f6f55;opacity:.8;border-radius:1px"></span></sc-for></span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;text-align:right">{{ r.prs }}</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;text-align:right">★ {{ r.stars }}</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#575047;text-align:right">{{ r.push }}</span>
+          </button>
+        </sc-for>
+        <sc-if value="{{ reposEmpty }}" hint-placeholder-val="{{ false }}"><p style="margin:0;padding:24px 18px;font-family:'Newsreader',serif;font-style:italic;font-size:17px;color:#575047">No repositories match.</p></sc-if>
+      </div>
+    </section>
+
+  </div>
+</sc-if>
+<sc-if value="{{ isRepo }}" hint-placeholder-val="{{ false }}">
+  <div style="display:flex;flex-direction:column;gap:16px">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+      <div style="display:flex;flex-direction:column;gap:8px;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:13.5px"><button onClick="{{ backList }}" style="display:flex;align-items:center;gap:2px;border:0;background:none;padding:0;color:#b5502f;cursor:pointer;font-size:13.5px"><span style="font-family:'Material Symbols Outlined';line-height:1;font-size:18px">chevron_left</span>Career</button><span style="color:#b9ae9b">/</span><span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:#575047">alex-morgan</span><span style="color:#b9ae9b">/</span></div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><h1 style="margin:0;font-family:'Newsreader',serif;font-weight:400;font-size:34px;letter-spacing:-.015em;word-break:break-word">{{ sel.short }}</h1><span style="display:flex;align-items:center;gap:4px;border:1px solid #cfc6b6;border-radius:10px;padding:1px 9px;font-size:12px;color:#575047"><span style="font-family:'Material Symbols Outlined';line-height:1;font-size:13px">{{ sel.visIcon }}</span>{{ sel.vis }}</span><span style="display:flex;align-items:center;gap:4px;font-size:12.5px;color:{{ sel.ciColor }}"><span style="font-family:'Material Symbols Outlined';line-height:1;font-size:16px">{{ sel.ciIcon }}</span>CI {{ sel.ciShort }}</span></div>
+        <p style="margin:0;font-size:14.5px;color:#575047;max-width:760px">{{ sel.descT }}</p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap"><sc-for list="{{ rp.topics }}" as="tp" hint-placeholder-count="3"><span style="font-size:12px;background:#ece6da;color:#1f1c18;border-radius:12px;padding:2px 10px">{{ tp }}</span></sc-for></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button onClick="{{ linkProject }}" style="white-space:nowrap;display:flex;align-items:center;gap:6px;border:1px solid #cfc6b6;background:#fffdf9;border-radius:6px;padding:7px 12px;font-size:13.5px;cursor:pointer"><span style="font-family:'Material Symbols Outlined';line-height:1;font-size:17px">link</span>{{ sel.linkLabel }}</button>
+        <button onClick="{{ openGh }}" style="white-space:nowrap;display:flex;align-items:center;gap:6px;border:0;background:#1f1c18;color:#f5f2eb;border-radius:6px;padding:8px 13px;font-size:13.5px;cursor:pointer"><span style="font-family:'Material Symbols Outlined';line-height:1;font-size:17px">open_in_new</span>Open on GitHub</button>
+      </div>
+    </div>
+    <div role="tablist" aria-label="Repository" style="display:flex;gap:2px;border-bottom:1px solid #dcd4c6;overflow-x:auto">
+      <sc-for list="{{ rTabs }}" as="t" hint-placeholder-count="5"><button role="tab" aria-selected="{{ t.on }}" onClick="{{ t.pick }}" style="display:flex;align-items:center;gap:7px;border:0;background:none;padding:10px 12px 11px;font-size:14px;cursor:pointer;white-space:nowrap;box-shadow:{{ t.line }};font-weight:{{ t.w }}"><span style="font-family:'Material Symbols Outlined';line-height:1;font-size:17px;color:#575047">{{ t.icon }}</span>{{ t.label }}<sc-if value="{{ t.hasN }}" hint-placeholder-val="{{ false }}"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;background:#ece6da;border-radius:9px;padding:0 7px;line-height:18px">{{ t.n }}</span></sc-if></button></sc-for>
+    </div>
+
+    <sc-if value="{{ tCode }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-start">
+        <div style="flex:2.2 1 600px;min-width:0;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <span style="display:flex;align-items:center;gap:6px;border:1px solid #cfc6b6;background:#fffdf9;border-radius:6px;padding:6px 11px;font-size:13px"><span style="font-family:'Material Symbols Outlined';line-height:1;font-size:16px">fork_right</span>main<span style="font-family:'Material Symbols Outlined';line-height:1;font-size:16px;color:#6e675c">expand_more</span></span>
+            <span style="font-size:13px;color:#575047"><strong style="font-weight:600;color:#1f1c18">{{ sel.branches }}</strong> branches</span>
+            <span style="margin-left:auto;min-width:0;max-width:100%;display:flex;align-items:center;gap:8px;border:1px solid #cfc6b6;background:#fffdf9;border-radius:6px;padding:6px 11px;font-size:13px;font-family:'JetBrains Mono',monospace"><span style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">git clone …/{{ sel.short }}.git</span><button onClick="{{ copyClone }}" aria-label="Copy clone URL" style="border:0;background:none;padding:0;cursor:pointer;font-family:'Material Symbols Outlined';line-height:1;font-size:16px;color:#575047">content_copy</button></span>
+          </div>
+          <div style="background:#fffdf9;border:1px solid #dcd4c6;border-radius:10px;overflow:hidden">
+            <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;background:#f5f2eb;border-bottom:1px solid #dcd4c6;font-size:13px;flex-wrap:wrap">
+              <span style="width:24px;height:24px;border-radius:50%;background:#d8cdb9;display:grid;place-items:center;font-size:10px;font-weight:600">AM</span><strong style="font-weight:600">alex-morgan</strong><span style="color:#575047;min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ rp.lastMsg }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#b5502f">{{ rp.lastSha }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#6e675c">{{ rp.lastT }}</span><span style="display:flex;align-items:center;gap:4px;font-size:12.5px;color:#575047"><span style="font-family:'Material Symbols Outlined';line-height:1;font-size:16px">history</span>{{ rp.totalCommits }} commits</span>
+            </div>
+            <sc-for list="{{ rp.files }}" as="f" hint-placeholder-count="6">
+              <button onClick="{{ f.open }}" style="width:100%;display:grid;grid-template-columns:22px minmax(120px,1fr) minmax(0,1.6fr) 60px;gap:12px;align-items:center;padding:9px 16px;border:0;border-bottom:1px solid #efe9de;background:none;text-align:left;cursor:pointer;font-size:13.5px" style-hover="background:#f5f2eb">
+                <span style="font-family:'Material Symbols Outlined';line-height:1;font-size:18px;color:{{ f.ic }};font-variation-settings:'FILL' {{ f.fill }}">{{ f.icon }}</span><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.name }}</span><span style="color:#6e675c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ f.msg }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#6e675c;text-align:right">{{ f.t }}</span>
+              </button>
+            </sc-for>
+          </div>
+          <article style="background:#fffdf9;border:1px solid #dcd4c6;border-radius:10px;overflow:hidden">
+            <div style="display:flex;align-items:center;gap:8px;padding:11px 16px;border-bottom:1px solid #dcd4c6;font-size:13.5px;font-weight:600"><span style="font-family:'Material Symbols Outlined';line-height:1;font-size:18px">menu_book</span>README.md</div>
+            <div style="padding:20px 24px 24px;display:flex;flex-direction:column;gap:12px;max-width:860px">
+              <h2 style="margin:0;font-family:'Newsreader',serif;font-weight:400;font-size:30px;border-bottom:1px solid #e6dfd2;padding-bottom:8px">{{ rp.readmeTitle }}</h2>
+              <sc-for list="{{ rp.readme }}" as="pp" hint-placeholder-count="2"><p style="margin:0;font-size:14.5px;line-height:1.6;color:#3d3830">{{ pp }}</p></sc-for>
+              <h3 style="margin:6px 0 0;font-size:16px;font-weight:600">Getting started</h3>
+              <pre style="margin:0;background:#1f1c18;color:#f5f2eb;border-radius:8px;padding:14px 16px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.7;overflow-x:auto;white-space:pre">{{ rp.code }}</pre>
+            </div>
+          </article>
+        </div>
+        <aside style="flex:1 1 300px;min-width:0;display:flex;flex-direction:column;gap:16px">
+          <section style="background:#fffdf9;border:1px solid #dcd4c6;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:12px">
+            <h2 style="margin:0;font-size:15px;font-weight:600">About</h2>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"><sc-for list="{{ sel.stats }}" as="st" hint-placeholder-count="4"><div style="background:#f5f2eb;border-radius:8px;padding:9px 10px"><div style="font-family:'Newsreader',serif;font-size:22px;line-height:1">{{ st.v }}</div><div style="font-size:11.5px;color:#6e675c;margin-top:4px">{{ st.k }}</div></div></sc-for></div>
+            <div style="display:flex;flex-direction:column;gap:6px"><div style="font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.1em;color:#6e675c">LANGUAGES</div><span style="display:flex;height:8px;border-radius:4px;overflow:hidden;gap:2px"><sc-for list="{{ sel.lang }}" as="l" hint-placeholder-count="0"><span style="width:{{ l.pct }}%;background:{{ l.color }}"></span></sc-for></span><div style="display:flex;gap:10px;flex-wrap:wrap;font-size:12.5px;color:#575047"><sc-for list="{{ sel.lang }}" as="l" hint-placeholder-count="0"><span style="display:flex;align-items:center;gap:5px"><span style="width:9px;height:9px;border-radius:50%;background:{{ l.color }}"></span>{{ l.name }} <span style="color:#6e675c">{{ l.pct }}%</span></span></sc-for></div></div>
+          </section>
+          <section style="background:#fffdf9;border:1px solid #dcd4c6;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;justify-content:space-between;align-items:center"><h2 style="margin:0;font-size:15px;font-weight:600">CI · last 12 runs</h2><button onClick="{{ goActions }}" style="border:0;background:none;padding:0;color:#b5502f;font-size:12.5px;cursor:pointer">All runs</button></div>
+            <div style="display:flex;gap:3px"><sc-for list="{{ sel.runs }}" as="u" hint-placeholder-count="0"><span title="{{ u.t }}" style="flex:1;height:20px;border-radius:3px;background:{{ u.c }}"></span></sc-for></div>
+            <sc-if value="{{ sel.failed }}" hint-placeholder-val="{{ false }}"><div role="alert" style="display:flex;gap:8px;align-items:flex-start;background:#f8e6e0;border-radius:8px;padding:10px 12px;font-size:13px;line-height:1.45"><span style="font-family:'Material Symbols Outlined';line-height:1;font-size:18px;color:#a8321f">error</span><span>Failed 2h ago on main: test “alerts banner”. <button onClick="{{ askIssue }}" style="border:0;background:none;padding:0;color:#b5502f;cursor:pointer;font-size:13px">Ask Projects to draft an issue</button></span></div></sc-if>
+          </section>
+          <section style="background:#fffdf9;border:1px solid #dcd4c6;border-radius:10px;padding:16px;display:flex;flex-direction:column">
+            <h2 style="margin:0 0 6px;font-size:15px;font-weight:600">Recent commits</h2>
+            <sc-for list="{{ sel.commits }}" as="c" hint-placeholder-count="0"><div style="display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:8px;align-items:center;padding:7px 0;border-top:1px solid #efe9de;font-size:13px"><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#b5502f">{{ c.sha }}</span><span style="min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.msg }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:#6e675c">{{ c.t }}</span></div></sc-for>
+            <sc-if value="{{ sel.noCommits }}" hint-placeholder-val="{{ false }}"><span style="font-size:13px;color:#6e675c;padding:6px 0">No commits in the last 30 days.</span></sc-if>
+          </section>
+        </aside>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ tPrs }}" hint-placeholder-val="{{ false }}">
+      <div style="background:#fffdf9;border:1px solid #dcd4c6;border-radius:10px;overflow:hidden">
+        <div style="display:flex;gap:16px;padding:12px 16px;background:#f5f2eb;border-bottom:1px solid #dcd4c6;font-size:13.5px"><span style="display:flex;gap:5px;align-items:center;font-weight:600"><span style="font-family:'Material Symbols Outlined';line-height:1;font-size:17px;color:#2f6f55">alt_route</span>{{ rp.openPrN }} open</span><span style="display:flex;gap:5px;align-items:center;color:#575047"><span style="font-family:'Material Symbols Outlined';line-height:1;font-size:17px">merge</span>{{ rp.mergedPrN }} merged</span></div>
+        <sc-for list="{{ rp.prs }}" as="p" hint-placeholder-count="3">
+          <div style="display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:12px;align-items:flex-start;padding:12px 16px;border-bottom:1px solid #efe9de">
+            <span style="font-family:'Material Symbols Outlined';line-height:1;font-size:18px;color:{{ p.c }}">{{ p.icon }}</span>
+            <div style="min-width:0;display:flex;flex-direction:column;gap:4px"><span style="font-size:14.5px;font-weight:600">{{ p.title }}</span><span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:#575047"><span style="font-family:'JetBrains Mono',monospace;font-size:11px;background:#f5f2eb;border:1px solid #e6dfd2;border-radius:4px;padding:1px 6px">{{ p.branch }}</span>{{ p.meta }}</span></div>
+            <span style="display:flex;align-items:center;gap:5px;font-size:12.5px;color:{{ p.checkC }}"><span style="font-family:'Material Symbols Outlined';line-height:1;font-size:16px">{{ p.checkIcon }}</span>{{ p.check }}</span>
+          </div>
+        </sc-for>
+        <sc-if value="{{ rp.noPrs }}" hint-placeholder-val="{{ false }}"><p style="margin:0;padding:24px 16px;font-family:'Newsreader',serif;font-style:italic;font-size:17px;color:#575047">No pull requests.</p></sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ tIssues }}" hint-placeholder-val="{{ false }}">
+      <div style="background:#fffdf9;border:1px solid #dcd4c6;border-radius:10px;overflow:hidden">
+        <div style="display:flex;justify-content:space-between;gap:16px;padding:12px 16px;background:#f5f2eb;border-bottom:1px solid #dcd4c6;font-size:13.5px"><span style="display:flex;gap:5px;align-items:center;font-weight:600"><span style="font-family:'Material Symbols Outlined';line-height:1;font-size:17px;color:#2f6f55">radio_button_checked</span>{{ rp.issueN }} open</span><button onClick="{{ askIssue }}" style="border:0;background:none;padding:0;color:#b5502f;font-size:13px;cursor:pointer">Ask Projects to draft an issue</button></div>
+        <sc-for list="{{ rp.issues }}" as="i" hint-placeholder-count="2">
+          <div style="display:grid;grid-template-columns:22px minmax(0,1fr);gap:12px;padding:12px 16px;border-bottom:1px solid #efe9de">
+            <span style="font-family:'Material Symbols Outlined';line-height:1;font-size:18px;color:#2f6f55">radio_button_checked</span>
+            <div style="display:flex;flex-direction:column;gap:5px"><span style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span style="font-size:14.5px;font-weight:600">{{ i.title }}</span><sc-for list="{{ i.labels }}" as="lb" hint-placeholder-count="0"><span style="font-size:11.5px;font-weight:500;background:{{ lb.bg }};color:{{ lb.fg }};border-radius:10px;padding:1px 8px">{{ lb.name }}</span></sc-for></span><span style="font-size:12.5px;color:#575047">{{ i.num }} · {{ i.meta }}</span></div>
+          </div>
+        </sc-for>
+        <sc-if value="{{ rp.noIssues }}" hint-placeholder-val="{{ false }}"><p style="margin:0;padding:24px 16px;font-family:'Newsreader',serif;font-style:italic;font-size:17px;color:#575047">No open issues.</p></sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ tActions }}" hint-placeholder-val="{{ false }}">
+      <div style="background:#fffdf9;border:1px solid #dcd4c6;border-radius:10px;overflow:hidden"><div style="overflow-x:auto"><div style="min-width:640px">
+        <div style="display:grid;grid-template-columns:24px minmax(0,1.6fr) 120px 90px 80px;gap:12px;padding:9px 16px;background:#f5f2eb;border-bottom:1px solid #dcd4c6;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.08em;color:#6e675c"><span></span><span>RUN</span><span>BRANCH</span><span style="text-align:right">DURATION</span><span style="text-align:right">WHEN</span></div>
+        <sc-for list="{{ rp.runs }}" as="u" hint-placeholder-count="6">
+          <div style="display:grid;grid-template-columns:24px minmax(0,1.6fr) 120px 90px 80px;gap:12px;align-items:center;padding:10px 16px;border-bottom:1px solid #efe9de;font-size:13.5px">
+            <span style="font-family:'Material Symbols Outlined';line-height:1;font-size:18px;color:{{ u.c }}">{{ u.icon }}</span>
+            <span style="min-width:0"><span style="display:block;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ u.msg }}</span><span style="display:block;font-size:12px;color:#6e675c">CI #{{ u.num }} · {{ u.status }}</span></span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:11.5px">{{ u.branch }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#575047;text-align:right">{{ u.dur }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#6e675c;text-align:right">{{ u.t }}</span>
+          </div>
+        </sc-for>
+        <sc-if value="{{ rp.noRuns }}" hint-placeholder-val="{{ false }}"><p style="margin:0;padding:24px 16px;font-family:'Newsreader',serif;font-style:italic;font-size:17px;color:#575047">No CI configured for this repository.</p></sc-if>
+      </div></div></div>
+    </sc-if>
+
+    <sc-if value="{{ tInsights }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-wrap:wrap;gap:16px">
+        <section style="flex:2 1 520px;min-width:0;background:#fffdf9;border:1px solid #dcd4c6;border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:12px">
+          <div><h2 style="margin:0;font-size:15px;font-weight:600">Commit activity</h2><div style="font-size:12.5px;color:#6e675c;margin-top:2px">Commits per week · last 12 weeks · sample</div></div>
+          <div style="display:flex;align-items:flex-end;gap:8px;height:180px;border-bottom:1px solid #cfc6b6;padding-top:18px"><sc-for list="{{ rp.weeks }}" as="w" hint-placeholder-count="12"><div title="{{ w.n }} commits" style="flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px"><span style="font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#575047">{{ w.n }}</span><span style="width:100%;max-width:34px;height:{{ w.h }}%;min-height:2px;background:#2f6f55;border-radius:3px 3px 0 0"></span></div></sc-for></div>
+          <div style="display:flex;gap:8px"><sc-for list="{{ rp.weeks }}" as="w" hint-placeholder-count="12"><span style="flex:1;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:#6e675c">{{ w.l }}</span></sc-for></div>
+        </section>
+        <section style="flex:1 1 300px;min-width:0;background:#fffdf9;border:1px solid #dcd4c6;border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:12px">
+          <h2 style="margin:0;font-size:15px;font-weight:600">Code frequency · 30 days</h2>
+          <div style="display:flex;gap:16px"><div><div style="font-family:'Newsreader',serif;font-size:28px;color:#2f6f55">+{{ rp.adds }}</div><div style="font-size:12px;color:#6e675c">additions</div></div><div><div style="font-family:'Newsreader',serif;font-size:28px;color:#a8321f">−{{ rp.dels }}</div><div style="font-size:12px;color:#6e675c">deletions</div></div></div>
+          <h2 style="margin:8px 0 0;font-size:15px;font-weight:600">Contributors</h2>
+          <sc-for list="{{ rp.contrib }}" as="c" hint-placeholder-count="2"><div style="display:flex;align-items:center;gap:10px;font-size:13.5px"><span style="width:28px;height:28px;border-radius:50%;background:{{ c.bg }};display:grid;place-items:center;font-size:11px;font-weight:600">{{ c.ini }}</span><span style="flex:1">{{ c.name }}</span><span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:#575047">{{ c.n }} commits</span></div></sc-for>
+        </section>
+      </div>
+    </sc-if>
+  </div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { ready: false, archived: false, syncing: false, filter: 'all', q: '', heatRepo: 'all', repoTab: 'code' };
+  componentDidMount() { const w = () => (window.APP && APP.ready) ? (this.un = APP.sub(() => this.forceUpdate()), this.setState({ ready: true })) : setTimeout(w, 30); w(); }
+  componentWillUnmount() { this.un && this.un(); }
+  nav = (r, p) => this.props.nav ? this.props.nav(r, p) : (p && APP.set(p), APP.toast('Opens ' + r + ' in the LifeOS shell.'));
+  openRepo = id => { APP.set({ repoSel: id, repoOpen: true }); this.setState({ repoTab: 'code' }); const m = document.getElementById('lifeos-main'); if (m) m.scrollTop = 0; else window.scrollTo(0, 0); };
+  rng(seed) { let s = seed; return () => (s = (s * 16807) % 2147483647) / 2147483647; }
+  renderVals() {
+    if (!this.state.ready) return {};
+    const S = APP.state, st = this.state, bp = this.props.bp || 'desktop';
+    const CI = { passing: ['Passing', '#2f6f55', 'check_circle'], failed: ['Failed', '#a8321f', 'cancel'], none: ['No CI', '#8a8377', 'remove'] };
+    const linked = { r1: 'LifeOS', r2: 'Harbour Transit case study', r4: 'Dumpling map' };
+    const X = {
+      r1: { vis: 'Public', branches: 6, c30: 86, w: 9, commits: [['a3f9c21', 'Briefings: retry on 429 with backoff', '2h'], ['7be04d1', 'Automations: run history table', '2h'], ['19c2e8a', 'Fix timezone on briefing schedule', '2h'], ['e04b7f3', 'Weekly briefing kind', 'Tue']], runs: '111111011111' },
+      r2: { vis: 'Private', branches: 3, c30: 21, w: 4, commits: [['c81d0a2', 'Alerts banner: move above trip list', '2h'], ['5f3a9be', 'Export GIF frames for case study', 'Mon'], ['2ad7e10', 'Trip planner: three-step flow', '9 Oct']], runs: '111101111110' },
+      r3: { vis: 'Public', branches: 2, c30: 4, w: 1.5, commits: [['0d4e1aa', 'Update case study links', '26 Sep']], runs: '111111111111' },
+      r4: { vis: 'Public', branches: 1, c30: 0, w: .3, commits: [], runs: '' },
+      r5: { vis: 'Public', branches: 1, c30: 9, w: 1, commits: [['9a1f2c0', 'zsh: add fzf keybindings', '12 Oct'], ['4c0be77', 'git: sign commits by default', '3 Oct']], runs: '' }
+    };
+    const PRS = { r1: [['alt_route', '#2f6f55', '#212 Automations: run history', 'open · Wed'], ['edit_note', '#8a8377', '#213 Briefings retry', 'draft · 2h']], r2: [['alt_route', '#2f6f55', '#18 Alerts banner placement', 'open · 2h']] };
+    const dec = r => { const x = X[r.id] || { vis: 'Public', branches: 1, c30: 0, w: .5, commits: [], runs: '' }, ci = CI[r.ci], on = S.repoSel === r.id;
+      const rr = this.rng(r.id.charCodeAt(1) * 97 + 11); rr();
+      const sp = Array.from({ length: 12 }, (_, i) => Math.max(0, x.w * (0.4 + i / 14 + rr() * .9)));
+      const spMax = Math.max(1, ...sp);
+      return Object.assign({}, r, { short: r.name.split('/')[1], vis: r.archived ? 'Archived' : x.vis, visIcon: r.archived ? 'inventory_2' : x.vis === 'Private' ? 'lock' : 'public', descT: r.desc || 'No description', branches: x.branches,
+        topLang: r.lang[0][0], topColor: r.lang[0][2], ciShort: ci[0], ciColor: ci[1], ciIcon: ci[2], failed: r.ci === 'failed', on, bg: on ? '#f5f2eb' : 'transparent', bar: on ? 'inset 3px 0 0 #b5502f' : 'none',
+        spark: sp.map(v => Math.round(v / spMax * 100)), sparkAria: 'Weekly commits, last 12 weeks',
+        lang: r.lang.map(l => ({ name: l[0], pct: l[1], color: l[2] })),
+        stats: [['Commits · 30d', x.c30], ['Open PRs', r.prs], ['Branches', x.branches], ['Stars', r.stars]].map(s => ({ k: s[0], v: s[1] })),
+        runs: x.runs ? x.runs.split('').map((c, i) => ({ c: c === '1' ? '#2f6f55' : '#a8321f', t: (c === '1' ? 'Passed' : 'Failed') + ' · run ' + (i + 1) })) : Array.from({ length: 12 }, () => ({ c: '#ece6da', t: 'No CI configured' })),
+        prList: (PRS[r.id] || []).map(p => ({ icon: p[0], c: p[1], a: p[2], b: p[3] })), noPrs: !(PRS[r.id] || []).length,
+        commits: x.commits.map(c => ({ sha: c[0], msg: c[1], t: c[2] })), noCommits: !x.commits.length,
+        linkLabel: linked[r.id] ? 'Linked to ' + linked[r.id] : 'Link to a project', pick: () => this.openRepo(r.id) }); };
+    const visible = APP.repos.filter(r => st.archived || !r.archived);
+    const q = st.q.trim().toLowerCase();
+    const FL = { all: () => true, failing: r => r.ci === 'failed', prs: r => r.prs > 0 };
+    const repos = visible.filter(r => FL[st.filter](r) && (!q || (r.name + ' ' + r.desc).toLowerCase().includes(q))).map(dec);
+    const selR = APP.repos.find(r => r.id === S.repoSel) || APP.repos[0];
+    const sel = dec(selR);
+    // heatmap
+    const end = new Date(2026, 9, 22), DN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], MN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const start = new Date(end); start.setDate(end.getDate() - end.getDay() - 52 * 7);
+    const hr = st.heatRepo, scale = hr === 'all' ? 1 : (X[hr] ? X[hr].w / 9 : .3);
+    const rnd = this.rng(hr === 'all' ? 7 : hr.charCodeAt(1) * 131 + 3); rnd();
+    const LV = ['#ece6da', '#c9dccf', '#8fb8a0', '#4f8a6c', '#2f6f55'];
+    const heat = [], months = []; let total = 0, run = 0, best = 0; const byMonth = {};
+    for (let i = 0; i < 53 * 7; i++) {
+      const d = new Date(start); d.setDate(start.getDate() + i);
+      const future = d > end, wk = Math.floor(i / 7), dow = d.getDay();
+      if (dow === 0 && d.getDate() <= 7) months.push({ label: MN[d.getMonth()], col: (wk + 1) + ' / span 4' });
+      let n = 0;
+      if (!future) { const season = .55 + .45 * Math.sin(wk / 53 * Math.PI * 2 - 1) + (wk > 44 ? .5 : 0), weekend = dow === 0 || dow === 6 ? .45 : 1, r = rnd();
+        n = r < .22 / Math.max(.3, scale) * .5 ? 0 : Math.round(r * 9 * season * weekend * Math.max(.15, scale)); }
+      total += n; run = n ? run + 1 : 0; best = Math.max(best, run); if (n) byMonth[MN[d.getMonth()]] = (byMonth[MN[d.getMonth()]] || 0) + n;
+      const lv = n === 0 ? 0 : n < 3 ? 1 : n < 5 ? 2 : n < 8 ? 3 : 4;
+      heat.push({ bg: future ? 'transparent' : LV[lv], ring: d.toDateString() === end.toDateString() ? '1.5px solid #b5502f' : 'none', title: future ? '' : (n || 'No') + ' contribution' + (n === 1 ? '' : 's') + ' on ' + DN[dow] + ' ' + d.getDate() + ' ' + MN[d.getMonth()] });
+    }
+    const busiest = Object.keys(byMonth).sort((a, b) => byMonth[b] - byMonth[a])[0] || '—';
+    const feedRaw = [
+      ['Today', 'commit', '#dbe8df', '#2f6f55', 'Pushed 3 commits to', 'r1', ['main', 'a3f9c21'], '2h ago'],
+      ['Today', 'error', '#f8e6e0', '#a8321f', 'CI failed on', 'r2', ['main', 'test “alerts banner”'], '2h ago', true],
+      ['Today', 'commit', '#dbe8df', '#2f6f55', 'Pushed 1 commit to', 'r2', ['main', 'c81d0a2'], '2h ago'],
+      ['Wed 21 Oct', 'alt_route', '#ece6da', '#1f1c18', 'Opened PR #212 in', 'r1', ['feat/run-history → main'], '18:40'],
+      ['Tue 20 Oct', 'merge', '#efe2f5', '#6b3f8a', 'Merged PR #209 in', 'r1', ['Weekly briefing', '+412 −38'], '21:15'],
+      ['Mon 12 Oct', 'commit', '#dbe8df', '#2f6f55', 'Pushed 2 commits to', 'r5', ['main'], '22:02']
+    ];
+    const feed = [];
+    feedRaw.forEach(f => { let g = feed.find(x => x.key === f[0]); if (!g) feed.push(g = { day: f[0].toUpperCase() === 'TODAY' ? 'TODAY · THU 22 OCT' : f[0].toUpperCase(), key: f[0], items: [] });
+      g.items.push({ icon: f[1], bg: f[2], fg: f[3], verb: f[4], repo: APP.repos.find(r => r.id === f[5]).name.split('/')[1], chips: f[6], time: f[7], hasAction: !!f[8], open: () => this.openRepo(f[5]) }); });
+    const RX = {
+      r1: { topics: ['personal-os', 'agents', 'nextjs', 'drizzle'], total: 1284, adds: 4812, dels: 1930, readme: ['A personal operating system for one owner: projects, calendar, mail, socials, finances and the agents that help with them.', 'Every write to the outside world is proposed by an agent and waits for approval. Hidden reasoning is never stored.'], code: 'pnpm install\ncp .env.example .env.local\npnpm db:migrate\npnpm dev',
+        files: [['dir', '.github/workflows', 'CI: cache pnpm store', '3d'], ['dir', 'docker', 'Compose: add mailpit', '2w'], ['dir', 'drizzle', 'Migration 0015 activity time', 'Wed'], ['dir', 'src', 'Briefings: retry on 429 with backoff', '2h'], ['dir', 'tests', 'Briefing retry tests', '2h'], ['file', '.env.example', 'Add OPENROUTER_KEY', '3w'], ['file', 'package.json', 'Bump next to 15.1', '1w'], ['file', 'README.md', 'Docs: 0.9 setup notes', 'Tue'], ['file', 'tsconfig.json', 'Strict null checks', '2mo']],
+        issues: [['#214', 'Briefings: retry failed sends', ['bug', 'agents'], 'opened 2h ago by Projects agent · awaiting your approval'], ['#208', 'Calendar conflicts ignore all-day events', ['bug'], 'opened 6 days ago'], ['#199', 'Weekly briefing: include finance summary', ['enhancement'], 'opened 2 weeks ago']],
+        merged: [['#209 Weekly briefing', 'feat/weekly-briefing', 'merged Tue · +412 −38'], ['#205 Finance overview cards', 'feat/fin-cards', 'merged 14 Oct · +880 −210']] },
+      r2: { topics: ['prototype', 'transit', 'ux'], total: 214, adds: 1240, dels: 610, readme: ['Trip-planning prototype for the Harbour Transit case study. Three-step planner, live alerts and an accessible timetable view.'], code: 'npm install\nnpm run dev',
+        files: [['dir', 'public', 'Export GIF frames for case study', 'Mon'], ['dir', 'src', 'Alerts banner: move above trip list', '2h'], ['dir', 'tests', 'Alerts banner snapshot', '2h'], ['file', 'package.json', 'Add playwright', '3w'], ['file', 'README.md', 'Case study links', '9 Oct']],
+        issues: [['#21', 'Alerts banner overlaps trip list on mobile', ['bug'], 'opened 1 day ago']], merged: [['#17 Three-step planner', 'feat/planner', 'merged 9 Oct']] }
+    };
+    const rx = RX[selR.id] || { topics: (selR.lang || []).map(l => l[0].toLowerCase()), total: 40 + (selR.stars || 0) * 3, adds: 120, dels: 40, readme: [selR.desc || 'No description.'], code: 'git clone git@github.com:' + selR.name + '.git', files: [['dir', 'src', (X[selR.id] && X[selR.id].commits[0] ? X[selR.id].commits[0][1] : 'Initial commit'), selR.push], ['file', 'README.md', 'Initial commit', selR.push]], issues: [], merged: [] };
+    const xr = X[selR.id] || { commits: [], runs: '', c30: 0 };
+    const LBL = { bug: ['#f8e6e0', '#a8321f'], agents: ['#efe2f5', '#6b3f8a'], enhancement: ['#dbe8df', '#2f6f55'] };
+    const runMsgs = xr.commits.length ? xr.commits : [['0000000', 'Update', selR.push]];
+    const rpRuns = xr.runs ? xr.runs.split('').reverse().map((c, i) => { const ok = c === '1', cm = runMsgs[i % runMsgs.length]; return { icon: ok ? 'check_circle' : 'cancel', c: ok ? '#2f6f55' : '#a8321f', status: ok ? 'Passed' : 'Failed', msg: cm[1], num: 412 - i, branch: i % 4 === 2 ? 'feat/run-history' : 'main', dur: (1 + (i * 7) % 4) + 'm ' + (10 + (i * 13) % 50) + 's', t: i === 0 ? '2h' : i < 3 ? 'Wed' : i < 6 ? 'Mon' : (20 - i) + ' Oct' }; }) : [];
+    const wk = sel.spark.map((h, i) => ({ n: Math.round(h / 100 * Math.max(2, xr.c30 / 3)), l: 'W' + (i + 1) }));
+    const wMax = Math.max(1, ...wk.map(w => w.n));
+    const openPrs = (PRS[selR.id] || []).map(p => ({ icon: p[0], c: p[1], title: p[2], branch: p[2].indexOf('212') >= 0 ? 'feat/run-history → main' : p[2].indexOf('213') >= 0 ? 'fix/briefing-retry → main' : 'fix/alerts-banner → main', meta: p[3], check: p[1] === '#8a8377' ? 'Draft' : selR.ci === 'failed' ? '1 failing' : 'Checks passed', checkIcon: p[1] === '#8a8377' ? 'edit_note' : selR.ci === 'failed' ? 'cancel' : 'check_circle', checkC: p[1] === '#8a8377' ? '#8a8377' : selR.ci === 'failed' ? '#a8321f' : '#2f6f55' }));
+    const mergedPrs = rx.merged.map(m => ({ icon: 'merge', c: '#6b3f8a', title: m[0], branch: m[1] + ' → main', meta: m[2], check: 'Merged', checkIcon: 'merge', checkC: '#6b3f8a' }));
+    const rp = { topics: rx.topics, lastMsg: runMsgs[0][1], lastSha: runMsgs[0][0], lastT: runMsgs[0][2], totalCommits: rx.total.toLocaleString(),
+      files: rx.files.map(f => ({ icon: f[0] === 'dir' ? 'folder' : 'draft', ic: f[0] === 'dir' ? '#92560a' : '#6e675c', fill: f[0] === 'dir' ? 1 : 0, name: f[1], msg: f[2], t: f[3], open: () => APP.toast('Opens ' + f[1] + ' on GitHub (read-only token).') })),
+      readmeTitle: sel.short, readme: rx.readme, code: rx.code.split('\\n').join('\n'),
+      prs: openPrs.concat(mergedPrs), noPrs: !openPrs.length && !mergedPrs.length, openPrN: openPrs.length, mergedPrN: mergedPrs.length,
+      issues: rx.issues.map(i => ({ num: i[0], title: i[1], meta: i[3], labels: i[2].map(l => ({ name: l, bg: (LBL[l] || LBL.enhancement)[0], fg: (LBL[l] || LBL.enhancement)[1] })) })), noIssues: !rx.issues.length, issueN: rx.issues.length,
+      runs: rpRuns, noRuns: !rpRuns.length, weeks: wk.map(w => Object.assign(w, { h: Math.round(w.n / wMax * 100) })), adds: rx.adds.toLocaleString(), dels: rx.dels.toLocaleString(),
+      contrib: [{ ini: 'AM', name: 'Alex Morgan', n: Math.max(1, xr.c30 - (selR.id === 'r1' ? 6 : 0)), bg: '#d8cdb9' }].concat(selR.id === 'r1' ? [{ ini: 'PA', name: 'Projects agent (issues only)', n: 6, bg: '#dbe8df' }] : []) };
+    const rt = st.repoTab;
+    const repoVals = {
+      isRepo: !!S.repoOpen, isList: !S.repoOpen, rp, backList: () => APP.set({ repoOpen: false }),
+      rTabs: [['code', 'Code', 'code', 0], ['prs', 'Pull requests', 'alt_route', openPrs.length], ['issues', 'Issues', 'radio_button_checked', rx.issues.length], ['actions', 'Actions', 'play_circle', rpRuns.length ? 0 : 0], ['insights', 'Insights', 'insights', 0]].map(t => ({ label: t[1], icon: t[2], n: t[3], hasN: t[3] > 0, on: rt === t[0], line: rt === t[0] ? 'inset 0 -2px 0 #b5502f' : 'none', w: rt === t[0] ? 600 : 400, pick: () => this.setState({ repoTab: t[0] }) })),
+      tCode: rt === 'code', tPrs: rt === 'prs', tIssues: rt === 'issues', tActions: rt === 'actions', tInsights: rt === 'insights',
+      goActions: () => this.setState({ repoTab: 'actions' }), copyClone: () => APP.toast('Copied clone URL.')
+    };
+    const seg = on => ({ bg: on ? '#fffdf9' : 'transparent', shadow: on ? '0 1px 2px rgba(31,28,24,.12)' : 'none', w: on ? 600 : 400 });
+    const c30 = Object.values(X).reduce((a, x) => a + x.c30, 0);
+    return Object.assign(repoVals, {
+      pad: bp === 'mobile' ? '20px 16px 40px' : bp === 'tablet' ? '28px 24px 56px' : '28px 40px 64px', repoN: visible.length, showArchived: st.archived, toggleArchived: () => this.setState({ archived: !st.archived }),
+      sync: () => { this.setState({ syncing: true }); setTimeout(() => { this.setState({ syncing: false }); APP.toast('Synced ' + APP.repos.length + ' repositories.'); }, 1200); }, syncLabel: st.syncing ? 'Syncing…' : 'Sync now',
+      kpis: [
+        { icon: 'commit', label: 'Commits', value: String(c30), delta: '+18%', deltaFg: '#2f6f55', deltaBg: '#dbe8df', sub: 'last 30 days · vs previous 30', chip: '#dbe8df', chipFg: '#2f6f55' },
+        { icon: 'merge', label: 'PRs merged', value: '9', delta: '+3', deltaFg: '#2f6f55', deltaBg: '#dbe8df', sub: '3 open · median review 1.2 days', chip: '#efe2f5', chipFg: '#6b3f8a' },
+        { icon: 'event_available', label: 'Active days', value: '21', delta: '/ 30', deltaFg: '#575047', deltaBg: '#ece6da', sub: 'current streak 6 days', chip: '#ece6da', chipFg: '#1f1c18' },
+        { icon: 'verified', label: 'CI pass rate', value: '88%', delta: '−4%', deltaFg: '#a8321f', deltaBg: '#f8e6e0', sub: '1 failing on harbour-prototype', chip: '#f8e6e0', chipFg: '#a8321f' }
+      ],
+      heat, heatMonths: months, heatTotal: total.toLocaleString(), heatLegend: LV, streak: best, busiest,
+      heatScope: hr === 'all' ? 'all repositories' : APP.repos.find(r => r.id === hr).name.split('/')[1], heatAria: total + ' contributions in the last year',
+      heatRepo: hr, heatOpts: [{ id: 'all', label: 'All repositories' }].concat(APP.repos.map(r => ({ id: r.id, label: r.name.split('/')[1] }))), setHeatRepo: e => this.setState({ heatRepo: e.target.value }),
+      feed, askIssue: () => APP.toast('Projects is drafting an issue; it will wait in Approvals.'),
+      repoFilters: [['all', 'All'], ['failing', 'Failing CI'], ['prs', 'Open PRs']].map(f => Object.assign({ label: f[1], n: visible.filter(FL[f[0]]).length, on: st.filter === f[0], pick: () => this.setState({ filter: f[0] }) }, seg(st.filter === f[0]))),
+      q: st.q, setQ: e => this.setState({ q: e.target.value }), notMobile: bp !== 'mobile',
+      cols: bp === 'mobile' ? 'minmax(0,1fr) auto' : 'minmax(0,2.2fr) 84px minmax(80px,1fr) 44px 56px 70px',
+      repos, reposEmpty: repos.length === 0, sel,
+      openGh: () => APP.toast('Opens ' + selR.name + ' on GitHub.'),
+      linkProject: () => linked[selR.id] ? this.nav('projects', { projSel: selR.id === 'r1' ? 'lifeos' : selR.id === 'r2' ? 'harbour' : 'dumpling' }) : APP.toast('Pick a project to link.')
+    });
+  }
+}
+</script>
+</body>
+</html>

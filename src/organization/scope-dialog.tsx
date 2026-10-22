@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/ui/button";
-import { Dialog } from "@/ui/dialog";
-import { RadioGroup } from "@/ui/field";
+import { Button } from "@/legacy-ui/button";
+import { Dialog } from "@/legacy-ui/dialog";
+import { RadioGroup } from "@/legacy-ui/field";
 
 export type Scope = "this" | "following" | "all";
 
