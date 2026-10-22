@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import type { RepoDetailDTO } from "@/lib/project-types";
 import { isSafeGithubUrl } from "@/lib/safe-url";
-import { CiChipView } from "@/projects/status";
+import { CiChipView } from "@/legacy-ui/project-status";
 import { Badge } from "@/legacy-ui/badge";
 import { Icon } from "@/legacy-ui/icon";
 import { SectionHeader } from "@/legacy-ui/section-header";

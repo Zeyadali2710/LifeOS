@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { PLATFORMS, type SocialPlatform } from "@/lib/social-types";
-import { rangeLabel } from "@/organization/layout";
+import { rangeLabel } from "@/features/organization/grid";
 import { formatHM } from "@/server/time";
 import { Button } from "@/legacy-ui/button";
 import { Checkbox } from "@/legacy-ui/field";

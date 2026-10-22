@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useId, useState } from "react";
 import { SOURCE_LABEL, STAGE, STAGE_ORDER, STAGES, type EventSourceKind, type OutreachEventDTO, type Stage } from "@/lib/outreach-types";
-import { ProgressRing } from "@/projects/progress-ring";
+import { ProgressRing } from "@/legacy-ui/progress-ring";
 import { Badge } from "@/legacy-ui/badge";
 import { Icon } from "@/legacy-ui/icon";
 import type { IconName } from "@/legacy-ui/icon-names";

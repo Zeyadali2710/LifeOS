@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { skip, skippedFor, unskip, type SkipStorage } from "@/organization/plan-skips";
+import { skip, skippedFor, unskip, type SkipStorage } from "@/features/organization/plan-skips";
 
 function fake(): SkipStorage & { m: Map<string, string> } {
   const m = new Map<string, string>();

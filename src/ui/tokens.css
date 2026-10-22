@@ -32,6 +32,14 @@
   --status-offline: #8a8377;
   --status-merged: #6b3f8a;    --status-merged-bg: #efe2f5;
 
+  /* Calendar categories (Organization.dc.html): fill / border */
+  --cat-work: #e2eaf0;     --cat-work-line: #b2c6d4;
+  --cat-personal: #e2ede4; --cat-personal-line: #afccb6;
+  --cat-social: #efe0ea;   --cat-social-line: #d3b1c6;
+  --cat-career: #f0e4d6;   --cat-career-line: #d6bc9f;
+  --cat-events: #f3e1d9;   --cat-events-line: #dcb3a1;
+  --cat-focus: #ece6da;    --cat-focus-line: #cfc6b6;
+
   /* Type */
   --font-display: var(--font-newsreader), "Newsreader", Georgia, serif;
   --font-ui: var(--font-instrument), "Instrument Sans", system-ui, sans-serif;

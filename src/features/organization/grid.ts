@@ -1,7 +1,7 @@
 // Pure grid maths (client-safe): Sydney wall time only via server/time.
 import { sydneyParts } from "@/server/time";
 
-export const HOUR_PX = 44;
+export const HOUR_PX = 40;
 export const START_HOUR = 7;
 const MIN_H = 22;
 
@@ -15,7 +15,7 @@ const hourOf = (d: Date) => {
 };
 const hm = (d: Date) => {
   const p = sydneyParts(d);
-  return `${String(p.hour).padStart(2, "0")}:${String(p.minute).padStart(2, "0")}`;
+  return `${p.hour}:${String(p.minute).padStart(2, "0")}`;
 };
 
 /** Block box inside one day column; null when the event ends before the visible window. */
@@ -62,7 +62,7 @@ export function packLanes(items: { key: string; start: string; end: string }[]):
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const LONG = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const parse = (ymd: string) => ymd.split("-").map(Number) as [number, number, number];
 
 /** week: array of day ymds; day/month: a single ymd. */
@@ -72,11 +72,11 @@ export function rangeLabel(view: "day" | "week" | "month", days: string[] | stri
     const [y2, m2, d2] = parse(days[days.length - 1]!);
     if (y1 !== y2) return `${d1} ${MONTHS[m1 - 1]} ${y1} – ${d2} ${MONTHS[m2 - 1]} ${y2}`;
     if (m1 !== m2) return `${d1} ${MONTHS[m1 - 1]} – ${d2} ${MONTHS[m2 - 1]} ${y2}`;
-    return `${d1} – ${d2} ${MONTHS[m2 - 1]} ${y2}`;
+    return `${d1}–${d2} ${LONG[m2 - 1]} ${y2}`;
   }
   const [y, m, d] = parse(Array.isArray(days) ? days[0]! : days);
   if (view === "month") return `${LONG[m - 1]} ${y}`;
-  return `${DOW[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]} ${d} ${MONTHS[m - 1]}`;
+  return `${DAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]} ${d} ${LONG[m - 1]}`;
 }
 
 /** Timed events hidden above the 07:00 grid on this day, overnight tails included. Items must touch the day. */
@@ -90,5 +90,5 @@ export function shortDate(iso: string): string {
   return `${p.weekday} ${p.day} ${MONTHS[p.month - 1]}`;
 }
 
-/** "HH:mm" in Sydney. */
+/** "9:30" in Sydney. */
 export const hmOf = (iso: string) => hm(new Date(iso));
