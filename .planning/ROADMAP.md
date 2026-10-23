@@ -395,6 +395,26 @@ Phase notes (built 2026-10-22/23; Claude orchestrated and reviewed, Codex built 
 - Codex phase review: 14 findings, all fixed (quick-approve bypass for finance, stale Agents/Approvals selection and traces, lost save-edits, run Cancel/Retry, paid-model selector, palette stale results, project optimistic overrides, Socials calendar entry, snooze presets, office keyboard entry).
 - Known: while a modal drawer is open, toasts render under its backdrop and screen readers don't announce them (the page outside a modal is inert). Follow-up: mount the toast region inside the open dialog.
 
+### Phase 13: Work roster to calendar
+**Goal:** roster emails from the barbershop rostering system (`rosters@burps.com.au`) put the owner's shifts into a chosen calendar automatically, deterministically (no LLM).
+
+Scope
+- `src/server/roster/parse.ts` (pure): subject/body → `{ weekStart, weekEnd, updated, rosterId, shifts: [{ date, branch, start, end, breakStart?, breakEnd? }] }`. Week from "dd/mm/yyyy - dd/mm/yyyy" (subject, else body); day rows "Tue 22-Sep" get their year from the week range (handles Dec/Jan weeks). Table read by column position with `colspan` accounting against the header row; a row whose width doesn't match the header, a time outside the week, or an unparseable time is a parse failure (never a guess).
+- `src/server/roster/apply.ts`: runs from mail triage as a rule step. Matching rows (sender = configured address, feature on) never go to the model; triage fetches the HTML body live (bodies stay unstored), parses, applies, then marks the row triaged by rule (`triageModel = "rules:roster"`, category OTHER/LOW). Parse or calendar failure → notification + `markFailed` (same retry ladder as model triage).
+- Roster state in `settings` (`roster.week.<weekStart>`): `{ receivedAt, gmailId, rosterId, shifts[] with eventId }`. An email older than the stored one for that week is ignored (out-of-order delivery). Diff by `date|branch`: unchanged → nothing; changed → `updateEvent`; gone → `deleteEvent`; new → `createEvent`. Only event ids in that state are ever touched; an event the owner already deleted is recreated only if the shift changed. State is saved after every successful write, and creates use a deterministic id (hash of message+shift) so a retry adopts instead of duplicating.
+- Calendar writes use the existing write service (`calendar/events.ts`) with `actor: "owner"` semantics (owner-configured rule; ORG-02 owner writes are direct + audited), plus a `roster.applied` activity + FYI notification with the counts. `createEvent` gains an optional deterministic id key.
+- Event: title `Work · <branch>`, location = branch, description `Break 14:30–15:00` + roster id, Sydney zone, busy.
+- Settings → "Work roster" section: on/off, calendar (writable calendars), sender address (default `rosters@burps.com.au`), optional branch-name mapping lines (`TG Warring = TG Warringah`). Stored in `settings` `roster.config`.
+- Docs: permissions.md, integrations.md.
+
+Risks
+- Real HTML may differ from the screenshots (colspans, nested tables). Mitigation: strict width check + failure notification; parser handles nested `<table>` by reading the innermost table containing a "Mon/Tue…" row.
+- Owner edits a roster event in the calendar: an updated roster overwrites it (roster is the source of truth); unchanged shifts are not touched.
+- Approval: auto (owner enabled the rule), not the agent approval gate; deletes are limited to roster-created events.
+
+Codex plan critique (12 items) — taken: writes audit as actor `system` with the rule exception documented in permissions.md (2); the table must have a row for every day of the week before missing shifts count as removed (3); one global roster lease in `settings` serialises reconciliation, a busy lease re-queues triage in 60 s (4); `shifts[]` is the applied reality and is checkpointed per write, `receivedAt`/`gmailId` advance only when the week is fully reconciled (5); each new shift gets a random key persisted before the provider call, so a retry adopts (6); one shift per branch per day is all the format can express (7); each applied shift records its calendar, a changed shift whose calendar is no longer the configured one moves (delete + create) (8); the roster step runs before the bulk rule and needs no AI key or spend headroom (9); a message older than the applied one, or the same message, is skipped (10); update `not_found` recreates, delete `not_found` converges, an unchanged event the owner deleted stays deleted, parse failures give up at once with one notification, calendar failures use the retry ladder and notify once when they give up (11); DB tests cover duplicate delivery, update, out-of-order, crash after provider success and calendar switch (12).
+Declined: requiring SPF/DKIM pass (1). The real mail is relayed "via email-od.com", so which check passes is unknown and gating on it could silently disable the feature. Blast radius is bounded instead: INBOX mail only (sync already), only roster-created events in the chosen calendar, every change notified.
+
 ## Credentials & external access needed
 | When | What |
 |---|---|
