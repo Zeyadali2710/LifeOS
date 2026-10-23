@@ -32,6 +32,8 @@ See `.planning/OWNER-ACTIONS.md`. Open: Socials real posting/scheduling (later),
 
 ## Verification checkpoints
 
+- 2026-10-23 Phase 13 gate: typecheck, lint (0 errors / 25 existing warnings), build, worker bundle; Vitest 142 files / 1,216 tests (unit + DB); Playwright 152 passed / 16 intentionally skipped (desktop + mobile, owner's untracked zz-* specs excluded). A first full run had 3 mobile failures (a11y, knowledge, organization) that passed alone and in the clean rerun: load flakes.
+
 - 2026-10-23 Phase 12 gate: typecheck, lint (0 errors / 25 warnings), build, worker bundle; Vitest 139 files / 1,198 tests (unit + DB); Playwright 150 passed / 16 intentionally skipped (desktop + mobile) incl. the axe audit; no hydration errors on any route.
 
 - 2026-10-17 morning gate (after Phases 8–11): typecheck, lint (0 errors / 19 existing warnings), worker bundle; Vitest 1,116 (unit + DB); Playwright 149 passed / 17 intentionally skipped (desktop + mobile), plus the new axe audit.
