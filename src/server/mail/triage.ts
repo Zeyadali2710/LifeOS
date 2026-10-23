@@ -171,9 +171,10 @@ async function rosterProblem(h: DB, row: Row, body: string) {
 async function triageRoster(h: DB, rows: Row[], cfg: RosterConfig & { calendarId: string }, o: Omit<TriageOpts, "now"> & { now: Date }): Promise<number> {
   const ctx: WriteCtx = { actor: "system", providerFor: (id, hh) => providerFor(id, hh, { fetch: o.fetch, key: o.key, now: () => o.now }), now: () => o.now };
   const gmails = new Map<string, ReturnType<typeof createGmail> | null>();
-  const done = await withRosterLease(h, o.now, async () => {
+  const done = await withRosterLease(h, o.now, async (renew) => {
     let n = 0;
     for (const row of rows) {
+      if (!(await renew())) break; // taken over: the rest waits for the next run
       const [cur] = await h.select().from(mailMessages).where(and(eq(mailMessages.id, row.id), isNull(mailMessages.triagedAt)));
       if (!cur) continue; // another run finished it
       try {
@@ -213,7 +214,8 @@ async function triageRoster(h: DB, rows: Row[], cfg: RosterConfig & { calendarId
     }
     return n;
   });
-  if (done === null) await (o.enqueue ?? realEnqueue)(QUEUES.mailTriage, {}, { startAfter: new Date(+o.now + 60_000) }).catch((err) => log.error({ err }, "roster retry enqueue failed"));
+  // Keep the ids so an owner retry of an older or given-up email isn't lost.
+  if (done === null) await (o.enqueue ?? realEnqueue)(QUEUES.mailTriage, { ids: rows.slice(0, 20).map((r) => r.id) }, { startAfter: new Date(+o.now + 60_000) }).catch((err) => log.error({ err }, "roster retry enqueue failed"));
   return done ?? 0;
 }
 
@@ -226,7 +228,7 @@ export async function runTriage(opts: TriageOpts = {}): Promise<{ triaged: numbe
 
   // Roster mail first: it must never reach the bulk rule or a model, and needs no AI key or spend headroom.
   const cfg = await rosterConfig(h);
-  const roster = rows.filter((r) => isRosterMail(cfg, r.fromAddress));
+  const roster = rows.filter((r) => isRosterMail(cfg, r));
   const ruled = roster.length ? await triageRoster(h, roster, { ...cfg, calendarId: cfg.calendarId! }, { ...opts, now }) : 0;
   const others = rows.filter((r) => !roster.includes(r));
 

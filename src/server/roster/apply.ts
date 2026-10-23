@@ -27,13 +27,18 @@ export async function rosterConfig(h: DB): Promise<RosterConfig> {
   return p.success ? p.data : DEFAULTS;
 }
 
-export const isRosterMail = (cfg: RosterConfig, fromAddress: string) => cfg.enabled && !!cfg.calendarId && fromAddress.toLowerCase() === cfg.sender.toLowerCase();
+/** INBOX only: spam or trash from a forged sender never writes. */
+export const isRosterMail = (cfg: RosterConfig, m: { fromAddress: string; labelIds: string[] }) =>
+  cfg.enabled && !!cfg.calendarId && m.fromAddress.toLowerCase() === cfg.sender.toLowerCase() && m.labelIds.includes("INBOX") && !m.labelIds.some((l) => l === "SPAM" || l === "TRASH");
 
 const LOCK = "roster.lock";
 const STALE_LOCK_MS = 10 * 60_000;
 
-/** One reconciliation at a time across workers; null when another holds the lease (taken over after 10 minutes). */
-export async function withRosterLease<T>(h: DB, now: Date, f: () => Promise<T>): Promise<T | null> {
+/**
+ * One reconciliation at a time across workers; null when another holds the lease (taken over after 10 minutes).
+ * f gets renew(): call it before each email; false = the lease was taken over, stop writing.
+ */
+export async function withRosterLease<T>(h: DB, now: Date, f: (renew: () => Promise<boolean>) => Promise<T>): Promise<T | null> {
   const token = randomUUID();
   const got = await h
     .insert(settings)
@@ -42,7 +47,8 @@ export async function withRosterLease<T>(h: DB, now: Date, f: () => Promise<T>):
     .returning({ k: settings.key });
   if (!got.length) return null;
   try {
-    return await f();
+    const renew = async () => (await h.update(settings).set({ updatedAt: new Date(Math.max(+now, Date.now())) }).where(and(eq(settings.key, LOCK), eq(settings.value, token))).returning({ k: settings.key })).length > 0;
+    return await f(renew);
   } finally {
     await h.delete(settings).where(and(eq(settings.key, LOCK), eq(settings.value, token)));
   }
@@ -91,13 +97,16 @@ export async function reconcileRoster(h: DB, cfg: RosterConfig & { calendarId: s
     a.eventId = w.eventId;
     await save();
   }
-  /** Deletes a's event; one that's already gone counts as deleted. */
+  /**
+   * Deletes a's event; one that's already gone counts as deleted. A calendar LifeOS can no longer write to (unsynced or
+   * read-only since) is let go too, so one stale calendar can't block every later roster for the week.
+   */
   async function remove(a: Applied) {
     const cur = a.eventId ? await etag(a.eventId) : undefined;
     if (!cur) return;
     try {
       const w = await deleteEvent(h, { eventId: a.eventId!, etag: cur.e, scope: "all", instanceStart: null }, ctx);
-      if (!w.ok && w.error !== "not_found") throw fail("delete", w.error);
+      if (!w.ok && w.error !== "not_found" && w.error !== "read_only") throw fail("delete", w.error);
     } catch (e) {
       if (!notFound(e)) throw e;
     }

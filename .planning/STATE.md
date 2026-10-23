@@ -24,6 +24,7 @@ Short current state only. History is in Git and the phase folders under `.planni
 - 10 Hardening: accepted 2026-10-17 (restore drill OK after the drill/backup-ordering fix d08ce89).
 - 11 Polish: accepted 2026-10-17. Milestone v1.0 roadmap complete.
 - 12 Almanac redesign: built on branch `redesign/almanac` 2026-10-23 (whole UI rebuilt from `design/handoff/`; backend contract unchanged). Full gate green; Codex phase review findings fixed. Not merged, pushed or deployed; awaiting owner review.
+- 13 Work roster to calendar: built on `main` 2026-10-23 (not pushed). Roster emails from `rosters@burps.com.au` are parsed by rule and reconciled into the calendar chosen in Settings → Work roster (off by default). No migration.
 
 ## Open owner items
 

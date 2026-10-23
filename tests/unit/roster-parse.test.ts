@@ -53,6 +53,11 @@ describe("parseRoster", () => {
     ]);
   });
 
+  it("skips a spacer row between the branch header and the days", () => {
+    const r = parseRoster(NEW, html("new.html").replace("<tr><td><b>Mon", `<tr><td colspan="5">&nbsp;</td></tr><tr><td><b>Mon`));
+    expect(r.ok && r.roster.shifts.length).toBe(3);
+  });
+
   it("refuses to guess", () => {
     const t = (rows: string) => parseRoster(NEW, `<table><tr><td></td><td colspan="2">TG A</td><td colspan="2">TG B</td></tr>${rows}</table>`);
     expect(t(`<tr><td>Tue 22-Sep</td><td>09:00 - 17:00</td><td></td><td></td></tr>`)).toEqual({ ok: false, error: "Row Tue 22-Sep doesn't line up with the branch columns." });
@@ -60,6 +65,12 @@ describe("parseRoster", () => {
     expect(t(`<tr><td>Wed 22-Sep</td><td>09:00 - 17:00</td><td></td><td colspan="2"></td></tr>`)).toEqual({ ok: false, error: "Wed 22-Sep is outside the roster week." });
     expect(t(`<tr><td>Tue 22-Sep</td><td>see AV</td><td></td><td colspan="2"></td></tr>`)).toEqual({ ok: false, error: "Couldn't read the TG A shift on Tue 22-Sep." });
     expect(t(`<tr><td>Tue 22-Sep</td><td>09:00 - 17:00</td><td></td><td colspan="2"></td></tr>`)).toEqual({ ok: false, error: "The roster table doesn't list every day of the week." });
+    expect(t(`<tr><td>Tue 22-Sep</td><td>09:00 - 12:00</td><td>13:00 - 17:00</td><td colspan="2"></td></tr>`)).toEqual({ ok: false, error: "Couldn't read the TG A shift on Tue 22-Sep." });
+    expect(t(`<tr><td>Tue 22-Sep</td><td>112:30 - 18:00</td><td></td><td colspan="2"></td></tr>`)).toEqual({ ok: false, error: "Couldn't read the TG A shift on Tue 22-Sep." });
+    expect(t(`<tr><td>Tue 22-Sep</td><td></td><td></td><td colspan="2"></td></tr><tr><td>Tue 22-Sep</td><td></td><td></td><td colspan="2"></td></tr>`)).toEqual({ ok: false, error: "Tue 22-Sep is listed twice." });
+    expect(parseRoster("Roster for 21/09/2026 - 21/09/2026", "<table><tr><td></td><td>A</td></tr><tr><td>Mon 21-Sep</td><td></td></tr></table>")).toEqual({ ok: false, error: "No roster week found." });
+    expect(parseRoster("Roster for 28/09/2026 - 04/10/2026", "")).toEqual({ ok: false, error: "No roster table found." });
+    expect(parseRoster("Roster for 31/09/2026 - 06/10/2026", "")).toEqual({ ok: false, error: "No roster week found." });
     expect(parseRoster("Roster", "<p>no dates</p>")).toEqual({ ok: false, error: "No roster week found." });
     expect(parseRoster(NEW, "<p>no table</p>")).toEqual({ ok: false, error: "No roster table found." });
   });

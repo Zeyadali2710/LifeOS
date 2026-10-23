@@ -10,7 +10,7 @@ const MONTHS = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "
 const WEEKDAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
 const WEEK = /(\d{1,2})\/(\d{1,2})\/(\d{4})\s*[-–]\s*(\d{1,2})\/(\d{1,2})\/(\d{4})/;
 const DAY = /^(sun|mon|tue|wed|thu|fri|sat)[a-z]*\s+(\d{1,2})[-\s]([a-z]{3})/i;
-const RANGE = /(\d{1,2}):(\d{2})\s*[-–]\s*(\d{1,2}):(\d{2})/;
+const RANGE = /(?<![\d:])(\d{1,2}):(\d{2})\s*[-–]\s*(\d{1,2}):(\d{2})(?![\d:])/;
 const BREAK = new RegExp(`brk\\w*\\s*\\(?\\s*${RANGE.source}\\s*\\)?`, "i");
 
 const pad = (n: number) => String(n).padStart(2, "0");
@@ -35,7 +35,8 @@ export function parseRoster(subject: string, html: string): ParseResult {
   const [d1, m1, y1, d2, m2, y2] = w.slice(1).map(Number) as [number, number, number, number, number, number];
   const from = Date.UTC(y1, m1 - 1, d1);
   const to = Date.UTC(y2, m2 - 1, d2);
-  if (!(to >= from && to - from < 14 * 86_400_000)) return { ok: false, error: "No roster week found." };
+  // Exactly one week: a shorter range would make the rest of an applied week look removed.
+  if (to - from !== 6 * 86_400_000 || new Date(from).getUTCDate() !== d1 || new Date(to).getUTCDate() !== d2) return { ok: false, error: "No roster week found." };
   const week = Array.from({ length: (to - from) / 86_400_000 + 1 }, (_, i) => new Date(from + i * 86_400_000));
   const ymd = (d: Date) => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
 
@@ -44,8 +45,9 @@ export function parseRoster(subject: string, html: string): ParseResult {
   const grid = tables.find((t) => t.some((r) => DAY.test(r[0]?.text ?? "")));
   if (!grid) return { ok: false, error: "No roster table found." };
   const first = grid.findIndex((r) => DAY.test(r[0]?.text ?? ""));
-  const header = grid[first - 1];
-  if (!header || header.length < 2) return { ok: false, error: "No roster table found." };
+  // The branch header is the nearest row above the days that names something (spacer rows are skipped).
+  const header = grid.slice(0, first).findLast((r) => r.length > 1 && r.slice(1).some((c) => c.text));
+  if (!header) return { ok: false, error: "No roster table found." };
   // Header column -> branch, with colspan expanded.
   const cols = header.slice(1).flatMap((c) => Array<string>(c.span).fill(c.text));
   const branches = [...new Set(cols)];
@@ -72,14 +74,18 @@ export function parseRoster(subject: string, html: string): ParseResult {
       const b = [...covered][0]!;
       byBranch.set(b, [...(byBranch.get(b) ?? []), c]);
     }
+    if (seen.has(ymd(date))) return { ok: false, error: `${name} is listed twice.` };
     seen.add(ymd(date));
     for (const branch of branches) {
       const s = (byBranch.get(branch) ?? []).map((c) => c.text).join(" ").trim();
       if (!s) continue;
       const brk = BREAK.exec(s);
-      const t = range(RANGE.exec(brk ? s.replace(brk[0], " ") : s));
-      const b = brk ? range(new RegExp(RANGE.source).exec(brk[0])) : null;
-      if (!t || (brk && !b)) return { ok: false, error: `Couldn't read the ${branch} shift on ${name}.` };
+      const rest = brk ? s.replace(brk[0], " ") : s;
+      const t = range(RANGE.exec(rest));
+      const b = brk ? range(RANGE.exec(brk[0])) : null;
+      // Exactly one shift and at most one break per cell; a second time range (split shift) isn't guessed at.
+      const extra = rest.replace(RANGE, " ");
+      if (!t || (brk && !b) || RANGE.test(extra) || BREAK.test(extra)) return { ok: false, error: `Couldn't read the ${branch} shift on ${name}.` };
       const [y, m, d] = [date.getUTCFullYear(), date.getUTCMonth() + 1, date.getUTCDate()];
       const start = sydneyInstant(y, m, d, t[0], t[1]);
       // An end at or before the start runs past midnight.

@@ -51,7 +51,7 @@ let n = 0;
 async function rosterMail(subject: string, file: string, at: Date, from = "rosters@burps.com.au") {
   const id = `r${++n}`;
   mailbox.push({ id, threadId: id, labelIds: ["INBOX"], snippet: "", internalDate: String(+at), historyId: "1", payload: { mimeType: "text/html", headers: [], body: { data: Buffer.from(html(file)).toString("base64url") } } });
-  const [r] = await t.handle().insert(mailMessages).values({ gmailId: id, threadId: id, fromAddress: from, subject, receivedAt: at }).returning();
+  const [r] = await t.handle().insert(mailMessages).values({ gmailId: id, threadId: id, fromAddress: from, subject, receivedAt: at, labelIds: ["INBOX"] }).returning();
   return r!;
 }
 const config = (o: object = {}) =>
@@ -122,7 +122,7 @@ describe("work roster", () => {
     const third = html("updated.html").replace("10:00 - 17:30", "").replace("Brk (14:00-14:30)", "");
     const id = `r${++n}`;
     mailbox.push({ id, threadId: id, labelIds: ["INBOX"], snippet: "", internalDate: "0", historyId: "1", payload: { mimeType: "text/html", body: { data: Buffer.from(third).toString("base64url") } } });
-    await t.handle().insert(mailMessages).values({ gmailId: id, threadId: id, fromAddress: "Rosters@Burps.com.au", subject: UPD, receivedAt: new Date("2026-09-19T09:00:00Z") });
+    await t.handle().insert(mailMessages).values({ gmailId: id, threadId: id, fromAddress: "Rosters@Burps.com.au", subject: UPD, receivedAt: new Date("2026-09-19T09:00:00Z"), labelIds: ["INBOX"] });
     await triage();
     expect(fake.calls.remove).toHaveLength(1);
     expect((await events()).map((e) => e.startAt!.toISOString())).toEqual(["2026-09-22T00:30:00.000Z", "2026-09-27T02:00:00.000Z"]);
@@ -187,6 +187,13 @@ describe("work roster", () => {
     expect(await t.handle().select().from(notifications)).toHaveLength(1);
   });
 
+  it("ignores roster-sender mail outside the INBOX (spam)", async () => {
+    const m = await rosterMail(NEW, "new.html", new Date("2026-09-19T01:00:00Z"));
+    await t.handle().update(mailMessages).set({ labelIds: ["INBOX", "SPAM"] }).where(eq(mailMessages.id, m.id));
+    await runTriage({ handle: t.handle(), llm: null, fetch: fakeGmail({ messages: mailbox }), now: () => NOW, key, enqueue });
+    expect(fake.calls.create).toHaveLength(0);
+  });
+
   it("leaves roster mail to normal triage when the feature is off, and other senders always", async () => {
     await config({ enabled: false });
     await rosterMail(NEW, "new.html", new Date("2026-09-19T01:00:00Z"));
@@ -203,6 +210,6 @@ describe("work roster", () => {
     expect(llm.calls).toHaveLength(0);
     expect(fake.calls.create).toHaveLength(0);
     expect(await mail(m.id)).toMatchObject({ triagedAt: null, triageModel: null });
-    expect(enqueue).toHaveBeenCalledWith("mail.triage", {}, { startAfter: new Date(+NOW + 60_000) });
+    expect(enqueue).toHaveBeenCalledWith("mail.triage", { ids: [m.id] }, { startAfter: new Date(+NOW + 60_000) });
   });
 });
