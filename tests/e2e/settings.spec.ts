@@ -32,3 +32,12 @@ test("spend cap saves with a toast", async ({ page }, info) => {
   await page.getByRole("button", { name: "Save cap" }).click();
   await expect(page.getByRole("status").filter({ hasText: `Spend cap set to US$${cap}` })).toBeVisible();
 });
+
+test("work roster refuses to turn on without a calendar", async ({ page }) => {
+  await page.goto("/settings?section=roster");
+  await expect(page.getByRole("region", { name: "Work roster" })).toBeVisible();
+  await expect(page.getByLabel("Roster sender")).toHaveValue("rosters@burps.com.au");
+  await page.getByLabel("Add my shifts to my calendar").check();
+  await page.getByRole("button", { name: "Save roster settings" }).click();
+  await expect(page.getByText("Choose a calendar LifeOS can write to.")).toBeVisible();
+});

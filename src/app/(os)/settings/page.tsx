@@ -22,6 +22,9 @@ import { SettingsNav } from "@/features/settings/settings-nav";
 import { SpendSection } from "@/features/settings/spend-section";
 import { BriefingsSection } from "@/features/settings/briefings-section";
 import { getSchedule } from "@/server/briefings";
+import { writableCalendars } from "@/server/calendar/queries";
+import { rosterConfig } from "@/server/roster/apply";
+import { RosterSection } from "@/features/settings/roster-section";
 import { SettingsSignOut } from "@/features/settings/settings-sign-out";
 import { Page, PageHeader } from "@/ui/layout";
 import styles from "@/features/settings/settings.module.css";
@@ -39,7 +42,7 @@ export default async function SettingsPage({ searchParams }: {
 }) {
   await requireOwner();
   const { section: raw, google: g, n, gmail, tiktok } = await searchParams;
-  const section = raw === "ai" || raw === "outreach" || raw === "briefings" ? raw : "connections";
+  const section = raw === "ai" || raw === "outreach" || raw === "briefings" || raw === "roster" ? raw : "connections";
   const googleResult = g && GOOGLE_RESULTS.includes(g) ? { google: g, n: n && /^\d{1,4}$/.test(n) ? Number(n) : null, gmail: gmail === "1" ? true : gmail === "0" ? false : null } : null;
   const now = new Date();
   const h = db();
@@ -52,6 +55,9 @@ export default async function SettingsPage({ searchParams }: {
   }
   else if (section === "briefings") {
     body = <BriefingsSection schedule={await getSchedule(h)} />;
+  }
+  else if (section === "roster") {
+    body = <RosterSection config={await rosterConfig(h)} calendars={await writableCalendars(h)} />;
   }
   else if (section === "outreach") {
     const [row] = await h.select({ v: settings.value }).from(settings).where(eq(settings.key, INTERESTS_KEY));

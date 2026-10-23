@@ -4,7 +4,7 @@ import { seedHeartbeat, signIn } from "./owner";
 
 // axe-core ships with eslint-plugin-jsx-a11y (via eslint-config-next); injected per page, no extra dependency.
 const AXE = createRequire(import.meta.url).resolve("axe-core/axe.min.js");
-const PAGES = ["/", "/career", "/socials", "/outreach", "/organization", "/projects", "/knowledge", "/goals", "/finances", "/agents", "/agents?view=approvals", "/agents?view=table", "/agents?view=runs", "/briefings", "/automations", "/settings", "/settings?section=briefings"];
+const PAGES = ["/", "/career", "/socials", "/outreach", "/organization", "/projects", "/knowledge", "/goals", "/finances", "/agents", "/agents?view=approvals", "/agents?view=table", "/agents?view=runs", "/briefings", "/automations", "/settings", "/settings?section=briefings", "/settings?section=roster"];
 type Violation = { id: string; impact: string | null; help: string; nodes: { target: string[] }[] };
 
 test.beforeAll(seedHeartbeat);

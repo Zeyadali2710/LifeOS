@@ -142,8 +142,8 @@ describe("work roster", () => {
       const m = await rosterMail(NEW, "new.html", new Date("2026-09-19T01:00:00Z"));
     let calls = 0;
     const base = provider();
-    current = fake = { ...base, calls: base.calls, create: async (...a) => (++calls === 2 ? Promise.reject(new Error("network")) : base.create(...a)) };
-    fake.calls.create.length = 0;
+    fake = { ...base, create: async (...a) => (++calls === 2 ? Promise.reject(new Error("network")) : base.create(...a)) };
+    current = fake;
     await triage();
     expect(await mail(m.id)).toMatchObject({ triagedAt: null, triageModel: "failed:1" });
     expect(await events()).toHaveLength(1);
@@ -152,7 +152,8 @@ describe("work roster", () => {
     const pending = state.shifts.find((s) => !s.eventId)!;
 
     const seen: string[] = [];
-    current = fake = { ...base, create: async (c, w, o) => (seen.push(o!.remoteId!), base.create(c, w, o)) };
+    fake = { ...base, create: async (c, w, o) => (seen.push(o!.remoteId!), base.create(c, w, o)) };
+    current = fake;
     await triage();
     expect(seen[0]).toBe(`lifeos${pending.key.replaceAll("-", "")}`);
     expect(await events()).toHaveLength(3);
