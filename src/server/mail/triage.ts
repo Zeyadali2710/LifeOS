@@ -153,6 +153,9 @@ export async function triageBatch(h: DB, rows: Row[], d: Deps): Promise<"ok" | "
   return "ok";
 }
 
+const ROSTER_RULE = "rules:roster";
+const ROSTER_CATCH_UP_DAYS = 14;
+
 const gmailFor = (h: DB, connectionId: string, o: { fetch?: typeof fetch; key?: Buffer; now: Date }) =>
   createGmail({ getToken: googleTokenSource(h, { connectionId, fetch: o.fetch, now: () => o.now, key: o.key }), fetch: o.fetch });
 
@@ -175,8 +178,8 @@ async function triageRoster(h: DB, rows: Row[], cfg: RosterConfig & { calendarId
     let n = 0;
     for (const row of rows) {
       if (!(await renew())) break; // taken over: the rest waits for the next run
-      const [cur] = await h.select().from(mailMessages).where(and(eq(mailMessages.id, row.id), isNull(mailMessages.triagedAt)));
-      if (!cur) continue; // another run finished it
+      const [cur] = await h.select().from(mailMessages).where(and(eq(mailMessages.id, row.id), or(isNull(mailMessages.triagedAt), ne(sql`coalesce(${mailMessages.triageModel}, '')`, ROSTER_RULE))));
+      if (!cur) continue; // another run already applied it
       try {
         if (!gmails.has(row.connectionId)) {
           const [conn] = await h.select({ s: connections.scopes }).from(connections).where(eq(connections.id, row.connectionId));
@@ -196,8 +199,8 @@ async function triageRoster(h: DB, rows: Row[], cfg: RosterConfig & { calendarId
         const summary = r ? `Work roster, week of ${week}: ${r.added} added, ${r.changed} changed, ${r.removed} removed.` : `Work roster, week of ${week}: already applied.`;
         await h
           .update(mailMessages)
-          .set({ category: "OTHER", importance: "LOW", summary, action: "", actionItems: [], flagged: false, triagedAt: o.now, triageModel: "rules:roster", updatedAt: o.now })
-          .where(and(eq(mailMessages.id, row.id), isNull(mailMessages.triagedAt)));
+          .set({ category: "OTHER", importance: "LOW", summary, action: "", actionItems: [], flagged: false, triagedAt: o.now, triageModel: ROSTER_RULE, updatedAt: o.now })
+          .where(eq(mailMessages.id, row.id));
         if (r && r.added + r.changed + r.removed > 0) {
           await emitActivity(
             { type: "roster.applied", source: "email", title: "Work roster updated", detail: summary, payload: { weekStart: p.roster.weekStart, ...r } },
@@ -222,12 +225,18 @@ async function triageRoster(h: DB, rows: Row[], cfg: RosterConfig & { calendarId
 export async function runTriage(opts: TriageOpts = {}): Promise<{ triaged: number; rules: number; paused: boolean }> {
   const h = opts.handle ?? db();
   const now = (opts.now ?? (() => new Date()))();
-  const rows = opts.ids?.length
+  const cfg = await rosterConfig(h);
+  const found = opts.ids?.length
     ? await h.select().from(mailMessages).where(and(inArray(mailMessages.id, opts.ids), isNull(mailMessages.triagedAt)))
     : await h.select().from(mailMessages).where(and(isNull(mailMessages.triagedAt), or(isNull(mailMessages.triageModel), ne(mailMessages.triageModel, TRIAGE_GAVE_UP)), gte(mailMessages.receivedAt, new Date(+now - 7 * DAY)))).orderBy(desc(mailMessages.receivedAt)).limit(100);
+  // Catch-up: roster emails from the last 14 days the rule hasn't applied yet (e.g. the model triaged them before the
+  // rule was turned on) go through it once, automatically. Given-up ones wait for the owner's Triage.
+  const backlog = !opts.ids?.length && cfg.enabled && cfg.calendarId
+    ? await h.select().from(mailMessages).where(and(eq(sql`lower(${mailMessages.fromAddress})`, cfg.sender.toLowerCase()), gte(mailMessages.receivedAt, new Date(+now - ROSTER_CATCH_UP_DAYS * DAY)), or(isNull(mailMessages.triageModel), and(ne(mailMessages.triageModel, ROSTER_RULE), ne(mailMessages.triageModel, TRIAGE_GAVE_UP))))).orderBy(desc(mailMessages.receivedAt)).limit(20)
+    : [];
+  const rows = [...found, ...backlog.filter((b) => isRosterMail(cfg, b) && !found.some((r) => r.id === b.id))];
 
   // Roster mail first: it must never reach the bulk rule or a model, and needs no AI key or spend headroom.
-  const cfg = await rosterConfig(h);
   const roster = rows.filter((r) => isRosterMail(cfg, r));
   const ruled = roster.length ? await triageRoster(h, roster, { ...cfg, calendarId: cfg.calendarId! }, { ...opts, now }) : 0;
   const others = rows.filter((r) => !roster.includes(r));

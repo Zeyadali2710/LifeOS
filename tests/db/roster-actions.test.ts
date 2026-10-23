@@ -11,6 +11,9 @@ vi.mock("@/server/session", () => ({
   },
 }));
 
+const enqueue = vi.fn<(...a: unknown[]) => Promise<void>>(async () => undefined);
+vi.mock("@/server/queue", () => ({ enqueue: (...a: unknown[]) => enqueue(...a), QUEUES: { mailTriage: "mail.triage" } }));
+
 import { rosterConfig } from "@/server/roster/apply";
 import { saveRosterConfigAction } from "@/server/roster-actions";
 
@@ -19,6 +22,7 @@ let ro = "";
 beforeEach(async () => {
   const h = t.handle();
   denied = false;
+  enqueue.mockClear();
   for (const tb of [settings, auditLog, connections]) await h.delete(tb);
   await h.insert(connections).values({ id: "google_calendar", ciphertext: "x", last4: "", login: "g@example.com" });
   const [a, b] = await h.insert(calendars).values([
@@ -36,6 +40,7 @@ describe("saveRosterConfigAction", () => {
     expect(await saveRosterConfigAction({ ...base, calendarId: rw })).toEqual({ ok: true });
     expect(await rosterConfig(t.handle())).toEqual({ ...base, sender: "rosters@burps.com.au", calendarId: rw });
     expect((await t.handle().select().from(auditLog)).map((a) => a.action)).toEqual(["roster.config"]);
+    expect(enqueue).toHaveBeenCalledWith("mail.triage", {}, { singletonKey: "mail.triage" }); // catch-up starts now
   });
 
   it("defaults to off with the known sender", async () => {

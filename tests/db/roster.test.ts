@@ -187,6 +187,17 @@ describe("work roster", () => {
     expect(await t.handle().select().from(notifications)).toHaveLength(1);
   });
 
+  it("catches up by itself on a roster email the model triaged before the rule was on, once", async () => {
+    const m = await rosterMail(NEW, "new.html", new Date("2026-09-10T01:00:00Z")); // older than the 7-day triage window
+    await t.handle().update(mailMessages).set({ triagedAt: NOW, triageModel: "claude-haiku", category: "OTHER", importance: "MEDIUM" }).where(eq(mailMessages.id, m.id));
+    await triage();
+    expect(llm.calls).toHaveLength(0);
+    expect(fake.calls.create).toHaveLength(3);
+    expect(await mail(m.id)).toMatchObject({ triageModel: "rules:roster", importance: "LOW" });
+    await triage(); // applied: not picked up again
+    expect(fake.calls.create).toHaveLength(3);
+  });
+
   it("ignores roster-sender mail outside the INBOX (spam)", async () => {
     const m = await rosterMail(NEW, "new.html", new Date("2026-09-19T01:00:00Z"));
     await t.handle().update(mailMessages).set({ labelIds: ["INBOX", "SPAM"] }).where(eq(mailMessages.id, m.id));
