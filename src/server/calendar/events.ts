@@ -15,7 +15,8 @@ import type { providerFor } from "./providers";
 import { loadInstances, storedEvent } from "./queries";
 import type { CalendarProvider, CalendarRef, EventWrite, NormalizedEvent, StoredEvent, WriteResult, WriteScope } from "./types";
 
-export type WriteCtx = { actor: "owner" | "agent"; approvalId?: string; providerFor: typeof providerFor; now: () => Date };
+// "system": an owner-enabled rule (work roster), direct + audited like owner writes.
+export type WriteCtx = { actor: "owner" | "agent" | "system"; approvalId?: string; providerFor: typeof providerFor; now: () => Date };
 export type EventFieldsLike = z.infer<typeof eventFields> & { repeat?: EventInput["repeat"] };
 type Target = { eventId: string; etag: string | null; scope: WriteScope; instanceStart: string | null };
 
@@ -125,20 +126,21 @@ async function guard<T>(h: DB, cal: CalendarRef, f: () => Promise<T>): Promise<T
   }
 }
 
-export async function createEvent(h: DB, args: { calendarId: string; input: EventFieldsLike }, ctx: WriteCtx): Promise<WriteOutcome> {
+export async function createEvent(h: DB, args: { calendarId: string; input: EventFieldsLike; idKey?: string }, ctx: WriteCtx): Promise<WriteOutcome> {
   const cal = await calendarById(h, args.calendarId);
   if (!writable(cal)) return { ok: false, error: "read_only" };
   const ref = calendarRef(cal);
   const provider: CalendarProvider = await ctx.providerFor(ref.connectionId, h);
   const w = toWrite(args.input, ctx, "create");
-  // Deterministic id per approval: a retried approved create adopts the first attempt's event (AGT-03).
-  const remoteId = ctx.approvalId ? (ref.connectionId === "google_calendar" ? `lifeos${ctx.approvalId.replaceAll("-", "")}` : `${ctx.approvalId}@lifeos`) : undefined;
+  // Deterministic id per approval (or caller key, a UUID): a retried create adopts the first attempt's event (AGT-03).
+  const key = args.idKey ?? ctx.approvalId;
+  const remoteId = key ? (ref.connectionId === "google_calendar" ? `lifeos${key.replaceAll("-", "")}` : `${key}@lifeos`) : undefined;
   const r = await guard(h, ref, () => provider.create(ref, w, remoteId ? { remoteId } : undefined));
   await apply(h, cal.id, r, ctx.now());
   const made = r.upserts[0];
   const [row] = made ? await h.select({ id: calendarEvents.id }).from(calendarEvents).where(and(eq(calendarEvents.calendarId, cal.id), eq(calendarEvents.remoteId, made.remoteId))) : [];
   if (!made || !row) throw new Error("provider returned no event");
-  await setLastUsedCalendar(h, cal.id);
+  if (ctx.actor !== "system") await setLastUsedCalendar(h, cal.id);
   await aud(h, ctx, "calendar.event.create", row.id, { calendarId: cal.id, eventId: row.id });
   await notifyLive(h, "calendar", cal.connectionId);
   return { ok: true, eventId: row.id, remoteId: made.remoteId, calendarId: cal.id, calendarName: cal.name, start: w.start, overlaps: await overlapOf(h, row.id, w) };

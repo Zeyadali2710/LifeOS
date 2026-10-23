@@ -2,7 +2,9 @@
 import { and, desc, eq, gte, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import { z } from "zod";
 import { IMPORTANCE, MAIL_CATEGORIES } from "@/lib/outreach-types";
+import type { WriteCtx } from "../calendar/events";
 import { googleTokenSource } from "../calendar/google/client";
+import { providerFor } from "../calendar/providers";
 import { db, type DB } from "../db/client";
 import { agentRuns, connections, mailMessages, settings } from "../db/schema";
 import { getLlm } from "../agents/llm";
@@ -12,8 +14,11 @@ import { toAnthropicTool, type AnthropicTool, type LlmClient } from "../agents/t
 import { addRunUsage } from "../agents/usage";
 import { emitActivity, notifyLive } from "../events";
 import { log } from "../log";
+import { enqueue as realEnqueue, QUEUES, type Enqueue } from "../queue";
+import { isRosterMail, reconcileRoster, rosterConfig, withRosterLease, type RosterConfig } from "../roster/apply";
+import { parseRoster } from "../roster/parse";
 import { createGmail, gmailAllowed } from "./client";
-import { bodyText, type GmailPayload } from "./text";
+import { bodyText, findPart, type GmailPayload } from "./text";
 
 const TriageItem = z.object({
   id: z.string(),
@@ -45,7 +50,7 @@ const SYSTEM =
 
 type Row = typeof mailMessages.$inferSelect;
 type Deps = { llm: LlmClient; gmail: ReturnType<typeof createGmail> | null; now: Date };
-export type TriageOpts = { handle?: DB; llm?: LlmClient | null; fetch?: typeof fetch; now?: () => Date; key?: Buffer; ids?: string[] };
+export type TriageOpts = { handle?: DB; llm?: LlmClient | null; fetch?: typeof fetch; now?: () => Date; key?: Buffer; ids?: string[]; enqueue?: Enqueue };
 
 /** Failed attempts live in triage_model while triaged_at is null: null -> failed:1 -> failed:2 (then only the owner's Triage retries). */
 export const TRIAGE_GAVE_UP = "failed:2";
@@ -148,6 +153,70 @@ export async function triageBatch(h: DB, rows: Row[], d: Deps): Promise<"ok" | "
   return "ok";
 }
 
+const gmailFor = (h: DB, connectionId: string, o: { fetch?: typeof fetch; key?: Buffer; now: Date }) =>
+  createGmail({ getToken: googleTokenSource(h, { connectionId, fetch: o.fetch, now: () => o.now, key: o.key }), fetch: o.fetch });
+
+async function rosterProblem(h: DB, row: Row, body: string) {
+  await emitActivity(
+    { type: "roster.failed", source: "email", title: "Work roster not applied", tone: "amber" },
+    { category: "IMPORTANT", title: "Work roster not applied", body, actionUrl: `/outreach?tab=email&mail=${row.id}` },
+    h,
+  );
+}
+
+/**
+ * Work roster mail (Phase 13): applied to the calendar by rule and never sent to a model. A parse failure gives up at once
+ * (retrying can't help); a calendar failure follows the failed:1 -> failed:2 ladder and notifies once when it gives up.
+ */
+async function triageRoster(h: DB, rows: Row[], cfg: RosterConfig & { calendarId: string }, o: Omit<TriageOpts, "now"> & { now: Date }): Promise<number> {
+  const ctx: WriteCtx = { actor: "system", providerFor: (id, hh) => providerFor(id, hh, { fetch: o.fetch, key: o.key, now: () => o.now }), now: () => o.now };
+  const gmails = new Map<string, ReturnType<typeof createGmail> | null>();
+  const done = await withRosterLease(h, o.now, async () => {
+    let n = 0;
+    for (const row of rows) {
+      const [cur] = await h.select().from(mailMessages).where(and(eq(mailMessages.id, row.id), isNull(mailMessages.triagedAt)));
+      if (!cur) continue; // another run finished it
+      try {
+        if (!gmails.has(row.connectionId)) {
+          const [conn] = await h.select({ s: connections.scopes }).from(connections).where(eq(connections.id, row.connectionId));
+          gmails.set(row.connectionId, conn && gmailAllowed(conn.s, "read") ? gmailFor(h, row.connectionId, o) : null);
+        }
+        const gmail = gmails.get(row.connectionId);
+        if (!gmail) throw new Error("no Gmail read access");
+        const payload = ((await gmail.getFull(row.gmailId)).payload ?? {}) as GmailPayload;
+        const p = parseRoster(row.subject, findPart(payload, "text/html") ?? findPart(payload, "text/plain") ?? "");
+        if (!p.ok) {
+          await h.update(mailMessages).set({ triageModel: TRIAGE_GAVE_UP }).where(eq(mailMessages.id, row.id));
+          await rosterProblem(h, row, `${p.error} Nothing in your calendar was changed.`);
+          continue;
+        }
+        const r = await reconcileRoster(h, cfg, p.roster, { gmailId: row.gmailId, receivedAt: row.receivedAt }, ctx);
+        const week = new Date(`${p.roster.weekStart}T00:00:00Z`).toLocaleDateString("en-AU", { day: "numeric", month: "short", timeZone: "UTC" });
+        const summary = r ? `Work roster, week of ${week}: ${r.added} added, ${r.changed} changed, ${r.removed} removed.` : `Work roster, week of ${week}: already applied.`;
+        await h
+          .update(mailMessages)
+          .set({ category: "OTHER", importance: "LOW", summary, action: "", actionItems: [], flagged: false, triagedAt: o.now, triageModel: "rules:roster", updatedAt: o.now })
+          .where(and(eq(mailMessages.id, row.id), isNull(mailMessages.triagedAt)));
+        if (r && r.added + r.changed + r.removed > 0) {
+          await emitActivity(
+            { type: "roster.applied", source: "email", title: "Work roster updated", detail: summary, payload: { weekStart: p.roster.weekStart, ...r } },
+            { category: "FYI", title: "Work roster updated", body: summary, actionUrl: `/organization?view=week&date=${p.roster.weekStart}` },
+            h,
+          );
+        }
+        n++;
+      } catch (err) {
+        log.error({ err }, "work roster failed");
+        await markFailed(h, [row.id]);
+        if (cur.triageModel === "failed:1") await rosterProblem(h, row, "LifeOS couldn't update your calendar from this roster. Use Triage on the email to try again.");
+      }
+    }
+    return n;
+  });
+  if (done === null) await (o.enqueue ?? realEnqueue)(QUEUES.mailTriage, {}, { startAfter: new Date(+o.now + 60_000) }).catch((err) => log.error({ err }, "roster retry enqueue failed"));
+  return done ?? 0;
+}
+
 export async function runTriage(opts: TriageOpts = {}): Promise<{ triaged: number; rules: number; paused: boolean }> {
   const h = opts.handle ?? db();
   const now = (opts.now ?? (() => new Date()))();
@@ -155,11 +224,17 @@ export async function runTriage(opts: TriageOpts = {}): Promise<{ triaged: numbe
     ? await h.select().from(mailMessages).where(and(inArray(mailMessages.id, opts.ids), isNull(mailMessages.triagedAt)))
     : await h.select().from(mailMessages).where(and(isNull(mailMessages.triagedAt), or(isNull(mailMessages.triageModel), ne(mailMessages.triageModel, TRIAGE_GAVE_UP)), gte(mailMessages.receivedAt, new Date(+now - 7 * DAY)))).orderBy(desc(mailMessages.receivedAt)).limit(100);
 
-  const bulk = rows.filter((r) => r.bulk);
+  // Roster mail first: it must never reach the bulk rule or a model, and needs no AI key or spend headroom.
+  const cfg = await rosterConfig(h);
+  const roster = rows.filter((r) => isRosterMail(cfg, r.fromAddress));
+  const ruled = roster.length ? await triageRoster(h, roster, { ...cfg, calendarId: cfg.calendarId! }, { ...opts, now }) : 0;
+  const others = rows.filter((r) => !roster.includes(r));
+
+  const bulk = others.filter((r) => r.bulk);
   if (bulk.length) {
     await h.update(mailMessages).set({ category: "OTHER", importance: "LOW", summary: null, triageModel: "rules", triagedAt: now, updatedAt: now }).where(inArray(mailMessages.id, bulk.map((r) => r.id)));
   }
-  const rest = rows.filter((r) => !r.bulk);
+  const rest = others.filter((r) => !r.bulk);
   let triaged = 0;
   let paused = false;
   const llm = rest.length ? (opts.llm ?? getLlm()) : null;
@@ -167,7 +242,7 @@ export async function runTriage(opts: TriageOpts = {}): Promise<{ triaged: numbe
   if (llm) {
     for (const connectionId of new Set(rest.map((r) => r.connectionId))) {
       const [conn] = await h.select({ s: connections.scopes }).from(connections).where(eq(connections.id, connectionId));
-      const gmail = conn && gmailAllowed(conn.s, "read") ? createGmail({ getToken: googleTokenSource(h, { connectionId, fetch: opts.fetch, now: () => now, key: opts.key }), fetch: opts.fetch }) : null;
+      const gmail = conn && gmailAllowed(conn.s, "read") ? gmailFor(h, connectionId, { ...opts, now }) : null;
       const accountRows = rest.filter((r) => r.connectionId === connectionId);
       for (let i = 0; i < accountRows.length; i += BATCH) {
         const chunk = accountRows.slice(i, i + BATCH);
@@ -182,6 +257,6 @@ export async function runTriage(opts: TriageOpts = {}): Promise<{ triaged: numbe
     }
   }
   if (bulk.length) await notifyLive(h, "outreach", "mail");
-  log.info({ rules: bulk.length, triaged, paused }, "mail triage finished");
-  return { triaged, rules: bulk.length, paused };
+  log.info({ rules: bulk.length, roster: ruled, triaged, paused }, "mail triage finished");
+  return { triaged, rules: bulk.length + ruled, paused };
 }

@@ -12,18 +12,18 @@ export type GmailPayload = {
   parts?: GmailPayload[];
 };
 
-function find(p: GmailPayload, type: string): string | null {
+export function findPart(p: GmailPayload, type: string): string | null {
   if (p.mimeType === type && p.body?.data && !p.body.attachmentId) return Buffer.from(p.body.data, "base64url").toString("utf8");
   for (const c of p.parts ?? []) {
-    const r = find(c, type);
+    const r = findPart(c, type);
     if (r !== null) return r;
   }
   return null;
 }
 
 export function bodyText(payload: GmailPayload): { text: string; htmlOnly: boolean; truncated: boolean } {
-  const plain = find(payload, "text/plain");
-  const html = plain === null ? find(payload, "text/html") : null;
+  const plain = findPart(payload, "text/plain");
+  const html = plain === null ? findPart(payload, "text/html") : null;
   const raw = plain ?? (html !== null ? htmlToText(html) : "");
   return { ...capUtf8(raw, MAIL_BODY_CAP), htmlOnly: plain === null && html !== null };
 }
